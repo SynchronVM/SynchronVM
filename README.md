@@ -52,7 +52,7 @@ SafE aNd SEcure Virtual Machine
     - N-Version programming and selection?
   - Snapshot and recovery?
   - Sandboxes - isolation?
-    - Overwriting of memory - reading of memory I should not read. 
+    - Overwriting of memory - reading of memory I should not read.
 - What security mechanisms can we include?
   - IFC?
   - Firmware authenticity check.
@@ -77,6 +77,9 @@ SafE aNd SEcure Virtual Machine
     - STM32 TF-M User Manual (UM2671).
   - Hardware crypto: AES, HASH, TRNG.
   - Readout protection.
+  - What should be the response if tampering is suspected?
+    - Safe default mode/value
+    - ?
   
 - System monitors, progress monitors, resource monitors
 
@@ -102,3 +105,9 @@ SafE aNd SEcure Virtual Machine
   - FlexRay  - Thought to become a Safety bus 
   - CAN
   - LIN  - Very simple
+  - UART
+  - SPI
+  - i2c
+  - Bluetooth?
+  - Wifi?
+  - Cat-M1, NB-IoT?
