@@ -53,9 +53,10 @@ SafE aNd SEcure Virtual Machine
 - What kind of fault tolerance mechanisms can we include?
   - Watchdog timers?
   - Error detection codes?
-  - Redundancy=
+  - Redundancy?
     - N-Version programming and selection?
   - Snapshot and recovery?
+  - Sandboxes - isolation?
 - What security mechanisms can we include?
   - IFC?
   - Firmware authenticity check.
