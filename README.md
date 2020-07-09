@@ -57,6 +57,29 @@ SafE aNd SEcure Virtual Machine
     - N-Version programming and selection?
   - Snapshot and recovery?
 - What security mechanisms can we include?
-  - IFC? 		
+  - IFC?
+  - Firmware authenticity check.
+- Security mechanisms of target platform.
+  - Arm TrustZone (only precent on more competent microcontrollers like M33).
+  - Arm TrustZone Cryptocell 310 security system (NRF52840 has this feature).
+  - Unique 96bit device IDs (STM32F4).
+  - SDIO (Secure Digital IO) SD-Card interface?
+  - SPI Communication with DMA and CRC.
+  - Clock Security System.
+  - IWDG: Watchdog peripherals (STM32F4 has 2 of these).
+  - Secure boot features (NRF52840 has some features)
+  - Secure erase (NRF52840)
+  - Memory write protection.
+  - Flexible memory controller (STM32F4).
+  - Memory protection unit (NRF52).
+  - Debug port disabling.
+  - Tamper detection.
+  - Power supply monitoring.
+  - Temperature monitors (abnormal temperature profile may be a sign of tampering).
+  - Secure firmware updates.
+    - STM32 TF-M User Manual (UM2671).
+  - Hardware crypto: AES, HASH, TRNG.
+  - Readout protection.
+  
 - System monitors, progress monitors, resource monitors
 
