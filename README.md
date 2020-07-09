@@ -4,12 +4,6 @@ SafE aNd SEcure Virtual Machine
 
 
 
-
-
-
-
-
-
 ## Thoughts
 
 ### Specification and testing
@@ -46,7 +40,8 @@ SafE aNd SEcure Virtual Machine
 
 ### Scheduling
 
-- 
+- Timing.
+- Processes at different criticality levels. 
 
 ### Safety and Security features that are of interest
 
@@ -57,6 +52,7 @@ SafE aNd SEcure Virtual Machine
     - N-Version programming and selection?
   - Snapshot and recovery?
   - Sandboxes - isolation?
+    - Overwriting of memory - reading of memory I should not read. 
 - What security mechanisms can we include?
   - IFC?
   - Firmware authenticity check.
@@ -84,3 +80,25 @@ SafE aNd SEcure Virtual Machine
   
 - System monitors, progress monitors, resource monitors
 
+
+
+- Things to look at
+  - Green hill software - Integrity
+  - safe&secure RTOSes
+
+
+  - Remote firmware updates - Danger
+  - Parameterization. Change operating parameters remotely - Danger.
+
+
+
+- Range of timing requirements
+  - From very slow: smart home.
+  - To very fast: connected cars?
+
+
+- Communication
+  - Ethernet - is comming on strong. 
+  - FlexRay  - Thought to become a Safety bus 
+  - CAN
+  - LIN  - Very simple
