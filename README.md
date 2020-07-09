@@ -12,10 +12,12 @@ SafE aNd SEcure Virtual Machine
 
 ## Thoughts
 
+### Specification and testing
+- 
+
 ### Source languages
 
 - Functional programming languages
-
 
 ### Target platforms
 
@@ -33,8 +35,14 @@ SafE aNd SEcure Virtual Machine
 - Heap consisting of cons-cells is easy to implement.
 
 - Possible unit of allocation
-  [Type info, Flags, GC-bits, safety and security bits | 32 bits data or ref | 32 bits data or ref] 
-  96 bits in total? 
+  ```
+  [Type info, Flags, GC-bits, safety and security bits | 32 bits data or ref | 32 bits data or ref]
+  ```
+
+### RTS language support features
+
+- Message queues?
+- Peripheral drivers?
 
 ### Scheduling
 
@@ -42,7 +50,13 @@ SafE aNd SEcure Virtual Machine
 
 ### Safety and Security features that are of interest
 
-- What kind of fault tollerance mechanisms can we include?
-- What security mechanisms can we include? 
-- IFC? 
-- System monitors and progress monitors?
+- What kind of fault tolerance mechanisms can we include?
+  - Watchdog timers?
+  - Error detection codes?
+  - Redundancy=
+    - N-Version programming and selection?
+  - Snapshot and recovery?
+- What security mechanisms can we include?
+  - IFC? 		
+- System monitors, progress monitors, resource monitors
+
