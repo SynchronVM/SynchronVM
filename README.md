@@ -2,8 +2,6 @@
 
 SafE aNd SEcure Virtual Machine
 
-
-
 ## Thoughts
 
 ### Specification and testing
@@ -111,3 +109,8 @@ SafE aNd SEcure Virtual Machine
   - Bluetooth?
   - Wifi?
   - Cat-M1, NB-IoT?
+
+
+## Static analysis tools
+
+To get *infer* go [here](https://github.com/facebook/infer/releases/tag/v0.17.0)
