@@ -57,9 +57,6 @@ OBJECTS = $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 LIB = $(BUILD_DIR)/libsensevm.a
 all: $(OBJECTS) $(LIB)
 
-analyze: $(SOURCES)
-	infer run -- $(CC) -I$(INCLUDE_DIR) $(CCFLAGS) -c $< 
-
 debug: CCFLAGS += -g 
 debug: $(OBJECTS) $(LIB)
 
