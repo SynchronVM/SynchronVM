@@ -5,11 +5,16 @@ SafE aNd SEcure Virtual Machine
 ## Thoughts
 
 ### Specification and testing
-- 
+- scan-build: Static analysis tool (from Clang)
+- Infer: Static analysis tool (from FB)
+- Property based testing: We can try to make use of the "theft" property based tester for C
+- Travis-ci integration in github to run tests on each commit.
+- What about specifications? 
 
 ### Source languages
 
-- Functional programming languages
+- Bytecode based VM
+  - Any source language that can be compiled to that bytecode.
 
 ### Target platforms
 
@@ -75,28 +80,19 @@ SafE aNd SEcure Virtual Machine
     - STM32 TF-M User Manual (UM2671).
   - Hardware crypto: AES, HASH, TRNG.
   - Readout protection.
-  - What should be the response if tampering is suspected?
-    - Safe default mode/value
-    - ?
   
 - System monitors, progress monitors, resource monitors
-
-
 
 - Things to look at
   - Green hill software - Integrity
   - safe&secure RTOSes
 
-
   - Remote firmware updates - Danger
   - Parameterization. Change operating parameters remotely - Danger.
-
-
 
 - Range of timing requirements
   - From very slow: smart home.
   - To very fast: connected cars?
-
 
 - Communication
   - Ethernet - is comming on strong. 
@@ -114,3 +110,11 @@ SafE aNd SEcure Virtual Machine
 ## Static analysis tools
 
 To get *infer* go [here](https://github.com/facebook/infer/releases/tag/v0.17.0)
+
+## Response to detected threat?
+
+- Tampering with value suspected
+  - Safe default mode/value
+  - ?
+
+## Potential attack surfaces
