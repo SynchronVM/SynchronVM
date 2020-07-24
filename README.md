@@ -120,3 +120,9 @@ To get *infer* go [here](https://github.com/facebook/infer/releases/tag/v0.17.0)
   - ?
 
 ## Potential attack surfaces
+
+
+
+## TODO:
+
+.1 Try to get Contiki running on STM32. 
