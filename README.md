@@ -41,9 +41,15 @@ SafE aNd SEcure Virtual Machine
 - Heap consisting of cons-cells is easy to implement.
 
 - Possible unit of allocation
-  ```
-  [Type info, Flags, GC-bits, safety and security bits | 32 bits data or ref | 32 bits data or ref]
-  ```
+
+  - Dynamically typed 
+    ```
+    [Type info, Flags, GC-bits, safety and security bits | 32 bits data or ref | 32 bits data or ref]
+    ```
+  - Statically typed
+    ``` 
+    [GC-bits, Safety and security bits | Some fixed suitable number of bits]
+    ``` 
 
 ### RTS language support features
 
