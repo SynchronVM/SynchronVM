@@ -125,4 +125,15 @@ To get *infer* go [here](https://github.com/facebook/infer/releases/tag/v0.17.0)
 
 ## TODO:
 
-.1 Try to get Contiki running on STM32. 
+.1 Try to get Contiki running on STM32.
+
+
+
+## Related Work:
+
+- VeloxVM:
+  - Seems very interesting.
+  - Runs bytecode compiled from a Scheme dialect.
+  - Mark and Sweep GC for heap allocated lists (just like LispBM does).
+  - Resource usage policies.
+  - What can we do that is significantly different?
