@@ -55,11 +55,15 @@ SafE aNd SEcure Virtual Machine
 
 - Message queues?
 - Peripheral drivers?
+- Linked lists?
+- Arrays?
 
 ### Scheduling
 
 - Timing.
-- Processes at different criticality levels. 
+- Processes at different criticality levels.
+- Resource constraints.
+- sleeping.
 
 ### Safety and Security features that are of interest
 
