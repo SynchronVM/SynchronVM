@@ -17,6 +17,12 @@ SafE aNd SEcure Virtual Machine
 
 - Bytecode based VM
   - Any source language that can be compiled to that bytecode.
+- Statically or Dynamically typed?
+  - Statically typed would lead to a larger instruction set (most likely), but more efficient execution.
+    - Move some safety and security concerns to the bytecode compiler - Good! 
+  - Dynamic - ease of use for programmer - ease of shooting oneself in foot increases.
+    - All safety and security concerns at runtime? 
+  
 
 ### Target platforms
 
