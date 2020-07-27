@@ -13,6 +13,9 @@ SafE aNd SEcure Virtual Machine
   - (download)[https://frama-c.com/download.html]
 - What about specifications?
   - ACSL - ANSI/ISO C Specification language
+- An ambitious idea of generating VMs from a safe language like Haskell
+  - Source Plugins allow intercepting the GHC pipeline at various points and correspondingly generate the VM written in C from the typechecked Haskell AST
+  - Design an EDSL in Haskell for writing VMs. This EDSL generates the VM written in C.
 
 ### Source languages
 
