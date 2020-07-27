@@ -136,6 +136,19 @@ To get *infer* go [here](https://github.com/facebook/infer/releases/tag/v0.17.0)
   - Safe default mode/value
   - ?
 
+- Should programmer be able to specify what happens in response to a
+  detected "threat" in some way ? (maybe similarly in some way to exceptions)
+
+```
+apa x y = x + y
+  threat | crc_check_fail args -> response depending on args 
+         | problem_x_detected args -> response depending on args
+	 | default -> Send/store log message
+``` 
+
+
+
+
 ## Potential attack surfaces
 
 
