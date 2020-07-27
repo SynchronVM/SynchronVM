@@ -167,3 +167,16 @@ apa x y = x + y
   - Mark and Sweep GC for heap allocated lists (just like LispBM does).
   - Resource usage policies.
   - What can we do that is significantly different?
+
+
+
+## Case Studies  (Put potential example programs/systems here)
+
+   *What are the problems with IoT. What kind of applications
+    How do they communicate? What Happens if one goes down? How are
+    they restarted (if possible)? 
+
+
+
+   -  
+
