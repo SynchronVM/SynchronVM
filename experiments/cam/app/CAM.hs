@@ -19,7 +19,7 @@ data Exp = Var Var  -- variable
          deriving (Ord, Show, Eq)
 
 data Sys = Sys2 Exp Exp
-         | Sys1  Exp
+         | Sys1 Exp
          deriving (Ord, Show, Eq)
 
 data Pat = PatVar Var
