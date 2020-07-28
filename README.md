@@ -71,6 +71,13 @@ SafE aNd SEcure Virtual Machine
 - Resource constraints.
 - sleeping.
 
+### Execution engine thoughts
+- CAM
+- SECD
+
+### Bytecode thoughts
+
+
 ### Safety and Security features that are of interest
 
 - What kind of fault tolerance mechanisms can we include?
