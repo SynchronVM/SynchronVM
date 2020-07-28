@@ -10,7 +10,7 @@ SafE aNd SEcure Virtual Machine
 - Property based testing: We can try to make use of the "theft" property based tester for C
 - Travis-ci integration in github to run tests on each commit.
 - Frama-C for formal verification against ACSL specifications?
-  - (download)[https://frama-c.com/download.html]
+  - [download](https://frama-c.com/download.html)
 - What about specifications?
   - ACSL - ANSI/ISO C Specification language
 - An ambitious idea of generating VMs from a safe language like Haskell
@@ -25,7 +25,8 @@ SafE aNd SEcure Virtual Machine
   - Statically typed would lead to a larger instruction set (most likely), but more efficient execution.
     - Move some safety and security concerns to the bytecode compiler - Good!
     - How does the garbage collector know which values are pointers to heap structures?
-      - in lispBM the type tags associated with each value is used to decide this.
+      - In lispBM the type tags associated with each value is used to decide this.
+      - Since we need to store GC-bits we can also store a "is pointer" bit + additional safety and security related bits.
   - Dynamic - ease of use for programmer - ease of shooting oneself in foot increases.
     - All safety and security concerns at runtime? 
   
