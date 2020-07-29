@@ -64,7 +64,7 @@ data Instructions
 
 type Label = String -- labels to identify a subroutine
 
-
+-- Val is basically Weak Head Normal Form
 data Val = VInt  Int  -- constants s(0)
          | VBool Bool -- constants s(0)
          | VEmpty     -- empty tuple
