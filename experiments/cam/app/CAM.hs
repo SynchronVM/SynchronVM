@@ -35,8 +35,18 @@ data Instructions
    | QUOTE Sys  -- load immediate i.e `li` from the code area to environment
    | PUSH       -- copy content of register to stack
    | SWAP       -- interchange between register and topmost element of stack
-   | CUR   Exp  -- build a closure with Exp and the environment register
+   | CUR Label  -- build a closure with labeled exp and the environment register
    | RETURN     -- return from a subroutine call
+   | APP
+   deriving (Ord, Show, Eq)
+
+type Label = String -- labels to identify a subroutine
+
+
+
+
+
+
 
 -- NOTE:
 {-
