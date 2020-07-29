@@ -65,8 +65,18 @@ data Instructions
 type Label = String -- labels to identify a subroutine
 
 
+data Val = VInt  Int  -- constants s(0)
+         | VBool Bool -- constants s(0)
+         | VEmpty     -- empty tuple
+         | VPair Val Val -- Pair
+         | VCon Val Val  -- first argument is the tag second is the rest of the value
+         | VClosure Val Label -- closure; Val is the environment
+         | VComb Label        -- closure of a combinator; no free variables
+         deriving (Ord, Show, Eq)
 
+type Stack = [Val]
 
+type EnvReg = Val -- the environment register
 
 
 
