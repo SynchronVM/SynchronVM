@@ -73,10 +73,10 @@ data Instructions
    | PACK Val   -- create tagged value with (VCon pack_val env_reg) and place on env_reg
 
      -- CONTROL INSTRUCTIONS
-   | SKIP
-   | STOP
-   | APP
-   | RETURN     -- return from a subroutine call
+   | SKIP   -- NoOp
+   | STOP   -- halt machine
+   | APP    -- function applications
+   | RETURN -- return from a subroutine call
    | CALL Label
    | GOTOFALSE Label
    | SWITCH [Val] -- case expression for constructors
