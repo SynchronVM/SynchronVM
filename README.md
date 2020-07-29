@@ -4,7 +4,7 @@ SafE aNd SEcure Virtual Machine
 
 ## Thoughts
 
-### Specification and testing
+### Specification and testing of implementation
 - scan-build: Static analysis tool (from Clang)
 - Infer: Static analysis tool (from FB)
 - Property based testing: We can try to make use of the "theft" property based tester for C
@@ -17,7 +17,11 @@ SafE aNd SEcure Virtual Machine
   - Source Plugins allow intercepting the GHC pipeline at various points and correspondingly generate the VM written in C from the typechecked Haskell AST
   - Design an EDSL in Haskell for writing VMs. This EDSL generates the VM written in C.
 
-### Source languages
+### CODE Guidelines
+
+- License boxes (top of each source file): Add you names in these boxes when doing any change to a source file
+
+### Source languages to run on the VM 
 
 - Bytecode based VM
   - Any source language that can be compiled to that bytecode.
@@ -28,8 +32,7 @@ SafE aNd SEcure Virtual Machine
       - In lispBM the type tags associated with each value is used to decide this.
       - Since we need to store GC-bits we can also store a "is pointer" bit + additional safety and security related bits.
   - Dynamic - ease of use for programmer - ease of shooting oneself in foot increases.
-    - All safety and security concerns at runtime? 
-  
+    - All safety and security concerns at runtime?
 
 ### Target platforms
 
