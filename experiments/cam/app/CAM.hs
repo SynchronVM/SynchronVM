@@ -78,7 +78,15 @@ type Stack = [Val]
 
 type EnvReg = Val -- the environment register
 
+data Env a = EnvEmpty                 -- empty environment
+           | EnvPair (Env a) Pat      -- constructed environment
+           | EnvAnn  (Env a) (a, Pat) -- annotated environment
+           deriving (Ord, Show, Eq)
 
+data CAM = Ins Instructions -- instructions
+         | Seq CAM CAM      -- sequence
+         | Lab Label CAM    -- labeled sequence
+         deriving (Ord, Show, Eq)
 
 -- NOTE:
 {-
