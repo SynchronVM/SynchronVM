@@ -29,30 +29,12 @@
 
 #include <stdint.h>
 
-#define WORDS_PER_CELL   7 /* Odd number here should give double word aligned memory cells ? */
-
 /* Bit masks for flags of a memory cell */ 
 const uint32_t flag_gc_mark       = 0x00000001;       /* Some GC algorithms require more bits */
 
-const uint32_t flag_data_used_0   = 0x00040000;
-const uint32_t flag_data_used_1   = 0x00080000;
-const uint32_t flag_data_used_2   = 0x00100000;
-const uint32_t flag_data_used_3   = 0x00200000;
-const uint32_t flag_data_used_4   = 0x00400000;
-const uint32_t flag_data_used_5   = 0x00800000;
-const uint32_t flag_data_used_6   = 0x01000000;
-const uint32_t flag_is_ptr_0      = 0x02000000;
-const uint32_t flag_is_ptr_1      = 0x04000000;
-const uint32_t flag_is_ptr_2      = 0x08000000;
-const uint32_t flag_is_ptr_3      = 0x10000000;
-const uint32_t flag_is_ptr_4      = 0x20000000;
-const uint32_t flag_is_ptr_5      = 0x40000000;
-const uint32_t flag_is_ptr_6      = 0x80000000;
-
-
 typedef struct {
   uint32_t flags;
-  uint32_t data[WORDS_PER_CELL];
+  uint32_t data[2];
 } heap_cell_t;
 
 
