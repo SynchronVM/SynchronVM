@@ -31,24 +31,86 @@
 #include "Absyn.h"
 
 
-struct varlist {
-  struct varlist *next;
-  char   *var;
-} varlist_t;
+typedef enum {
+  PAT_VAR,
+  PAT_NIL,
+  PAT_TUP,
+  PAT_LAY
+} pat_type;
 
-/* Compile time environment of variables. 
-   used to compute the index of the variable to be able instantiate the
-   correct "Acc" (access) instruction.  
-*/
-varlist_t *varlist_add(varlist_t *list, char *var) {
 
-  varlist_t *new = malloc(sizeof(varlist));
-  if (!new) return NULL;
-  new->next = list;
-  new->var  = var;
+
+struct pat_s;
+
+typedef struct {
+  struct pat_s *fst;
+  struct pat_s *snd;
+} pat_tup_t;
+
+typedef struct {
+  char *var;
+  struct pat_s *as;
+} pat_lay_t;
+
+typedef struct pat_s {
+  pat_type type;
+  union { 
+    char *var;
+    pat_tup_t tup;
+    pat_lay_t lay;
+  } pat;
+} pat_t; 
+
+typedef struct formal_env_s {
+  pat_t *head;
+  struct formal_env_s *tail;
+} formal_env_t;
+
+
+pat_t *pat_var(char *var) {
+
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_VAR;
+  pat->pat.var = var; /* maybe copy string? */
+
+  return pat;
 }
 
+pat_t *pat_nil() {
 
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_NIL;
+
+  return pat;
+}
+
+pat_t *pat_tup(pat_t *fst, pat_t *snd) {
+
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_TUP;
+  pat->pat.tup.fst = fst;
+  pat->pat.tup.snd = snd;
+
+  return pat;
+}
+
+pat_t *pat_lay(char *var, pat_t *p) {
+
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_LAY;
+  pat->pat.lay.var = var;
+  pat->pat.lay.as  = p;
+
+  return pat;
+}
 
 int main(int argc, char **argv) {
 
@@ -61,7 +123,7 @@ int main(int argc, char **argv) {
     printf("Error: specify exactly one argument (file to compile)\n");
     return 1;
   }
-  
+
   fn = argv[1];
 
   if (fn) {
