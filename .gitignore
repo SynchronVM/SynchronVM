@@ -1,0 +1,41 @@
+
+# General
+*~
+*#
+
+# C stuff
+*.o
+*.a
+*.dylib
+
+# Directories
+
+infer-out
+spec/plantuml-images
+
+# Documents
+*.pdf
+
+# tiny_camiot specific
+language/tiny_camiot/build/
+language/tiny_camiot/camiotc
+language/tiny_camiot/grammar/Absyn.c
+language/tiny_camiot/grammar/Absyn.h
+language/tiny_camiot/grammar/Absyn.o
+language/tiny_camiot/grammar/Lexer.c
+language/tiny_camiot/grammar/Lexer.o
+language/tiny_camiot/grammar/Makefile
+language/tiny_camiot/grammar/Makefile~
+language/tiny_camiot/grammar/Parser.c
+language/tiny_camiot/grammar/Parser.h
+language/tiny_camiot/grammar/Parser.o
+language/tiny_camiot/grammar/Printer.c
+language/tiny_camiot/grammar/Printer.h
+language/tiny_camiot/grammar/Printer.o
+language/tiny_camiot/grammar/Skeleton.c
+language/tiny_camiot/grammar/Skeleton.h
+language/tiny_camiot/grammar/Test.c
+language/tiny_camiot/grammar/Test.o
+language/tiny_camiot/grammar/Testtiny_camiot
+language/tiny_camiot/grammar/tiny_camiot.l
+language/tiny_camiot/grammar/tiny_camiot.y

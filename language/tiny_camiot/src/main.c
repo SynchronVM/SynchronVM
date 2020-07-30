@@ -22,23 +22,49 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __HEAP_H_
-#define __HEAP_H_
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-/* Just a sketch */
-
-#include <stdint.h>
-
-/* Bit masks for flags of a memory cell */ 
-const uint32_t flag_gc_mark       = 0x00000001;       /* Some GC algorithms require more bits */
-
-typedef struct {
-  uint32_t flags;
-  uint32_t data[2];
-} heap_cell_t;
+#include "Parser.h"
+#include "Printer.h"
+#include "Absyn.h"
 
 
-/* Later initialize heap from a preallocaed array provided by caller */ 
-extern heap_cell_t* heap_init(unsigned int n_cells);
+int main(int argc, char **argv) {
 
-#endif
+
+  FILE *fp;
+  Exp ast;
+  char *fn;
+
+  if (argc != 2) {
+    printf("Error: specify exactly one argument (file to compile)\n");
+    return 1;
+  }
+  
+  fn = argv[1];
+
+  if (fn) {
+    fp = fopen(fn, "r");
+    if (!fp) {
+      printf("Error: cannot open file %s\n", fn);
+      return 1;
+    }
+    
+    ast = pExp(fp);
+    
+    if (ast) {
+      printf("%s\n", showExp(ast));
+    } else {
+      printf("Failure!\n");
+      return 1;
+    }
+  } else {
+    printf("Error: filename\n");
+    return 1;
+  }
+    
+  return 0;
+}
+  
