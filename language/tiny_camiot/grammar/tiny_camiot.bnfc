@@ -1,0 +1,50 @@
+
+
+
+token UIdent (upper (letter | digit | '_')*) ;
+
+-- Expressions
+-- The indices on the "Exp" sets precedence levels.
+-- Fix the precedences so they make sence.
+
+EAddi.  Exp  ::= Exp "+" Exp1 ;
+EAddf.  Exp  ::= Exp "+." Exp1 ;
+EMuli.  Exp1 ::= Exp1 "*" Exp2 ;
+EMulf.  Exp1 ::= Exp1 "*." Exp2 ;
+EVar.   Exp2 ::= Ident ;
+EConst. Exp2 ::= Const ;
+ECon.   Exp2 ::= Con Exp ;
+ETup.   Exp3 ::= "(" Exp "," Exp ")" ;
+ECase.  Exp4 ::= "case" Exp "of" [PatMatch] ;
+ELet.   Exp4 ::= "let" Pat "=" Exp "in" Exp ;
+ELetR.  Exp4 ::= "letrec" Pat "=" Exp "in" Exp ;
+ELam.   Exp4 ::= "\\" Pat "->" Exp ;
+EApp.   Exp4 ::= Exp Exp ;
+_.      Exp5 ::= "(" Exp ")" ;
+
+
+coercions Exp 5 ;
+
+-- Constructor
+Constructor. Con ::= UIdent ;
+
+
+-- Constants
+
+CInt.     Const ::= Integer ;
+CFloat.   Const ::= Double ;
+
+-- Patterns
+
+PVar.  Pat ::=   Ident ;
+PNil.  Pat ::=   "(" ")";
+PTup.  Pat1 ::=  "(" Pat "," Pat ")" ;
+PLay.  Pat2 ::=  Ident "as" Pat ;
+
+coercions Pat 2 ;
+
+-- Pattern matching
+
+PConPat.  PatMatch ::= Con Pat "->" Exp ;
+separator PatMatch "|"; 
+
