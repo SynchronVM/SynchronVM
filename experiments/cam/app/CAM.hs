@@ -22,6 +22,8 @@
 
 module CAM where
 
+import Prelude hiding (lookup)
+
 type Var = String
 
 data Exp = Var Var  -- variable
@@ -100,9 +102,9 @@ type Stack = [Val]
 type EnvReg = Val -- the environment register
 
 -- compile time environment
-data Env a = EnvEmpty                 -- empty environment
-           | EnvPair (Env a) Pat      -- constructed environment
-           | EnvAnn  (Env a) (a, Pat) -- annotated environment
+data Env = EnvEmpty                 -- empty environment
+         | EnvPair Env Pat          -- constructed environment
+         | EnvAnn  Env (Label, Pat) -- annotated environment
            deriving (Ord, Show, Eq)
 
 data CAM = Ins Instructions -- instructions
@@ -117,10 +119,11 @@ data CAM = Ins Instructions -- instructions
 interpret :: Exp -> CAM
 interpret e = Seq (codegen e EnvEmpty) (Ins STOP)
 
-codegen :: Exp -> Env a -> CAM
-codegen = undefined
+codegen :: Exp -> Env -> CAM
+codegen (Var var) env = lookup var env 0
 
-
+lookup :: Var -> Env -> Int -> CAM
+lookup = undefined
 
 
 
