@@ -1,10 +1,11 @@
 
 
 
- token UIdent (upper (letter | digit | '_')*) ;
-
+token UIdent (upper (letter | digit | '_')*) ;
 
 -- Expressions
+-- The indices on the "Exp" sets precedence levels.
+-- Fix the precedences so they make sence.
 
 EAddi.  Exp  ::= Exp "+" Exp1 ;
 EAddf.  Exp  ::= Exp "+." Exp1 ;
@@ -17,6 +18,8 @@ ETup.   Exp3 ::= "(" Exp "," Exp ")" ;
 ECase.  Exp4 ::= "case" Exp "of" [PatMatch] ;
 ELet.   Exp4 ::= "let" Pat "=" Exp "in" Exp ;
 ELetR.  Exp4 ::= "letrec" Pat "=" Exp "in" Exp ;
+ELam.   Exp4 ::= "\\" Pat "->" Exp ;
+EApp.   Exp4 ::= Exp Exp ;
 _.      Exp5 ::= "(" Exp ")" ;
 
 
