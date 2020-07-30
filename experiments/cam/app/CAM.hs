@@ -42,11 +42,16 @@ data Exp = Var Var  -- variable
          --              resulting expression
          deriving (Ord, Show, Eq)
 
-data Sys = Sys2 Exp Exp -- BinOp
-         | Sys1 Exp     -- UnaryOp
+data Sys = Sys2 BinOp Exp Exp -- BinOp
+         | Sys1 UnaryOp Exp     -- UnaryOp
          | LInt Int     -- Int s(0) in cam
          | LBool Bool   -- Bool s(0) in cam
          deriving (Ord, Show, Eq)
+
+
+data BinOp = Plus | Multiply | Minus deriving (Ord, Show, Eq)
+
+data UnaryOp = Abs deriving (Ord, Show, Eq)
 
 data Pat = PatVar Var
          | Empty
@@ -68,8 +73,8 @@ data Instructions
      -- REGISTER OPERATIONS
    | QUOTE Sys  -- QUOTE S(0) load immediate i.e `li` from the code area to environment
    | CLEAR      -- clear environment register
-   | PRIM Sys   -- if PRIM s(1) then apply primop to env reg
-                -- if PRIM s(2) then apply primop to top of stack (arg1) and env reg(arg2)
+   | PRIM1 UnaryOp -- PRIM s(1) then apply primop to env reg
+   | PRIM2 BinOp   -- PRIM s(2) then apply primop to top of stack (arg1) and env reg(arg2)
    | CONS       -- join (stack_top, env_reg) and place it on environment register
    | CUR Label  -- build a closure with labeled exp and the environment register
    | PACK Val   -- create tagged value with (VCon pack_val env_reg) and place on env_reg
@@ -123,6 +128,18 @@ interpret e = Seq (codegen e EnvEmpty) (Ins STOP)
 
 codegen :: Exp -> Env -> CAM
 codegen (Var var) env = lookup var env 0
+codegen (Sys (LInt n)) _ = Ins $ QUOTE (LInt n) -- s(0)
+codegen (Sys (LBool b)) _ = Ins $ QUOTE (LBool b) -- s(0)
+codegen (Sys (Sys1 uop e)) env = Seq (codegen e env) (Ins (PRIM1 uop))
+codegen (Sys (Sys2 bop e1 e2)) env = Seq (eval e1 e2 env) (Ins (PRIM2 bop))
+codegen Void _ = Ins CLEAR
+codegen (Pair e1 e2) env = Seq (eval e1 e2 env) (Ins CONS)
+
+eval :: Exp -> Exp -> Env -> CAM
+eval e1 e2 env =
+  (Seq (Ins PUSH)
+   (Seq (codegen e1 env)
+    (Seq (Ins SWAP) (codegen e2 env))))
 
 lookup :: Var -> Env -> Int -> CAM
 lookup var EnvEmpty _ = Ins FAIL
