@@ -5,7 +5,7 @@ CCFLAGS = -g -O2 -Wall -Wextra -pedantic -std=c11
 CC=gcc
 
 SOURCE_DIR = src
-INCLUDE_DIR = include
+INCLUDES = -Iinclude -Igrammar
 
 $(shell mkdir -p ${BUILD_DIR})
 
@@ -20,7 +20,7 @@ PARSER  = grammar/Absyn.o grammar/Lexer.o grammar/Parser.o grammar/Printer.o
 all: camiotc 
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c 
-	$(CC) -I$(INCLUDE_DIR) $(CCFLAGS) -c $< -o $@
+	$(CC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
 
 camiotc: $(OBJECTS) $(PARSER)
 	$(CC) -o $@  $(CFLAGS) $(OBJECTS)
@@ -31,4 +31,5 @@ $(PARSER):
 clean:
 	rm -f ${BUILD_DIR}/*.o
 	rm -f ${BUILD_DIR}/*.a
+	cd grammar; make clean
 
