@@ -23,7 +23,7 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
 	$(CC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
 
 camiotc: $(OBJECTS) $(PARSER)
-	$(CC) -o $@  $(CFLAGS) $(OBJECTS)
+	$(CC) -o $@  $(CFLAGS) $(OBJECTS) $(PARSER)
 
 $(PARSER):
 	cd grammar; ./make.sh
