@@ -83,6 +83,8 @@ data Instructions
    | GOTOFALSE Label
    | SWITCH [Val] -- case expression for constructors
    | GOTO Label
+
+   | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
 
 type Label = String -- labels to identify a subroutine
@@ -123,11 +125,41 @@ codegen :: Exp -> Env -> CAM
 codegen (Var var) env = lookup var env 0
 
 lookup :: Var -> Env -> Int -> CAM
-lookup = undefined
+lookup var EnvEmpty _ = Ins FAIL
+lookup var (EnvPair env pat) n =
+  (Seq (Ins (ACC n))
+   (lookupPat var pat)) <?>
+  (lookup var env (n + 1))
+lookup var (EnvAnn env (l, pat)) n =
+  (Seq (Ins (REST n))
+   (Seq (Ins (CALL l))
+    (lookupPat var pat))) <?>
+  (lookup var env n)
 
 
+lookupPat :: Var -> Pat -> CAM
+lookupPat _ Empty = Ins FAIL
+lookupPat x (PatVar v)
+  | x == v = Ins SKIP
+  | otherwise = Ins FAIL
+lookupPat x (PatPair p1 p2) =
+  (Seq (Ins FST) (lookupPat x p1)) <?>
+  (Seq (Ins SND) (lookupPat x p2))
+lookupPat x (As y p)
+  | x == y = Ins SKIP
+  | otherwise = lookupPat x p
 
+(<?>) :: CAM -> CAM -> CAM
+(<?>) x y
+  | nofail x = x
+  | nofail y = y
+  | otherwise = error "Variable not found"
 
+nofail :: CAM -> Bool
+nofail (Ins FAIL) = False
+nofail (Ins _)    = True
+nofail (Seq _ cam2) = nofail cam2
+nofail (Lab _ cam)  = nofail cam
 
 -- NOTE:
 {-
