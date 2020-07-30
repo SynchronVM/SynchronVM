@@ -31,6 +31,25 @@
 #include "Absyn.h"
 
 
+struct varlist {
+  struct varlist *next;
+  char   *var;
+} varlist_t;
+
+/* Compile time environment of variables. 
+   used to compute the index of the variable to be able instantiate the
+   correct "Acc" (access) instruction.  
+*/
+varlist_t *varlist_add(varlist_t *list, char *var) {
+
+  varlist_t *new = malloc(sizeof(varlist));
+  if (!new) return NULL;
+  new->next = list;
+  new->var  = var;
+}
+
+
+
 int main(int argc, char **argv) {
 
 

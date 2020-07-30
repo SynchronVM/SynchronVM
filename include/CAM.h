@@ -75,21 +75,11 @@ const uint8_t bci_jmpf          = 36; // jump if false
 const uint8_t bci_switch        = 37;
 const uint8_t bci_goto          = 38;
 
-
-
-
-/* Note: With this representation, bci_fst instructions can likely be
-         optimized out as they can probably be implemented by doing nothing.
-*/
-
-
-
 /* cam_context_t
 
    Info: Representation of the state of a running CAM process
 
-   a: value register or the "fst" of a tuple value
-   b: Unused or the "snd" of a tuple value     (a,b)
+   reg: value register
    pc: index into code area where currently executing
 
    stack:
@@ -97,8 +87,7 @@ const uint8_t bci_goto          = 38;
 */
 typedef struct {
 
-  uint32_t a;
-  uint32_t b;
+  uint32_t reg;
   uint32_t pc;
 
   /* stack */
