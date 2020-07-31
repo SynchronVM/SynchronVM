@@ -22,11 +22,7 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __CAM_H_
-#define __CAM_H_
-
-#include <stdint.h>
-
+#include <CAM.h>
 
 const uint8_t bci_fst           = 1;
 const uint8_t bci_snd           = 2;
@@ -74,28 +70,3 @@ const uint8_t bci_call          = 35;
 const uint8_t bci_jmpf          = 36; // jump if false
 const uint8_t bci_switch        = 37;
 const uint8_t bci_goto          = 38;
-
-/* cam_context_t
-
-   Info: Representation of the state of a running CAM process
-
-   reg: value register
-   pc: index into code area where currently executing
-
-   stack:
-   code area: pointer to the bytecode
-*/
-typedef struct {
-
-  uint32_t reg;
-  uint32_t pc;
-
-  /* stack */
-  /* code area */
-
-} cam_context_t;
-
-
-
-
-#endif

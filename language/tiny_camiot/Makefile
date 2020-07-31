@@ -5,7 +5,7 @@ CCFLAGS = -g -O2 -Wall -Wextra -pedantic -std=c11
 CC=gcc
 
 SOURCE_DIR = src
-INCLUDES = -Iinclude -Igrammar -I../../include
+INCLUDES = -Iinclude -Igrammar 
 
 $(shell mkdir -p ${BUILD_DIR})
 

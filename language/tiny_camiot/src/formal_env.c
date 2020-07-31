@@ -22,51 +22,52 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
-#include <Parser.h>
-#include <Printer.h>
-#include <Absyn.h>
 
 #include <formal_env.h>
-#include <CAM.h>
 
-int main(int argc, char **argv) {
+pat_t *pat_var(char *var) {
 
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
 
-  FILE *fp;
-  Exp ast;
-  char *fn;
+  pat->type = PAT_VAR;
+  pat->pat.var = var; /* maybe copy string? */
 
-  if (argc != 2) {
-    printf("Error: specify exactly one argument (file to compile)\n");
-    return 1;
-  }
-
-  fn = argv[1];
-
-  if (fn) {
-    fp = fopen(fn, "r");
-    if (!fp) {
-      printf("Error: cannot open file %s\n", fn);
-      return 1;
-    }
-    
-    ast = pExp(fp);
-    
-    if (ast) {
-      printf("%s\n", showExp(ast));
-    } else {
-      printf("Failure!\n");
-      return 1;
-    }
-  } else {
-    printf("Error: filename\n");
-    return 1;
-  }
-    
-  return 0;
+  return pat;
 }
-  
+
+pat_t *pat_nil() {
+
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_NIL;
+
+  return pat;
+}
+
+pat_t *pat_tup(pat_t *fst, pat_t *snd) {
+
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_TUP;
+  pat->pat.tup.fst = fst;
+  pat->pat.tup.snd = snd;
+
+  return pat;
+}
+
+pat_t *pat_lay(char *var, pat_t *p) {
+
+  pat_t *pat = malloc(sizeof(pat_t));
+  if (!pat) return NULL;
+
+  pat->type = PAT_LAY;
+  pat->pat.lay.var = var;
+  pat->pat.lay.as  = p;
+
+  return pat;
+}
+
