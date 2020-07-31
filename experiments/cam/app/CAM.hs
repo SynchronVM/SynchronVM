@@ -164,17 +164,17 @@ codegen (Sys (Sys1 uop e)) env = do
   i1 <- codegen e env
   pure $! Seq i1 (Ins (PRIM1 uop))
 codegen (Sys (Sys2 bop e1 e2)) env = do
-  is <- eval e1 e2 env
+  is <- codegen2 e1 e2 env
   pure $! Seq is (Ins (PRIM2 bop))
 codegen Void _ = pure $! Ins CLEAR
 codegen (Pair e1 e2) env = do
-  is <- eval e1 e2 env
+  is <- codegen2 e1 e2 env
   pure $! Seq is (Ins CONS)
 codegen (Con tag e) env = do
   i1 <- codegen e env
   pure $! Seq i1  (Ins $ PACK tag)
 codegen (App e1 e2) env = do
-  is <- eval e2 e1 env
+  is <- codegen2 e2 e1 env
   pure $! Seq is (Ins APP)
 codegen (Lam pat e) env = do
   l <- freshLabel
@@ -186,8 +186,8 @@ codegenR e env = do
   i <- codegen e env
   pure $! Seq i (Ins RETURN)
 
-eval :: Exp -> Exp -> Env -> Codegen CAM
-eval e1 e2 env = do
+codegen2 :: Exp -> Exp -> Env -> Codegen CAM
+codegen2 e1 e2 env = do
   i1 <- codegen e1 env
   i2 <- codegen e2 env
   pure $! (Seq (Ins PUSH)
