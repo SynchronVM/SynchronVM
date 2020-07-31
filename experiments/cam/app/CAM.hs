@@ -20,9 +20,12 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module CAM where
 
 import Prelude hiding (lookup)
+import qualified Control.Monad.State.Strict as S
 
 type Var = String
 type Tag = String
@@ -121,31 +124,66 @@ data CAM = Ins Instructions -- instructions
          deriving (Ord, Show, Eq)
 
 
+data CodegenState =
+  CodegenState
+  { count :: Int }
 
+initState = CodegenState {count = 0 }
+
+newtype Codegen a =
+  Codegen
+    { runCodegen :: S.State CodegenState a
+    }
+  deriving (Functor, Applicative, Monad, S.MonadState CodegenState)
+
+freshLabel :: Codegen String
+freshLabel = do
+  i <- S.gets count
+  S.modify $ \s -> s {count = 1 + i}
+  return $ "label_" <> (show i)
 
 
 interpret :: Exp -> CAM
-interpret e = Seq (codegen e EnvEmpty) (Ins STOP)
+interpret e = Seq instrs (Ins STOP)
+  where
+    instrs = S.evalState
+               (runCodegen $! codegen e EnvEmpty)
+               initState
 
-codegen :: Exp -> Env -> CAM
-codegen (Var var) env = lookup var env 0
-codegen (Sys (LInt n)) _ = Ins $ QUOTE (LInt n) -- s(0)
-codegen (Sys (LBool b)) _ = Ins $ QUOTE (LBool b) -- s(0)
-codegen (Sys (Sys1 uop e)) env = Seq (codegen e env) (Ins (PRIM1 uop))
-codegen (Sys (Sys2 bop e1 e2)) env = Seq (eval e1 e2 env) (Ins (PRIM2 bop))
-codegen Void _ = Ins CLEAR
-codegen (Pair e1 e2) env = Seq (eval e1 e2 env) (Ins CONS)
-codegen (Con tag e) env = Seq (codegen e env) (Ins $ PACK tag)
-codegen (App e1 e2)  env = Seq (eval e2 e1 env) (Ins APP)
+codegen :: Exp -> Env -> Codegen CAM
+codegen (Var var) env = pure $! lookup var env 0
+codegen (Sys (LInt n)) _ = pure $! Ins $ QUOTE (LInt n) -- s(0)
+codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
+codegen (Sys (Sys1 uop e)) env = do
+  i1 <- codegen e env
+  pure $! Seq i1 (Ins (PRIM1 uop))
+codegen (Sys (Sys2 bop e1 e2)) env = do
+  is <- eval e1 e2 env
+  pure $! Seq is (Ins (PRIM2 bop))
+codegen Void _ = pure $! Ins CLEAR
+codegen (Pair e1 e2) env = do
+  is <- eval e1 e2 env
+  pure $! Seq is (Ins CONS)
+codegen (Con tag e) env = do
+  i1 <- codegen e env
+  pure $! Seq i1  (Ins $ PACK tag)
+codegen (App e1 e2) env = do
+  is <- eval e2 e1 env
+  pure $! Seq is (Ins APP)
+codegen (Lam pat e) env = undefined
 
-codegenR :: Exp -> Env -> CAM
-codegenR e env = Seq (codegen e env) (Ins RETURN)
+codegenR :: Exp -> Env -> Codegen CAM
+codegenR e env = do
+  i <- codegen e env
+  pure $! Seq i (Ins RETURN)
 
-eval :: Exp -> Exp -> Env -> CAM
-eval e1 e2 env =
-  (Seq (Ins PUSH)
-   (Seq (codegen e1 env)
-    (Seq (Ins SWAP) (codegen e2 env))))
+eval :: Exp -> Exp -> Env -> Codegen CAM
+eval e1 e2 env = do
+  i1 <- codegen e1 env
+  i2 <- codegen e2 env
+  pure $! (Seq (Ins PUSH)
+           (Seq i1
+            (Seq (Ins SWAP) i2)))
 
 lookup :: Var -> Env -> Int -> CAM
 lookup var EnvEmpty _ = Ins FAIL
