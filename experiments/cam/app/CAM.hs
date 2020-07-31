@@ -108,10 +108,6 @@ data Val = VInt  Int  -- constants s(0)
          | VComb Label        -- closure of a combinator; no free variables
          deriving (Ord, Show, Eq)
 
-type Stack = [Val]
-
-type EnvReg = Val -- the environment register
-
 -- compile time environment
 data Env = EnvEmpty                 -- empty environment
          | EnvPair Env Pat          -- constructed environment
@@ -219,6 +215,7 @@ lookupPat x (As y p)
   | x == y = Ins SKIP
   | otherwise = lookupPat x p
 
+-- non-deterministic search; partial function
 (<?>) :: CAM -> CAM -> CAM
 (<?>) x y
   | nofail x = x
@@ -244,5 +241,16 @@ nofail (Lab _ cam)  = nofail cam
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
 
 -}
+
+
+type Stack = [Val]
+
+type EnvReg = Val -- the environment register
+
+-- Take a sequence of stack machine instructions
+-- and run evaluate them to their normal form
+eval :: CAM -> Stack -> EnvReg -> Val
+eval cam stack envreg = undefined
+
 
 example = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
