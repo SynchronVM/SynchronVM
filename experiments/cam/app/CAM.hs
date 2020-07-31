@@ -25,12 +25,13 @@ module CAM where
 import Prelude hiding (lookup)
 
 type Var = String
+type Tag = String
 
 data Exp = Var Var  -- variable
          | Sys Sys  -- Primops
          | Void     -- Empty Tuple
          | Pair Exp Exp    -- Pair
-         | Con  Exp        -- Constructed Value
+         | Con  Tag Exp    -- Constructed Value
          | App Exp Exp     -- Function application
          | Lam Pat Exp     -- Lambda Abstraction
          | If Exp Exp Exp  -- if then else
@@ -77,7 +78,7 @@ data Instructions
    | PRIM2 BinOp   -- PRIM s(2) then apply primop to top of stack (arg1) and env reg(arg2)
    | CONS       -- join (stack_top, env_reg) and place it on environment register
    | CUR Label  -- build a closure with labeled exp and the environment register
-   | PACK Val   -- create tagged value with (VCon pack_val env_reg) and place on env_reg
+   | PACK Tag   -- create tagged value with (VCon pack_val env_reg) and place on env_reg
 
      -- CONTROL INSTRUCTIONS
    | SKIP   -- NoOp
@@ -99,7 +100,7 @@ data Val = VInt  Int  -- constants s(0)
          | VBool Bool -- constants s(0)
          | VEmpty     -- empty tuple
          | VPair Val Val -- Pair
-         | VCon Val Val  -- first argument is the tag second is the rest of the value
+         | VCon Label Val  -- first argument is the tag second is the rest of the value
          | VClosure Val Label -- closure; Val is the environment
          | VComb Label        -- closure of a combinator; no free variables
          deriving (Ord, Show, Eq)
@@ -134,6 +135,11 @@ codegen (Sys (Sys1 uop e)) env = Seq (codegen e env) (Ins (PRIM1 uop))
 codegen (Sys (Sys2 bop e1 e2)) env = Seq (eval e1 e2 env) (Ins (PRIM2 bop))
 codegen Void _ = Ins CLEAR
 codegen (Pair e1 e2) env = Seq (eval e1 e2 env) (Ins CONS)
+codegen (Con tag e) env = Seq (codegen e env) (Ins $ PACK tag)
+codegen (App e1 e2)  env = Seq (eval e2 e1 env) (Ins APP)
+
+codegenR :: Exp -> Env -> CAM
+codegenR e env = Seq (codegen e env) (Ins RETURN)
 
 eval :: Exp -> Exp -> Env -> CAM
 eval e1 e2 env =
@@ -183,4 +189,11 @@ nofail (Lab _ cam)  = nofail cam
 1. Use the stack for intermediate storage of environment;
    Always PUSH before beginning computation
 2. BinOp (s(2)) expects first argument on stack and second on register
+3. Data constructors
+   1 :: (2 :: Empty)
+       |
+       |  compiled to
+       V
+   Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
+
 -}
