@@ -33,8 +33,18 @@
 #include <formal_env.h>
 #include <CAM.h>
 
-int main(int argc, char **argv) {
+typedef struct {
+  uint8_t opcode;
+  uint32_t immediate;  
+} CAM_instr_t;
 
+
+typedef struct CAM_ll_s {
+  struct CAM_ll_s *prev;
+  CAM_instr_t instr;
+} CAM_ll_t;
+
+int main(int argc, char **argv) {
 
   FILE *fp;
   Exp ast;
