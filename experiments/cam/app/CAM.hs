@@ -53,7 +53,12 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          deriving (Ord, Show, Eq)
 
 
-data BinOp = Plus | Multiply | Minus deriving (Ord, Show, Eq)
+data BinOp = Plus | Multiply | Minus deriving (Ord, Eq)
+
+instance Show BinOp where
+  show Plus     = "+"
+  show Multiply = "*"
+  show Minus    = "-"
 
 data UnaryOp = Abs deriving (Ord, Show, Eq)
 
@@ -248,7 +253,7 @@ type Stack = [Val]
 type EnvReg = Val -- the environment register
 
 -- Take a sequence of stack machine instructions
--- and run evaluate them to their normal form
+-- and evaluate them to their normal form
 eval :: CAM -> Stack -> EnvReg -> Val
 eval cam stack envreg = undefined
 
