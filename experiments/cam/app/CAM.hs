@@ -136,7 +136,7 @@ newtype Codegen a =
     }
   deriving (Functor, Applicative, Monad, S.MonadState CodegenState)
 
-freshLabel :: Codegen String
+freshLabel :: Codegen Label
 freshLabel = do
   i <- S.gets count
   S.modify $ \s -> s {count = 1 + i}
@@ -170,7 +170,10 @@ codegen (Con tag e) env = do
 codegen (App e1 e2) env = do
   is <- eval e2 e1 env
   pure $! Seq is (Ins APP)
-codegen (Lam pat e) env = undefined
+codegen (Lam pat e) env = do
+  l <- freshLabel
+  is <- codegenR e (EnvPair env pat)
+  pure $! Seq (Ins $ CUR l) is
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
@@ -235,3 +238,5 @@ nofail (Lab _ cam)  = nofail cam
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
 
 -}
+
+example = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
