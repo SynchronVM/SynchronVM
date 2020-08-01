@@ -142,6 +142,12 @@ instance Show CAM where
   show (Lab label cam) =
     show label <> " : " <> show cam
 
+instance Semigroup CAM where
+  (<>) = (<+>)
+
+instance Monoid CAM where
+  mempty = Ins SKIP
+
 data CodegenState =
   CodegenState
   { count :: Int }
