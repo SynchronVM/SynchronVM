@@ -53,14 +53,25 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          deriving (Ord, Show, Eq)
 
 
-data BinOp = Plus | Multiply | Minus deriving (Ord, Eq)
+data BinOp = Plus | Multiply  | Minus |
+              BGT | BLT | BEQ | BGE   | BLE
+           deriving (Ord, Eq)
 
 instance Show BinOp where
   show Plus     = "+"
   show Multiply = "*"
   show Minus    = "-"
+  show BGT       = ">"
+  show BLT       = "<"
+  show BEQ       = "=="
+  show BGE       = ">="
+  show BLE       = "<="
 
-data UnaryOp = Abs deriving (Ord, Show, Eq)
+data UnaryOp = Abs | Neg deriving (Ord, Eq)
+
+instance Show UnaryOp where
+  show Abs = "abs"
+  show Neg = "-"
 
 data Pat = PatVar Var
          | Empty
@@ -129,7 +140,7 @@ instance Show CAM where
   show (Seq c1 c2) =
     show c1 <> ";\n" <> show c2
   show (Lab label cam) =
-    show label <> " : " <> show cam <> "\n"
+    show label <> " : " <> show cam
 
 data CodegenState =
   CodegenState
@@ -163,50 +174,60 @@ codegen (Sys (LInt n)) _ = pure $! Ins $ QUOTE (LInt n) -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
 codegen (Sys (Sys1 uop e)) env = do
   i1 <- codegen e env
-  pure $! Seq i1 (Ins (PRIM1 uop))
+  pure $! i1 <+> (Ins (PRIM1 uop))
 codegen (Sys (Sys2 bop e1 e2)) env = do
   is <- codegen2 e1 e2 env
-  pure $! Seq is (Ins (PRIM2 bop))
+  pure $! is <+> (Ins (PRIM2 bop))
 codegen Void _ = pure $! Ins CLEAR
 codegen (Pair e1 e2) env = do
   is <- codegen2 e1 e2 env
-  pure $! Seq is (Ins CONS)
+  pure $! is <+> (Ins CONS)
 codegen (Con tag e) env = do
   i1 <- codegen e env
-  pure $! Seq i1  (Ins $ PACK tag)
+  pure $! i1 <+> (Ins $ PACK tag)
 codegen (App e1 e2) env = do
   is <- codegen2 e2 e1 env
-  pure $! Seq is (Ins APP)
+  pure $! is <+> (Ins APP)
 codegen (Lam pat e) env = do
   l <- freshLabel
   is <- codegenR e (EnvPair env pat)
-  pure $! Seq (Ins $ CUR l) is
+  pure $! (Ins $ CUR l) <+> (Lab l is)
+codegen (If e1 e2 e3) env = do
+  l1 <- freshLabel
+  l2 <- freshLabel
+  is1 <- codegen e1 env
+  is2 <- codegen e2 env
+  is3 <- codegen e3 env
+  pure $! Ins PUSH
+      <+> is1
+      <+> (Ins $ GOTOFALSE l1)
+      <+> is2
+      <+> (Ins $ GOTO l2)
+      <+> (Lab l1 is3)
+      <+> (Lab l2 (Ins SKIP))
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
   i <- codegen e env
-  pure $! Seq i (Ins RETURN)
+  pure $! i <+> (Ins RETURN)
 
 codegen2 :: Exp -> Exp -> Env -> Codegen CAM
 codegen2 e1 e2 env = do
   i1 <- codegen e1 env
   i2 <- codegen e2 env
-  pure $! (Seq (Ins PUSH)
-           (Seq i1
-            (Seq (Ins SWAP) i2)))
+  pure $! Ins PUSH
+      <+> i1
+      <+> Ins SWAP
+      <+> i2
 
 lookup :: Var -> Env -> Int -> CAM
 lookup var EnvEmpty _ = Ins FAIL
 lookup var (EnvPair env pat) n =
-  (Seq (Ins (ACC n))
-   (lookupPat var pat)) <?>
+  (Ins (ACC n) <+> (lookupPat var pat)) <?>
   (lookup var env (n + 1))
 lookup var (EnvAnn env (l, pat)) n =
-  (Seq (Ins (REST n))
-   (Seq (Ins (CALL l))
-    (lookupPat var pat))) <?>
+  (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
-
 
 lookupPat :: Var -> Pat -> CAM
 lookupPat _ Empty = Ins FAIL
@@ -214,8 +235,8 @@ lookupPat x (PatVar v)
   | x == v = Ins SKIP
   | otherwise = Ins FAIL
 lookupPat x (PatPair p1 p2) =
-  (Seq (Ins FST) (lookupPat x p1)) <?>
-  (Seq (Ins SND) (lookupPat x p2))
+  ((Ins FST) <+> (lookupPat x p1)) <?>
+  ((Ins SND) <+> (lookupPat x p2))
 lookupPat x (As y p)
   | x == y = Ins SKIP
   | otherwise = lookupPat x p
@@ -232,6 +253,10 @@ nofail (Ins FAIL) = False
 nofail (Ins _)    = True
 nofail (Seq _ cam2) = nofail cam2
 nofail (Lab _ cam)  = nofail cam
+
+(<+>) :: CAM -> CAM -> CAM
+(<+>) cam1 cam2 = Seq cam1 cam2
+
 
 -- NOTE:
 {-
@@ -258,4 +283,10 @@ eval :: CAM -> Stack -> EnvReg -> Val
 eval cam stack envreg = undefined
 
 
-example = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
+example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
+
+example2 = App example1 (Sys $ LInt 1)
+
+example3 = Lam (PatVar "f") (Lam (PatVar "x") (App (Var "f") (App (Var "f") (Var "x"))))
+
+example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "n") (Sys $ Sys1 Neg (Var "n")))
