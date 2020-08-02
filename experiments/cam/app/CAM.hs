@@ -206,11 +206,11 @@ codegen (If e1 e2 e3) env = do
   is3 <- codegen e3 env
   pure $! Ins PUSH
       <+> is1
-      <+> (Ins $ GOTOFALSE l1)
+      <+> Ins (GOTOFALSE l1)
       <+> is2
-      <+> (Ins $ GOTO l2)
-      <+> (Lab l1 is3)
-      <+> (Lab l2 (Ins SKIP))
+      <+> Ins (GOTO l2)
+      <+> Lab l1 is3
+      <+> Lab l2 (Ins SKIP)
 codegen (Case cond clauses) env = do
   labels    <- replicateM (length clauses) freshLabel
   skiplabel <- freshLabel
@@ -219,18 +219,24 @@ codegen (Case cond clauses) env = do
   instrs <- zipWith3A (genStackClauses skiplabel) labels exps pats
   pure $! Ins PUSH
       <+> cond'
-      <+> (Ins $ SWITCH tagandlabel)
+      <+> Ins (SWITCH tagandlabel)
       <+> fold instrs
-      <+> (Lab skiplabel (Ins SKIP))
+      <+> Lab skiplabel (Ins SKIP)
   where
     extractTL ((t,_),_) l = (t, l)
     genStackClauses skipl label exp pat = do
       e <- codegen exp (EnvPair env pat)
-      pure $! (Lab label e)
-          <+> (Ins $ GOTO skipl)
+      pure $! Lab label e
+          <+> Ins (GOTO skipl)
     exps = map snd clauses
     pats = map (snd . fst) clauses
-
+codegen (Let pat e1 e) env = do
+  i1 <- codegen e1 env
+  i  <- codegen e  (EnvPair env pat)
+  pure $! Ins PUSH
+      <+> i1
+      <+> Ins CONS
+      <+> i
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
@@ -327,3 +333,5 @@ example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "
 example5 = Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
                           , (("::"   , Empty), (Sys $ LInt 10))
                           ]
+
+example6 = Let (PatVar "a") (Sys $ LInt 5) (Sys $ Sys2 Multiply (Var "a") (Var "a"))
