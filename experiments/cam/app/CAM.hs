@@ -127,7 +127,7 @@ data Val = VInt  Int  -- constants s(0)
 -- compile time environment
 data Env = EnvEmpty                 -- empty environment
          | EnvPair Env Pat          -- constructed environment
-         | EnvAnn  Env (Label, Pat) -- annotated environment
+         | EnvAnn  Env (Pat, Label) -- annotated environment
            deriving (Ord, Show, Eq)
 
 data CAM = Ins Instructions -- instructions
@@ -237,6 +237,12 @@ codegen (Let pat e1 e) env = do
       <+> i1
       <+> Ins CONS
       <+> i
+codegen (Letrec pat e1 e) env = do
+  l  <- freshLabel
+  i  <- codegen  e  (EnvAnn env (pat, l))
+  i1 <- codegenR e1 (EnvAnn env (pat, l))
+  pure $! i
+      <+> Lab l i1
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
@@ -257,7 +263,7 @@ lookup var EnvEmpty _ = Ins FAIL
 lookup var (EnvPair env pat) n =
   (Ins (ACC n) <+> (lookupPat var pat)) <?>
   (lookup var env (n + 1))
-lookup var (EnvAnn env (l, pat)) n =
+lookup var (EnvAnn env (pat, l)) n =
   (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
 
