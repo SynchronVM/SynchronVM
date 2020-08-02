@@ -24,11 +24,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module CAM where
 
+import Control.Monad (replicateM)
+import Data.Foldable (fold)
 import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
 
 type Var = String
 type Tag = String
+type TaggedField = (Tag, Pat)
 
 data Exp = Var Var  -- variable
          | Sys Sys  -- Primops
@@ -40,10 +43,7 @@ data Exp = Var Var  -- variable
          | If Exp Exp Exp  -- if then else
          | Let Pat Exp Exp -- Let bindings
          | Letrec Pat Exp Exp -- letrec
-         | Case Exp [(Exp, Exp)]
-         --            ^    ^
-         --     constructor |
-         --              resulting expression
+         | Case Exp [(TaggedField, Exp)]
          deriving (Ord, Show, Eq)
 
 data Sys = Sys2 BinOp Exp Exp -- BinOp
@@ -106,7 +106,7 @@ data Instructions
    | RETURN -- return from a subroutine call
    | CALL Label
    | GOTOFALSE Label
-   | SWITCH [Val] -- case expression for constructors
+   | SWITCH [(Tag, Label)] -- case expression for constructors
    | GOTO Label
 
    | FAIL -- a meta instruction to indicate search failure
@@ -119,7 +119,7 @@ data Val = VInt  Int  -- constants s(0)
          | VBool Bool -- constants s(0)
          | VEmpty     -- empty tuple
          | VPair Val Val -- Pair
-         | VCon Label Val  -- first argument is the tag second is the rest of the value
+         | VCon Tag Val  -- first argument is the tag second is the rest of the value
          | VClosure Val Label -- closure; Val is the environment
          | VComb Label        -- closure of a combinator; no free variables
          deriving (Ord, Show, Eq)
@@ -211,6 +211,26 @@ codegen (If e1 e2 e3) env = do
       <+> (Ins $ GOTO l2)
       <+> (Lab l1 is3)
       <+> (Lab l2 (Ins SKIP))
+codegen (Case cond clauses) env = do
+  labels    <- replicateM (length clauses) freshLabel
+  skiplabel <- freshLabel
+  c         <- codegen cond env
+  let tagandlabel = zipWith extractTL clauses labels
+  instrs <- zipWith3A (genStackClauses skiplabel) labels exps pats
+  pure $! Ins PUSH
+      <+> c
+      <+> (Ins $ SWITCH tagandlabel)
+      <+> fold instrs
+      <+> (Lab skiplabel (Ins SKIP))
+  where
+    extractTL ((t,_),_) l = (t, l)
+    genStackClauses skipl label exp pat = do
+      e <- codegen exp (EnvPair env pat)
+      pure $! (Lab label e)
+          <+> (Ins $ GOTO skipl)
+    exps = map snd clauses
+    pats = map (snd . fst) clauses
+
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
@@ -263,6 +283,13 @@ nofail (Lab _ cam)  = nofail cam
 (<+>) :: CAM -> CAM -> CAM
 (<+>) cam1 cam2 = Seq cam1 cam2
 
+zipWith3A ::   Applicative t
+          =>   (a -> b -> c -> t d)
+          ->   [a]
+          ->   [b]
+          ->   [c]
+          -> t [d]
+zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
 
 -- NOTE:
 {-
