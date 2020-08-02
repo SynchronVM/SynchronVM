@@ -67,11 +67,12 @@ instance Show BinOp where
   show BGE       = ">="
   show BLE       = "<="
 
-data UnaryOp = Abs | Neg deriving (Ord, Eq)
+data UnaryOp = Abs | Neg | NOT deriving (Ord, Eq)
 
 instance Show UnaryOp where
   show Abs = "abs"
   show Neg = "-"
+  show NOT = "~"
 
 data Pat = PatVar Var
          | Empty
@@ -152,7 +153,7 @@ data CodegenState =
   CodegenState
   { count :: Int }
 
-initState = CodegenState {count = 0 }
+initState = CodegenState { count = 1 }
 
 newtype Codegen a =
   Codegen
@@ -336,8 +337,26 @@ example3 = Lam (PatVar "f") (Lam (PatVar "x") (App (Var "f") (App (Var "f") (Var
 
 example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "n") (Sys $ Sys1 Neg (Var "n")))
 
+{-
+case s of
+   Nil -> 5
+   Cons _ _ -> 10
+-}
+
 example5 = Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
                           , (("::"   , Empty), (Sys $ LInt 10))
                           ]
 
+{-
+let a = 5 in
+(a * a)
+-}
+
 example6 = Let (PatVar "a") (Sys $ LInt 5) (Sys $ Sys2 Multiply (Var "a") (Var "a"))
+
+{-
+letrec even = \n -> if (n == 0) then true else not (even (n - 1))
+in even 56
+-}
+example7 = Letrec (PatVar "even") (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0)) (Sys $ LBool True) (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1))))))
+                  (App (Var "even") (Sys $ LInt 56))
