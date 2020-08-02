@@ -214,11 +214,11 @@ codegen (If e1 e2 e3) env = do
 codegen (Case cond clauses) env = do
   labels    <- replicateM (length clauses) freshLabel
   skiplabel <- freshLabel
-  c         <- codegen cond env
+  cond'     <- codegen cond env
   let tagandlabel = zipWith extractTL clauses labels
   instrs <- zipWith3A (genStackClauses skiplabel) labels exps pats
   pure $! Ins PUSH
-      <+> c
+      <+> cond'
       <+> (Ins $ SWITCH tagandlabel)
       <+> fold instrs
       <+> (Lab skiplabel (Ins SKIP))
@@ -323,3 +323,7 @@ example2 = App example1 (Sys $ LInt 1)
 example3 = Lam (PatVar "f") (Lam (PatVar "x") (App (Var "f") (App (Var "f") (Var "x"))))
 
 example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "n") (Sys $ Sys1 Neg (Var "n")))
+
+example5 = Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
+                          , (("::"   , Empty), (Sys $ LInt 10))
+                          ]
