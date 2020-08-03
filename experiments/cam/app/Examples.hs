@@ -52,8 +52,59 @@ example6 = Let (PatVar "a") (Sys $ LInt 5) (Sys $ Sys2 Multiply (Var "a") (Var "
 {-
 letrec even = \n -> if (n == 0) then true else not (even (n - 1))
 in even 56
+
+generated
+
+PUSH;
+QUOTE (LInt 56);
+SWAP;
+REST 0;
+CALL "label_1";
+SKIP;
+APP;
+STOP;
+"label_1" : CUR "label_2";
+RETURN;
+"label_2" : PUSH;
+PUSH;
+ACC 0;
+SKIP;
+SWAP;
+QUOTE (LInt 0);
+PRIM2 ==;
+GOTOFALSE "label_3";
+QUOTE (LBool True);
+GOTO "label_4";
+"label_3" : PUSH;
+PUSH;
+ACC 0;
+SKIP;
+SWAP;
+QUOTE (LInt 1);
+PRIM2 -;
+SWAP;
+REST 1;
+CALL "label_1";
+SKIP;
+APP;
+PRIM1 ~;
+"label_4" : SKIP;
+RETURN;
+SKIP
 -}
-example7 = Letrec (PatVar "even") (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0)) (Sys $ LBool True) (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1))))))
+-- example7 = Letrec (PatVar "even") (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0)) (Sys $ LBool True) (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1))))))
+--                   (App (Var "even") (Sys $ LInt 56))
+
+{-
+letrec even = \n -> if (n == 0) then true else not (even (n - 1))
+in even 56
+-}
+
+example7 = Letrec [( (PatVar "even")
+                   , (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0))
+                                        (Sys $ LBool True)
+                                        (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1)))))))
+                  ]
                   (App (Var "even") (Sys $ LInt 56))
 
 {-

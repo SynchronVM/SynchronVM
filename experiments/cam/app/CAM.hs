@@ -42,7 +42,7 @@ data Exp = Var Var  -- variable
          | Lam Pat Exp     -- Lambda Abstraction
          | If Exp Exp Exp  -- if then else
          | Let Pat Exp Exp -- Let bindings
-         | Letrec Pat Exp Exp -- letrec
+         | Letrec [(Pat,Exp)] Exp -- letrec
          | Case Exp [(TaggedField, Exp)]
          deriving (Ord, Show, Eq)
 
@@ -243,14 +243,23 @@ codegen (Let pat e1 e) env = do
       <+> i1
       <+> Ins CONS
       <+> i
-codegen (Letrec pat e1 e) env = do
-  l  <- freshLabel
-  i  <- codegen  e  (EnvAnn env (pat, l))
-  i1 <- codegenR e1 (EnvAnn env (pat, l))
+codegen (Letrec recpats e) env = do
+  labels  <- replicateM (length recpats) freshLabel
+  let evalEnv = growEnv env (zip pats labels)
+  instr  <- codegen e evalEnv
+  instrs <- zipWithA codegenR exps (repeat evalEnv)
+  let labeledInstrs = zipWith Lab labels instrs
   ts <- S.gets thunks
-  S.modify $ \s -> s {thunks = (Lab l i1) : ts}
-  pure i
+  S.modify $ \s -> s {thunks = labeledInstrs ++ ts}
+  pure instr
+  where
+    growEnv :: Env -> [(Pat,Label)] -> Env
+    growEnv finalEnv [] = finalEnv
+    growEnv initEnv ((pat,label):xs) =
+      growEnv (EnvAnn initEnv (pat, label)) xs
 
+    pats = map fst recpats
+    exps = map snd recpats
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
@@ -302,6 +311,14 @@ nofail (Lab _ cam)  = nofail cam
 
 (<+>) :: CAM -> CAM -> CAM
 (<+>) cam1 cam2 = Seq cam1 cam2
+
+zipWithA ::   Applicative t
+         =>   (a -> b -> t c)
+         ->   [a]
+         ->   [b]
+         -> t [c]
+zipWithA f xs ys = sequenceA (zipWith f xs ys)
+
 
 zipWith3A ::   Applicative t
           =>   (a -> b -> c -> t d)
