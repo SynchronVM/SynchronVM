@@ -120,7 +120,7 @@ data Val = VInt  Int  -- constants s(0)
          | VBool Bool -- constants s(0)
          | VEmpty     -- empty tuple
          | VPair Val Val -- Pair
-         | VCon Tag Val  -- first argument is the tag second is the rest of the value
+         | VCon Tag Val  -- first arg is the tag second is value with tag
          | VClosure Val Label -- closure; Val is the environment
          | VComb Label        -- closure of a combinator; no free variables
          deriving (Ord, Show, Eq)
@@ -151,9 +151,11 @@ instance Monoid CAM where
 
 data CodegenState =
   CodegenState
-  { count :: Int }
+  { count :: Int
+  , thunks :: [CAM] -- thunks are the bytecode generated for the lambda body
+  }
 
-initState = CodegenState { count = 1 }
+initState = CodegenState { count = 1, thunks = [] }
 
 newtype Codegen a =
   Codegen
@@ -169,11 +171,12 @@ freshLabel = do
 
 
 interpret :: Exp -> CAM
-interpret e = Seq instrs (Ins STOP)
+interpret e = instrs <+> Ins STOP <+> fold thunks_
   where
-    instrs = S.evalState
-               (runCodegen $! codegen e EnvEmpty)
-               initState
+    (instrs, CodegenState {thunks = thunks_} ) =
+      S.runState
+        (runCodegen $! codegen e EnvEmpty)
+        initState
 
 codegen :: Exp -> Env -> Codegen CAM
 codegen (Var var) env = pure $! lookup var env 0
@@ -198,7 +201,9 @@ codegen (App e1 e2) env = do
 codegen (Lam pat e) env = do
   l <- freshLabel
   is <- codegenR e (EnvPair env pat)
-  pure $! (Ins $ CUR l) <+> (Lab l is)
+  ts <- S.gets thunks
+  S.modify $ \s -> s {thunks = (Lab l is) : ts}
+  pure (Ins $ CUR l)
 codegen (If e1 e2 e3) env = do
   l1 <- freshLabel
   l2 <- freshLabel
@@ -360,3 +365,28 @@ in even 56
 -}
 example7 = Letrec (PatVar "even") (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0)) (Sys $ LBool True) (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1))))))
                   (App (Var "even") (Sys $ LInt 56))
+
+{-
+let y = 1 in
+(\x -> x + y)
+-}
+
+example8 = Let (PatVar "y") (Sys $ LInt 1)
+           (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y")))
+
+{-
+let y = 1 in
+(\x -> x + y) 4
+-}
+
+example9 = Let (PatVar "y") (Sys $ LInt 1)
+               (App (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y"))) (Sys $ LInt 4))
+
+{-
+(let y = 1 in
+ (\x -> x + y)) 4
+-}
+
+example10 = App (Let (PatVar "y") (Sys $ LInt 1)
+                 (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y")))) (Sys $ LInt 4)
+
