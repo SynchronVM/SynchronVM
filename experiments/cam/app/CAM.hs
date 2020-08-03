@@ -247,8 +247,10 @@ codegen (Letrec pat e1 e) env = do
   l  <- freshLabel
   i  <- codegen  e  (EnvAnn env (pat, l))
   i1 <- codegenR e1 (EnvAnn env (pat, l))
-  pure $! i
-      <+> Lab l i1
+  ts <- S.gets thunks
+  S.modify $ \s -> s {thunks = (Lab l i1) : ts}
+  pure i
+
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
