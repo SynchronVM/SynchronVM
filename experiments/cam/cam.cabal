@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2dc2a355490e1d1f1ba831c758edd453c475db0ae41e9e74a81d4bca2742250c
+-- hash: 20c466135b5d336e537dedb49e5b3d2db1655592c6e175a31deba9c5b423e403
 
 name:           cam
 version:        0.1.0.0
@@ -39,14 +39,16 @@ library
 executable cam-exe
   main-is: Main.hs
   other-modules:
+      Assembler
       Bytecode.Interpreter
-      BytecodeInterpreter
+      Bytecode.InterpreterSample
       CAM
       Examples
       Paths_cam
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: GeneralizedNewtypeDeriving
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fwarn-incomplete-patterns
   build-depends:
       base >=4.7 && <5
     , cam
@@ -60,7 +62,8 @@ test-suite cam-test
       Paths_cam
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: GeneralizedNewtypeDeriving
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fwarn-incomplete-patterns
   build-depends:
       base >=4.7 && <5
     , cam

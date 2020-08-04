@@ -26,6 +26,7 @@ module Bytecode.InterpreterSample where
 
 import CAM
 import GHC.Arr
+import qualified Control.Monad.State.Strict as S
 
 {-
 NOTE: This is not the actual "byte"code interpreter.
@@ -50,13 +51,25 @@ data Code = Code { instrs :: Array Index Instruction
                  , programCounter :: Index
                  }
 
+newtype Evaluate a =
+  Evaluate
+    { runEvaluate :: S.State Code a
+    }
+  deriving (Functor, Applicative, Monad, S.MonadState Code)
+
 -- Take a sequence of stack machine instructions
 -- and evaluate them to their normal form
 evaluate :: CAM -> Val
-evaluate cam = eval VEmpty [] undefined
+evaluate cam = val
+  where
+    code = initCode cam
+    val  = S.evalState (runEvaluate $ eval VEmpty []) code
 
-eval :: EnvReg -> Stack -> Code -> Val
-eval envreg _ _ = envreg
+initCode :: CAM -> Code
+initCode = undefined
+
+eval :: EnvReg -> Stack -> Evaluate Val
+eval envreg _ = return envreg
 
 
 -- In this case we have a common error message
