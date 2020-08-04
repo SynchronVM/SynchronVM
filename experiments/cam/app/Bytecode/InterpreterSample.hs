@@ -32,7 +32,8 @@ NOTE: This is not the actual "byte"code interpreter.
 This takes the Haskell `Instruction` datatype and interprets that.
 This module would be primarily used for experimentation with VM designs
 
-NOTE 2: Efficiency
+NOTE 2: Efficiency of the data structures like symbol table
+doesn't matter because we will generate more efficient C types
 -}
 
 type Stack = [Val]
