@@ -3,6 +3,30 @@
 
 token UIdent (upper (letter | digit | '_')*) ;
 
+-- Programs
+
+Program. Prg ::= [Def] ;
+
+Define.  Def ::= Ident "=" Exp ;
+Deftype. Def ::= Ident ":" Type ;
+Data.    Def ::= "data" UIdent "=" Con Type ;
+Defexp.  Def ::= Exp ;
+
+separator    Def "" ;
+terminator   Def "" ;
+separator    Ident "" ;
+
+-- types
+TLam.	Type ::= Type1 "->" Type ;
+TPair.  Type  ::= Type1 "*" Type ;
+TInt. 	Type1 ::= "Int" ;
+TFloat. Type1 ::= "Float" ;
+TVar. 	Type1 ::= Ident ;
+TData.  Type1 ::= UIdent ;
+
+
+coercions Type 1 ;
+
 -- Expressions
 -- The indices on the "Exp" sets precedence levels.
 -- Fix the precedences so they make sense.

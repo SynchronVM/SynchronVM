@@ -1,0 +1,2 @@
+apa : Int * Int -> Int
+apa = \x -> 1
