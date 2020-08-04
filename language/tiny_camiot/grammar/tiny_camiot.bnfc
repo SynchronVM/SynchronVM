@@ -2,29 +2,48 @@
 
 
 token UIdent (upper (letter | digit | '_')*) ;
-token Boolean {"True"} | {"False"} ;
 
 -- Expressions
 -- The indices on the "Exp" sets precedence levels.
--- Fix the precedences so they make sence.
+-- Fix the precedences so they make sense.
 
-EAddi.  Exp  ::= Exp "+" Exp1 ;
-EAddf.  Exp  ::= Exp "+." Exp1 ;
-EMuli.  Exp1 ::= Exp1 "*" Exp2 ;
-EMulf.  Exp1 ::= Exp1 "*." Exp2 ;
-EVar.   Exp2 ::= Ident ;
-EConst. Exp2 ::= Const ;
-ECon.   Exp2 ::= Con Exp ;
-ETup.   Exp3 ::= "(" Exp "," Exp ")" ;
-ECase.  Exp4 ::= "case" Exp "of" [PatMatch] ;
-ELet.   Exp4 ::= "let" Pat "=" Exp "in" Exp ;
-ELetR.  Exp4 ::= "letrec" Pat "=" Exp "in" Exp ;
-ELam.   Exp4 ::= "\\" Pat "->" Exp ;
-EApp.   Exp4 ::= Exp Exp ;
-_.      Exp5 ::= "(" Exp ")" ;
+-- I think this might make sense, but we should try to produce a test suite to test this.
+-- I took some inspiration from various other .bnfc-files.
 
+-- 1: An expression of higher levels can be used on lower levels.
+-- 2: Any level expression is lifted to highest by wrapping in parentheses.
 
-coercions Exp 5 ;
+ETup.   Exp ::= "(" Exp "," Exp ")" ;
+ECase.  Exp ::= "case" Exp "of" [PatMatch] ;
+ELet.   Exp ::= "let" Pat "=" Exp "in" Exp ;
+ELetR.  Exp ::= "letrec" Pat "=" Exp "in" Exp ;
+EApp.   Exp ::= Exp Exp ;
+_.      Exp ::= "(" Exp ")" ;
+ELam.   Exp  ::= "\\" Pat "->" Exp ;
+EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
+EOr.    Exp  ::= Exp1 "||" Exp ;
+EAnd.   Exp1 ::= Exp2 "&&" Exp1 ;
+ERel.   Exp2 ::= Exp2 RelOp Exp3 ;
+EAdd.   Exp3 ::= Exp3 AddOp Exp4 ;
+EMul.   Exp4 ::= Exp4 MulOp Exp5 ;
+ENot.   Exp5 ::= "!" Exp6 ;
+EConst. Exp6 ::= Const ;
+EVar.   Exp6 ::= Ident ;
+ECon.   Exp6 ::= Con Exp ;
+
+Plus.  AddOp ::= "+" ;
+Minus. AddOp ::= "-" ;
+
+Times. MulOp ::= "*" ;
+Div.   MulOp ::= "/" ;
+
+LT. RelOp ::= "<" ;
+LE. RelOp ::= "<=" ;
+GT. RelOp ::= ">" ;
+GE. RelOp ::= ">=" ;
+EQ. RelOp ::= "==" ;
+
+coercions Exp 6 ;
 
 -- Constructor
 Constructor. Con ::= UIdent ;
@@ -34,14 +53,16 @@ Constructor. Con ::= UIdent ;
 
 CInt.     Const ::= Integer ;
 CFloat.   Const ::= Double ;
-CBool.    Const ::= Boolean ;
+CTrue.    Const ::= "True" ;
+CFalse.   Const ::= "False" ;
 
 -- Patterns
 
-PVar.  Pat ::=   Ident ;
-PNil.  Pat ::=   "(" ")";
-PTup.  Pat1 ::=  "(" Pat "," Pat ")" ;
-PLay.  Pat2 ::=  Ident "as" Pat ;
+PVar.   Pat  ::=  Ident ;
+PConst. Pat  ::=  Const ;
+PNil.   Pat  ::=  "(" ")";
+PTup.   Pat1 ::=  "(" Pat "," Pat ")" ;
+PLay.   Pat2 ::=  Ident "as" Pat ;
 
 coercions Pat 2 ;
 
