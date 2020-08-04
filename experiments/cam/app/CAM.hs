@@ -80,7 +80,7 @@ data Pat = PatVar Var
          | As Var Pat      -- var `as` pat; equivalent to @ in Haskell
          deriving (Ord, Show, Eq)
 
-data Instructions
+data Instruction
    = -- ACCESS INSTRUCTIONS
      FST      -- access the left component of the environement register
    | SND      -- access the right component of the environement register
@@ -131,7 +131,7 @@ data Env = EnvEmpty                 -- empty environment
          | EnvAnn  Env (Pat, Label) -- annotated environment
            deriving (Ord, Show, Eq)
 
-data CAM = Ins Instructions -- instructions
+data CAM = Ins Instruction  -- instructions
          | Seq CAM CAM      -- sequence
          | Lab Label CAM    -- labeled sequence
          deriving (Ord, Eq)

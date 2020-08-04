@@ -20,10 +20,51 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+{-# LANGUAGE RecordWildCards #-}
 
-module BytecodeInterpreter where
+module Bytecode.InterpreterSample where
 
 import CAM
+import GHC.Arr
+
+{-
+NOTE: This is not the actual "byte"code interpreter.
+This takes the Haskell `Instruction` datatype and interprets that.
+This module would be primarily used for experimentation with VM designs
+
+NOTE 2: Efficiency
+-}
+
+type Stack = [Val]
+
+type EnvReg = Val -- the environment register
+
+type Index = Int
+
+type SymbolTable = [(Label, Index)]
+
+data Code = Code { instrs :: Array Index Instruction
+                 , symbolTable :: SymbolTable
+                 , prevJump    :: [Index]
+                 , programCounter :: Index
+                 }
+
+-- Take a sequence of stack machine instructions
+-- and evaluate them to their normal form
+evaluate :: CAM -> Val
+evaluate cam = eval VEmpty [] undefined
+
+eval :: EnvReg -> Stack -> Code -> Val
+eval envreg _ _ = envreg
+
+
+-- In this case we have a common error message
+-- because this operation is only on a symbol table
+(~>) :: SymbolTable -> Label -> Index
+(~>) [] _ = error "Label missing in symbol table"
+(~>) ((label,idx):st) l
+  | l == label = idx
+  | otherwise  = st ~> l
 
 -- NOTE:
 {-
@@ -31,17 +72,3 @@ import CAM
    Always PUSH before beginning computation
 2. BinOp (s(2)) expects first argument on stack and second on register
 -}
-
-type Stack = [Val]
-
-type EnvReg = Val -- the environment register
-
-type Code = CAM
-
--- Take a sequence of stack machine instructions
--- and evaluate them to their normal form
-evaluate :: CAM -> Val
-evaluate = eval VEmpty []
-
-eval :: EnvReg -> Stack -> Code -> Val
-eval envreg _ _ = envreg
