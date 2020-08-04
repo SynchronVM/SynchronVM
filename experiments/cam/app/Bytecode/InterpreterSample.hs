@@ -49,13 +49,25 @@ data Code = Code { instrs :: Array Index Instruction
                  , symbolTable :: SymbolTable
                  , prevJump    :: [Index]
                  , programCounter :: Index
-                 }
+                 } deriving Show
 
 newtype Evaluate a =
   Evaluate
     { runEvaluate :: S.State Code a
     }
   deriving (Functor, Applicative, Monad, S.MonadState Code)
+
+
+-- Val is basically Weak Head Normal Form
+data Val = VInt  Int  -- constants s(0)
+         | VBool Bool -- constants s(0)
+         | VEmpty     -- empty tuple
+         | VPair Val Val -- Pair
+         | VCon Tag Val  -- first arg is the tag second is value with tag
+         | VClosure Val Label -- closure; Val is the environment
+         | VComb Label        -- closure of a combinator; no free variables
+         deriving (Ord, Show, Eq)
+
 
 -- Take a sequence of stack machine instructions
 -- and evaluate them to their normal form
@@ -66,10 +78,26 @@ evaluate cam = val
     val  = S.evalState (runEvaluate $ eval VEmpty []) code
 
 initCode :: CAM -> Code
-initCode = undefined
+initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
+                    , symbolTable = filteredEntries
+                    , prevJump    = []
+                    , programCounter = 1
+                    }
+  where
+    instrsLabs = genInstrs cam dummyLabel
+    indexedinstrsLabs = zip instrsLabs [1..]
+    caminstrs = map (fst . fst) indexedinstrsLabs
+    entries = map (\((_,l),idx) -> (l,idx)) indexedinstrsLabs
+    filteredEntries = filter (\(l,_) -> l /= dummyLabel) entries
+    totalInstrs = length caminstrs
+
+genInstrs :: CAM -> Label -> [(Instruction, Label)]
+genInstrs (Ins i) l = [(i, l)]
+genInstrs (Seq c1 c2) l = genInstrs c1 l ++ genInstrs c2 dummyLabel
+genInstrs (Lab l c) _ = genInstrs c l
 
 eval :: EnvReg -> Stack -> Evaluate Val
-eval envreg _ = return envreg
+eval envreg stack = return envreg
 
 
 -- In this case we have a common error message
@@ -79,6 +107,15 @@ eval envreg _ = return envreg
 (~>) ((label,idx):st) l
   | l == label = idx
   | otherwise  = st ~> l
+
+put :: SymbolTable -> Label -> Index -> SymbolTable
+put st l idx = (l,idx) : st
+
+
+emptyST :: SymbolTable
+emptyST = []
+
+dummyLabel = "dummy"
 
 -- NOTE:
 {-
