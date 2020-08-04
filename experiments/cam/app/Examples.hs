@@ -131,3 +131,41 @@ example9 = Let (PatVar "y") (Sys $ LInt 1)
 example10 = App (Let (PatVar "y") (Sys $ LInt 1)
                  (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y")))) (Sys $ LInt 4)
 
+
+{-
+let foo = let m = \x -> x
+           in 3
+  in let baz = foo + 2
+      in (baz + 4)
+-}
+
+example11 = Let (PatVar "foo") (Let (PatVar "m") (Lam (PatVar "x") (Var "x")) (Sys $ LInt 3))
+                (Let (PatVar "baz") (Sys $ Sys2 Plus (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                )
+
+{-
+let foo = let m = 11
+           in 3
+  in let baz = foo + 2
+      in (baz + 4)
+-}
+
+example12 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Sys $ LInt 3))
+                (Let (PatVar "baz") (Sys $ Sys2 Plus (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                )
+
+{-
+-- Closure should be heap allocated
+but stackroot points to the closure throughout
+let foo = let m = 11
+           in \x -> x
+  in let baz = foo 2
+      in (baz + 4)
+-}
+
+example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x") (Var "x")))
+                (Let (PatVar "baz") (App (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                )

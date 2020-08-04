@@ -330,10 +330,8 @@ zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
 
 -- NOTE:
 {-
-1. Use the stack for intermediate storage of environment;
-   Always PUSH before beginning computation
-2. BinOp (s(2)) expects first argument on stack and second on register
-3. Data constructors
+Data constructors:
+
    1 :: (2 :: Empty)
        |
        |  compiled to
@@ -341,13 +339,3 @@ zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
 
 -}
-
-
-type Stack = [Val]
-
-type EnvReg = Val -- the environment register
-
--- Take a sequence of stack machine instructions
--- and evaluate them to their normal form
-eval :: CAM -> Stack -> EnvReg -> Val
-eval cam stack envreg = undefined
