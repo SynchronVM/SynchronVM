@@ -2,6 +2,7 @@
 
 
 token UIdent (upper (letter | digit | '_')*) ;
+token Boolean {"True"} | {"False"} ;
 
 -- Expressions
 -- The indices on the "Exp" sets precedence levels.
@@ -33,6 +34,7 @@ Constructor. Con ::= UIdent ;
 
 CInt.     Const ::= Integer ;
 CFloat.   Const ::= Double ;
+CBool.    Const ::= Boolean ;
 
 -- Patterns
 

@@ -38,7 +38,6 @@ typedef struct {
   uint32_t immediate;  
 } CAM_instr_t;
 
-
 typedef struct CAM_ll_s {
   struct CAM_ll_s *prev;
   CAM_instr_t instr;
