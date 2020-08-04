@@ -87,14 +87,14 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
     instrsLabs = genInstrs cam dummyLabel
     indexedinstrsLabs = zip instrsLabs [1..]
     caminstrs = map (fst . fst) indexedinstrsLabs
-    entries = map (\((_,l),idx) -> (l,idx)) indexedinstrsLabs
+    entries   = map (\((_,l),idx) -> (l,idx)) indexedinstrsLabs
     filteredEntries = filter (\(l,_) -> l /= dummyLabel) entries
-    totalInstrs = length caminstrs
+    totalInstrs     = length caminstrs
 
 genInstrs :: CAM -> Label -> [(Instruction, Label)]
 genInstrs (Ins i) l = [(i, l)]
 genInstrs (Seq c1 c2) l = genInstrs c1 l ++ genInstrs c2 dummyLabel
-genInstrs (Lab l c) _ = genInstrs c l
+genInstrs (Lab l c) _   = genInstrs c l
 
 eval :: EnvReg -> Stack -> Evaluate Val
 eval envreg stack = return envreg
