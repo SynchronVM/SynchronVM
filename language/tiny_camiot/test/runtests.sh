@@ -8,7 +8,7 @@ for file in `ls`
 do
 	if [ $(basename $file) != $(basename $0) ]
         then
-		var=$(../grammar/./Testtiny_camiot < $file 2>&1)
+		var=$(../grammar/./TestTinyCamiot < $file 2>&1)
 		res=$?
 	        if [ "$res" -eq 0 ]
                 then
