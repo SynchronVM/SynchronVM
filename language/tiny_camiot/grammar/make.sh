@@ -1,5 +1,5 @@
 #!/bin/sh
 
 
-bnfc -m --c tiny_camiot.cf
+bnfc -m --c -l tiny_camiot.cf
 make
