@@ -99,6 +99,7 @@ genInstrs (Lab l c) _   = genInstrs c l
 eval :: EnvReg -> Stack -> Evaluate Val
 eval envreg stack = return envreg
 
+-- Symbol Table operations
 
 -- In this case we have a common error message
 -- because this operation is only on a symbol table
@@ -114,6 +115,41 @@ put st l idx = (l,idx) : st
 
 emptyST :: SymbolTable
 emptyST = []
+
+
+-- Code operations
+
+readCurrent :: Evaluate Instruction
+readCurrent = do
+  is <- S.gets instrs
+  pc <- S.gets programCounter
+  pure $! is ! pc
+
+incPC :: Evaluate ()
+incPC  = do
+  pc <- S.gets programCounter
+  S.modify $ \s -> s {programCounter = pc + 1}
+
+jumpTo :: Label -> Evaluate ()
+jumpTo l = do
+  pc <- S.gets programCounter
+  st <- S.gets symbolTable
+  pj <- S.gets prevJump
+  let ix = st ~> l
+  S.modify $ \s -> s { programCounter = ix
+                     , prevJump = pc : pj
+                     }
+
+-- return back to the previous "jumped from" label
+-- and increment the program counter by 1
+retBack :: Evaluate ()
+retBack = do
+  pj <- S.gets prevJump
+  S.modify $ \s -> s { programCounter = head pj + 1
+                     , prevJump = tail pj
+                     }
+  incPC
+
 
 dummyLabel = "dummy"
 
