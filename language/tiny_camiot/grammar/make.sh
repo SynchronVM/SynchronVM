@@ -1,5 +1,5 @@
 #!/bin/sh
 
 
-bnfc -m --haskell -l tiny_camiot.cf
+bnfc -m --haskell --functor tiny_camiot.cf
 make
