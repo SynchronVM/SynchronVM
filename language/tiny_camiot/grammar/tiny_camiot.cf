@@ -23,9 +23,9 @@ TInt. 	Type1 ::= "Int" ;
 TFloat. Type1 ::= "Float" ;
 TVar. 	Type1 ::= Ident ;
 TData.  Type1 ::= UIdent ;
+_.      Type2 ::= "(" Type ")" ;
 
-
-coercions Type 1 ;
+coercions Type 2 ;
 
 -- Expressions
 -- The indices on the "Exp" sets precedence levels.
