@@ -3,22 +3,26 @@
 
 token UIdent (upper (letter | digit | '_')*) ;
 
+-- Layout
+
+layout "where", "of";
+layout toplevel ;
+
 -- Programs
 
 -- A program is a sequence of definitions
-Program. Prg ::= [Def] ;
+-- Program. Prg ::= "{" [Def] "}" ;
 
-layout "where", "of";
+-- commenting this out removes 1 shift reduce
+separator    Def   ";" ; -- Moving this here changes the behavior
 
-Equation. Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ...
-TypeSig.  Def ::= Ident ":" Type ;
-DataDec.  Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}";
+Equation.   Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ...
+TypeSig.    Def ::= Ident ":" Type ;
+DataDec.    Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}";
 
 ConstDec. ConstructorDec ::= UIdent "::" Type ;
 separator ConstructorDec ";" ;
 
--- commenting this out removes 1 shift reduce
-separator    Def   "" ;
 separator    Ident "" ;
 
 
@@ -60,7 +64,7 @@ ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
 ECon.   Exp  ::= Con Exp ;
-EApp.   Exp1 ::= Exp2 Exp1 ;
+EApp.   Exp1 ::= Exp2 Exp1 ; 
 EOr.    Exp1 ::= Exp2 "||" Exp1 ;
 EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
 ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
