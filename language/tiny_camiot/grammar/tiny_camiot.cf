@@ -5,7 +5,7 @@ token UIdent (upper (letter | digit | '_')*) ;
 
 -- Programs
 
-Program. Prg ::= [Def] ;
+{-Program. Prg ::= [Def] ;
 
 Define.  Def ::= Ident "=" Exp ;
 Deftype. Def ::= Ident ":" Type ;
@@ -25,7 +25,7 @@ TVar. 	Type1 ::= Ident ;
 TData.  Type1 ::= UIdent ;
 _.      Type2 ::= "(" Type ")" ;
 
-coercions Type 2 ;
+coercions Type 2 ;-}
 
 -- Expressions
 -- The indices on the "Exp" sets precedence levels.
@@ -37,12 +37,22 @@ coercions Type 2 ;
 -- 1: An expression of higher levels can be used on lower levels.
 -- 2: Any level expression is lifted to highest by wrapping in parentheses.
 
-ETup.   Exp ::= "(" Exp "," Exp ")" ;
-ECase.  Exp ::= "case" Exp "of" [PatMatch] ;
-ELet.   Exp ::= "let" Pat "=" Exp "in" Exp ;
-ELetR.  Exp ::= "letrec" Pat "=" Exp "in" Exp ;
-EApp.   Exp ::= Exp Exp ;
-_.      Exp ::= "(" Exp ")" ;
+{- Layout syntax! See the rule for case of, there is some extra fluff there, e.g {}.
+   Only works with the Haskell version! If it sees the {} and stuff it will work
+   as intended, as the rule will match. If it does not see a { after of, it will
+   insert one and insert the ; at appropriate places. Only demand is that we write each
+   of the case branches starting on the same column. -}
+layout "of";
+
+ETup.   Exp  ::= "(" Exp "," Exp ")" ;
+ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
+ELet.   Exp  ::= "let" Pat "=" Exp "in" Exp ;
+ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
+ECon.   Exp  ::= Con Exp ;
+EApp.   Exp  ::= Exp Exp ;
+-- Commenting this out removed 21 reduce conflicts! It automatically builds
+-- a rule like this when you use coerce.
+--_.      Exp  ::= "(" Exp ")" ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
 EOr.    Exp  ::= Exp1 "||" Exp ;
@@ -53,7 +63,6 @@ EMul.   Exp4 ::= Exp4 MulOp Exp5 ;
 ENot.   Exp5 ::= "!" Exp6 ;
 EConst. Exp6 ::= Const ;
 EVar.   Exp6 ::= Ident ;
-ECon.   Exp6 ::= Con Exp ;
 
 Plus.  AddOp ::= "+" ;
 Minus. AddOp ::= "-" ;
@@ -61,11 +70,11 @@ Minus. AddOp ::= "-" ;
 Times. MulOp ::= "*" ;
 Div.   MulOp ::= "/" ;
 
-LT. RelOp ::= "<" ;
-LE. RelOp ::= "<=" ;
-GT. RelOp ::= ">" ;
-GE. RelOp ::= ">=" ;
-EQ. RelOp ::= "==" ;
+LTC. RelOp ::= "<" ;
+LEC. RelOp ::= "<=" ;
+GTC. RelOp ::= ">" ;
+GEC. RelOp ::= ">=" ;
+EQC. RelOp ::= "==" ;
 
 coercions Exp 6 ;
 
@@ -92,6 +101,7 @@ coercions Pat 2 ;
 
 -- Pattern matching
 
+-- TODO we cannot match on constants atm
 PConPat.  PatMatch ::= Con Pat "->" Exp ;
-separator PatMatch "|"; 
+separator PatMatch ";"; 
 
