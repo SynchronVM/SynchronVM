@@ -11,6 +11,8 @@ layout toplevel ;
 -- Programs
 
 -- A program is a sequence of definitions
+-- This is commented out as the "layout toplevel" above seems to have the
+-- same effect, imåplicitly.
 -- Program. Prg ::= "{" [Def] "}" ;
 
 -- commenting this out removes 1 shift reduce
