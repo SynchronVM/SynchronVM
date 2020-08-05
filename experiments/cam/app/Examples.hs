@@ -22,7 +22,10 @@
 
 module Examples where
 
+import Bytecode.InterpreterModel
 import CAM
+
+example0 = Sys $ Sys2 Minus (Sys $ LInt 5) (Sys $ LInt 4)
 
 example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
 
