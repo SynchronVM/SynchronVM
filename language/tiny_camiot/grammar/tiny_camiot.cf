@@ -10,7 +10,7 @@ Program. Prg ::= [Def] ;
 
 layout "where", "of";
 
-Equation. Def ::= [Ident] "=" Exp ; -- List so that we can have f a b = ...
+Equation. Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ...
 TypeSig.  Def ::= Ident ":" Type ;
 DataDec.  Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}";
 
@@ -28,7 +28,7 @@ separator    Ident "" ;
 -- it will remove all shift/reduce conflicts.
 TLam.	Type  ::= Type1 "->" Type ;
 TPair.  Type1  ::= Type2 "*" Type1 ; -- want * to bind harder than ->, I figured
-TInt. 	Type2 ::= "Int" ;
+TInt. 	Type2 ::= "Int" ; -- TODO I would want these to be captured by TAdt but it doesn't seem to work...
 TFloat. Type2 ::= "Float" ;
 TBool.  Type2 ::= "Bool" ;
 TVar. 	Type2 ::= Ident ;
@@ -102,6 +102,7 @@ PNil.   Pat  ::=  "(" ")";
 PTup.   Pat1 ::=  "(" Pat "," Pat ")" ;
 PLay.   Pat2 ::=  Ident "as" Pat ;
 
+separator Pat "" ;
 coercions Pat 2 ;
 
 -- Pattern matching
