@@ -5,27 +5,37 @@ token UIdent (upper (letter | digit | '_')*) ;
 
 -- Programs
 
-{-Program. Prg ::= [Def] ;
+-- A program is a sequence of definitions
+Program. Prg ::= [Def] ;
 
-Define.  Def ::= Ident "=" Exp ;
-Deftype. Def ::= Ident ":" Type ;
-Data.    Def ::= "data" UIdent "=" Con Type ;
-Defexp.  Def ::= Exp ;
+layout "where", "of";
 
-separator    Def "" ;
-terminator   Def "" ;
+Equation. Def ::= [Ident] "=" Exp ; -- List so that we can have f a b = ...
+TypeSig.  Def ::= Ident ":" Type ;
+DataDec.  Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}";
+
+ConstDec. ConstructorDec ::= UIdent "::" Type ;
+separator ConstructorDec ";" ;
+
+-- commenting this out removes 1 shift reduce
+separator    Def   "" ;
 separator    Ident "" ;
 
--- types
-TLam.	Type ::= Type1 "->" Type ;
-TPair.  Type  ::= Type1 "*" Type ;
-TInt. 	Type1 ::= "Int" ;
-TFloat. Type1 ::= "Float" ;
-TVar. 	Type1 ::= Ident ;
-TData.  Type1 ::= UIdent ;
-_.      Type2 ::= "(" Type ")" ;
 
-coercions Type 2 ;-}
+-- types
+-- This gives some shift/reduce conflicts (7), but it seems to parse
+-- as we want it to anyway! If you remove the [Type] after UIdent
+-- it will remove all shift/reduce conflicts.
+TLam.	Type  ::= Type1 "->" Type ;
+TPair.  Type1  ::= Type2 "*" Type1 ; -- want * to bind harder than ->, I figured
+TInt. 	Type2 ::= "Int" ;
+TFloat. Type2 ::= "Float" ;
+TBool.  Type2 ::= "Bool" ;
+TVar. 	Type2 ::= Ident ;
+TAdt.   Type2 ::= UIdent [Type] ;
+-- removed a ( Type ) rule, coerce will insert it.
+separator Type "" ;
+coercions Type 2 ;
 
 -- Expressions
 -- The indices on the "Exp" sets precedence levels.
@@ -42,27 +52,23 @@ coercions Type 2 ;-}
    as intended, as the rule will match. If it does not see a { after of, it will
    insert one and insert the ; at appropriate places. Only demand is that we write each
    of the case branches starting on the same column. -}
-layout "of";
 
 ETup.   Exp  ::= "(" Exp "," Exp ")" ;
 ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
-ELet.   Exp  ::= "let" Pat "=" Exp "in" Exp ;
+ELet.   Exp  ::= "let"    Pat "=" Exp "in" Exp ;
 ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
-ECon.   Exp  ::= Con Exp ;
-EApp.   Exp  ::= Exp Exp ;
--- Commenting this out removed 21 reduce conflicts! It automatically builds
--- a rule like this when you use coerce.
---_.      Exp  ::= "(" Exp ")" ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
-EOr.    Exp  ::= Exp1 "||" Exp ;
-EAnd.   Exp1 ::= Exp2 "&&" Exp1 ;
-ERel.   Exp2 ::= Exp2 RelOp Exp3 ;
-EAdd.   Exp3 ::= Exp3 AddOp Exp4 ;
-EMul.   Exp4 ::= Exp4 MulOp Exp5 ;
-ENot.   Exp5 ::= "!" Exp6 ;
-EConst. Exp6 ::= Const ;
-EVar.   Exp6 ::= Ident ;
+ECon.   Exp  ::= Con Exp ;
+EApp.   Exp1 ::= Exp2 Exp1 ;
+EOr.    Exp1 ::= Exp2 "||" Exp1 ;
+EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
+ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
+EAdd.   Exp4 ::= Exp4 AddOp Exp5 ;
+EMul.   Exp5 ::= Exp5 MulOp Exp6 ;
+ENot.   Exp6 ::= "!" Exp7 ;
+EVar.   Exp7 ::= Ident ;
+EConst. Exp7 ::= Const ;
 
 Plus.  AddOp ::= "+" ;
 Minus. AddOp ::= "-" ;
@@ -76,14 +82,13 @@ GTC. RelOp ::= ">" ;
 GEC. RelOp ::= ">=" ;
 EQC. RelOp ::= "==" ;
 
-coercions Exp 6 ;
+coercions Exp 7 ;
 
 -- Constructor
 Constructor. Con ::= UIdent ;
 
 
 -- Constants
-
 CInt.     Const ::= Integer ;
 CFloat.   Const ::= Double ;
 CTrue.    Const ::= "True" ;
@@ -102,6 +107,7 @@ coercions Pat 2 ;
 -- Pattern matching
 
 -- TODO we cannot match on constants atm
-PConPat.  PatMatch ::= Con Pat "->" Exp ;
+PMConPat.  PatMatch ::= Con Pat "->" Exp ;
+PMConst.   PatMatch ::= Const "->" Exp ;
 separator PatMatch ";"; 
 
