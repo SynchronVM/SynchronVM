@@ -1,7 +1,8 @@
 apa : Int -> Int 
 apa = \x -> x + 1
 
-data Apa = Apa Int
+data Apa where
+  Apa :: Int
 
 bepa : Apa -> Int
 bepa = \x -> case x of Apa y -> y

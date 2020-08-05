@@ -1,1 +1,1 @@
-!True && False || False
+a = !True && False || False

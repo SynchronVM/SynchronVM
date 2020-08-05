@@ -1,1 +1,2 @@
-Apa True
+data Apa a where
+  Apa :: a -> Int
