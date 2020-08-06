@@ -1,0 +1,13 @@
+pair a = (a,a)
+
+quad a = ((a,a), (a,a))
+
+alot a = (quad a, quad a)
+
+fst (a,_) = a
+snd (_,b) = b
+
+-- how do we want to go about this? Should tuples be generalised and then
+-- desugared in the compiler?
+three : Int * Int * Int
+three = (1,(2,3))
