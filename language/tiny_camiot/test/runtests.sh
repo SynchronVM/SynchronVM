@@ -22,10 +22,12 @@ do
 		    echo "\noops!"
 		    echo "file: $file did not parse successfully"
 		    echo $var
+			echo ""
 		fi
         fi
 done
 
+echo ""
 echo Tests passed: $success_count
 echo Tests failed: $fail_count
 

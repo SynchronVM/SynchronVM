@@ -1,5 +1,6 @@
 
-
+comment "--" ;
+comment "{-" "-}" ;
 
 token UIdent (upper (letter | digit | '_')*) ;
 
@@ -9,11 +10,6 @@ layout "where", "of";
 layout toplevel ;
 
 -- Programs
-
--- A program is a sequence of definitions
--- This is commented out as the "layout toplevel" above seems to have the
--- same effect, imåplicitly.
--- Program. Prg ::= "{" [Def] "}" ;
 
 -- commenting this out removes 1 shift reduce
 separator    Def   ";" ; -- Moving this here changes the behavior
@@ -29,35 +25,22 @@ separator    Ident "" ;
 
 
 -- types
+
 -- This gives some shift/reduce conflicts (7), but it seems to parse
 -- as we want it to anyway! If you remove the [Type] after UIdent
 -- it will remove all shift/reduce conflicts.
-TLam.	Type  ::= Type1 "->" Type ;
-TPair.  Type1  ::= Type2 "*" Type1 ; -- want * to bind harder than ->, I figured
-TInt. 	Type2 ::= "Int" ; -- TODO I would want these to be captured by TAdt but it doesn't seem to work...
+TLam.	  Type  ::= Type1 "->" Type ;
+TPair.  Type1 ::= Type2 "*" Type1 ;
+TInt.   Type2 ::= "Int" ; -- TODO I would want these to be captured by TAdt but it doesn't seem to work...
 TFloat. Type2 ::= "Float" ;
 TBool.  Type2 ::= "Bool" ;
-TVar. 	Type2 ::= Ident ;
+TVar.   Type2 ::= Ident ;
 TAdt.   Type2 ::= UIdent [Type] ;
--- removed a ( Type ) rule, coerce will insert it.
+
 separator Type "" ;
 coercions Type 2 ;
 
 -- Expressions
--- The indices on the "Exp" sets precedence levels.
--- Fix the precedences so they make sense.
-
--- I think this might make sense, but we should try to produce a test suite to test this.
--- I took some inspiration from various other .bnfc-files.
-
--- 1: An expression of higher levels can be used on lower levels.
--- 2: Any level expression is lifted to highest by wrapping in parentheses.
-
-{- Layout syntax! See the rule for case of, there is some extra fluff there, e.g {}.
-   Only works with the Haskell version! If it sees the {} and stuff it will work
-   as intended, as the rule will match. If it does not see a { after of, it will
-   insert one and insert the ; at appropriate places. Only demand is that we write each
-   of the case branches starting on the same column. -}
 
 ETup.   Exp  ::= "(" Exp "," Exp ")" ;
 ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
@@ -92,7 +75,6 @@ coercions Exp 7 ;
 
 -- Constructor
 Constructor. Con ::= UIdent ;
-
 
 -- Constants
 CInt.     Const ::= Integer ;
