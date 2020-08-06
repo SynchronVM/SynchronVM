@@ -1,0 +1,8 @@
+ntup : Int * Int * Int
+ntup = (1, 2, 3)
+
+ntup2 = (1, 2, 3)
+
+ntup3 = (1, (2, 3))
+
+ntup4 = ((1,2), 3)
