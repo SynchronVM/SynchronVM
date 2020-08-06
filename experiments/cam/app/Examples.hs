@@ -111,7 +111,7 @@ in even 56
 example7 = Letrec [( (PatVar "even")
                    , (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0))
                                         (Sys $ LBool True)
-                                        (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1)))))))
+                                        (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys1 DEC (Var "n")))))))
                   ]
                   (App (Var "even") (Sys $ LInt 1))
 

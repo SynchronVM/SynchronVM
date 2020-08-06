@@ -289,6 +289,9 @@ unaryop uop = do
     NOT -> do
       let (VBool b) = e
       S.modify $ \s -> s { environment = VBool (not b) }
+    DEC -> do
+      let (VInt i) = e
+      S.modify $ \s -> s { environment = VInt (i - 1) }
 
 binaryop :: BinOp -> Evaluate ()
 binaryop bop = do

@@ -65,12 +65,13 @@ instance Show BinOp where
   show BGE       = ">="
   show BLE       = "<="
 
-data UnaryOp = Abs | Neg | NOT deriving (Ord, Eq)
+data UnaryOp = Abs | Neg | NOT | DEC deriving (Ord, Eq)
 
 instance Show UnaryOp where
   show Abs = "abs"
   show Neg = "-"
   show NOT = "~"
+  show DEC = "dec"
 
 data Pat = PatVar Var
          | Empty
@@ -168,7 +169,7 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
 
 codegen :: Exp -> Env -> Codegen CAM
 codegen (Var var) env = pure $! lookup var env 0
-codegen (Sys (LInt n)) _ = pure $! Ins $ QUOTE (LInt n) -- s(0)
+codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
 codegen (Sys (Sys1 uop e)) env = do
   i1 <- codegen e env
