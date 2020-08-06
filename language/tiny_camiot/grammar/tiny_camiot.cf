@@ -85,24 +85,13 @@ CFloat.   Const ::= Double ;
 CTrue.    Const ::= "True" ;
 CFalse.   Const ::= "False" ;
 
--- Values
-
--- TODO It doesn't seem all right that these are mutually recursive
-
-VConst.   Value  ::= Const ;
-VVar.     Value  ::= Ident ;
-VPar.     Value  ::= "(" Value ")" ;
-VZAryAdt. Value  ::= Con ;
-VConPat.  Value  ::= Con Pat ;
-VNAryAdt. Value1 ::= Con [Value] ;
-
-separator Value "" ;
-
 -- Patterns
 
-PValue. Pat ::= Value ;
+PConst. Pat  ::= Const ;
+PVar.   Pat  ::= Ident ;
+PAdt.   Pat  ::= UIdent [Pat] ;
 PWild.  Pat  ::= "_" ;
-PNil.   Pat  ::= "(" ")";
+PNIl.   Pat  ::= "(" ")" ;
 PTup.   Pat1 ::= "(" Pat "," Pat ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
 

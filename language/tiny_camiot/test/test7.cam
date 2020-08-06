@@ -1,3 +1,0 @@
-a = if True
-  then 2 * if True then 0 else 0
-  else 3
