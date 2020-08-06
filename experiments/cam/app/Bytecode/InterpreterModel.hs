@@ -29,7 +29,6 @@ import Data.List (find)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
 
-
 {-
 NOTE: This is not the actual "byte"code interpreter.
 This takes the Haskell `Instruction` datatype and interprets that.
@@ -415,7 +414,7 @@ gotofalse l = do
       S.modify $ \s -> s { environment = h
                          , stack = t
                          }
-      jumpTo l
+      goto l
     _ -> error "GOTOFALSE instuction applied to incorrect operand"
 
 switch :: [(Tag, Label)] -> Evaluate ()
