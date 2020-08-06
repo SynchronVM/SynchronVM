@@ -42,7 +42,11 @@ coercions Type 2 ;
 
 -- Expressions
 
-ETup.   Exp  ::= "(" Exp "," Exp ")" ;
+-- We want a different separator for these than for ordinary Exp
+ETupExp. TupExp ::= Exp ;
+separator TupExp "," ;
+
+ETup.   Exp  ::= "(" [TupExp] ")" ;
 ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
 ELet.   Exp  ::= "let"    Pat "=" Exp "in" Exp ;
 ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
