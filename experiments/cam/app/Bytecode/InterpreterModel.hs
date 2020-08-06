@@ -117,8 +117,6 @@ genInstrs (Lab l c) _   = genInstrs c l
 eval :: Evaluate Val
 eval = do
   currentInstr <- readCurrent
-  -- envreg <- getEnv
-  -- stack  <- getStack
   case currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
