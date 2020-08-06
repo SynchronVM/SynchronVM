@@ -2,7 +2,7 @@ apa : Int -> Int
 apa = \x -> x + 1
 
 data Apa where
-  Apa : Int
+  Apa : Int -> Apa
 
 bepa : Apa -> Int
 bepa = \x -> case x of Apa y -> y

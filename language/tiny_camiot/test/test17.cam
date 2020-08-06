@@ -1,6 +1,6 @@
 data Maybe a where
-  Just   : a -> Maybe a
-  Nothng : Maybe a
+  Just    : a -> Maybe a
+  Nothing : Maybe a
 
 data List a where
   Nil  : List a
