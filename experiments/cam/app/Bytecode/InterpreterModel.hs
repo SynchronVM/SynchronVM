@@ -25,8 +25,10 @@
 module Bytecode.InterpreterModel where
 
 import CAM
+import Data.List (find)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
+
 
 {-
 NOTE: This is not the actual "byte"code interpreter.
@@ -110,7 +112,7 @@ eval = do
       do { incPC; fstEnv; eval }
     SND ->
       do { incPC; sndEnv; eval }
-    ACC n ->
+    ACC n  ->
       do { incPC; accessnth n; eval }
     REST n ->
       do { incPC; restnth n; eval }
@@ -118,26 +120,35 @@ eval = do
       do { incPC; push; eval }
     SWAP ->
       do { incPC; swap; eval }
-    QUOTE (LInt i) ->
+    QUOTE (LInt i)  ->
       do { incPC; loadi i; eval }
     QUOTE (LBool b) ->
       do { incPC; loadb b; eval }
     CLEAR ->
       do { incPC; clear; eval }
     PRIM1 uop ->
-      do { incPC; unaryop uop; eval}
+      do { incPC; unaryop uop; eval }
     PRIM2 bop ->
-      do { incPC; binaryop bop; eval}
+      do { incPC; binaryop bop; eval }
     CONS ->
-      do { incPC; cons; eval}
-    CUR l ->
-      do { incPC ; cur l; eval}
+      do { incPC; cons; eval }
+    CUR l  ->
+      do { incPC; cur l; eval }
     PACK c ->
-      do { incPC ; pack c; eval}
-    SKIP -> eval
+      do { incPC; pack c; eval }
+    SKIP ->
+      do { incPC; eval}
     STOP -> getEnv -- base case
-
-
+    APP    -> do {      app; eval }
+    RETURN -> do {  retBack; eval }
+    CALL l -> do { jumpTo l; eval }
+    GOTO l -> do {   goto l; eval }
+    GOTOFALSE l ->
+      do { gotofalse l; eval; }
+    SWITCH conds ->
+      do { switch conds; eval; }
+    i ->
+      error $! "Unsupported Instruction : " <> show i
 
 -- Symbol Table operations
 
@@ -188,13 +199,18 @@ retBack = do
   S.modify $ \s -> s { programCounter = head pj + 1
                      , prevJump = tail pj
                      }
-  incPC
 
 getEnv :: Evaluate Environment
 getEnv = S.gets environment
 
 getStack :: Evaluate Stack
 getStack = S.gets stack
+
+popAndRest :: Evaluate (Val, Stack)
+popAndRest = do
+  st <- getStack
+  let (h:t) = st
+  return (h, t)
 
 fstEnv :: Evaluate ()
 fstEnv = do
@@ -232,9 +248,8 @@ push = do
 
 swap :: Evaluate ()
 swap = do
-  e  <- getEnv
-  st <- getStack
-  let h:t = st
+  e      <- getEnv
+  (h, t) <- popAndRest
   S.modify $ \s -> s { stack = e : t
                      , environment = h
                      }
@@ -264,9 +279,8 @@ unaryop uop = do
 
 binaryop :: BinOp -> Evaluate ()
 binaryop bop = do
-  e <- getEnv
-  st <- getStack
-  let h:t = st
+  e      <- getEnv
+  (h, t) <- popAndRest
   case bop of
     Plus -> do
       let (VInt i1) = e -- XXX: Partial
@@ -338,9 +352,8 @@ binaryop bop = do
 
 cons :: Evaluate ()
 cons = do
-  e  <- getEnv
-  st <- getStack
-  let h:t = st
+  e      <- getEnv
+  (h, t) <- popAndRest
   S.modify $ \s -> s { environment = VPair h e
                      , stack = t
                      }
@@ -354,6 +367,54 @@ pack :: Tag -> Evaluate ()
 pack t = do
   e <- getEnv
   S.modify $ \s -> s { environment = VCon t e }
+
+app :: Evaluate ()
+app = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  let (VClosure val label) = e -- XXX: Partial
+  S.modify $ \s -> s { environment = VPair val h
+                     , stack = t
+                     }
+  jumpTo label
+
+goto :: Label -> Evaluate ()
+goto l = do
+  pc <- S.gets programCounter
+  st <- S.gets symbolTable
+  let ix = st ~> l
+  S.modify $ \s -> s { programCounter = ix }
+
+gotofalse :: Label -> Evaluate ()
+gotofalse l = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  case e of
+    VBool True -> do
+      incPC
+      S.modify $ \s -> s { environment = h
+                         , stack = t
+                         }
+    VBool False -> do
+      S.modify $ \s -> s { environment = h
+                         , stack = t
+                         }
+      jumpTo l
+    _ -> error "GOTOFALSE instuction applied to incorrect operand"
+
+switch :: [(Tag, Label)] -> Evaluate ()
+switch conds = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  let VCon ci v1 = e
+  let (_, label) =
+        case find (\(c,_) -> c == ci) conds of
+          Just (cf, lf) -> (cf, lf)
+          Nothing -> error $ "Missing constructor" <> show ci
+  S.modify $ \s -> s { environment = VPair h v1
+                     , stack = t
+                     }
+  jumpTo label
 
 
 dummyLabel = "dummy"

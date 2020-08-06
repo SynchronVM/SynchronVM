@@ -27,7 +27,7 @@ import CAM
 
 example0 = Sys $ Sys2 Minus (Sys $ LInt 5) (Sys $ LInt 4)
 
-example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
+example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 3) (Var "x"))
 
 example2 = App example1 (Sys $ LInt 1)
 
@@ -39,6 +39,8 @@ example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "
 case s of
    Nil -> 5
    Cons _ _ -> 10
+
+-- generates FAIL
 -}
 
 example5 = Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
@@ -101,6 +103,7 @@ SKIP
 {-
 letrec even = \n -> if (n == 0) then true else not (even (n - 1))
 in even 56
+-- XXX: Incorrect result
 -}
 
 example7 = Letrec [( (PatVar "even")
@@ -108,7 +111,7 @@ example7 = Letrec [( (PatVar "even")
                                         (Sys $ LBool True)
                                         (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1)))))))
                   ]
-                  (App (Var "even") (Sys $ LInt 56))
+                  (App (Var "even") (Sys $ LInt 1))
 
 {-
 let y = 1 in
@@ -172,3 +175,7 @@ example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x
                 (Let (PatVar "baz") (App (Var "foo") (Sys $ LInt 2))
                      (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
                 )
+
+
+run :: Exp -> Val
+run = evaluate . interpret
