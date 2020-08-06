@@ -29,13 +29,16 @@ separator    Ident "" ;
 -- This gives some shift/reduce conflicts (7), but it seems to parse
 -- as we want it to anyway! If you remove the [Type] after UIdent
 -- it will remove all shift/reduce conflicts.
-TLam.	  Type  ::= Type1 "->" Type ;
+TLam.	Type  ::= Type1 "->" Type ;
 TPair.  Type1 ::= Type2 "*" Type1 ;
-TInt.   Type2 ::= "Int" ; -- TODO I would want these to be captured by TAdt but it doesn't seem to work...
-TFloat. Type2 ::= "Float" ;
-TBool.  Type2 ::= "Bool" ;
 TVar.   Type2 ::= Ident ;
 TAdt.   Type2 ::= UIdent [Type] ;
+
+-- Set these as internals, in the AST we can inspect a TAdt to see if it's a Int []
+-- and return a TInt instead.
+internal TInt.   Type ::= ;
+internal TFloat. Type ::= ;
+internal TBool.  Type ::= ;
 
 separator Type "" ;
 coercions Type 2 ;
