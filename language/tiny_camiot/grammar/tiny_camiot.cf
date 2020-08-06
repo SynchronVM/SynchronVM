@@ -44,7 +44,7 @@ coercions Type 2 ;
 
 -- We want a different separator for these than for ordinary Exp
 ETupExp. TupExp ::= Exp ;
-separator TupExp "," ;
+separator nonempty TupExp "," ;
 
 ETup.   Exp  ::= "(" [TupExp] ")" ;
 ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
@@ -88,6 +88,7 @@ CInt.     Const ::= Integer ;
 CFloat.   Const ::= Double ;
 CTrue.    Const ::= "True" ;
 CFalse.   Const ::= "False" ;
+CNil.     Const ::= "()" ;
 
 -- Patterns
 
