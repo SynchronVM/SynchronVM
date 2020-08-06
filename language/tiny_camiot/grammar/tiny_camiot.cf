@@ -14,9 +14,9 @@ layout toplevel ;
 -- commenting this out removes 1 shift reduce
 separator    Def   ";" ; -- Moving this here changes the behavior
 
-Equation.   Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ...
-TypeSig.    Def ::= Ident ":" Type ;
-DataDec.    Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}";
+DEquation.   Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ...
+DTypeSig.    Def ::= Ident ":" Type ;
+DDataDec.    Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}" ;
 
 ConstDec. ConstructorDec ::= UIdent ":" Type ;
 separator ConstructorDec ";" ;
@@ -74,22 +74,34 @@ EQC. RelOp ::= "==" ;
 coercions Exp 7 ;
 
 -- Constructor
+
 Constructor. Con ::= UIdent ;
 
 -- Constants
+
 CInt.     Const ::= Integer ;
 CFloat.   Const ::= Double ;
 CTrue.    Const ::= "True" ;
 CFalse.   Const ::= "False" ;
 
+-- Values
+
+VConst.   Value  ::= Const ;
+VVar.     Value  ::= Ident ;
+VPar.     Value  ::= "(" Value ")" ;
+VZAryAdt. Value  ::= Con ;
+VConPat.  Value  ::= Con Pat ;
+VNAryAdt. Value1 ::= Con [Value] ;
+
+separator Value "" ;
+
 -- Patterns
 
-PVar.   Pat  ::=  Ident ;
-PConst. Pat  ::=  Const ;
+PValue. Pat ::= Value ;
 PWild.  Pat  ::= "_" ;
-PNil.   Pat  ::=  "(" ")";
-PTup.   Pat1 ::=  "(" Pat "," Pat ")" ;
-PLay.   Pat2 ::=  Ident "as" Pat ;
+PNil.   Pat  ::= "(" ")";
+PTup.   Pat1 ::= "(" Pat "," Pat ")" ;
+PLay.   Pat2 ::= Ident "as" Pat ;
 
 separator Pat "" ;
 coercions Pat 2 ;
@@ -97,7 +109,8 @@ coercions Pat 2 ;
 -- Pattern matching
 
 -- TODO we cannot match on constants atm
-PMConPat.  PatMatch ::= Con Pat "->" Exp ;
-PMConst.   PatMatch ::= Const "->" Exp ;
-separator PatMatch ";"; 
+PM. PatMatch ::= Pat "->" Exp ;
+--PMConPat.  PatMatch ::= Con Pat "->" Exp ;
+--PMConst.   PatMatch ::= Const "->" Exp ;
 
+separator PatMatch ";"; 

@@ -1,2 +1,2 @@
 data Apa a where
-  Apa :: a -> Int
+  Apa : a -> Int

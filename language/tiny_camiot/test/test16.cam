@@ -1,0 +1,9 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+bind : Maybe a -> (a -> Maybe b) -> Maybe b
+bind ma k = case ma of
+        Just True -> k a
+        Nothing   -> Nothing
