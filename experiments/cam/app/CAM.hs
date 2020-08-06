@@ -20,8 +20,6 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module CAM where
 
 import Control.Monad (replicateM)
@@ -67,12 +65,13 @@ instance Show BinOp where
   show BGE       = ">="
   show BLE       = "<="
 
-data UnaryOp = Abs | Neg | NOT deriving (Ord, Eq)
+data UnaryOp = Abs | Neg | NOT | DEC deriving (Ord, Eq)
 
 instance Show UnaryOp where
   show Abs = "abs"
   show Neg = "-"
   show NOT = "~"
+  show DEC = "dec"
 
 data Pat = PatVar Var
          | Empty
@@ -80,7 +79,7 @@ data Pat = PatVar Var
          | As Var Pat      -- var `as` pat; equivalent to @ in Haskell
          deriving (Ord, Show, Eq)
 
-data Instructions
+data Instruction
    = -- ACCESS INSTRUCTIONS
      FST      -- access the left component of the environement register
    | SND      -- access the right component of the environement register
@@ -115,23 +114,13 @@ data Instructions
 
 type Label = String -- labels to identify a subroutine
 
--- Val is basically Weak Head Normal Form
-data Val = VInt  Int  -- constants s(0)
-         | VBool Bool -- constants s(0)
-         | VEmpty     -- empty tuple
-         | VPair Val Val -- Pair
-         | VCon Tag Val  -- first arg is the tag second is value with tag
-         | VClosure Val Label -- closure; Val is the environment
-         | VComb Label        -- closure of a combinator; no free variables
-         deriving (Ord, Show, Eq)
-
 -- compile time environment
 data Env = EnvEmpty                 -- empty environment
          | EnvPair Env Pat          -- constructed environment
          | EnvAnn  Env (Pat, Label) -- annotated environment
            deriving (Ord, Show, Eq)
 
-data CAM = Ins Instructions -- instructions
+data CAM = Ins Instruction  -- instructions
          | Seq CAM CAM      -- sequence
          | Lab Label CAM    -- labeled sequence
          deriving (Ord, Eq)
@@ -180,7 +169,7 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
 
 codegen :: Exp -> Env -> Codegen CAM
 codegen (Var var) env = pure $! lookup var env 0
-codegen (Sys (LInt n)) _ = pure $! Ins $ QUOTE (LInt n) -- s(0)
+codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
 codegen (Sys (Sys1 uop e)) env = do
   i1 <- codegen e env
@@ -330,10 +319,8 @@ zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
 
 -- NOTE:
 {-
-1. Use the stack for intermediate storage of environment;
-   Always PUSH before beginning computation
-2. BinOp (s(2)) expects first argument on stack and second on register
-3. Data constructors
+Data constructors:
+
    1 :: (2 :: Empty)
        |
        |  compiled to
@@ -341,13 +328,3 @@ zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
 
 -}
-
-
-type Stack = [Val]
-
-type EnvReg = Val -- the environment register
-
--- Take a sequence of stack machine instructions
--- and evaluate them to their normal form
-eval :: CAM -> Stack -> EnvReg -> Val
-eval cam stack envreg = undefined

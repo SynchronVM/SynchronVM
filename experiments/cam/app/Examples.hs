@@ -22,9 +22,12 @@
 
 module Examples where
 
+import Bytecode.InterpreterModel
 import CAM
 
-example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 1) (Var "x"))
+example0 = Sys $ Sys2 Minus (Sys $ LInt 5) (Sys $ LInt 4)
+
+example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 3) (Var "x"))
 
 example2 = App example1 (Sys $ LInt 1)
 
@@ -33,14 +36,18 @@ example3 = Lam (PatVar "f") (Lam (PatVar "x") (App (Var "f") (App (Var "f") (Var
 example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "n") (Sys $ Sys1 Neg (Var "n")))
 
 {-
+(\ s ->
 case s of
    Nil -> 5
-   Cons _ _ -> 10
+   Cons _ _ -> 10) Nil
 -}
 
-example5 = Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
-                          , (("::"   , Empty), (Sys $ LInt 10))
-                          ]
+example5helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
+                     , (("::"   , Empty), (Sys $ LInt 10))
+                     ]
+example5 = App example5helper (Con "Empty" Void)
 
 {-
 let a = 5 in
@@ -98,14 +105,15 @@ SKIP
 {-
 letrec even = \n -> if (n == 0) then true else not (even (n - 1))
 in even 56
+-- XXX: Incorrect result
 -}
 
 example7 = Letrec [( (PatVar "even")
                    , (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0))
                                         (Sys $ LBool True)
-                                        (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys2 Minus (Var "n") (Sys $ LInt 1)))))))
+                                        (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys1 DEC (Var "n")))))))
                   ]
-                  (App (Var "even") (Sys $ LInt 56))
+                  (App (Var "even") (Sys $ LInt 1))
 
 {-
 let y = 1 in
@@ -131,3 +139,45 @@ example9 = Let (PatVar "y") (Sys $ LInt 1)
 example10 = App (Let (PatVar "y") (Sys $ LInt 1)
                  (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y")))) (Sys $ LInt 4)
 
+
+{-
+let foo = let m = \x -> x
+           in 3
+  in let baz = foo + 2
+      in (baz + 4)
+-}
+
+example11 = Let (PatVar "foo") (Let (PatVar "m") (Lam (PatVar "x") (Var "x")) (Sys $ LInt 3))
+                (Let (PatVar "baz") (Sys $ Sys2 Plus (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                )
+
+{-
+let foo = let m = 11
+           in 3
+  in let baz = foo + 2
+      in (baz + 4)
+-}
+
+example12 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Sys $ LInt 3))
+                (Let (PatVar "baz") (Sys $ Sys2 Plus (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                )
+
+{-
+-- Closure should be heap allocated
+but stackroot points to the closure throughout
+let foo = let m = 11
+           in \x -> x
+  in let baz = foo 2
+      in (baz + 4)
+-}
+
+example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x") (Var "x")))
+                (Let (PatVar "baz") (App (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                )
+
+
+run :: Exp -> Val
+run = evaluate . interpret

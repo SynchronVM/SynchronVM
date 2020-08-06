@@ -33,9 +33,12 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -fwarn-incomplete-patterns
     dependencies:
     - cam
     - mtl
+    default-extensions:
+    - GeneralizedNewtypeDeriving
 
 tests:
   cam-test:
@@ -45,6 +48,9 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -fwarn-incomplete-patterns
     dependencies:
     - cam
     - mtl
+    default-extensions:
+    - GeneralizedNewtypeDeriving
