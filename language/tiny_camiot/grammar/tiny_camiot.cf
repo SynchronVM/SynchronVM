@@ -18,7 +18,7 @@ Equation.   Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ..
 TypeSig.    Def ::= Ident ":" Type ;
 DataDec.    Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}";
 
-ConstDec. ConstructorDec ::= UIdent "::" Type ;
+ConstDec. ConstructorDec ::= UIdent ":" Type ;
 separator ConstructorDec ";" ;
 
 separator    Ident "" ;
@@ -86,6 +86,7 @@ CFalse.   Const ::= "False" ;
 
 PVar.   Pat  ::=  Ident ;
 PConst. Pat  ::=  Const ;
+PWild.  Pat  ::= "_" ;
 PNil.   Pat  ::=  "(" ")";
 PTup.   Pat1 ::=  "(" Pat "," Pat ")" ;
 PLay.   Pat2 ::=  Ident "as" Pat ;
