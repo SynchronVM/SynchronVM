@@ -87,6 +87,8 @@ CFalse.   Const ::= "False" ;
 
 -- Values
 
+-- TODO It doesn't seem all right that these are mutually recursive
+
 VConst.   Value  ::= Const ;
 VVar.     Value  ::= Ident ;
 VPar.     Value  ::= "(" Value ")" ;
@@ -109,9 +111,6 @@ coercions Pat 2 ;
 
 -- Pattern matching
 
--- TODO we cannot match on constants atm
 PM. PatMatch ::= Pat "->" Exp ;
---PMConPat.  PatMatch ::= Con Pat "->" Exp ;
---PMConst.   PatMatch ::= Const "->" Exp ;
 
 separator PatMatch ";"; 
