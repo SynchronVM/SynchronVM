@@ -27,7 +27,7 @@ import Data.Word
 import GHC.Arr
 
 {-
-Bytecode format to and mapping to instructions will follow
+Bytecode format and its mapping to instructions will follow
 -}
 
 translate :: CAM -> Array Int Word16
