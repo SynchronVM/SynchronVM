@@ -70,8 +70,21 @@ data Val = VInt  Int  -- constants s(0)
          | VCon Tag Val  -- first arg is the tag second is value with tag
          | VClosure Val Label -- closure; Val is the environment
          | VComb Label        -- closure of a combinator; no free variables
-         deriving (Ord, Show, Eq)
+         deriving (Ord, Eq)
 
+-- using Hinze's notation
+instance Show Val where
+  show (VInt i)  = show i
+  show (VBool b) = show b
+  show  VEmpty   = "()"
+  show (VPair v1 v2) =
+    "(" <> show v1 <> ", " <> show v2 <> ")"
+  show (VCon t v) =
+    "(" <> show t <> " : " <> show v  <> ")"
+  show (VClosure v l) =
+    "[" <> show v <> " : " <> show l  <> "]"
+  show (VComb l) =
+    "[" <> show l <> "]"
 
 -- Take a sequence of stack machine instructions
 -- and evaluate them to their normal form

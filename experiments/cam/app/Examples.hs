@@ -36,16 +36,18 @@ example3 = Lam (PatVar "f") (Lam (PatVar "x") (App (Var "f") (App (Var "f") (Var
 example4 = Lam (PatVar "n") (If (Sys $ Sys2 BGE (Var "n") (Sys $ LInt 0)) (Var "n") (Sys $ Sys1 Neg (Var "n")))
 
 {-
+(\ s ->
 case s of
    Nil -> 5
-   Cons _ _ -> 10
-
--- generates FAIL
+   Cons _ _ -> 10) Nil
 -}
 
-example5 = Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
-                          , (("::"   , Empty), (Sys $ LInt 10))
-                          ]
+example5helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
+                     , (("::"   , Empty), (Sys $ LInt 10))
+                     ]
+example5 = App example5helper (Con "Empty" Void)
 
 {-
 let a = 5 in
