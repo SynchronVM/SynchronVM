@@ -105,7 +105,6 @@ SKIP
 {-
 letrec even = \n -> if (n == 0) then true else not (even (n - 1))
 in even 56
--- XXX: Incorrect result
 -}
 
 example7 = Letrec [( (PatVar "even")
@@ -177,6 +176,25 @@ example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x
                 (Let (PatVar "baz") (App (Var "foo") (Sys $ LInt 2))
                      (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
                 )
+
+{-
+letrec not = \b -> if b == True then False else True
+       even = \n -> if (n == 0) then true else not (even (n - 1))
+in even 56
+-}
+
+example14 =
+  Letrec
+  [ (PatVar "not"
+    ,Lam (PatVar "b") (If (Sys $ Sys2 BEQ (Var "b") (Sys $ LBool True))
+                          (Sys $ LBool False)
+                          (Sys $ LBool True)))
+  , ((PatVar "even")
+    , (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0))
+                          (Sys $ LBool True)
+                          (App (Var "not") (App (Var "even") (Sys $ Sys1 DEC (Var "n")))))))
+  ]
+  (App (Var "even") (Sys $ LInt 53))
 
 
 run :: Exp -> Val
