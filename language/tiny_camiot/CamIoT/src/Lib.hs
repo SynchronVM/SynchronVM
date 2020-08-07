@@ -6,7 +6,10 @@ import AbsTinyCamiot
 import ParseTinyCamiot
 import TypecheckTinyCamiot
 
-readAndParse :: String -> IO (Either String [Def ()])
+readAndParse :: String -> IO (Either String [Def (Type ())])
 readAndParse input = do
     contents <- readFile input
-    return $ parse contents >>= typecheck
+    let parsed = parse contents
+    case parsed of
+        Left err   -> return (Left err)
+        Right defs -> typecheck defs
