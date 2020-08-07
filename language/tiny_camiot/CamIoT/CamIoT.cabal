@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 86296e0fdf18e4d831c7f2020233bece399b2622746aad0fed3110601ffe8d64
+-- hash: 8f8137dcf3c638c34a046a69d483f4d988a944c98df901a5f693d1c7ddcd6712
 
 name:           CamIoT
 version:        0.1.0.0
@@ -30,10 +30,20 @@ library
       Lib
   other-modules:
       Paths_CamIoT
+      AbsTinyCamiot
+      LayoutTinyCamiot
+      LexTinyCamiot
+      PrintTinyCamiot
+      SkelTinyCamiot
+      ParTinyCamiot
+      ParseTinyCamiot
+      TypecheckTinyCamiot
   hs-source-dirs:
       src
+      src/Frontend
   build-depends:
       base >=4.7 && <5
+    , array
   default-language: Haskell2010
 
 executable CamIoT-exe

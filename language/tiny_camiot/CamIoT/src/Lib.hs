@@ -1,6 +1,12 @@
 module Lib
-    ( someFunc
+    ( readAndParse
     ) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import AbsTinyCamiot
+import ParseTinyCamiot
+import TypecheckTinyCamiot
+
+readAndParse :: String -> IO (Either String [Def ()])
+readAndParse input = do
+    contents <- readFile input
+    return $ parse contents >>= typecheck
