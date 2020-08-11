@@ -6,6 +6,9 @@ import PrintTinyCamiot
 
 import Control.Monad.Trans
 import Control.Monad.State
+import Control.Monad.Reader
+import Control.Monad.Writer
+
 import Control.Monad.Except
 import Data.Maybe
 import Data.Foldable
@@ -13,7 +16,9 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 data Scheme = Forall [Ident] (Type ())
-newtype TEnv = TEnv (Map.Map Ident Scheme)
+newtype TEnv = TEnv (Map.Map Ident (Type ()))
+emptyEnv :: TEnv
+emptyEnv = TEnv Map.empty
 
 extend :: TEnv -> (Ident, Scheme) -> TEnv
 extend = undefined
@@ -70,8 +75,8 @@ letters = [1..] >>= flip replicateM ['a'..'z']
 fresh :: TC (Type ())
 fresh = do
   s <- get
-  put $ s + 1
-  return $ TVar () (Ident (letters !! s))
+  put $ s { num = (num s) + 1}
+  return $ TVar () (Ident (letters !! (num s)))
 
 occursCheck :: Substitutable a => Ident -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
@@ -123,12 +128,12 @@ generalize env t  = Forall vars t
 -- top level typecheck
 
 typecheck :: [Def ()] -> IO (Either String [Def (Type ())])
-typecheck defs = do
-    res <- runExceptT (runStateT pgm emptyState)
-    case res of
-        Left e -> return $ Left (show e)         -- error occured
-        Right (defs', _) -> return $ Right defs' -- TC completed
-  where pgm = check defs -- the monadic computation that TC's
+typecheck defs = undefined
+--    res <- runExceptT (runStateT pgm emptyState)
+--    case res of
+--        Left e -> return $ Left (show e)         -- error occured
+--        Right (defs', _) -> return $ Right defs' -- TC completed
+--  where pgm = check defs -- the monadic computation that TC's
 
 {- ******************** -}
 -- typecheck monad
@@ -137,66 +142,129 @@ typecheck defs = do
 -- Add variants and needed and include a show instance for it, so that
 -- it is rendered nicely.
 data TCError =
-    {--- Expression errors ---}
-    --        exp     actual     expected 
-    TypeError (Exp ()) (Type ()) (Type ())
-    --         op         left      right
-  | RelOpError (RelOp ()) (Type ()) (Type ())
-    --         op                             left      right
-  | ArithError (Either (AddOp ()) (MulOp ())) (Type ()) (Type ())
-    --        left      right
-  | BoolError (Type ()) (Type ())
-    --          exp      type
-  | AppValError (Exp ()) (Type ())
-
-    -- For the hindley milner TC
-  | InfiniteType Ident (Type ())
+    InfiniteType Ident (Type ())
   | UnificationFail (Type ()) (Type ())
+  | UnboundVariable String
 
 instance Show TCError where
-    show (TypeError expression act exp) = 
-        "Type error ---\n" ++
-        "Expected: " ++ show exp ++ "\n" ++
-        "Actual: " ++ show act ++ "\n" ++
-        "In expression: \n" ++ printTree expression
-    show (RelOpError op t1 t2) =
-        "Type error ---\n" ++
-        "Operator " ++ show op ++ "expect arguments of equal type\n" ++
-        "Left  operators type: " ++ show t1 ++ "\n" ++
-        "Right operators type: " ++ show t2
-    show (ArithError op t1 t2) =
-        "Type error ---\n" ++
-        "Arithmic operator " ++ show op ++ " expects both arguments to be of the same numerical type\n" ++
-        "Left  operators type: " ++ show t1 ++ "\n" ++
-        "Right operators type: " ++ show t2
-    show (BoolError t1 t2) =
-        "Type error ---\n" ++
-        "Boolean operators && and || expects both arguments to be of type Bool\n" ++
-        "Left  operators type: " ++ show t1 ++ "\n" ++
-        "Right operators type: " ++ show t2
-    show (AppValError e t) =
-        "Type error ---\n" ++
-        "Cannot apply " ++ show e ++ " since it does not have a function type\n" ++
-        "Actual type: " ++ show t
-
-    show (InfiniteType (Ident var) t) =
-        "Type error ---\n" ++
-        "Infinite type found during type checking: " ++ var ++ show t
-
-    show (UnificationFail t1 t2) =
-        "Type error ---\n" ++
-        "Unification failed for types: " ++ show t1 ++ ", " ++ show t2
 
 -- The state kept by the typechecker as it typechecks a program
-type TCState = Int
+data TCState = TCState { 
+    num  :: Int
+  , constructors :: Map.Map UIdent (Type ()) } deriving Show
 
-emptyState :: Int
-emptyState = 0
+emptyState :: TCState
+emptyState = TCState 0 Map.empty
 
 -- The typechecking monad! Please change as you see fit. Perhaps we don't
 -- want IO in the bottom of it, but i find it usually helps me debug stuff,
 -- as you can always just print whatever you want.
-type TC a = StateT TCState (ExceptT TCError IO) a
+--type TC a = StateT TCState (ExceptT TCError IO) a
+type Constraint = (Type (), Type ())
+
+type TC a = ReaderT TEnv (
+            WriterT [Constraint] (
+            StateT TCState (
+            ExceptT TCError 
+            IO))) 
+            a
+
+runTC :: TC a -> TEnv -> IO (Either TCError ((a, [Constraint]), TCState))
+runTC tc initEnv = do
+    let rd = runReaderT tc initEnv
+    let wr = runWriterT rd
+    let st = runStateT wr emptyState
+    let ex = runExceptT st
+    ex
+
+uni :: Type () -> Type () -> TC ()
+uni t1 t2 = tell [(t1, t2)]
+
+uniMany :: [Type ()] -> TC ()
+uniMany [] = return ()
+uniMany [x] = uni x x -- should be OK
+uniMany (x:y:xs) = uni x y >> uniMany xs
+
+inEnv :: (Ident, Scheme) -> TC a -> TC a
+inEnv xsc m = inEnvMany [xsc] m
+
+-- Extend the local environment with many variables
+inEnvMany :: [(Ident, Scheme)] -> TC a -> TC a
+inEnvMany xs m = do
+    let scope e = foldl (\e' (x,sc) -> restrict e' x `extend` (x, sc)) e xs
+    local scope m
+
+lookupVar :: Ident -> TC (Type ())
+lookupVar x@(Ident name) = do
+    (TEnv env) <- ask
+    case Map.lookup x env of
+        Just t  -> return t
+        Nothing -> throwError $ UnboundVariable name
+
+lookupCons :: Con () -> TC (Type ())
+lookupCons (Constructor () con) = do
+    env <- get
+    case Map.lookup con (constructors env) of
+        Just t  -> return t
+        Nothing -> error ""
+
+lookupTypeSig :: Ident -> TC (Maybe (Type ()))
+lookupTypeSig fun = do
+    (TEnv env) <- ask
+    return $ Map.lookup fun env
+
+-- collect type sigs and put them in state
+gatherTypeSigs :: [Def ()] -> TC () -> TC ()
+gatherTypeSigs ds m = do
+    let scope e = foldl f e (catMaybes (map go ds))
+    local scope m
+  where go (DTypeSig () fun t) = Just (fun, t)
+        go _                   = Nothing
+
+        f (TEnv e) (fun, t) = case Map.lookup fun e of
+            Just _  -> error "same type sig appear twice"
+            Nothing -> TEnv $ Map.insert fun t e
+
+-- Gather type information about data declarations and their constructors
+gatherDataDecs :: [Def ()] -> TC ()
+gatherDataDecs [] = return ()
+gatherDataDecs (d:ds) = case d of
+    DDataDec () typ tvars cons -> do
+        constructors <- mapM (consDecToType typ tvars) cons
+        tryInsert constructors
+        gatherDataDecs ds
+    _ -> gatherDataDecs ds
+  where
+      tryInsert :: [(UIdent, Type ())] -> TC ()
+      tryInsert []         = return ()
+      tryInsert ((c,t):xs) = do
+          env <- get
+          let cons = constructors env
+          case Map.lookup c cons of
+              Just t' -> error ""
+              Nothing -> put (env { constructors = Map.insert c t cons}) >> tryInsert xs
+
+      -- Given a UIdent, e.g 'Maybe', and a list of type vars, e,g [a], and
+      -- a constructor, e.g Just, see if the type for Just is correct
+      -- TODO check that the type variables are bound by the data declaration
+      consDecToType :: UIdent -> [Ident] -> ConstructorDec () -> TC (UIdent, Type ())
+      consDecToType typ tvars (ConstDec () con t) =
+          -- get the intended creation
+          let goal = getGoal t
+          -- Is the intended creation an ADT?
+          in case goal of
+                                     -- Is it the correct ADT?
+              (TAdt () con' vars) -> case typ == con' of
+                           -- Is the arity correct?
+                  True  -> case length tvars == length vars of
+                               -- good!
+                      True  -> return $ (con, t)
+                      False -> error ""
+                  False -> error ""
+              _ -> error ""
+      
+      getGoal (TLam _ _ r) = getGoal r
+      getGoal t            = t
 
 {- ******************** -}
 -- typecheck
@@ -204,110 +272,181 @@ type TC a = StateT TCState (ExceptT TCError IO) a
 check :: [Def ()] -> TC [Def (Type ())]
 check = undefined
 
-{-
-check_ :: Def () -> TC (Def (Type ()))
-check_ d = case d of
-    DEquation a id patterns body -> undefined
-    DTypeSig a id t -> undefined
-    DDataDec a name typevars constructors -> undefined
+checkSingle :: Def () -> TC ()
+checkSingle d = case d of
+    DEquation () name pats exp -> do
+        patinfo <- mapM (flip checkPattern True) pats
+        let types = map fst patinfo
+        let vars = concat $ map snd patinfo
+        t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
 
-checkExp :: Exp () -> TC (Exp (Type ()))
+        let inferredType = function_type types t
+        sig <- lookupTypeSig name
+        case sig of
+            Just assigned -> uni assigned inferredType
+            Nothing -> return ()
+        undefined
+    _ -> return ()
+
+-- Input: a pattern
+-- output
+--   - component 1: Type of the top-level pattern
+--   - component 2: List of variables and their type variables created by the pattern
+-- TODO Maybe the second component should be name and type scheme?
+-- TODO rewrite this behemoth
+checkPattern :: Pat () -> Bool -> TC (Type (), [(Ident, Type ())])
+checkPattern pattern allowConstants = case pattern of
+    PConst a c       -> if allowConstants 
+                        then return $ (checkConstType c, []) 
+                        else error ""
+    PVar a var       -> fresh >>= \tv -> return (tv, [(var, tv)])
+    PAdt a con pats  -> do
+        (typs, vars) <- unzip <$> mapM (flip checkPattern allowConstants) pats
+        t <- lookupCons (Constructor () con)
+        let t' = unwrap_function t
+        -- is it actually an ADT?
+        case t' of
+                                    -- great, correct arity?
+            (TAdt () con' vars') -> case length vars == length vars' of
+                True  -> return $ (TAdt () con' typs, concat vars)
+                False -> error "wrong arity"
+            _ -> error "" -- This happens if someone does data (a -> b) where ...
+    PWild a          -> fresh >>= \tv -> return (tv, [])
+    PNil a           -> return (TNil (), [])
+    PTup a pat1 pat2 -> do
+        (t1, tpat1) <- checkPattern pat1 allowConstants
+        (t2, tpat2) <- checkPattern pat2 allowConstants
+        return $ (TPair () t1 t2, tpat1 ++ tpat2)
+    PLay a var pat   -> do
+        (tv, tpat) <- checkPattern pat allowConstants
+        return $ (tv, (var, tv) : tpat)
+
+checkConstType :: Const () -> Type ()
+checkConstType const = case const of
+    CInt a integer  -> int
+    CFloat a double -> float
+    CTrue a         -> bool
+    CFalse a        -> bool
+    CNil a          -> TNil ()
+
+checkCases :: Type () -> [PatMatch ()] -> TC (Type ())
+checkCases t pm = do
+    types <- mapM (checkCase t) pm
+    uniMany types
+    return $ head types
+
+checkCase :: Type () -> PatMatch () -> TC (Type ())
+checkCase t (PM () pat e1) = do
+    (t', vars) <- checkPattern pat True
+    uni t t'
+    inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1) 
+    
+
+checkExp :: Exp () -> TC (Type ())
 checkExp e = case e of
-    ETup _ tupExps -> do
-        -- type the tuple components
-        typedTupExps <- mapM (checkExp . deTupExp) tupExps
-        -- fetch the types
-        let types = map getExpvar typedTupExps
-        -- create the tuple type
-        let typ = undefined -- TODO TPair etc etc
-        -- return the typed tuple expression
-        return $ ETup typ (map tupExp typedTupExps)
+    ECase _ e1 patterns -> do
+        te1 <- checkExp e1
+        checkCases te1 patterns
 
-    ECase _ e1 patterns -> undefined
-    ELet _ pattern e1 e2 -> undefined
+    ELet _ pattern e1 e2 -> do
+        (tpat, vars) <- checkPattern pattern False
+        te1 <- checkExp e1
+        uni tpat te1
+        inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e2)
+
+    -- TODO
     ELetR _ pattern e1 e2 -> undefined
-    ELam _ pattern e1 -> undefined
-    EIf _ e1 e2 e3 -> undefined
-    ECon _ constructor exps -> undefined
+
+    ELam _ pattern e1 -> do
+        -- TODO Maybe we want checkLambdaPattern to
+        -- return Schemes with the proper type variables
+        (tpat, vars) <- checkPattern pattern False
+        t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e1)
+        return $ TLam () tpat t
+        
+    ECon _ constructor exps -> do
+        texps <- mapM checkExp exps
+        tv <- fresh
+        let u1 = function_type texps tv
+        u2 <- lookupCons constructor
+        uni u1 u2
+        return tv
+
+    EIf _ e1 e2 e3 -> do
+        te1 <- checkExp e1
+        te2 <- checkExp e2
+        te3 <- checkExp e3
+        uni te1 bool
+        uni te2 te3
+        return te2
 
     EApp _ e1 e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
-        let t1 = getExpvar te1
-        let t2 = getExpvar te2
-        case isFunctionType t1 of
-            True  -> case canApply t1 t2 of
-                Left t    -> return $ EApp t te1 te2
-                Right err -> throwError (err e2)
-            False -> throwError $ AppValError e1 t1
+        tv <- fresh
+        uni te1 (TLam () te2 tv)
+        return tv
 
     EOr _ e1 e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
-        let t1 = getExpvar te1
-        let t2 = getExpvar te2
-        case t1 == bool && t2 == bool of
-            True  -> return $ EOr bool te1 te2
-            False -> throwError $ BoolError t1 t2
+        uni te1 bool
+        uni te2 bool
+        return bool
 
     EAnd _ e1 e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
-        let t1 = getExpvar te1
-        let t2 = getExpvar te2
-        case t1 == bool && t2 == bool of
-            True  -> return $ EAnd bool te1 te2
-            False -> throwError $ BoolError t1 t2
-    
+        uni te1 bool
+        uni te2 bool
+        return bool
+
     ERel _ e1 op e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
-        let t1 = getExpvar te1
-        let t2 = getExpvar te2
-        -- TODO how to do Adt? Maybe more involved than we expected
-        case t1 == t2 of
-            True  -> let optype = function_type [t1, t2] bool
-                     in return $ ERel bool te1 (fmap (\_ -> optype) op) te2
-            False -> throwError $ RelOpError op t1 t2
+        tv <- fresh
+        let u1 = TLam () te1 (TLam () te2 tv)
+            u2 = relOps Map.! op
+        uni u1 u2
+        return tv
 
-    -- Add and Mul are duplicated, could probably generalise
     EAdd _ e1 op e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
-        let t1 = getExpvar te1
-        let t2 = getExpvar te1
-        let allowed = [int, float]
-        case t1 == t2 && elem t1 allowed of
-            True  -> let optype = function_type [t1, t2] t1
-                     in return $ EAdd t1 te1 (fmap (\_ -> optype) op) te2
-            False -> throwError $ ArithError (Left op) t1 t2
+        tv <- fresh
+        let u1 = TLam () te1 (TLam () te2 tv)
+            u2 = addOps Map.! op
+        uni u1 u2
+        return tv
 
     EMul _ e1 op e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
-        let t1 = getExpvar te1
-        let t2 = getExpvar te1
-        let allowed = [int, float]
-        case t1 == t2 && elem t1 allowed of
-            True  -> let optype = function_type [t1, t2] t1
-                     in return $ EMul t1 te1 (fmap (\_ -> optype) op) te2
-            False -> throwError $ ArithError (Right op) t1 t2
+        tv <- fresh
+        let u1 = TLam () te1 (TLam () te2 tv)
+            u2 = mulOps Map.! op
+        uni u1 u2
+        return tv
 
     ENot _ e1 -> do
         te1 <- checkExp e1
-        case getExpvar te1 == bool of
-            True  -> return $ ENot bool te1
-            False -> throwError $ TypeError e1 (getExpvar te1) bool
+        uni te1 bool
+        return bool
 
-    EVar _ var -> undefined -- look up type I guess
+    EVar _ var -> lookupVar var
 
-    EConst _ const -> return $ case const of
-        CInt _ i   -> fmap (\_ -> int) e
-        CFloat _ d -> fmap (\_ -> float) e
-        CTrue _    -> fmap (\_ -> bool) e
-        CFalse _   -> fmap (\_ -> bool) e
-        CNil _     -> fmap (\_ -> go "what is this?") e -- TODO
-      where go str = TAdt () (UIdent str) []
+    ETup _ tupExps -> do
+        let exps = map deTupExp tupExps
+        texps <- mapM checkExp exps
+        return $ TTup () texps
+
+    EConst _ const -> case const of
+        CInt a i   -> return int
+        CFloat a f -> return float
+        CTrue a    -> return bool
+        CFalse a   -> return bool
+        CNil a     -> undefined
+{-
 
 {- ******************** -}
 -- typecheck utility functions
@@ -319,7 +458,7 @@ collectTypes ds = return $ catMaybes $ map go ds
   where go (DDataDec _ name vars _) = 
            Just $ TAdt () name (map (TVar ()) vars)
         go _ = Nothing
-
+-}
 -- Extract the var from a typed expression
 getExpvar :: Exp a -> a
 getExpvar e = case e of
@@ -339,7 +478,7 @@ getExpvar e = case e of
     ENot a _      -> a
     EVar a _      -> a
     EConst a _    -> a
-
+{-
 isFunctionType :: Type () -> Bool
 isFunctionType (TLam _ _ _) = True
 isFunctionType _            = False
@@ -354,12 +493,13 @@ canApply (TLam _ t rest) t' = case t == t' of
 
 {- ******************** -}
 -- ADT related utility functions
-
+-}
 tupExp :: Exp a -> TupExp a
 tupExp e = ETupExp (getExpvar e) e
 
 deTupExp :: TupExp a -> Exp a
 deTupExp (ETupExp _ e) = e
+
 
 -- synonyms for the built-in types
 bool :: Type ()
@@ -371,7 +511,42 @@ int = TAdt () (UIdent "Int") []
 float :: Type ()
 float = TAdt () (UIdent "Float") []
 
+-- TODO we can remove the 'duplice' operators and try to overload them
+-- when we know how to attempt the unification when the types it can be
+-- unified with are not arbitrary, but actually a subset of all types.
+addOps :: Map.Map (AddOp ()) (Type ())
+addOps = Map.fromList [
+    (Plus   (), TLam () int   (TLam () int   int)),
+    (FPlus  (), TLam () float (TLam () float float)),
+    (Minus  (), TLam () int   (TLam () int   int)),
+    (FMinus (), TLam () float (TLam () float float))]
+
+mulOps :: Map.Map (MulOp ()) (Type ())
+mulOps = Map.fromList [
+    (Times  (), TLam () int   (TLam () int   int)),
+    (FTImes (), TLam () float (TLam () float float)),
+    (Div    (), TLam () int   (TLam () int   int)),
+    (FDiv   (), TLam () float (TLam () float float))]
+
+relOps :: Map.Map (RelOp ()) (Type ())
+relOps = Map.fromList [
+    (LTC  (), TLam () int   (TLam () int   bool)),
+    (FLTC (), TLam () float (TLam () float bool)),
+    (LEC  (), TLam () int   (TLam () int   bool)),
+    (FLEC (), TLam () float (TLam () float bool)),
+    (GTC  (), TLam () int   (TLam () int   bool)),
+    (FGTC (), TLam () float (TLam () float bool)),
+    (GEC  (), TLam () int   (TLam () int   bool)),
+    (FGEC (), TLam () float (TLam () float bool)),
+    (EQC  (), undefined {- TODO insert some type later, talk with Joel -})]
+
 -- builds a function type from the list of argument types and the result type
 function_type :: [Type ()] -> Type () -> Type ()
 function_type [] res     = res
-function_type (x:xs) res = TLam () x (function_type xs res) -}
+function_type (x:xs) res = TLam () x (function_type xs res)
+
+-- fetch the final construction of a type
+-- e.g unwrap function (a -> b -> Either a b) = Either a b
+unwrap_function :: Type () -> Type ()
+unwrap_function (TLam () _ t) = unwrap_function t
+unwrap_function t             = t

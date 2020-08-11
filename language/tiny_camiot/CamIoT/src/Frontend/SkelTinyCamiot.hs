@@ -28,8 +28,10 @@ transType :: Show a => AbsTinyCamiot.Type a -> Result
 transType x = case x of
   AbsTinyCamiot.TLam _ type_1 type_2 -> failure x
   AbsTinyCamiot.TPair _ type_1 type_2 -> failure x
+  AbsTinyCamiot.TNil _ -> failure x
   AbsTinyCamiot.TVar _ ident -> failure x
   AbsTinyCamiot.TAdt _ uident types -> failure x
+  AbsTinyCamiot.TTup _ types -> failure x
   AbsTinyCamiot.TInt _ -> failure x
   AbsTinyCamiot.TFloat _ -> failure x
   AbsTinyCamiot.TBool _ -> failure x
@@ -58,17 +60,25 @@ transExp x = case x of
 transAddOp :: Show a => AbsTinyCamiot.AddOp a -> Result
 transAddOp x = case x of
   AbsTinyCamiot.Plus _ -> failure x
+  AbsTinyCamiot.FPlus _ -> failure x
   AbsTinyCamiot.Minus _ -> failure x
+  AbsTinyCamiot.FMinus _ -> failure x
 transMulOp :: Show a => AbsTinyCamiot.MulOp a -> Result
 transMulOp x = case x of
   AbsTinyCamiot.Times _ -> failure x
+  AbsTinyCamiot.FTImes _ -> failure x
   AbsTinyCamiot.Div _ -> failure x
+  AbsTinyCamiot.FDiv _ -> failure x
 transRelOp :: Show a => AbsTinyCamiot.RelOp a -> Result
 transRelOp x = case x of
   AbsTinyCamiot.LTC _ -> failure x
+  AbsTinyCamiot.FLTC _ -> failure x
   AbsTinyCamiot.LEC _ -> failure x
+  AbsTinyCamiot.FLEC _ -> failure x
   AbsTinyCamiot.GTC _ -> failure x
+  AbsTinyCamiot.FGTC _ -> failure x
   AbsTinyCamiot.GEC _ -> failure x
+  AbsTinyCamiot.FGEC _ -> failure x
   AbsTinyCamiot.EQC _ -> failure x
 transCon :: Show a => AbsTinyCamiot.Con a -> Result
 transCon x = case x of
@@ -86,7 +96,7 @@ transPat x = case x of
   AbsTinyCamiot.PVar _ ident -> failure x
   AbsTinyCamiot.PAdt _ uident pats -> failure x
   AbsTinyCamiot.PWild _ -> failure x
-  AbsTinyCamiot.PNIl _ -> failure x
+  AbsTinyCamiot.PNil _ -> failure x
   AbsTinyCamiot.PTup _ pat1 pat2 -> failure x
   AbsTinyCamiot.PLay _ ident pat -> failure x
 transPatMatch :: Show a => AbsTinyCamiot.PatMatch a -> Result

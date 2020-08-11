@@ -46,6 +46,7 @@ library
     , array
     , mtl
     , containers
+    , transformers
   default-language: Haskell2010
 
 executable CamIoT-exe

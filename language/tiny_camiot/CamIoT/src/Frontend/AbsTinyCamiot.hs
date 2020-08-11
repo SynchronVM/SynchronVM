@@ -37,8 +37,10 @@ instance C.Functor ConstructorDec where
 data Type a
     = TLam a (Type a) (Type a)
     | TPair a (Type a) (Type a)
+    | TNil a
     | TVar a Ident
     | TAdt a UIdent [Type a]
+    | TTup a [Type a]
     | TInt a
     | TFloat a
     | TBool a
@@ -48,8 +50,10 @@ instance C.Functor Type where
     fmap f x = case x of
         TLam a type_1 type_2 -> TLam (f a) (fmap f type_1) (fmap f type_2)
         TPair a type_1 type_2 -> TPair (f a) (fmap f type_1) (fmap f type_2)
+        TNil a -> TNil (f a)
         TVar a ident -> TVar (f a) ident
         TAdt a uident types -> TAdt (f a) uident (map (fmap f) types)
+        TTup a types -> TTup (f a) (map (fmap f) types)
         TInt a -> TInt (f a)
         TFloat a -> TFloat (f a)
         TBool a -> TBool (f a)
@@ -101,31 +105,48 @@ instance C.Functor Exp where
         EConst a const -> EConst (f a) (fmap f const)
         ETyped a exp type_ -> ETyped (f a) (fmap f exp) (fmap f type_)
 
-data AddOp a = Plus a | Minus a
+data AddOp a = Plus a | FPlus a | Minus a | FMinus a
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor AddOp where
     fmap f x = case x of
         Plus a -> Plus (f a)
+        FPlus a -> FPlus (f a)
         Minus a -> Minus (f a)
+        FMinus a -> FMinus (f a)
 
-data MulOp a = Times a | Div a
+data MulOp a = Times a | FTImes a | Div a | FDiv a
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor MulOp where
     fmap f x = case x of
         Times a -> Times (f a)
+        FTImes a -> FTImes (f a)
         Div a -> Div (f a)
+        FDiv a -> FDiv (f a)
 
-data RelOp a = LTC a | LEC a | GTC a | GEC a | EQC a
+data RelOp a
+    = LTC a
+    | FLTC a
+    | LEC a
+    | FLEC a
+    | GTC a
+    | FGTC a
+    | GEC a
+    | FGEC a
+    | EQC a
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor RelOp where
     fmap f x = case x of
         LTC a -> LTC (f a)
+        FLTC a -> FLTC (f a)
         LEC a -> LEC (f a)
+        FLEC a -> FLEC (f a)
         GTC a -> GTC (f a)
+        FGTC a -> FGTC (f a)
         GEC a -> GEC (f a)
+        FGEC a -> FGEC (f a)
         EQC a -> EQC (f a)
 
 data Con a = Constructor a UIdent
@@ -152,7 +173,7 @@ data Pat a
     | PVar a Ident
     | PAdt a UIdent [Pat a]
     | PWild a
-    | PNIl a
+    | PNil a
     | PTup a (Pat a) (Pat a)
     | PLay a Ident (Pat a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -163,7 +184,7 @@ instance C.Functor Pat where
         PVar a ident -> PVar (f a) ident
         PAdt a uident pats -> PAdt (f a) uident (map (fmap f) pats)
         PWild a -> PWild (f a)
-        PNIl a -> PNIl (f a)
+        PNil a -> PNil (f a)
         PTup a pat1 pat2 -> PTup (f a) (fmap f pat1) (fmap f pat2)
         PLay a ident pat -> PLay (f a) ident (fmap f pat)
 

@@ -134,8 +134,10 @@ instance Print (AbsTinyCamiot.Type a) where
   prt i e = case e of
     AbsTinyCamiot.TLam _ type_1 type_2 -> prPrec i 0 (concatD [prt 1 type_1, doc (showString "->"), prt 0 type_2])
     AbsTinyCamiot.TPair _ type_1 type_2 -> prPrec i 1 (concatD [prt 2 type_1, doc (showString "*"), prt 1 type_2])
+    AbsTinyCamiot.TNil _ -> prPrec i 2 (concatD [doc (showString "("), doc (showString ")")])
     AbsTinyCamiot.TVar _ id -> prPrec i 2 (concatD [prt 0 id])
     AbsTinyCamiot.TAdt _ uident types -> prPrec i 2 (concatD [prt 0 uident, prt 0 types])
+    AbsTinyCamiot.TTup _ types -> prPrec i 0 (concatD [prt 0 types])
     AbsTinyCamiot.TInt _ -> prPrec i 0 (concatD [])
     AbsTinyCamiot.TFloat _ -> prPrec i 0 (concatD [])
     AbsTinyCamiot.TBool _ -> prPrec i 0 (concatD [])
@@ -179,19 +181,27 @@ instance Print (AbsTinyCamiot.Exp a) where
 instance Print (AbsTinyCamiot.AddOp a) where
   prt i e = case e of
     AbsTinyCamiot.Plus _ -> prPrec i 0 (concatD [doc (showString "+")])
+    AbsTinyCamiot.FPlus _ -> prPrec i 0 (concatD [doc (showString "+.")])
     AbsTinyCamiot.Minus _ -> prPrec i 0 (concatD [doc (showString "-")])
+    AbsTinyCamiot.FMinus _ -> prPrec i 0 (concatD [doc (showString "-.")])
 
 instance Print (AbsTinyCamiot.MulOp a) where
   prt i e = case e of
     AbsTinyCamiot.Times _ -> prPrec i 0 (concatD [doc (showString "*")])
+    AbsTinyCamiot.FTImes _ -> prPrec i 0 (concatD [doc (showString "*.")])
     AbsTinyCamiot.Div _ -> prPrec i 0 (concatD [doc (showString "/")])
+    AbsTinyCamiot.FDiv _ -> prPrec i 0 (concatD [doc (showString "/.")])
 
 instance Print (AbsTinyCamiot.RelOp a) where
   prt i e = case e of
     AbsTinyCamiot.LTC _ -> prPrec i 0 (concatD [doc (showString "<")])
+    AbsTinyCamiot.FLTC _ -> prPrec i 0 (concatD [doc (showString "<.")])
     AbsTinyCamiot.LEC _ -> prPrec i 0 (concatD [doc (showString "<=")])
+    AbsTinyCamiot.FLEC _ -> prPrec i 0 (concatD [doc (showString "<=.")])
     AbsTinyCamiot.GTC _ -> prPrec i 0 (concatD [doc (showString ">")])
+    AbsTinyCamiot.FGTC _ -> prPrec i 0 (concatD [doc (showString ">.")])
     AbsTinyCamiot.GEC _ -> prPrec i 0 (concatD [doc (showString ">=")])
+    AbsTinyCamiot.FGEC _ -> prPrec i 0 (concatD [doc (showString ">=.")])
     AbsTinyCamiot.EQC _ -> prPrec i 0 (concatD [doc (showString "==")])
 
 instance Print [AbsTinyCamiot.Exp a] where
@@ -215,7 +225,7 @@ instance Print (AbsTinyCamiot.Pat a) where
     AbsTinyCamiot.PVar _ id -> prPrec i 0 (concatD [prt 0 id])
     AbsTinyCamiot.PAdt _ uident pats -> prPrec i 0 (concatD [prt 0 uident, prt 0 pats])
     AbsTinyCamiot.PWild _ -> prPrec i 0 (concatD [doc (showString "_")])
-    AbsTinyCamiot.PNIl _ -> prPrec i 0 (concatD [doc (showString "("), doc (showString ")")])
+    AbsTinyCamiot.PNil _ -> prPrec i 0 (concatD [doc (showString "("), doc (showString ")")])
     AbsTinyCamiot.PTup _ pat1 pat2 -> prPrec i 1 (concatD [doc (showString "("), prt 0 pat1, doc (showString ","), prt 0 pat2, doc (showString ")")])
     AbsTinyCamiot.PLay _ id pat -> prPrec i 2 (concatD [prt 0 id, doc (showString "as"), prt 0 pat])
   prtList _ [] = concatD []
