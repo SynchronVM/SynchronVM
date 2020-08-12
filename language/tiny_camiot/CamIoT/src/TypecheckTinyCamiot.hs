@@ -313,7 +313,7 @@ checkSingle d = case d of
         case sig of
             -- if there is, try to unify the inferred and declared type
             Just assigned -> uni assigned inferredType
-            -- otherwise, just return
+            -- otherwise, just return TODO also add the function and inferred type to the env
             Nothing -> return ()
     _ -> return ()
 
