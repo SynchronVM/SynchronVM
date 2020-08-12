@@ -12,6 +12,7 @@ import Control.Monad.Identity
 
 import Control.Monad.Except
 import Data.Maybe
+import Data.List
 import Data.Foldable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -111,8 +112,51 @@ data TCError =
     InfiniteType Ident (Type ())
   | UnificationFail (Type ()) (Type ())
   | UnboundVariable String
+  | UnboundConstructor UIdent
+  | DuplicateTypeSig Ident
+  | DuplicateConstructor UIdent (Type ())
+  | TypeArityError UIdent [Type ()] [Type ()] -- Type constructor, expected vars, found vars
+  | WrongConstructorGoal UIdent (Type ()) (Type ())
+  | LambdaConstError (Const ())
+  | ConstructorNotFullyApplied UIdent Int Int
 
 instance Show TCError where
+    show (InfiniteType var t) =
+        "Type error ---\n" ++
+        "Failed to create the infinite type from type variable " ++ printTree var ++ 
+        " with type " ++ printTree t
+    show (UnificationFail t1 t2) =
+        "Type error ---\n" ++
+        "Failed to unify the two types: \n" ++
+        printTree t1 ++ " and \n" ++
+        printTree t2
+    show (UnboundVariable var) =
+        "Type error ---\n" ++
+        "Unbound variable: " ++ var
+    show (UnboundConstructor (UIdent con)) =
+        "Type error ---\n" ++
+        "Unbound constructor: " ++ show con
+    show (DuplicateTypeSig (Ident fun)) =
+        "Type error ---\n" ++
+        "Type signature for " ++ fun ++ " declared more than once"
+    show (DuplicateConstructor c t) =
+        "Type error ---\n" ++
+        "Data constructor " ++ show c ++ " : " ++ printTree t ++ " declared more than once"
+    show (TypeArityError con' tvars vars) =
+        "Type error ---\n" ++
+        "Arity error - declared type " ++ printTree (TAdt () con' tvars) ++ " does not match " ++
+        "inferred type " ++ printTree (TAdt () con' vars)
+    show (WrongConstructorGoal con inferred declared) =
+        "Type error ---\n" ++
+        "Constructor " ++ printTree con ++ " attempts to create a value of type " ++ 
+        printTree inferred ++ ", but it has been declared to be of form " ++ printTree declared
+    show (LambdaConstError c) =
+        "Type error ---\n" ++
+        "Lambdas can only abstract over variables, not constants such as " ++ printTree c
+    show (ConstructorNotFullyApplied con expected found) =
+        "Type error ---\n" ++
+        "Data constructor " ++ printTree con ++ " applied to " ++ show found ++ " arguments, " ++
+        "but " ++ show expected ++ " is expected"
 
 -- The state kept by the typechecker as it typechecks a program
 data TCState = TCState { 
@@ -177,7 +221,7 @@ lookupCons (Constructor () con) = do
     env <- get
     case Map.lookup con (constructors env) of
         Just t  -> return t
-        Nothing -> error ""
+        Nothing -> throwError $ UnboundConstructor con
 
 lookupTypeSig :: Ident -> TC (Maybe (Type ()))
 lookupTypeSig fun = do
@@ -190,14 +234,16 @@ lookupTypeSig fun = do
 -- collect type sigs and put them in state
 gatherTypeSigs :: [Def ()] -> TC () -> TC ()
 gatherTypeSigs ds m = do
-    let scope e = foldl f e (catMaybes (map go ds))
-    local scope m
+    let typesigs = catMaybes (map go ds)
+    let scope e = foldl f e typesigs
+
+    let funs = map fst typesigs in case length funs == length (nub funs) of
+        True  -> local scope m
+        False -> throwError $ DuplicateTypeSig $ head (intersect funs (nub funs))
   where go (DTypeSig () fun t) = Just (fun, t)
         go _                   = Nothing
 
-        f (TEnv e) (fun, t) = case Map.lookup fun e of
-            Just _  -> error "same type sig appear twice"
-            Nothing -> TEnv $ Map.insert fun (generalize (TEnv e) t) e
+        f (TEnv e) (fun, t) = TEnv $ Map.insert fun (generalize (TEnv e) t) e
 
 -- Gather type information about data declarations and their constructors
 gatherDataDecs :: [Def ()] -> TC ()
@@ -215,7 +261,7 @@ gatherDataDecs (d:ds) = case d of
           env <- get
           let cons = constructors env
           case Map.lookup c cons of
-              Just t' -> error ""
+              Just t' -> throwError $ DuplicateConstructor c t
               Nothing -> put (env { constructors = Map.insert c t cons}) >> tryInsert xs
 
       -- Given a UIdent, e.g 'Maybe', and a list of type vars, e,g [a], and
@@ -233,9 +279,9 @@ gatherDataDecs (d:ds) = case d of
                   True  -> case length tvars == length vars of
                                -- good!
                       True  -> return $ (con, t)
-                      False -> error ""
-                  False -> error ""
-              _ -> error ""
+                      False -> throwError $ TypeArityError con' (map (TVar ()) tvars) vars
+                  False -> throwError $ WrongConstructorGoal con goal (TAdt () typ (map (TVar ()) tvars))
+              _ -> throwError $ WrongConstructorGoal con goal (TAdt () typ (map (TVar ()) tvars))
       
       getGoal (TLam _ _ r) = getGoal r
       getGoal t            = t
@@ -281,25 +327,32 @@ checkPattern :: Pat () -> Bool -> TC (Type (), [(Ident, Type ())])
 checkPattern pattern allowConstants = case pattern of
     PConst a c       -> if allowConstants 
                         then return $ (checkConstType c, []) 
-                        else error ""
+                        else throwError $ LambdaConstError c
+
     PVar a var       -> fresh >>= \tv -> return (tv, [(var, tv)])
+
     PAdt a con pats  -> do
         (typs, vars) <- unzip <$> mapM (flip checkPattern allowConstants) pats
         t <- lookupCons (Constructor () con)
-        let t' = unwrap_function t
-        -- is it actually an ADT?
-        case t' of
-                                    -- great, correct arity?
-            (TAdt () con' vars') -> case length vars == length vars' of
-                True  -> return $ (TAdt () con' typs, concat vars)
-                False -> error "wrong arity"
-            _ -> error "" -- This happens if someone does data (a -> b) where ...
+        let t'      = unwrap_function t
+        let numargs = count_arguments t
+
+        -- is the constructor correctly applied?
+        -- TODO I just rewrote this, there MIGHT be an error here
+        case length pats == numargs of
+            True  -> let (TAdt () con' _) = t' 
+                     in return $ (TAdt () con' typs, concat vars)
+            False -> throwError $ ConstructorNotFullyApplied con numargs (length pats)
+
     PWild a          -> fresh >>= \tv -> return (tv, [])
+
     PNil a           -> return (TNil (), [])
+
     PTup a pat1 pat2 -> do
         (t1, tpat1) <- checkPattern pat1 allowConstants
         (t2, tpat2) <- checkPattern pat2 allowConstants
         return $ (TPair () t1 t2, tpat1 ++ tpat2)
+    
     PLay a var pat   -> do
         (tv, tpat) <- checkPattern pat allowConstants
         return $ (tv, (var, tv) : tpat)
@@ -442,9 +495,7 @@ solver (su, cs) =
     case cs of
         [] -> return su
         (C (t1, t2):cs') -> do
-            liftIO $ putStrLn $ "unifying " ++ show (C (t1, t2))
             su1 <- unify t1 t2
-            liftIO $ putStrLn $ "unified one!"
             solver (su1 `compose` su, apply su1 cs')
 
 occursCheck :: Substitutable a => Ident -> a -> Bool
@@ -461,9 +512,7 @@ unifyMany _ _ = error "" -- throwError with a smarter error
 unify ::  Type () -> Type () -> Solve Subst
 unify (TLam _ t1 t2) (TLam _ t1' t2') = do
     s1 <- unify t1 t1'
-    liftIO $ putStrLn "trying to apply s1"
     s2 <- unify (apply s1 t2) (apply s1 t2')
-    liftIO $ putStrLn "applied s1"
     return (s2 `compose` s1)
 
 unify (TPair _ t1 t2) (TPair _ t1' t2') = do
@@ -572,3 +621,7 @@ function_type (x:xs) res = TLam () x (function_type xs res)
 unwrap_function :: Type () -> Type ()
 unwrap_function (TLam () _ t) = unwrap_function t
 unwrap_function t             = t
+
+count_arguments :: Type () -> Int
+count_arguments (TLam () _ t) = 1 + count_arguments t
+count_arguments _             = 0

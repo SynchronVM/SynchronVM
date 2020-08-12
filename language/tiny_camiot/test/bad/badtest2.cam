@@ -1,0 +1,4 @@
+
+data Maybe a where
+  Just    : a -> Int
+  Nothing : Maybe a
