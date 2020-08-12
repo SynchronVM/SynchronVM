@@ -146,7 +146,7 @@ runTC tc initEnv = do
     res <- ex
     case res of -- Either TCError (((), [Constraint]), TCState)
         Left err -> return $ Left err
-        Right ((_, constraints), _) -> return $ runSolve constraints
+        Right ((_, constraints), _) -> runSolve constraints
 
 uni :: Type () -> Type () -> TC ()
 uni t1 t2 = tell [C (t1, t2)]
@@ -169,7 +169,7 @@ lookupVar :: Ident -> TC (Type ())
 lookupVar x@(Ident name) = do
     (TEnv env) <- ask
     case Map.lookup x env of
-        Just (Forall _ t)  -> return t -- TODO scheme -> Type, probably not correct to do it this way
+        Just s  -> instantiate s
         Nothing -> throwError $ UnboundVariable name
 
 lookupCons :: Con () -> TC (Type ())
@@ -182,19 +182,22 @@ lookupCons (Constructor () con) = do
 lookupTypeSig :: Ident -> TC (Maybe (Type ()))
 lookupTypeSig fun = do
     (TEnv env) <- ask
-    return $ (\(Forall _ t) -> t) <$> Map.lookup fun env
+    let tsig = Map.lookup fun env
+    case tsig of
+        Just sig -> Just <$> instantiate sig
+        Nothing  -> return Nothing
 
 -- collect type sigs and put them in state
 gatherTypeSigs :: [Def ()] -> TC () -> TC ()
 gatherTypeSigs ds m = do
     let scope e = foldl f e (catMaybes (map go ds))
     local scope m
-  where go (DTypeSig () fun t) = Just (fun, Forall [] t)
+  where go (DTypeSig () fun t) = Just (fun, t)
         go _                   = Nothing
 
         f (TEnv e) (fun, t) = case Map.lookup fun e of
             Just _  -> error "same type sig appear twice"
-            Nothing -> TEnv $ Map.insert fun t e
+            Nothing -> TEnv $ Map.insert fun (generalize (TEnv e) t) e
 
 -- Gather type information about data declarations and their constructors
 gatherDataDecs :: [Def ()] -> TC ()
@@ -427,10 +430,11 @@ checkExp e = case e of
         CFalse a   -> return bool
         CNil a     -> undefined
 
-type Solve a = StateT Subst (ExceptT TCError Identity) a
+-- change to Identity from IO when done debugging
+type Solve a = StateT Subst (ExceptT TCError IO) a
 
-runSolve :: [Constraint] -> Either TCError Subst
-runSolve constraints = runIdentity $ runExceptT $ evalStateT (solver st) nullSubst
+runSolve :: [Constraint] -> IO (Either TCError Subst)
+runSolve constraints = runExceptT (evalStateT (solver st) nullSubst)
   where st = (nullSubst, constraints)
 
 solver :: (Subst, [Constraint]) -> Solve Subst
@@ -438,7 +442,9 @@ solver (su, cs) =
     case cs of
         [] -> return su
         (C (t1, t2):cs') -> do
+            liftIO $ putStrLn $ "unifying " ++ show (C (t1, t2))
             su1 <- unify t1 t2
+            liftIO $ putStrLn $ "unified one!"
             solver (su1 `compose` su, apply su1 cs')
 
 occursCheck :: Substitutable a => Ident -> a -> Bool
@@ -455,7 +461,9 @@ unifyMany _ _ = error "" -- throwError with a smarter error
 unify ::  Type () -> Type () -> Solve Subst
 unify (TLam _ t1 t2) (TLam _ t1' t2') = do
     s1 <- unify t1 t1'
+    liftIO $ putStrLn "trying to apply s1"
     s2 <- unify (apply s1 t2) (apply s1 t2')
+    liftIO $ putStrLn "applied s1"
     return (s2 `compose` s1)
 
 unify (TPair _ t1 t2) (TPair _ t1' t2') = do
@@ -463,7 +471,8 @@ unify (TPair _ t1 t2) (TPair _ t1' t2') = do
     s2 <- unify (apply s1 t2) (apply s1 t2')
     return $ s2 `compose` s1
 
-unify (TAdt _ con []) (TAdt _ con' [])        | con == con' = return nullSubst
+unify t1@(TAdt _ con []) t2@(TAdt _ con' [])  | con == con' = return nullSubst
+                                              | otherwise   = error "here"
 unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
     -- I hope this is right?
     -- I want to unify the first 'pair' of zipped types, and then try to unify
@@ -478,25 +487,13 @@ unify (TFloat ()) (TFloat ()) = return nullSubst
 unify (TVar _ var) t = bind var t
 unify t (TVar _ var) = bind var t
 
---unify t1 t2 = throwError $ UnificationFail t1 t2
+unify t1 t2 = throwError $ UnificationFail t1 t2
 
 bind :: Ident -> Type () -> Solve Subst
 bind a t | t == TVar () a  = return nullSubst
          | occursCheck a t = throwError $ InfiniteType a t
          | otherwise       = return $ Map.singleton a t
-{-
 
-{- ******************** -}
--- typecheck utility functions
-
--- map over all definitions and create a type from every
--- data type declaration that is encountered.
-collectTypes :: [Def ()] -> TC [Type ()]
-collectTypes ds = return $ catMaybes $ map go ds
-  where go (DDataDec _ name vars _) = 
-           Just $ TAdt () name (map (TVar ()) vars)
-        go _ = Nothing
--}
 -- Extract the var from a typed expression
 getExpvar :: Exp a -> a
 getExpvar e = case e of
@@ -516,22 +513,9 @@ getExpvar e = case e of
     ENot a _      -> a
     EVar a _      -> a
     EConst a _    -> a
-{-
-isFunctionType :: Type () -> Bool
-isFunctionType (TLam _ _ _) = True
-isFunctionType _            = False
-
--- Can an expression of the first type be applied
--- to an expression of the second type?
--- Returns either the resulting type or a type error
-canApply :: Type () -> Type () -> Either (Type ()) (Exp () -> TCError)
-canApply (TLam _ t rest) t' = case t == t' of
-    True  -> Left rest 
-    False -> Right $ \e -> TypeError e t' t
 
 {- ******************** -}
 -- ADT related utility functions
--}
 tupExp :: Exp a -> TupExp a
 tupExp e = ETupExp (getExpvar e) e
 
