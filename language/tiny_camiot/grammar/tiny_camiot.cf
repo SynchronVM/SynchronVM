@@ -31,8 +31,10 @@ separator    Ident "" ;
 -- it will remove all shift/reduce conflicts.
 TLam.	Type  ::= Type1 "->" Type ;
 TPair.  Type1 ::= Type2 "*" Type1 ;
+TNil.   Type2 ::= "(" ")" ;
 TVar.   Type2 ::= Ident ;
 TAdt.   Type2 ::= UIdent [Type] ;
+internal TTup. Type ::= [Type] ;
 
 -- Set these as internals, in the AST we can inspect a TAdt to see if it's a Int []
 -- and return a TInt instead.
@@ -67,17 +69,25 @@ EVar.   Exp7 ::= Ident ;
 EConst. Exp7 ::= Const ;
 internal ETyped. Exp ::= Exp Type ;
 
-Plus.  AddOp ::= "+" ;
-Minus. AddOp ::= "-" ;
+Plus.   AddOp ::= "+" ;
+FPlus.  AddOp ::= "+." ;
+Minus.  AddOp ::= "-" ;
+FMinus. AddOp ::= "-." ;
 
-Times. MulOp ::= "*" ;
-Div.   MulOp ::= "/" ;
+Times.  MulOp ::= "*" ;
+FTImes. MulOp ::= "*." ;
+Div.    MulOp ::= "/" ;
+FDiv.   MulOp ::= "/." ;
 
-LTC. RelOp ::= "<" ;
-LEC. RelOp ::= "<=" ;
-GTC. RelOp ::= ">" ;
-GEC. RelOp ::= ">=" ;
-EQC. RelOp ::= "==" ;
+LTC.  RelOp ::= "<" ;
+FLTC. RelOp ::= "<." ;
+LEC.  RelOp ::= "<=" ;
+FLEC. RelOp ::= "<=." ;
+GTC.  RelOp ::= ">" ;
+FGTC. RelOp ::= ">." ;
+GEC.  RelOp ::= ">=" ;
+FGEC. RelOp ::= ">=." ;
+EQC.  RelOp ::= "==" ;
 
 coercions Exp 7 ;
 separator Exp "" ;
@@ -100,7 +110,7 @@ PConst. Pat  ::= Const ;
 PVar.   Pat  ::= Ident ;
 PAdt.   Pat  ::= UIdent [Pat] ;
 PWild.  Pat  ::= "_" ;
-PNIl.   Pat  ::= "(" ")" ;
+PNil.   Pat  ::= "(" ")" ;
 PTup.   Pat1 ::= "(" Pat "," Pat ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
 

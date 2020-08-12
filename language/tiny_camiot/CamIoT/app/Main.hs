@@ -12,6 +12,6 @@ main = do
     [fs] -> do
         res <- readAndParse fs
         case res of
-          Left err -> putStrLn err
+          Left err -> print err
           Right tree -> putStrLn "parse & typecheck succeeded!"
     _ -> putStrLn "Right now I can only handle one input file" -- :c

@@ -8,6 +8,7 @@ import Control.Monad.Trans
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Writer
+import Control.Monad.Identity
 
 import Control.Monad.Except
 import Data.Maybe
@@ -16,15 +17,17 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 data Scheme = Forall [Ident] (Type ())
-newtype TEnv = TEnv (Map.Map Ident (Type ()))
+instance Show Scheme where
+    show (Forall vars t) = "forall " ++ (show vars) ++ "." ++ (printTree t)
+newtype TEnv = TEnv (Map.Map Ident Scheme)
 emptyEnv :: TEnv
 emptyEnv = TEnv Map.empty
 
 extend :: TEnv -> (Ident, Scheme) -> TEnv
-extend = undefined
+extend (TEnv env) (x, sc) = TEnv $ Map.insert x sc env
 
 restrict :: TEnv -> Ident -> TEnv
-restrict = undefined
+restrict (TEnv env) var = TEnv $ Map.delete var env
 
 type Subst = Map.Map Ident (Type ())
 
@@ -55,6 +58,10 @@ instance Substitutable (Type ()) where
     ftv (TFloat _)         = Set.empty
     ftv (TBool _)          = Set.empty
 
+instance Substitutable Constraint where
+    apply s (C (t1, t2)) = C $ ((apply s t1), (apply s t2))
+    ftv (C (t1, t2)) = Set.union (ftv t1) (ftv t2)
+
 instance Substitutable Scheme where
     apply s (Forall vars t) = Forall vars $ apply s' t
                               where s' = foldr Map.delete s vars
@@ -78,42 +85,6 @@ fresh = do
   put $ s { num = (num s) + 1}
   return $ TVar () (Ident (letters !! (num s)))
 
-occursCheck :: Substitutable a => Ident -> a -> Bool
-occursCheck a t = a `Set.member` ftv t
-
-unify ::  Type () -> Type () -> TC Subst
-unify (TLam _ t1 t2) (TLam _ t1' t2') = do
-    s1 <- unify t1 t1'
-    s2 <- unify (apply s1 t2) (apply s1 t2')
-    return (s2 `compose` s1)
-
-unify (TPair _ t1 t2) (TPair _ t1' t2') = do
-    s1 <- unify t1 t1'
-    s2 <- unify (apply s1 t2) (apply s1 t2')
-    return $ s2 `compose` s1
-
-unify (TAdt _ con []) (TAdt _ con' [])        | con == con' = return nullSubst
-unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
-    -- I hope this is right?
-    -- I want to unify the first 'pair' of zipped types, and then try to unify
-    -- the subsequent pair by first applying the substitution I just got by
-    -- unifying the first pair
-    foldlM (\s' (t1,t2) -> unify (apply s' t1) (apply s' t2)) nullSubst (zip types types')
-
-unify (TInt ()) (TInt ())     = return nullSubst
-unify (TBool ()) (TBool ())   = return nullSubst
-unify (TFloat ()) (TFloat ()) = return nullSubst
-
-unify (TVar _ var) t = bind var t
-unify t (TVar _ var) = bind var t
-
-unify t1 t2 = throwError $ UnificationFail t1 t2
-
-bind :: Ident -> Type () -> TC Subst
-bind a t | t == TVar () a  = return nullSubst
-         | occursCheck a t = throwError $ InfiniteType a t
-         | otherwise       = return $ Map.singleton a t
-
 instantiate ::  Scheme -> TC (Type ())
 instantiate (Forall vars t) = do
   vars' <- mapM (const fresh) vars
@@ -127,13 +98,8 @@ generalize env t  = Forall vars t
 {- ******************** -}
 -- top level typecheck
 
-typecheck :: [Def ()] -> IO (Either String [Def (Type ())])
-typecheck defs = undefined
---    res <- runExceptT (runStateT pgm emptyState)
---    case res of
---        Left e -> return $ Left (show e)         -- error occured
---        Right (defs', _) -> return $ Right defs' -- TC completed
---  where pgm = check defs -- the monadic computation that TC's
+typecheck :: [Def ()] -> IO (Either TCError Subst)
+typecheck defs = runTC (check defs) emptyEnv
 
 {- ******************** -}
 -- typecheck monad
@@ -160,7 +126,9 @@ emptyState = TCState 0 Map.empty
 -- want IO in the bottom of it, but i find it usually helps me debug stuff,
 -- as you can always just print whatever you want.
 --type TC a = StateT TCState (ExceptT TCError IO) a
-type Constraint = (Type (), Type ())
+newtype Constraint = C (Type (), Type ())
+instance Show Constraint where
+    show (C (t1, t2)) = "Constraint: " ++ printTree t1 ++ ", " ++ printTree t2
 
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
@@ -169,16 +137,19 @@ type TC a = ReaderT TEnv (
             IO))) 
             a
 
-runTC :: TC a -> TEnv -> IO (Either TCError ((a, [Constraint]), TCState))
+runTC :: TC a -> TEnv -> IO (Either TCError Subst)
 runTC tc initEnv = do
     let rd = runReaderT tc initEnv
     let wr = runWriterT rd
     let st = runStateT wr emptyState
     let ex = runExceptT st
-    ex
+    res <- ex
+    case res of -- Either TCError (((), [Constraint]), TCState)
+        Left err -> return $ Left err
+        Right ((_, constraints), _) -> return $ runSolve constraints
 
 uni :: Type () -> Type () -> TC ()
-uni t1 t2 = tell [(t1, t2)]
+uni t1 t2 = tell [C (t1, t2)]
 
 uniMany :: [Type ()] -> TC ()
 uniMany [] = return ()
@@ -198,7 +169,7 @@ lookupVar :: Ident -> TC (Type ())
 lookupVar x@(Ident name) = do
     (TEnv env) <- ask
     case Map.lookup x env of
-        Just t  -> return t
+        Just (Forall _ t)  -> return t -- TODO scheme -> Type, probably not correct to do it this way
         Nothing -> throwError $ UnboundVariable name
 
 lookupCons :: Con () -> TC (Type ())
@@ -211,14 +182,14 @@ lookupCons (Constructor () con) = do
 lookupTypeSig :: Ident -> TC (Maybe (Type ()))
 lookupTypeSig fun = do
     (TEnv env) <- ask
-    return $ Map.lookup fun env
+    return $ (\(Forall _ t) -> t) <$> Map.lookup fun env
 
 -- collect type sigs and put them in state
 gatherTypeSigs :: [Def ()] -> TC () -> TC ()
 gatherTypeSigs ds m = do
     let scope e = foldl f e (catMaybes (map go ds))
     local scope m
-  where go (DTypeSig () fun t) = Just (fun, t)
+  where go (DTypeSig () fun t) = Just (fun, Forall [] t)
         go _                   = Nothing
 
         f (TEnv e) (fun, t) = case Map.lookup fun e of
@@ -269,23 +240,32 @@ gatherDataDecs (d:ds) = case d of
 {- ******************** -}
 -- typecheck
 
-check :: [Def ()] -> TC [Def (Type ())]
-check = undefined
+check :: [Def ()] -> TC ()
+check ds = do
+    gatherDataDecs ds
+    gatherTypeSigs ds (do
+        mapM checkSingle ds
+        return ()) 
 
 checkSingle :: Def () -> TC ()
 checkSingle d = case d of
     DEquation () name pats exp -> do
+        -- get the types and variables bound in the declration
         patinfo <- mapM (flip checkPattern True) pats
         let types = map fst patinfo
         let vars = concat $ map snd patinfo
+        -- extend the environment with the variables
         t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
 
+        -- create the type inferred by the argument types and the result type
         let inferredType = function_type types t
+        -- is there a type signature available for this function?
         sig <- lookupTypeSig name
         case sig of
+            -- if there is, try to unify the inferred and declared type
             Just assigned -> uni assigned inferredType
+            -- otherwise, just return
             Nothing -> return ()
-        undefined
     _ -> return ()
 
 -- Input: a pattern
@@ -446,6 +426,64 @@ checkExp e = case e of
         CTrue a    -> return bool
         CFalse a   -> return bool
         CNil a     -> undefined
+
+type Solve a = StateT Subst (ExceptT TCError Identity) a
+
+runSolve :: [Constraint] -> Either TCError Subst
+runSolve constraints = runIdentity $ runExceptT $ evalStateT (solver st) nullSubst
+  where st = (nullSubst, constraints)
+
+solver :: (Subst, [Constraint]) -> Solve Subst
+solver (su, cs) =
+    case cs of
+        [] -> return su
+        (C (t1, t2):cs') -> do
+            su1 <- unify t1 t2
+            solver (su1 `compose` su, apply su1 cs')
+
+occursCheck :: Substitutable a => Ident -> a -> Bool
+occursCheck a t = a `Set.member` ftv t
+
+unifyMany :: [Type ()] -> [Type ()] -> Solve Subst
+unifyMany [] [] = return $ nullSubst
+unifyMany (t1:ts) (t2:ts') = do
+    su1 <- unify t1 t2
+    su2 <- unifyMany (apply su1 ts) (apply su1 ts')
+    return $ su2 `compose` su1
+unifyMany _ _ = error "" -- throwError with a smarter error
+
+unify ::  Type () -> Type () -> Solve Subst
+unify (TLam _ t1 t2) (TLam _ t1' t2') = do
+    s1 <- unify t1 t1'
+    s2 <- unify (apply s1 t2) (apply s1 t2')
+    return (s2 `compose` s1)
+
+unify (TPair _ t1 t2) (TPair _ t1' t2') = do
+    s1 <- unify t1 t1'
+    s2 <- unify (apply s1 t2) (apply s1 t2')
+    return $ s2 `compose` s1
+
+unify (TAdt _ con []) (TAdt _ con' [])        | con == con' = return nullSubst
+unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
+    -- I hope this is right?
+    -- I want to unify the first 'pair' of zipped types, and then try to unify
+    -- the subsequent pair by first applying the substitution I just got by
+    -- unifying the first pair
+    foldlM (\s' (t1,t2) -> unify (apply s' t1) (apply s' t2)) nullSubst (zip types types')
+
+unify (TInt ()) (TInt ())     = return nullSubst
+unify (TBool ()) (TBool ())   = return nullSubst
+unify (TFloat ()) (TFloat ()) = return nullSubst
+
+unify (TVar _ var) t = bind var t
+unify t (TVar _ var) = bind var t
+
+--unify t1 t2 = throwError $ UnificationFail t1 t2
+
+bind :: Ident -> Type () -> Solve Subst
+bind a t | t == TVar () a  = return nullSubst
+         | occursCheck a t = throwError $ InfiniteType a t
+         | otherwise       = return $ Map.singleton a t
 {-
 
 {- ******************** -}
