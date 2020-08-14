@@ -89,7 +89,10 @@ gatherDataDecs (d:ds) = case d of
                            -- Is the arity correct?
                   True  -> case length tvars == length vars of
                                -- good!
-                      True  -> return $ (con, t)
+                      True  -> let diff = Set.difference (ftv t) (Set.fromList tvars)
+                               in case diff == Set.empty of
+                                    True  -> return $ (con, t)
+                                    False -> throwError $ UnboundTypeVariable tvars (Set.toList diff)
                       False -> throwError $ TypeArityError con' (map (TVar ()) tvars) vars
                   False -> throwError $ WrongConstructorGoal con goal (TAdt () typ (map (TVar ()) tvars))
               _ -> throwError $ WrongConstructorGoal con goal (TAdt () typ (map (TVar ()) tvars))

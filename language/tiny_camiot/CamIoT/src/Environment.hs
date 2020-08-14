@@ -150,6 +150,7 @@ data TCError =
   | WrongConstructorGoal UIdent (Type ()) (Type ())
   | LambdaConstError (Const ())
   | ConstructorNotFullyApplied UIdent Int Int
+  | UnboundTypeVariable [Ident] [Ident]
 
 instance Show TCError where
     show (InfiniteType var t) =
@@ -188,6 +189,11 @@ instance Show TCError where
         "Type error ---\n" ++
         "Data constructor " ++ printTree con ++ " applied to " ++ show found ++ " arguments, " ++
         "but " ++ show expected ++ " is expected"
+    show (UnboundTypeVariable bound foreignnnn) =
+        "Type error ---\n" ++
+        "Encountered unbound type variable -\n" ++
+        "Bound: " ++ show bound ++ "\n" ++
+        "Encountered: " ++ show foreignnnn
 
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
