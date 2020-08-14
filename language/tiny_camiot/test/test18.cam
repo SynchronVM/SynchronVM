@@ -1,2 +1,2 @@
-badtup : Int * Int
+badtup : (Int, Int)
 badtup = ()

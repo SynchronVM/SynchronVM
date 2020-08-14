@@ -4,4 +4,4 @@ fac n = n * fac (n-1)
 
 power : Int -> Int -> Int
 power a 0 = a
-power a n = a + power (n - 1)
+power a n = a + power a (n - 1)

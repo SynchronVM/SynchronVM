@@ -36,11 +36,10 @@ instance C.Functor ConstructorDec where
 
 data Type a
     = TLam a (Type a) (Type a)
-    | TPair a (Type a) (Type a)
-    | TNil a
     | TVar a Ident
+    | TNil a
     | TAdt a UIdent [Type a]
-    | TTup a [Type a]
+    | TTup a [TupType a]
     | TInt a
     | TFloat a
     | TBool a
@@ -49,14 +48,20 @@ data Type a
 instance C.Functor Type where
     fmap f x = case x of
         TLam a type_1 type_2 -> TLam (f a) (fmap f type_1) (fmap f type_2)
-        TPair a type_1 type_2 -> TPair (f a) (fmap f type_1) (fmap f type_2)
-        TNil a -> TNil (f a)
         TVar a ident -> TVar (f a) ident
+        TNil a -> TNil (f a)
         TAdt a uident types -> TAdt (f a) uident (map (fmap f) types)
-        TTup a types -> TTup (f a) (map (fmap f) types)
+        TTup a tuptypes -> TTup (f a) (map (fmap f) tuptypes)
         TInt a -> TInt (f a)
         TFloat a -> TFloat (f a)
         TBool a -> TBool (f a)
+
+data TupType a = TTupType a (Type a)
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+instance C.Functor TupType where
+    fmap f x = case x of
+        TTupType a type_ -> TTupType (f a) (fmap f type_)
 
 data TupExp a = ETupExp a (Exp a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -66,13 +71,11 @@ instance C.Functor TupExp where
         ETupExp a exp -> ETupExp (f a) (fmap f exp)
 
 data Exp a
-    = ETup a [TupExp a]
-    | ECase a (Exp a) [PatMatch a]
+    = ECase a (Exp a) [PatMatch a]
     | ELet a (Pat a) (Exp a) (Exp a)
     | ELetR a (Pat a) (Exp a) (Exp a)
     | ELam a (Pat a) (Exp a)
     | EIf a (Exp a) (Exp a) (Exp a)
-    | ECon a (Con a) [Exp a]
     | EApp a (Exp a) (Exp a)
     | EOr a (Exp a) (Exp a)
     | EAnd a (Exp a) (Exp a)
@@ -80,20 +83,19 @@ data Exp a
     | EAdd a (Exp a) (AddOp a) (Exp a)
     | EMul a (Exp a) (MulOp a) (Exp a)
     | ENot a (Exp a)
+    | ETup a [TupExp a]
+    | EUVar a UIdent
     | EVar a Ident
     | EConst a (Const a)
-    | ETyped a (Exp a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Exp where
     fmap f x = case x of
-        ETup a tupexps -> ETup (f a) (map (fmap f) tupexps)
         ECase a exp patmatchs -> ECase (f a) (fmap f exp) (map (fmap f) patmatchs)
         ELet a pat exp1 exp2 -> ELet (f a) (fmap f pat) (fmap f exp1) (fmap f exp2)
         ELetR a pat exp1 exp2 -> ELetR (f a) (fmap f pat) (fmap f exp1) (fmap f exp2)
         ELam a pat exp -> ELam (f a) (fmap f pat) (fmap f exp)
         EIf a exp1 exp2 exp3 -> EIf (f a) (fmap f exp1) (fmap f exp2) (fmap f exp3)
-        ECon a con exps -> ECon (f a) (fmap f con) (map (fmap f) exps)
         EApp a exp1 exp2 -> EApp (f a) (fmap f exp1) (fmap f exp2)
         EOr a exp1 exp2 -> EOr (f a) (fmap f exp1) (fmap f exp2)
         EAnd a exp1 exp2 -> EAnd (f a) (fmap f exp1) (fmap f exp2)
@@ -101,9 +103,10 @@ instance C.Functor Exp where
         EAdd a exp1 addop exp2 -> EAdd (f a) (fmap f exp1) (fmap f addop) (fmap f exp2)
         EMul a exp1 mulop exp2 -> EMul (f a) (fmap f exp1) (fmap f mulop) (fmap f exp2)
         ENot a exp -> ENot (f a) (fmap f exp)
+        ETup a tupexps -> ETup (f a) (map (fmap f) tupexps)
+        EUVar a uident -> EUVar (f a) uident
         EVar a ident -> EVar (f a) ident
         EConst a const -> EConst (f a) (fmap f const)
-        ETyped a exp type_ -> ETyped (f a) (fmap f exp) (fmap f type_)
 
 data AddOp a = Plus a | FPlus a | Minus a | FMinus a
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -171,10 +174,11 @@ instance C.Functor Const where
 data Pat a
     = PConst a (Const a)
     | PVar a Ident
-    | PAdt a UIdent [Pat a]
+    | PZAdt a UIdent
+    | PNAdt a UIdent [AdtPat a]
     | PWild a
     | PNil a
-    | PTup a (Pat a) (Pat a)
+    | PTup a [TupPat a]
     | PLay a Ident (Pat a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
@@ -182,11 +186,26 @@ instance C.Functor Pat where
     fmap f x = case x of
         PConst a const -> PConst (f a) (fmap f const)
         PVar a ident -> PVar (f a) ident
-        PAdt a uident pats -> PAdt (f a) uident (map (fmap f) pats)
+        PZAdt a uident -> PZAdt (f a) uident
+        PNAdt a uident adtpats -> PNAdt (f a) uident (map (fmap f) adtpats)
         PWild a -> PWild (f a)
         PNil a -> PNil (f a)
-        PTup a pat1 pat2 -> PTup (f a) (fmap f pat1) (fmap f pat2)
+        PTup a tuppats -> PTup (f a) (map (fmap f) tuppats)
         PLay a ident pat -> PLay (f a) ident (fmap f pat)
+
+data AdtPat a = PAdtPat a (Pat a)
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+instance C.Functor AdtPat where
+    fmap f x = case x of
+        PAdtPat a pat -> PAdtPat (f a) (fmap f pat)
+
+data TupPat a = PTupPat a (Pat a)
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+instance C.Functor TupPat where
+    fmap f x = case x of
+        PTupPat a pat -> PTupPat (f a) (fmap f pat)
 
 data PatMatch a = PM a (Pat a) (Exp a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)

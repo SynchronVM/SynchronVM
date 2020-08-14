@@ -30,11 +30,13 @@ separator    Ident "" ;
 -- as we want it to anyway! If you remove the [Type] after UIdent
 -- it will remove all shift/reduce conflicts.
 TLam.	Type  ::= Type1 "->" Type ;
-TPair.  Type1 ::= Type2 "*" Type1 ;
+TVar.   Type1 ::= Ident ;
 TNil.   Type2 ::= "(" ")" ;
-TVar.   Type2 ::= Ident ;
-TAdt.   Type2 ::= UIdent [Type] ;
-internal TTup. Type ::= [Type] ;
+TAdt.   Type2 ::= UIdent [Type1] ;
+TTup.   Type1   ::= "(" [TupType] ")" ;
+
+TTupType. TupType ::= Type ;
+separator TupType "," ;
 
 -- Set these as internals, in the AST we can inspect a TAdt to see if it's a Int []
 -- and return a TInt instead.
@@ -42,6 +44,7 @@ internal TInt.   Type ::= ;
 internal TFloat. Type ::= ;
 internal TBool.  Type ::= ;
 
+separator Type1 "" ;
 separator Type "" ;
 coercions Type 2 ;
 
@@ -51,13 +54,12 @@ coercions Type 2 ;
 ETupExp. TupExp ::= Exp ;
 separator nonempty TupExp "," ;
 
-ETup.   Exp  ::= "(" [TupExp] ")" ;
 ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
 ELet.   Exp  ::= "let"    Pat "=" Exp "in" Exp ;
 ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
-ECon.   Exp  ::= Con [Exp] ;
+-- ECon.   Exp  ::= Con [Exp] ;
 EApp.   Exp6 ::= Exp6 Exp7 ; 
 EOr.    Exp1 ::= Exp2 "||" Exp1 ;
 EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
@@ -65,9 +67,10 @@ ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
 EAdd.   Exp4 ::= Exp4 AddOp Exp5 ;
 EMul.   Exp5 ::= Exp5 MulOp Exp6 ;
 ENot.   Exp6 ::= "!" Exp7 ;
+ETup.   Exp7  ::= "(" [TupExp] ")" ;
+EUVar.  Exp7 ::= UIdent ;
 EVar.   Exp7 ::= Ident ;
 EConst. Exp7 ::= Const ;
-internal ETyped. Exp ::= Exp Type ;
 
 Plus.   AddOp ::= "+" ;
 FPlus.  AddOp ::= "+." ;
@@ -108,11 +111,18 @@ CNil.     Const ::= "()" ;
 
 PConst. Pat  ::= Const ;
 PVar.   Pat  ::= Ident ;
-PAdt.   Pat  ::= UIdent [Pat] ;
+PZAdt.  Pat  ::= UIdent ;
+PNAdt.  Pat  ::= "(" UIdent [AdtPat] ")" ;
 PWild.  Pat  ::= "_" ;
 PNil.   Pat  ::= "(" ")" ;
-PTup.   Pat1 ::= "(" Pat "," Pat ")" ;
+PTup.   Pat1 ::= "(" [TupPat] ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
+
+PAdtPat. AdtPat ::= Pat ;
+separator nonempty AdtPat "" ;
+
+PTupPat. TupPat ::= Pat ;
+separator TupPat "," ;
 
 separator Pat "" ;
 coercions Pat 2 ;

@@ -44,7 +44,8 @@ class Substitutable a where
 
 instance Substitutable (Type ()) where
     apply s (TLam a t1 t2)     = TLam a (apply s t1) (apply s t2)
-    apply s (TPair a t1 t2)    = TPair a (apply s t1) (apply s t2)
+    apply s (TTup a types)     = TTup a (map (apply s) types)
+    apply _ (TNil a)           = TNil a
     apply s (TVar a var)       = Map.findWithDefault (TVar a var) var s
     apply s (TAdt a con types) = TAdt a con (map (apply s) types)
     apply _ (TInt a)           = TInt a
@@ -52,12 +53,18 @@ instance Substitutable (Type ()) where
     apply _ (TBool a)          = TBool a
 
     ftv (TLam _ t1 t2)     = Set.union (ftv t1) (ftv t2)
-    ftv (TPair _ t1 t2)    = Set.union (ftv t1) (ftv t2)
+    ftv (TTup _ types)     = Set.unions (map ftv types)
+    ftv (TNil ())          = Set.empty
     ftv (TVar _ var)       = Set.singleton var
     ftv (TAdt _ con types) = Set.unions (map ftv types)
     ftv (TInt _)           = Set.empty
     ftv (TFloat _)         = Set.empty
     ftv (TBool _)          = Set.empty
+
+instance Substitutable (TupType ()) where
+    apply s (TTupType a t) = TTupType a (apply s t)
+
+    ftv (TTupType a t) = ftv t
 
 instance Substitutable Constraint where
     apply s (C (t1, t2)) = C $ ((apply s t1), (apply s t2))
@@ -161,7 +168,7 @@ instance Show TCError where
 -- The state kept by the typechecker as it typechecks a program
 data TCState = TCState { 
     num  :: Int
-  , constructors :: Map.Map UIdent (Type ()) } deriving Show
+  , constructors :: Map.Map UIdent Scheme } deriving Show
 
 emptyState :: TCState
 emptyState = TCState 0 Map.empty
@@ -190,7 +197,9 @@ runTC tc initEnv = do
     res <- ex
     case res of -- Either TCError (((), [Constraint]), TCState)
         Left err -> return $ Left err
-        Right ((_, constraints), _) -> runSolve constraints
+        Right ((_, constraints), _) -> do
+            putStrLn $ intercalate "\n" $ map show constraints
+            runSolve constraints
 
 uni :: Type () -> Type () -> TC ()
 uni t1 t2 = tell [C (t1, t2)]
@@ -220,7 +229,7 @@ lookupCons :: Con () -> TC (Type ())
 lookupCons (Constructor () con) = do
     env <- get
     case Map.lookup con (constructors env) of
-        Just t  -> return t
+        Just t  -> instantiate t
         Nothing -> throwError $ UnboundConstructor con
 
 lookupTypeSig :: Ident -> TC (Maybe (Type ()))
@@ -231,19 +240,19 @@ lookupTypeSig fun = do
         Just sig -> Just <$> instantiate sig
         Nothing  -> return Nothing
 
--- collect type sigs and put them in state
-gatherTypeSigs :: [Def ()] -> TC () -> TC ()
-gatherTypeSigs ds m = do
+-- collect type sigs
+gatherTypeSigs :: [Def ()] -> TC [(Ident, Scheme)]
+gatherTypeSigs ds = do
     let typesigs = catMaybes (map go ds)
-    let scope e = foldl f e typesigs
+    let funs     = map fst typesigs
+    e           <- ask
 
-    let funs = map fst typesigs in case length funs == length (nub funs) of
-        True  -> local scope m
+    case length funs == length (nub funs) of
+        True  -> return $ map (\(n, t) -> (n, (generalize e t))) typesigs
         False -> throwError $ DuplicateTypeSig $ head (intersect funs (nub funs))
+
   where go (DTypeSig () fun t) = Just (fun, t)
         go _                   = Nothing
-
-        f (TEnv e) (fun, t) = TEnv $ Map.insert fun (generalize (TEnv e) t) e
 
 -- Gather type information about data declarations and their constructors
 gatherDataDecs :: [Def ()] -> TC ()
@@ -259,10 +268,11 @@ gatherDataDecs (d:ds) = case d of
       tryInsert []         = return ()
       tryInsert ((c,t):xs) = do
           env <- get
+          e   <- ask
           let cons = constructors env
           case Map.lookup c cons of
               Just t' -> throwError $ DuplicateConstructor c t
-              Nothing -> put (env { constructors = Map.insert c t cons}) >> tryInsert xs
+              Nothing -> put (env { constructors = Map.insert c (generalize e t) cons}) >> tryInsert xs
 
       -- Given a UIdent, e.g 'Maybe', and a list of type vars, e,g [a], and
       -- a constructor, e.g Just, see if the type for Just is correct
@@ -292,9 +302,16 @@ gatherDataDecs (d:ds) = case d of
 check :: [Def ()] -> TC ()
 check ds = do
     gatherDataDecs ds
-    gatherTypeSigs ds (do
-        mapM checkSingle ds
-        return ()) 
+    sigs <- gatherTypeSigs ds
+    let scope e = foldl (\e' (x, sc) -> extend e' (x, sc)) e sigs
+    --let m = foldl (\ma d -> checkSingle d ma) (return ()) ds
+    local scope (checkMany ds)
+
+checkMany :: [Def ()] -> TC ()
+checkMany [] = return ()
+checkMany (d:ds) = do
+    checkSingle d
+    checkMany ds
 
 checkSingle :: Def () -> TC ()
 checkSingle d = case d of
@@ -305,7 +322,6 @@ checkSingle d = case d of
         let vars = concat $ map snd patinfo
         -- extend the environment with the variables
         t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
-
         -- create the type inferred by the argument types and the result type
         let inferredType = function_type types t
         -- is there a type signature available for this function?
@@ -314,7 +330,10 @@ checkSingle d = case d of
             -- if there is, try to unify the inferred and declared type
             Just assigned -> uni assigned inferredType
             -- otherwise, just return TODO also add the function and inferred type to the env
-            Nothing -> return ()
+            Nothing       -> return ()
+                       --let scope e = let e' = restrict e name 
+                       --              in extend e' (name, generalize e' inferredType)
+                       --in local scope m
     _ -> return ()
 
 -- Input: a pattern
@@ -331,14 +350,17 @@ checkPattern pattern allowConstants = case pattern of
 
     PVar a var       -> fresh >>= \tv -> return (tv, [(var, tv)])
 
-    PAdt a con pats  -> do
-        (typs, vars) <- unzip <$> mapM (flip checkPattern allowConstants) pats
+    PZAdt a con -> do
+        t <- lookupCons (Constructor () con)
+        return (t, [])
+
+    PNAdt a con pats  -> do
+        (typs, vars) <- unzip <$> mapM (flip checkPattern allowConstants) (map deAdtPat pats)
         t <- lookupCons (Constructor () con)
         let t'      = unwrap_function t
         let numargs = count_arguments t
 
         -- is the constructor correctly applied?
-        -- TODO I just rewrote this, there MIGHT be an error here
         case length pats == numargs of
             True  -> let (TAdt () con' _) = t' 
                      in return $ (TAdt () con' typs, concat vars)
@@ -348,10 +370,11 @@ checkPattern pattern allowConstants = case pattern of
 
     PNil a           -> return (TNil (), [])
 
-    PTup a pat1 pat2 -> do
-        (t1, tpat1) <- checkPattern pat1 allowConstants
-        (t2, tpat2) <- checkPattern pat2 allowConstants
-        return $ (TPair () t1 t2, tpat1 ++ tpat2)
+    PTup a patterns -> do
+        res <- mapM (flip checkPattern allowConstants) (map deTupPat patterns)
+        let types = map fst res
+        let vars  = concat $ map snd res
+        return $ (TTup () (map tupType types), vars)
     
     PLay a var pat   -> do
         (tv, tpat) <- checkPattern pat allowConstants
@@ -399,14 +422,6 @@ checkExp e = case e of
         (tpat, vars) <- checkPattern pattern False
         t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e1)
         return $ TLam () tpat t
-        
-    ECon _ constructor exps -> do
-        texps <- mapM checkExp exps
-        tv <- fresh
-        let u1 = function_type texps tv
-        u2 <- lookupCons constructor
-        uni u1 u2
-        return tv
 
     EIf _ e1 e2 e3 -> do
         te1 <- checkExp e1
@@ -416,7 +431,17 @@ checkExp e = case e of
         uni te2 te3
         return te2
 
-    EApp _ e1 e2 -> do
+    --ECon _ constructor exps -> do
+    --    texps <- mapM checkExp exps
+    --    tv <- fresh
+    --    let u1 = function_type texps tv
+    --    u2 <- lookupCons constructor
+    --    uni u1 u2
+    --    return tv
+    --EApp a (EUVar _ con) e2 ->
+
+
+    EApp a e1 e2 -> do
         te1 <- checkExp e1
         te2 <- checkExp e2
         tv <- fresh
@@ -469,12 +494,13 @@ checkExp e = case e of
         uni te1 bool
         return bool
 
-    EVar _ var -> lookupVar var
+    EUVar _ con -> lookupCons (Constructor () con)
+    EVar _ var  -> lookupVar var
 
     ETup _ tupExps -> do
         let exps = map deTupExp tupExps
         texps <- mapM checkExp exps
-        return $ TTup () texps
+        return $ TTup () (map tupType texps)
 
     EConst _ const -> case const of
         CInt a i   -> return int
@@ -515,10 +541,10 @@ unify (TLam _ t1 t2) (TLam _ t1' t2') = do
     s2 <- unify (apply s1 t2) (apply s1 t2')
     return (s2 `compose` s1)
 
-unify (TPair _ t1 t2) (TPair _ t1' t2') = do
-    s1 <- unify t1 t1'
-    s2 <- unify (apply s1 t2) (apply s1 t2')
-    return $ s2 `compose` s1
+unify (TTup _ types1) (TTup _ types2) = 
+    let types1' = map deTupType types1
+        types2' = map deTupType types2
+    in unifyMany types1' types2'
 
 unify t1@(TAdt _ con []) t2@(TAdt _ con' [])  | con == con' = return nullSubst
                                               | otherwise   = error "here"
@@ -552,7 +578,7 @@ getExpvar e = case e of
     ELetR a _ _ _ -> a
     ELam a _ _    -> a
     EIf a _ _ _   -> a
-    ECon a _ _    -> a
+    --ECon a _ _    -> a
     EApp a _ _    -> a
     EOr a _ _     -> a
     EAnd a _ _    -> a
@@ -563,14 +589,36 @@ getExpvar e = case e of
     EVar a _      -> a
     EConst a _    -> a
 
+getTypvar :: Type a -> a
+getTypvar (TLam a _ _) = a
+getTypvar (TTup a _)   = a
+getTypvar (TNil a)     = a
+getTypvar (TVar a _)   = a
+getTypvar (TAdt a _ _) = a
+getTypvar (TInt a)     = a
+getTypvar (TFloat a)   = a
+getTypvar (TBool a)    = a
+
 {- ******************** -}
 -- ADT related utility functions
+
 tupExp :: Exp a -> TupExp a
 tupExp e = ETupExp (getExpvar e) e
 
 deTupExp :: TupExp a -> Exp a
 deTupExp (ETupExp _ e) = e
 
+tupType :: Type a -> TupType a
+tupType t = TTupType (getTypvar t) t
+
+deTupType :: TupType a -> Type a
+deTupType (TTupType _ t) = t
+
+deTupPat :: TupPat a -> Pat a
+deTupPat (PTupPat _ p) = p
+
+deAdtPat :: AdtPat a -> Pat a
+deAdtPat (PAdtPat _ p) = p
 
 -- synonyms for the built-in types
 bool :: Type ()

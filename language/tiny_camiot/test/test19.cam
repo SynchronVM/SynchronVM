@@ -1,4 +1,4 @@
-ntup : Int * Int * Int
+ntup : (Int, Int, Int)
 ntup = (1, 2, 3)
 
 ntup2 = (1, 2, 3)

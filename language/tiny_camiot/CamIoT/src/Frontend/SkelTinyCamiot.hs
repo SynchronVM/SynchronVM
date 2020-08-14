@@ -27,26 +27,26 @@ transConstructorDec x = case x of
 transType :: Show a => AbsTinyCamiot.Type a -> Result
 transType x = case x of
   AbsTinyCamiot.TLam _ type_1 type_2 -> failure x
-  AbsTinyCamiot.TPair _ type_1 type_2 -> failure x
-  AbsTinyCamiot.TNil _ -> failure x
   AbsTinyCamiot.TVar _ ident -> failure x
+  AbsTinyCamiot.TNil _ -> failure x
   AbsTinyCamiot.TAdt _ uident types -> failure x
-  AbsTinyCamiot.TTup _ types -> failure x
+  AbsTinyCamiot.TTup _ tuptypes -> failure x
   AbsTinyCamiot.TInt _ -> failure x
   AbsTinyCamiot.TFloat _ -> failure x
   AbsTinyCamiot.TBool _ -> failure x
+transTupType :: Show a => AbsTinyCamiot.TupType a -> Result
+transTupType x = case x of
+  AbsTinyCamiot.TTupType _ type_ -> failure x
 transTupExp :: Show a => AbsTinyCamiot.TupExp a -> Result
 transTupExp x = case x of
   AbsTinyCamiot.ETupExp _ exp -> failure x
 transExp :: Show a => AbsTinyCamiot.Exp a -> Result
 transExp x = case x of
-  AbsTinyCamiot.ETup _ tupexps -> failure x
   AbsTinyCamiot.ECase _ exp patmatchs -> failure x
   AbsTinyCamiot.ELet _ pat exp1 exp2 -> failure x
   AbsTinyCamiot.ELetR _ pat exp1 exp2 -> failure x
   AbsTinyCamiot.ELam _ pat exp -> failure x
   AbsTinyCamiot.EIf _ exp1 exp2 exp3 -> failure x
-  AbsTinyCamiot.ECon _ con exps -> failure x
   AbsTinyCamiot.EApp _ exp1 exp2 -> failure x
   AbsTinyCamiot.EOr _ exp1 exp2 -> failure x
   AbsTinyCamiot.EAnd _ exp1 exp2 -> failure x
@@ -54,9 +54,10 @@ transExp x = case x of
   AbsTinyCamiot.EAdd _ exp1 addop exp2 -> failure x
   AbsTinyCamiot.EMul _ exp1 mulop exp2 -> failure x
   AbsTinyCamiot.ENot _ exp -> failure x
+  AbsTinyCamiot.ETup _ tupexps -> failure x
+  AbsTinyCamiot.EUVar _ uident -> failure x
   AbsTinyCamiot.EVar _ ident -> failure x
   AbsTinyCamiot.EConst _ const -> failure x
-  AbsTinyCamiot.ETyped _ exp type_ -> failure x
 transAddOp :: Show a => AbsTinyCamiot.AddOp a -> Result
 transAddOp x = case x of
   AbsTinyCamiot.Plus _ -> failure x
@@ -94,11 +95,18 @@ transPat :: Show a => AbsTinyCamiot.Pat a -> Result
 transPat x = case x of
   AbsTinyCamiot.PConst _ const -> failure x
   AbsTinyCamiot.PVar _ ident -> failure x
-  AbsTinyCamiot.PAdt _ uident pats -> failure x
+  AbsTinyCamiot.PZAdt _ uident -> failure x
+  AbsTinyCamiot.PNAdt _ uident adtpats -> failure x
   AbsTinyCamiot.PWild _ -> failure x
   AbsTinyCamiot.PNil _ -> failure x
-  AbsTinyCamiot.PTup _ pat1 pat2 -> failure x
+  AbsTinyCamiot.PTup _ tuppats -> failure x
   AbsTinyCamiot.PLay _ ident pat -> failure x
+transAdtPat :: Show a => AbsTinyCamiot.AdtPat a -> Result
+transAdtPat x = case x of
+  AbsTinyCamiot.PAdtPat _ pat -> failure x
+transTupPat :: Show a => AbsTinyCamiot.TupPat a -> Result
+transTupPat x = case x of
+  AbsTinyCamiot.PTupPat _ pat -> failure x
 transPatMatch :: Show a => AbsTinyCamiot.PatMatch a -> Result
 transPatMatch x = case x of
   AbsTinyCamiot.PM _ pat exp -> failure x

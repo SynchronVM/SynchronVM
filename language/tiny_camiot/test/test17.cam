@@ -28,12 +28,12 @@ map : (a -> b) -> List a -> List b
 map f _ = Nil
 map f (Cons a rest) = Cons (f a) (map f rest)
 
-zip : List a -> List b -> List (a * b)
+zip : List a -> List b -> List (a, b)
 zip Nil _ = Nil
 zip _ Nil = Nil
 zip (Cons a r1) (Cons b r2) = Cons (a, b) (zip r1 r2)
 
 -- Just want to test let-bindings
-zipWith : (a -> b) -> List a -> List b -> List (a * b)
+zipWith : (a -> b) -> List a -> List b -> List (a, b)
 zipWith f l1 l2 = let res = zip l1 l2
                   in map (\(o1, o2) -> f o1 o2) res

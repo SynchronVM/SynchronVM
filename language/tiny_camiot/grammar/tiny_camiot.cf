@@ -33,9 +33,8 @@ TLam.	Type  ::= Type1 "->" Type ;
 TVar.   Type1 ::= Ident ;
 TNil.   Type2 ::= "(" ")" ;
 TAdt.   Type2 ::= UIdent [Type1] ;
-internal TTup. Type ::= [Type] ;
+TTup.   Type1   ::= "(" [TupType] ")" ;
 
-TTuple.   Type1   ::= "(" [TupType] ")" ;
 TTupType. TupType ::= Type ;
 separator TupType "," ;
 
@@ -55,13 +54,12 @@ coercions Type 2 ;
 ETupExp. TupExp ::= Exp ;
 separator nonempty TupExp "," ;
 
-ETup.   Exp  ::= "(" [TupExp] ")" ;
 ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
 ELet.   Exp  ::= "let"    Pat "=" Exp "in" Exp ;
 ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
-ECon.   Exp  ::= Con [Exp] ;
+internal ECon.   Exp  ::= Con [Exp] ;
 EApp.   Exp6 ::= Exp6 Exp7 ; 
 EOr.    Exp1 ::= Exp2 "||" Exp1 ;
 EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
@@ -69,6 +67,8 @@ ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
 EAdd.   Exp4 ::= Exp4 AddOp Exp5 ;
 EMul.   Exp5 ::= Exp5 MulOp Exp6 ;
 ENot.   Exp6 ::= "!" Exp7 ;
+ETup.   Exp7  ::= "(" [TupExp] ")" ;
+EUVar.  Exp7 ::= UIdent ;
 EVar.   Exp7 ::= Ident ;
 EConst. Exp7 ::= Const ;
 internal ETyped. Exp ::= Exp Type ;
@@ -112,11 +112,15 @@ CNil.     Const ::= "()" ;
 
 PConst. Pat  ::= Const ;
 PVar.   Pat  ::= Ident ;
-PAdt.   Pat  ::= UIdent [Pat] ;
+PZAdt.  Pat  ::= UIdent ;
+PNAdt.  Pat  ::= "(" UIdent [AdtPat] ")" ;
 PWild.  Pat  ::= "_" ;
 PNil.   Pat  ::= "(" ")" ;
 PTup.   Pat1 ::= "(" [TupPat] ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
+
+PAdtPat. AdtPat ::= Pat ;
+separator nonempty AdtPat "" ;
 
 PTupPat. TupPat ::= Pat ;
 separator TupPat "," ;

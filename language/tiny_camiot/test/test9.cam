@@ -5,4 +5,4 @@ data Apa where
   Apa : Int -> Apa
 
 bepa : Apa -> Int
-bepa = \x -> case x of Apa y -> y
+bepa = \x -> case x of (Apa y) -> y

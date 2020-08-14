@@ -5,7 +5,7 @@ data Maybe a where
 
 bind2 : Maybe a -> (a -> Maybe b) -> Maybe b
 bind2 ma k = case ma of
-        Just a  -> k a
+        (Just a)  -> k a
         Nothing -> Nothing
 
 bind : Maybe a -> (a -> Maybe b) -> Maybe b
