@@ -38,6 +38,9 @@ library
       ParTinyCamiot
       ParseTinyCamiot
       TypecheckTinyCamiot
+      Environment
+      Unification
+      AstUtils
   hs-source-dirs:
       src
       src/Frontend

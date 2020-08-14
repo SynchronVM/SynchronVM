@@ -5,6 +5,7 @@ module Lib
 import AbsTinyCamiot
 import ParseTinyCamiot
 import TypecheckTinyCamiot
+import Environment
 
 readAndParse :: String -> IO (Either String Subst)
 readAndParse input = do

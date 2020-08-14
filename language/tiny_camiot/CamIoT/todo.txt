@@ -1,0 +1,6 @@
+Todo items
+
+* Type checking recursive functions does not work unless there is an explicit type signature for the function.
+  Do we force type signatures on functions? I like the idea, but it will lead to very simple things being
+  unecessarily cluttered. Perhaps we can do a check on a functions body to see if it is recursive, and if it is,
+  force the user to annotate just _that_ function.
