@@ -30,11 +30,14 @@ separator    Ident "" ;
 -- as we want it to anyway! If you remove the [Type] after UIdent
 -- it will remove all shift/reduce conflicts.
 TLam.	Type  ::= Type1 "->" Type ;
-TPair.  Type1 ::= Type2 "*" Type1 ;
+TVar.   Type1 ::= Ident ;
 TNil.   Type2 ::= "(" ")" ;
-TVar.   Type2 ::= Ident ;
-TAdt.   Type2 ::= UIdent [Type] ;
+TAdt.   Type2 ::= UIdent [Type1] ;
 internal TTup. Type ::= [Type] ;
+
+TTuple.   Type1   ::= "(" [TupType] ")" ;
+TTupType. TupType ::= Type ;
+separator TupType "," ;
 
 -- Set these as internals, in the AST we can inspect a TAdt to see if it's a Int []
 -- and return a TInt instead.
@@ -42,6 +45,7 @@ internal TInt.   Type ::= ;
 internal TFloat. Type ::= ;
 internal TBool.  Type ::= ;
 
+separator Type1 "" ;
 separator Type "" ;
 coercions Type 2 ;
 
@@ -58,7 +62,7 @@ ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
 ECon.   Exp  ::= Con [Exp] ;
-EApp.   Exp1 ::= Exp2 Exp1 ; 
+EApp.   Exp6 ::= Exp6 Exp7 ; 
 EOr.    Exp1 ::= Exp2 "||" Exp1 ;
 EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
 ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
@@ -111,8 +115,11 @@ PVar.   Pat  ::= Ident ;
 PAdt.   Pat  ::= UIdent [Pat] ;
 PWild.  Pat  ::= "_" ;
 PNil.   Pat  ::= "(" ")" ;
-PTup.   Pat1 ::= "(" Pat "," Pat ")" ;
+PTup.   Pat1 ::= "(" [TupPat] ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
+
+PTupPat. TupPat ::= Pat ;
+separator TupPat "," ;
 
 separator Pat "" ;
 coercions Pat 2 ;

@@ -58,7 +58,7 @@ ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
 ECon.   Exp  ::= Con [Exp] ;
-EApp.   Exp1 ::= Exp2 Exp1 ; 
+EApp.   Exp6 ::= Exp6 Exp7 ; 
 EOr.    Exp1 ::= Exp2 "||" Exp1 ;
 EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
 ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
