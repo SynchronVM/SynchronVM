@@ -113,10 +113,13 @@ check ds = do
 checkMany :: [Def ()] -> TC ()
 checkMany [] = return ()
 checkMany (d:ds) = do
-    checkSingle d
-    checkMany ds
+    mt <- checkSingle d
+    case mt of
+        Just (x,sc)  -> let scope e = extend e (x, sc)
+                        in local scope (checkMany ds)
+        nothing      -> checkMany ds
 
-checkSingle :: Def () -> TC ()
+checkSingle :: Def () -> TC (Maybe (Ident, Scheme))
 checkSingle d = case d of
     DEquation () name pats exp -> do
         -- get the types and variables bound in the declration
@@ -131,10 +134,10 @@ checkSingle d = case d of
         sig <- lookupTypeSig name
         case sig of
             -- if there is, try to unify the inferred and declared type
-            Just assigned -> uni assigned inferredType
+            Just assigned -> uni assigned inferredType >> return Nothing
             -- otherwise, just return TODO also add the function and inferred type to the env
-            Nothing       -> return ()
-    _ -> return ()
+            Nothing       -> ask >>= \e -> return $ Just $ (name, generalize e inferredType)
+    _ -> return Nothing
 
 -- Input: a pattern
 -- output
