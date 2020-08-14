@@ -35,7 +35,6 @@ getExpvar e = case e of
     ELetR a _ _ _ -> a
     ELam a _ _    -> a
     EIf a _ _ _   -> a
-    --ECon a _ _    -> a
     EApp a _ _    -> a
     EOr a _ _     -> a
     EAnd a _ _    -> a
@@ -56,7 +55,7 @@ getTypvar (TInt a)     = a
 getTypvar (TFloat a)   = a
 getTypvar (TBool a)    = a
 
-
+{- Some conversion to and from closely related types -}
 tupExp :: Exp a -> TupExp a
 tupExp e = ETupExp (getExpvar e) e
 

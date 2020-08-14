@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Environment (
+    -- TODO now I manually added everything so that it is exported, but when we
+    -- are done we should just expose what we need, I suppose..
     Scheme(..)
   , instantiate
   , generalize
@@ -13,8 +15,6 @@ module Environment (
   , restrict
   , inEnv
   , inEnvMany
-
-  , Constraint(..)
 
   , TC()
   , TCError(..)
@@ -31,6 +31,8 @@ module Environment (
 
 import AbsTinyCamiot
 import PrintTinyCamiot
+import Substitution
+import Constraint
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -41,12 +43,24 @@ import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.Except
 
+{- Type schemes and environments -}
+{-*******************************-}
 -- Type scheme
 -- e.g id :: a -> a has type scheme forall a . a -> a
 data Scheme = Forall [Ident] (Type ())
 
+instance Substitutable Scheme where
+    apply s (Forall vars t) = Forall vars $ apply s' t
+                              where s' = foldr Map.delete s vars
+
+    ftv (Forall vars t) = ftv t `Set.difference` Set.fromList vars
+
 -- Typing environment, map identifiers to type schemes
 newtype TEnv = TEnv (Map.Map Ident Scheme)
+
+instance Substitutable TEnv where
+  apply s (TEnv env) =  TEnv $ Map.map (apply s) env
+  ftv (TEnv env) = ftv $ Map.elems env
 
 emptyEnv :: TEnv
 emptyEnv = TEnv Map.empty
@@ -66,16 +80,22 @@ inEnvMany xs m = do
     let scope e = foldl (\e' (x,sc) -> restrict e' x `extend` (x, sc)) e xs
     local scope m
 
+-- Given a type scheme, this function will generate fresh
+-- names for the bound type variables, replace them and then
+-- return the new 'fresh' type.
 instantiate ::  Scheme -> TC (Type ())
 instantiate (Forall vars t) = do
   vars' <- mapM (const fresh) vars
   let s = Map.fromList $ zip vars vars'
   return $ apply s t
 
+-- Given a type such as id : a -> a, return a scheme such as
+-- forall a . a -> a
 generalize :: TEnv -> Type () -> Scheme
 generalize env t  = Forall vars t
     where vars = Set.toList $ ftv t `Set.difference` ftv env
 
+-- Look up a type scheme from the environment and instantiate it
 lookupVar :: Ident -> TC (Type ())
 lookupVar x@(Ident name) = do
     (TEnv env) <- ask
@@ -83,6 +103,10 @@ lookupVar x@(Ident name) = do
         Just s  -> instantiate s
         Nothing -> throwError $ UnboundVariable name
 
+-- Semantically identical to lookupVar, but it reads from the
+-- declared data constructors instead of the declared function
+-- signatures. Not sure why this is treated separately, honestly.
+-- It does probably not have to be.
 lookupCons :: Con () -> TC (Type ())
 lookupCons (Constructor () con) = do
     env <- get
@@ -90,6 +114,7 @@ lookupCons (Constructor () con) = do
         Just t  -> instantiate t
         Nothing -> throwError $ UnboundConstructor con
 
+-- If a type signature exists for the function, fetch and instantiate it.
 lookupTypeSig :: Ident -> TC (Maybe (Type ()))
 lookupTypeSig fun = do
     (TEnv env) <- ask
@@ -97,11 +122,13 @@ lookupTypeSig fun = do
     case tsig of
         Just sig -> Just <$> instantiate sig
         Nothing  -> return Nothing
+{-*******************************-}
 
-newtype Constraint = C (Type (), Type ())
-instance Show Constraint where
-    show (C (t1, t2)) = "Constraint: " ++ printTree t1 ++ ", " ++ printTree t2
-
+{-
+  num: used for generating fresh type variables
+  constructors: when we traverse the AST and parse all data type declarations,
+                they end up in this map.
+-}
 data TCState = TCState { 
     num  :: Int
   , constructors :: Map.Map UIdent Scheme }
@@ -109,6 +136,9 @@ data TCState = TCState {
 emptyState :: TCState
 emptyState = TCState 0 Map.empty
 
+-- All potential errors that can be thrown. Feel free to
+-- add more variants as you need.
+-- They don't include much information about the source now, so they can be tricky to read.
 data TCError =
     InfiniteType Ident (Type ())
   | UnificationFail (Type ()) (Type ())
@@ -116,7 +146,7 @@ data TCError =
   | UnboundConstructor UIdent
   | DuplicateTypeSig Ident
   | DuplicateConstructor UIdent (Type ())
-  | TypeArityError UIdent [Type ()] [Type ()] -- Type constructor, expected vars, found vars
+  | TypeArityError UIdent [Type ()] [Type ()]
   | WrongConstructorGoal UIdent (Type ()) (Type ())
   | LambdaConstError (Const ())
   | ConstructorNotFullyApplied UIdent Int Int
@@ -166,6 +196,7 @@ type TC a = ReaderT TEnv (
             IO))) 
             a
 
+{- type variable generation -}
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
 
@@ -174,57 +205,3 @@ fresh = do
   s <- get
   put $ s { num = (num s) + 1}
   return $ TVar () (Ident (letters !! (num s)))
-
-type Subst = Map.Map Ident (Type ())
-
-nullSubst :: Subst
-nullSubst = Map.empty
-
-compose :: Subst -> Subst -> Subst
-s1 `compose` s2 = Map.map (apply s1) s2 `Map.union` s1
-
-class Substitutable a where
-    apply :: Subst -> a -> a
-    ftv :: a -> Set.Set Ident
-
-instance Substitutable (Type ()) where
-    apply s (TLam a t1 t2)     = TLam a (apply s t1) (apply s t2)
-    apply s (TTup a types)     = TTup a (map (apply s) types)
-    apply _ (TNil a)           = TNil a
-    apply s (TVar a var)       = Map.findWithDefault (TVar a var) var s
-    apply s (TAdt a con types) = TAdt a con (map (apply s) types)
-    apply _ (TInt a)           = TInt a
-    apply _ (TFloat a)         = TFloat a
-    apply _ (TBool a)          = TBool a
-
-    ftv (TLam _ t1 t2)     = Set.union (ftv t1) (ftv t2)
-    ftv (TTup _ types)     = Set.unions (map ftv types)
-    ftv (TNil ())          = Set.empty
-    ftv (TVar _ var)       = Set.singleton var
-    ftv (TAdt _ con types) = Set.unions (map ftv types)
-    ftv (TInt _)           = Set.empty
-    ftv (TFloat _)         = Set.empty
-    ftv (TBool _)          = Set.empty
-
-instance Substitutable (TupType ()) where
-    apply s (TTupType a t) = TTupType a (apply s t)
-
-    ftv (TTupType a t) = ftv t
-
-instance Substitutable Constraint where
-    apply s (C (t1, t2)) = C (apply s t1, apply s t2)
-    ftv (C (t1, t2)) = Set.union (ftv t1) (ftv t2)
-
-instance Substitutable Scheme where
-    apply s (Forall vars t) = Forall vars $ apply s' t
-                              where s' = foldr Map.delete s vars
-
-    ftv (Forall vars t) = ftv t `Set.difference` Set.fromList vars
-
-instance Substitutable a => Substitutable [a] where
-    apply = fmap . apply
-    ftv   = foldr (Set.union . ftv) Set.empty
-
-instance Substitutable TEnv where
-  apply s (TEnv env) =  TEnv $ Map.map (apply s) env
-  ftv (TEnv env) = ftv $ Map.elems env

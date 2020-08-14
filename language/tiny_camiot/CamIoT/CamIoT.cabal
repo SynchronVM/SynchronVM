@@ -41,6 +41,8 @@ library
       Environment
       Unification
       AstUtils
+      Substitution
+      Constraint
   hs-source-dirs:
       src
       src/Frontend

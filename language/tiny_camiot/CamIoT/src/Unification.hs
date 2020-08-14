@@ -15,6 +15,8 @@ module Unification(
 import AbsTinyCamiot
 import Environment
 import AstUtils
+import Substitution
+import Constraint
 
 import Control.Monad.Writer
 import Control.Monad.State
@@ -23,21 +25,23 @@ import Data.Foldable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- emitting constraints
+-- emit a constraint for unification
 uni :: Type () -> Type () -> TC ()
 uni t1 t2 = tell [C (t1, t2)]
 
+-- Do you want to unify more than two constraints?
+-- I convinced myself that if you can unify a and b, and b and c,
+-- then you can unify a and c. This SHOULD work! (please)
 uniMany :: [Type ()] -> TC ()
 uniMany [] = return ()
 uniMany [x] = uni x x -- should be OK
 uniMany (x:y:xs) = uni x y >> uniMany xs
 
--- solving constraints
--- change to Identity from IO when done debugging
-type Solve a = StateT Subst (ExceptT TCError IO) a
+-- TODO change to Identity from IO when done debugging
+type Solve a = ExceptT TCError IO a
 
 runSolve :: [Constraint] -> IO (Either TCError Subst)
-runSolve constraints = runExceptT (evalStateT (solver st) nullSubst)
+runSolve constraints = runExceptT (solver st)
   where st = (nullSubst, constraints)
 
 solver :: (Subst, [Constraint]) -> Solve Subst
@@ -48,6 +52,9 @@ solver (su, cs) =
             su1 <- unify t1 t2
             solver (su1 `compose` su, apply su1 cs')
 
+-- Does the free variable we are about to substitute for a type,
+-- occur in the new type? E.g we can not substitute a for List a, we
+-- will never terminate.
 occursCheck :: Substitutable a => Ident -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
 
@@ -70,25 +77,19 @@ unify (TTup _ types1) (TTup _ types2) =
         types2' = map deTupType types2
     in unifyMany types1' types2'
 
-unify t1@(TAdt _ con []) t2@(TAdt _ con' [])  | con == con' = return nullSubst
-                                              | otherwise   = error "here"
+unify (TAdt _ con []) (TAdt _ con' [])  | con == con' = return nullSubst
+                                        | otherwise   = error "here"
 unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
-    -- I hope this is right?
-    -- I want to unify the first 'pair' of zipped types, and then try to unify
-    -- the subsequent pair by first applying the substitution I just got by
-    -- unifying the first pair
-    foldlM (\s' (t1,t2) -> unify (apply s' t1) (apply s' t2)) nullSubst (zip types types')
+    let doOne subst (t1,t2) = unify (apply subst t1) (apply subst t2)
+    in foldlM doOne nullSubst (zip types types')
 
-unify (TInt ()) (TInt ())     = return nullSubst
-unify (TBool ()) (TBool ())   = return nullSubst
-unify (TFloat ()) (TFloat ()) = return nullSubst
-
+-- variables will just be substituted for the other type
 unify (TVar _ var) t = bind var t
 unify t (TVar _ var) = bind var t
 
 unify t1 t2 = throwError $ UnificationFail t1 t2
 
 bind :: Ident -> Type () -> Solve Subst
-bind a t | t == TVar () a  = return nullSubst
+bind a t | t == TVar () a  = return nullSubst -- trying to substitue a for a, doesn't make sense
          | occursCheck a t = throwError $ InfiniteType a t
          | otherwise       = return $ Map.singleton a t
