@@ -36,6 +36,7 @@ import Constraint
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List
 
 import Control.Monad.Trans
 import Control.Monad.State
@@ -189,11 +190,11 @@ instance Show TCError where
         "Type error ---\n" ++
         "Data constructor " ++ printTree con ++ " applied to " ++ show found ++ " arguments, " ++
         "but " ++ show expected ++ " is expected"
-    show (UnboundTypeVariable bound foreignnnn) =
+    show (UnboundTypeVariable bound free) =
         "Type error ---\n" ++
-        "Encountered unbound type variable -\n" ++
-        "Bound: " ++ show bound ++ "\n" ++
-        "Encountered: " ++ show foreignnnn
+        "Encountered unbound type variable \n" ++
+        "Bound: " ++ intercalate "," (map printTree bound) ++ "\n" ++
+        "Encountered: " ++ intercalate "," (map printTree free)
 
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
