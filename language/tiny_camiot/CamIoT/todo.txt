@@ -11,8 +11,3 @@ Todo items
   unification failed since we don't track the constraints to their location in the source code.
   E.g trying to unify `t1 = Int -> Int -> Int` and `t2 = Int`, we could perhaps do
   `uni t1 t2 e where e = SomeErrorThatHasInformationFromTheSourceCode`.
-* It successfully parses crap like
-  ```
-  data Either a b where
-    Left  : a -> Either a b
-    Right : b -> Either c d

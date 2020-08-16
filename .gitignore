@@ -2,11 +2,16 @@
 # General
 *~
 *#
+*.bak
+*.swp
 
 # C stuff
 *.o
 *.a
 *.dylib
+
+# Haskell
+*.hi
 
 # Directories
 
