@@ -36,18 +36,12 @@ instance Substitutable (Type ()) where
     apply _ (TNil a)           = TNil a
     apply s (TVar a var)       = Map.findWithDefault (TVar a var) var s
     apply s (TAdt a con types) = TAdt a con (map (apply s) types)
-    apply _ (TInt a)           = TInt a
-    apply _ (TFloat a)         = TFloat a
-    apply _ (TBool a)          = TBool a
 
     ftv (TLam _ t1 t2)     = Set.union (ftv t1) (ftv t2)
     ftv (TTup _ types)     = Set.unions (map ftv types)
     ftv (TNil ())          = Set.empty
     ftv (TVar _ var)       = Set.singleton var
     ftv (TAdt _ con types) = Set.unions (map ftv types)
-    ftv (TInt _)           = Set.empty
-    ftv (TFloat _)         = Set.empty
-    ftv (TBool _)          = Set.empty
 
 instance Substitutable (TupType ()) where
     apply s (TTupType a t) = TTupType a (apply s t)

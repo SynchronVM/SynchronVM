@@ -148,7 +148,6 @@ checkSingle d = case d of
 --   - component 1: Type of the top-level pattern
 --   - component 2: List of variables and their type variables created by the pattern
 -- e.g pattern Just (a,2) gives us (Maybe (a, Int), [a, Int])
--- TODO rewrite this behemoth
 checkPattern :: Pat () -> Bool -> TC (Type (), [(Ident, Type ())])
 checkPattern pattern allowConstants = case pattern of
     -- Are constaints allowed? In e.g lambda abstractions we don't
