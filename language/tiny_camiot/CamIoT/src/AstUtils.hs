@@ -8,7 +8,12 @@ module AstUtils(
   , tupType
   , deTupType
   , deTupPat
+  , tupPat
   , deAdtPat
+  , adtPat
+  , getPatType
+  , getExpType
+  , getPMType
 
   , function_type
   , unwrap_function
@@ -54,6 +59,18 @@ getTypvar (TNil a)     = a
 getTypvar (TVar a _)   = a
 getTypvar (TAdt a _ _) = a
 
+getPatvar :: Pat a -> a
+getPatvar p = case p of
+    PConst a _   -> a
+    PVar a _     -> a
+    PZAdt a _    -> a
+    PNAdt a _ _  -> a
+    PWild a      -> a
+    PNil a       -> a
+    PTup a _     -> a
+    PLay a _ _   -> a
+    PTyped a _ _ -> a
+
 {- Some conversion to and from closely related types -}
 tupExp :: Exp a -> TupExp a
 tupExp e = ETupExp (getExpvar e) e
@@ -70,8 +87,25 @@ deTupType (TTupType _ t) = t
 deTupPat :: TupPat a -> Pat a
 deTupPat (PTupPat _ p) = p
 
+tupPat :: Pat a -> TupPat a
+tupPat p = PTupPat (getPatvar p) p
+
 deAdtPat :: AdtPat a -> Pat a
 deAdtPat (PAdtPat _ p) = p
+
+adtPat :: Pat a -> AdtPat a
+adtPat p = PAdtPat (getPatvar p) p
+
+getPatType :: Pat () -> Type ()
+getPatType (PTyped _ _ t) = t
+getPatType _ = error "please don't end up here" -- TODO backtrack and take care of this
+
+getExpType :: Exp () -> Type ()
+getExpType (ETyped _ _ t) = t
+getExpType _ = error "please don't end up here" -- TODO backtrack and take care of this
+
+getPMType :: PatMatch () -> Type ()
+getPMType (PM _ _ (ETyped _ _ t)) = t
 
 -- builds a function type from the list of argument types and the result type
 function_type :: [Type ()] -> Type () -> Type ()
@@ -102,6 +136,12 @@ float = TAdt () (UIdent "Float") []
 
 -- these instances are meant to be used when applying the inferred substitution to the
 -- type annotated AST produced while typechecking.
+instance Substitutable (Def ()) where
+  apply s (DEquation a ident pats exp) = DEquation a ident (apply s pats) (apply s exp)
+  apply _ d = d
+
+  ftv d = undefined -- see below
+
 instance Substitutable (Pat ()) where
   apply s (PTyped a p t)        = PTyped a (apply s p) (apply s t)
   apply s (PNAdt a con adtpats) = PNAdt a con (map (apply s) adtpats)

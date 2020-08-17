@@ -17,4 +17,4 @@ readAndParse input = do
             tc <- typecheck defs
             case tc of
                 Left err -> return $ Left $ show err
-                Right tc -> print tc >> return (Right tc)
+                Right tc -> return (Right tc)

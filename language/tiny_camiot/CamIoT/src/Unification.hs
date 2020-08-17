@@ -33,9 +33,9 @@ uni t1 t2 = tell [C (t1, t2)]
 -- I convinced myself that if you can unify a and b, and b and c,
 -- then you can unify a and c. This SHOULD work! (please)
 uniMany :: [Type ()] -> TC ()
-uniMany [] = return ()
-uniMany [x] = uni x x -- should be OK
-uniMany (x:y:xs) = uni x y >> uniMany xs
+uniMany []       = return ()
+uniMany [x]      = uni x x -- should be OK
+uniMany (x:y:xs) = uni x y >> uniMany (y:xs)
 
 -- TODO change to Identity from IO when done debugging
 type Solve a = ExceptT TCError IO a

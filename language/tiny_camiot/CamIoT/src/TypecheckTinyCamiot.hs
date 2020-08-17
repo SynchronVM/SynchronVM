@@ -20,18 +20,23 @@ import Data.Foldable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-runTC :: TC a -> TEnv -> IO (Either TCError Subst)
+runTC :: TC [Def ()] -> TEnv -> IO (Either TCError Subst)
 runTC tc initEnv = do
     let rd = runReaderT tc initEnv
     let wr = runWriterT rd
     let st = runStateT wr emptyState
     let ex = runExceptT st
     res <- ex
-    case res of -- Either TCError (((), [Constraint]), TCState)
+    case res of -- Either TCError (([Def ()]], [Constraint]), TCState)
         Left err -> return $ Left err
-        Right ((_, constraints), _) -> do
-            putStrLn $ intercalate "\n" $ map show constraints
-            runSolve constraints
+        Right ((annotatedTree, constraints), _) -> do
+            --putStrLn $ intercalate "\n" $ map show constraints
+            esubst <- runSolve constraints
+            case esubst of
+                (Left err')   -> return esubst
+                (Right subst) -> do
+                    putStrLn $ printTree $ apply subst annotatedTree
+                    return (Right subst) 
 
 
 {---------------------------------------------------------------------}
@@ -104,7 +109,7 @@ gatherDataDecs (d:ds) = case d of
 {- ******************** -}
 -- typecheck
 
-check :: [Def ()] -> TC ()
+check :: [Def ()] -> TC [Def ()]
 check ds = do
     -- updates state with data types
     gatherDataDecs ds
@@ -114,65 +119,75 @@ check ds = do
     let scope e = foldl (\e' (x, sc) -> extend e' (x, sc)) e sigs
     local scope (checkMany ds)
 
-checkMany :: [Def ()] -> TC ()
-checkMany [] = return ()
+checkMany :: [Def ()] -> TC [Def ()]
+checkMany [] = return []
 checkMany (d:ds) = do
-    mt <- checkSingle d
+    (d', mt) <- checkSingle d
     case mt of
-        Just (x,sc)  -> let scope e = extend e (x, sc)
-                        in local scope (checkMany ds)
-        nothing      -> checkMany ds
+        Just (x,sc)  -> do
+            let scope e = extend e (x, sc)
+            ds' <- local scope (checkMany ds)
+            return $ d' : ds'
+        nothing      -> do
+            ds' <- checkMany ds
+            return $ d' : ds'
 
-checkSingle :: Def () -> TC (Maybe (Ident, Scheme))
+checkSingle :: Def () -> TC (Def (), (Maybe (Ident, Scheme)))
 checkSingle d = case d of
     DEquation () name pats exp -> do
-        -- get the types and variables bound in the declration
+        -- get the types and variables bound in the declaration
         patinfo <- mapM (flip checkPattern True) pats
-        let types = map fst patinfo
-        let vars = concat $ map snd patinfo
+        let pats' = map fst patinfo
+        let types = map getPatType pats'
+        let vars  = concat $ map snd patinfo
         -- extend the environment with the variables
-        t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
+        exp' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
+        let t = getExpType exp'
+        let d' = DEquation () name pats' exp'
         -- create the type inferred by the argument types and the result type
         let inferredType = function_type types t
         -- is there a type signature available for this function?
         sig <- lookupTypeSig name
         case sig of
             -- if there is, try to unify the inferred and declared type
-            Just assigned -> uni assigned inferredType >> return Nothing
+            Just assigned -> uni assigned inferredType >> return (d', Nothing)
             -- otherwise, just return TODO also add the function and inferred type to the env
-            Nothing       -> ask >>= \e -> return $ Just $ (name, generalize e inferredType)
-    _ -> return Nothing
+            Nothing       -> do
+                e <- ask
+                return $ (d', Just (name, generalize e inferredType))
+    _ -> return (d, Nothing)
 
 -- Input: a pattern
 -- output
 --   - component 1: Type of the top-level pattern
 --   - component 2: List of variables and their type variables created by the pattern
 -- e.g pattern Just (a,2) gives us (Maybe (a, Int), [a, Int])
-checkPattern :: Pat () -> Bool -> TC (Type (), [(Ident, Type ())])
-checkPattern pattern allowConstants = case pattern of
+checkPattern :: Pat () -> Bool -> TC (Pat (), [(Ident, Type ())])
+checkPattern p allowConstants = case p of
     -- Are constaints allowed? In e.g lambda abstractions we don't
     -- allow constants such as 3
     PConst a c       -> if allowConstants 
-                        then return $ (checkConstType c, []) 
+                        then return $ (PTyped () p (checkConstType c), []) 
                         else throwError $ LambdaConstError c
 
     -- variables are easy! Just generate a fresh type variable for it and return that
-    PVar a var       -> fresh >>= \tv -> return (tv, [(var, tv)])
+    PVar a var       -> fresh >>= \tv -> return (PTyped () p tv, [(var, tv)])
 
     -- 0-ary ADT constructor, just look up the type. No local variables are introduced
     PZAdt a con -> do
         t <- lookupCons (Constructor () con)
-        return (t, [])
+        return (PTyped () p t, [])
 
     -- N-ary ADT constructor
     PNAdt a con pats  -> do
-        (typs, vars) <- unzip <$> mapM (flip checkPattern allowConstants) (map deAdtPat pats)
+        let unwrapped_pats = map deAdtPat pats
+        res <- mapM (flip checkPattern allowConstants) unwrapped_pats
+
+        let pats' = map fst res
+        let typs  = map getPatType pats'
+        let vars  = concat $ map snd res
         t <- lookupCons (Constructor () con)
-
-        -- What is the creation of the type? E.g Maybe a for Just
         let t'      = unwrap_function t
-
-        -- How many arguments does the constructor expect?
         let numargs = count_arguments t
 
         -- Is it fully applied? We only pattern match on fully applied constructors.
@@ -181,26 +196,40 @@ checkPattern pattern allowConstants = case pattern of
             -- the type variables in t' exchanged for the inferred types of the
             -- recursive patterns.
             True  -> let (TAdt () con' _) = t' 
-                     in return $ (TAdt () con' typs, concat vars)
+                         pats''           = map adtPat pats'
+                     in return $ (PTyped () (PNAdt a con pats'') (TAdt () con' typs), vars)
             -- otherwise we are not fully applied, and we raise an error.
             False -> throwError $ ConstructorNotFullyApplied con numargs (length pats)
 
     -- wildcards can have any type they like?
-    PWild a          -> fresh >>= \tv -> return (tv, [])
+    PWild a          -> fresh >>= \tv -> return (PTyped () p tv, [])
 
-    PNil a           -> return (TNil (), [])
+    PNil a           -> return (PTyped () p (TNil ()), [])
 
     -- The type of a pattern such as (3,5) is (Int, Int). Recursively check what type the
     -- patterns 3 and 5 have, and use those results to build a TTup node.
     PTup a patterns -> do
-        res <- mapM (flip checkPattern allowConstants) (map deTupPat patterns)
-        let types = map fst res
-        let vars  = concat $ map snd res
-        return $ (TTup () (map tupType types), vars)
+        let unwrapped_patterns = map deTupPat patterns
+        res <- mapM (flip checkPattern allowConstants) unwrapped_patterns
+
+        let patterns'  = map fst res
+        let pat_types  = map getPatType patterns'
+        let vars       = concat $ map snd res
+        let patterns'' = map tupPat patterns'
+        return $ (PTyped () (PTup a patterns'') (TTup () (map tupType pat_types)), vars)
+
+        --res <- mapM (flip checkPattern allowConstants) (map deTupPat patterns)
+        --let types = map fst res
+        --let vars  = concat $ map snd res
+        --return $ (TTup () (map tupType types), vars)
     
     PLay a var pat   -> do
-        (tv, tpat) <- checkPattern pat allowConstants
-        return $ (tv, (var, tv) : tpat)
+        -- recursively check pattern
+        (pat', vars) <- checkPattern pat allowConstants
+        -- get the type of the pattern
+        let tv = getPatType pat'
+        -- return the annotated pattern and the new environment variables
+        return $ (PTyped () (PLay a var pat') tv, (var, tv) : vars)
 
 checkConstType :: Const () -> Type ()
 checkConstType const = case const of
@@ -216,150 +245,187 @@ checkConstType const = case const of
 --   (Just a) -> 3
 --   Nothing  -> True
 -- as that is just silly
-checkCases :: Type () -> [PatMatch ()] -> TC (Type ())
+checkCases :: Type () -> [PatMatch ()] -> TC [PatMatch ()]
 checkCases t pm = do
-    types <- mapM (checkCase t) pm
+    pm' <- mapM (checkCase t) pm
+    let types = map getPMType pm'
     uniMany types
-    return $ head types
+    return $ pm'
 
 -- Check that a case branch is correctly typed.
 -- check the pattern and extend the environment with any
 -- variables it might create before we check that the result is well typed.
 -- We also verify that the pattern is of the correct type, which is the type
 -- given as an argument.
-checkCase :: Type () -> PatMatch () -> TC (Type ())
+checkCase :: Type () -> PatMatch () -> TC (PatMatch ())
 checkCase t (PM () pat e1) = do
-    (t', vars) <- checkPattern pat True
+    (pat', vars) <- checkPattern pat True
+    let t' = getPatType pat'
     uni t t'
-    inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1) 
-    
+    e1' <- inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1)
+    return $ PM () pat' e1'
+
 -- Type check an expression!
-checkExp :: Exp () -> TC (Type ())
+checkExp :: Exp () -> TC (Exp ())
 checkExp e = case e of
     ECase _ e1 patterns -> do
         -- check the type of the expression we are casing over
-        te1 <- checkExp e1
-        -- check that the branches are of the same result type and that
-        -- the pattern type is identical to the expression we cased over.
-        checkCases te1 patterns
+        e1' <- checkExp e1
+        let te1 = getExpType e1'
 
-    ELet _ pattern e1 e2 -> do
+        patterns' <- checkCases te1 patterns
+                                                     -- TODO backtrack and see why it has to be reversed here
+        let t = getPMType (head (reverse patterns')) -- parser only parses nonempty lists
+        return $ ETyped () (ECase () e1' patterns') t
+
+    ELet _ p e1 e2 -> do
         -- Check the type of the pattern
-        (tpat, vars) <- checkPattern pattern False
+        (p', vars) <- checkPattern p False
+        let tpat = getPatType p'
         -- check the type of the expression we are binding to the pattern
-        te1 <- checkExp e1
+        e1' <- checkExp e1
+        let te1 = getExpType e1'
         -- unify them! e.g let (a,b) = Nothing in ... makes no sense
         uni tpat te1
         -- extend the environment with the new variable(s) and check e2
-        inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e2)
+        e2' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e2)
+        let te2 = getExpType e2'
+        return $ ETyped () (ELet () p' e1' e2') te2
 
     -- TODO
     ELetR _ pattern e1 e2 -> undefined
 
     ELam _ pattern e1 -> do
         -- check the pattern! We do not allow constants here.
-        (tpat, vars) <- checkPattern pattern False
+        (pattern', vars) <- checkPattern pattern False
+        let tpat = getPatType pattern'
         -- extend the environment with the variables bound by the lambda and
         -- check the function body.
-        t <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e1)
+        e1' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e1)
+        let t = getExpType e1'
         -- The whole expressions is of the type
         -- (type of pattern) -> (type of expression)
-        return $ tpat *-> t
+        return $ ETyped () (ELam () pattern' e1') (tpat *-> t)
 
     EIf _ e1 e2 e3 -> do
         -- check all three expression
-        te1 <- checkExp e1
-        te2 <- checkExp e2
-        te3 <- checkExp e3
+        e1' <- checkExp e1
+        e2' <- checkExp e2
+        e3' <- checkExp e3
+        let te1 = getExpType e1'
+        let te2 = getExpType e2'
+        let te3 = getExpType e3'
         -- unify the first one with bool
         uni te1 bool
         -- unify the other two, both branches must have the same type
         uni te2 te3
         -- return te2 (or te3, doesn't matter)
-        return te2
+        return $ ETyped () (EIf () e1' e2' e3') te2
 
     EApp a e1 e2 -> do
         -- check the type of the (hopefully) function we are applying
-        te1 <- checkExp e1
+        e1' <- checkExp e1
+        let te1 = getExpType e1'
         -- check the type of the argument to the function
-        te2 <- checkExp e2
+        e2' <- checkExp e2
+        let te2 = getExpType e2'
         -- generate a fresh type variable for the 'result'
         tv <- fresh
         -- see if it is possible to unify the types. Essentially
         -- checking if the first argument of te1 is te2.
         uni te1 (te2 *-> tv)
-        return tv
+        return $ ETyped () (EApp a e1' e2') tv
 
     EOr _ e1 e2 -> do
-        te1 <- checkExp e1
-        te2 <- checkExp e2
+        e1' <- checkExp e1
+        e2' <- checkExp e2
+        let te1 = getExpType e1'
+        let te2 = getExpType e2'
         -- Are both expressions booleans? Then we are OK!
         uni te1 bool
         uni te2 bool
-        return bool
+        return $ ETyped () (EOr () e1' e2') bool
 
     EAnd _ e1 e2 -> do
-        te1 <- checkExp e1
-        te2 <- checkExp e2
+        e1' <- checkExp e1
+        e2' <- checkExp e2
+        let te1 = getExpType e1'
+        let te2 = getExpType e2'
         uni te1 bool
         uni te2 bool
-        return bool
+        return $ ETyped () (EAnd () e1' e2') bool
 
     ERel _ e1 op e2 -> do
-        te1 <- checkExp e1
-        te2 <- checkExp e2
+        e1' <- checkExp e1
+        e2' <- checkExp e2
+        let te1 = getExpType e1'
+        let te2 = getExpType e2'
         tv <- fresh
         -- u2 will become e.g int -> int -> int for (+)
         -- is it possible to unify te1 -> te2 -> tv and
         --                         int -> int -> int?
-        let u1 = (te1 *-> te2 *-> tv)
-            u2 = relOps Map.! op
+        let u1  = (te1 *-> te2 *-> tv)
+            u2  = relOps Map.! op
+            op' = RelOpTyped () op u2
         uni u1 u2
-        return tv
+        return $ ETyped () (ERel () e1' op' e2') tv
 
     EAdd _ e1 op e2 -> do
-        te1 <- checkExp e1
-        te2 <- checkExp e2
+        e1' <- checkExp e1
+        e2' <- checkExp e2
+        let te1 = getExpType e1'
+        let te2 = getExpType e2'
         tv <- fresh
-        let u1 = (te1 *-> te2 *-> tv)
-            u2 = addOps Map.! op
+        let u1  = (te1 *-> te2 *-> tv)
+            u2  = addOps Map.! op
+            op' = AddOpTyped () op u2
         uni u1 u2
-        return tv
+        return $ ETyped () (EAdd () e1' op' e2') tv
 
     EMul _ e1 op e2 -> do
-        te1 <- checkExp e1
-        te2 <- checkExp e2
+        e1' <- checkExp e1
+        e2' <- checkExp e2
+        let te1 = getExpType e1'
+        let te2 = getExpType e2'
         tv <- fresh
         let u1 = (te1 *-> te2 *-> tv)
             u2 = mulOps Map.! op
+            op' = MulOpTyped () op u2
         uni u1 u2
-        return tv
+        return $ ETyped () (EMul () e1' op' e2') tv
 
     ENot _ e1 -> do
-        te1 <- checkExp e1
+        e1' <- checkExp e1
+        let te1 = getExpType e1'
         -- We can only negate booleans :)
         uni te1 bool
-        return bool
+        return $ ETyped () (ENot () e1') bool
 
     -- Capital letter variables are constructors! Look up the type of it.
-    EUVar _ con -> lookupCons (Constructor () con)
+    EUVar _ con -> do
+        t <- lookupCons (Constructor () con)
+        return $ ETyped () (EUVar () con) t
     -- otherwise it is a function or something else, like an x bound by a \x.
-    EVar _ var  -> lookupVar var
+    EVar _ var  -> do
+        t <- lookupVar var
+        return $ ETyped () (EVar () var) t
 
     ETup _ tupExps -> do
         let exps = map deTupExp tupExps
         -- check the types of the tuple expressions
-        texps <- mapM checkExp exps
+        exps' <- mapM checkExp exps
+        let texps = map getExpType exps'
         -- simply build a tuple type of the inferred types. Nothing to unify, tuples
         -- are polymorphic in their contents.
-        return $ TTup () (map tupType texps)
+        let tupExps' = map tupExp exps'
+        return $ ETyped () (ETup () tupExps') (TTup () (map tupType texps))
 
     EConst _ const -> case const of
-        CInt a i   -> return int
-        CFloat a f -> return float
-        CTrue a    -> return bool
-        CFalse a   -> return bool
-        CNil a     -> return $ TNil ()
+        CInt a i   -> return $ ETyped () (EConst () const) int
+        CFloat a f -> return $ ETyped () (EConst () const) float
+        CTrue a    -> return $ ETyped () (EConst () const) bool
+        CFalse a   -> return $ ETyped () (EConst () const) bool
+        CNil a     -> return $ ETyped () (EConst () const) (TNil ())
 
 -- TODO we can remove the 'duplice' operators and try to overload them
 -- when we know how to attempt the unification when the types it can be

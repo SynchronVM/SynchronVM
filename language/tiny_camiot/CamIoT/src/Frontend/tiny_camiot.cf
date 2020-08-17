@@ -64,19 +64,19 @@ ENot.   Exp6 ::= "!" Exp7 ;
 EVar.   Exp7 ::= Ident ;
 EUVar.  Exp7 ::= UIdent ;
 EConst. Exp7 ::= Const ;
-internal ETyped. Exp ::= Exp Type ;
+internal ETyped. Exp ::= "(" Exp ":" Type ")" ;
 
 Plus.   AddOp ::= "+" ;
 FPlus.  AddOp ::= "+." ;
 Minus.  AddOp ::= "-" ;
 FMinus. AddOp ::= "-." ;
-internal AddOpTyped. AddOp ::= AddOp Type ;
+internal AddOpTyped. AddOp ::= "(" AddOp ":" Type ")" ;
 
 Times.  MulOp ::= "*" ;
 FTImes. MulOp ::= "*." ;
 Div.    MulOp ::= "/" ;
 FDiv.   MulOp ::= "/." ;
-internal MulOpTyped. MulOp ::= MulOp Type ;
+internal MulOpTyped. MulOp ::= "(" MulOp ":" Type ")" ;
 
 LTC.  RelOp ::= "<" ;
 FLTC. RelOp ::= "<." ;
@@ -87,7 +87,7 @@ FGTC. RelOp ::= ">." ;
 GEC.  RelOp ::= ">=" ;
 FGEC. RelOp ::= ">=." ;
 EQC.  RelOp ::= "==" ;
-internal RelOpTyped. RelOp ::= RelOp Type ;
+internal RelOpTyped. RelOp ::= "(" RelOp ":" Type ")" ;
 
 coercions Exp 7 ;
 separator Exp "" ;
@@ -116,7 +116,7 @@ PTup.   Pat1 ::= "(" [TupPat] ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
 
 -- for annotating the AST
-internal PTyped. Pat ::= Pat Type ;
+internal PTyped. Pat ::= "(" Pat ":" Type ")" ;
 
 PAdtPat. AdtPat ::= Pat ;
 separator nonempty AdtPat "" ;
@@ -131,4 +131,4 @@ coercions Pat 2 ;
 
 PM. PatMatch ::= Pat "->" Exp ;
 
-separator PatMatch ";"; 
+separator nonempty PatMatch ";"; 
