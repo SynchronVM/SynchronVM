@@ -33,13 +33,16 @@ TLam.	Type  ::= Type1 "->" Type ;
 TVar.   Type1 ::= Ident ;
 TNil.   Type2 ::= "(" ")" ;
 TAdt.   Type2 ::= UIdent [Type1] ;
-TTup.   Type1   ::= "(" [TupType] ")" ;
+TTup.   Type1 ::= "(" [TupType] ")" ;
+TBool. Type2  ::= "Bool" ;
+TInt. Type2   ::= "Int" ;
+TFloat. Type2 ::= "Float" ;
 
 TTupType. TupType ::= Type ;
 separator TupType "," ;
 
 separator Type1 "" ;
-separator Type "" ;
+--separator Type "" ;
 coercions Type 2 ;
 
 -- Expressions

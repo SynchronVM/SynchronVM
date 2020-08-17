@@ -13,6 +13,8 @@ module Unification(
 ) where
 
 import AbsTinyCamiot
+import PrintTinyCamiot
+
 import Environment
 import AstUtils
 import Substitution
@@ -86,6 +88,10 @@ unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
 -- variables will just be substituted for the other type
 unify (TVar _ var) t = bind var t
 unify t (TVar _ var) = bind var t
+
+unify (TInt ()) (TInt ())     = return nullSubst
+unify (TBool ()) (TBool ())   = return nullSubst
+unify (TFloat ()) (TFloat ()) = return nullSubst
 
 unify t1 t2 = throwError $ UnificationFail t1 t2
 

@@ -152,6 +152,7 @@ data TCError =
   | LambdaConstError (Const ())
   | ConstructorNotFullyApplied UIdent Int Int
   | UnboundTypeVariable [Ident] [Ident]
+  | TypeSignatureTooGeneral (Type ()) (Type ())
 
 instance Show TCError where
     show (InfiniteType var t) =
@@ -195,6 +196,11 @@ instance Show TCError where
         "Encountered unbound type variable \n" ++
         "Bound: " ++ intercalate "," (map printTree bound) ++ "\n" ++
         "Encountered: " ++ intercalate "," (map printTree free)
+    show (TypeSignatureTooGeneral t1 t2) =
+        "Type error ---\n" ++
+        "The declared type is more general than the inferred one:\n" ++
+        "Declared type: " ++ printTree t1 ++ "\n" ++
+        "Inferred type: " ++ printTree t2
 
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (

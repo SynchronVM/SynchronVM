@@ -58,6 +58,9 @@ getTypvar (TTup a _)   = a
 getTypvar (TNil a)     = a
 getTypvar (TVar a _)   = a
 getTypvar (TAdt a _ _) = a
+getTypvar (TInt a)     = a
+getTypvar (TBool a)    = a
+getTypvar (TFloat a)   = a
 
 getPatvar :: Pat a -> a
 getPatvar p = case p of
@@ -124,13 +127,13 @@ count_arguments _             = 0
 
 -- synonyms for the built-in types
 bool :: Type ()
-bool = TAdt () (UIdent "Bool") []
+bool = TBool () --TAdt () (UIdent "Bool") []
 
 int :: Type ()
-int = TAdt () (UIdent "Int") []
+int = TInt () --TAdt () (UIdent "Int") []
 
 float :: Type ()
-float = TAdt () (UIdent "Float") []
+float = TFloat () -- TAdt () (UIdent "Float") []
 
 {- Substitution instances for backtracking -}
 

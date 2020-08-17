@@ -50,6 +50,7 @@ typecheck defs = runTC (check defs) emptyEnv
 gatherTypeSigs :: [Def ()] -> TC [(Ident, Scheme)]
 gatherTypeSigs ds = do
     let typesigs = catMaybes (map go ds)
+    liftIO $ putStrLn $ intercalate "\n" (map (show . snd) typesigs)
     let funs     = map fst typesigs
     e           <- ask
 
@@ -156,6 +157,36 @@ checkSingle d = case d of
                 e <- ask
                 return $ (d', Just (name, generalize e inferredType))
     _ -> return (d, Nothing)
+
+-- If the types are of the same shape, returns true if the first operand
+-- is more general than the second operand. If where there is a variable
+-- in the first operand there is something else in the second, the left one
+-- is more general.
+--
+-- If they are of different shapes there is something else wrong, and we should
+-- just let the unifier figure out what it is?
+isMoreGeneral :: Type () -> Type () -> Maybe Bool
+isMoreGeneral (TLam _ t1 t1s) (TLam _ t2 t2s)     = (||) <$> 
+                                                      (isMoreGeneral t1 t2) <*> 
+                                                      (isMoreGeneral t1s t2s)
+isMoreGeneral (TVar _ _) (TVar _ _)               = Just False
+isMoreGeneral (TVar _ _) _                        = Just True
+isMoreGeneral (TAdt _ con1 t1s) (TAdt _ con2 t2s) =
+    -- there is surely something built in for this
+    let maybes = zipWith isMoreGeneral t1s t2s
+        f (Just x) (Just y) = Just (x || y)
+        f Nothing  _        = Nothing
+        f _        Nothing  = Nothing
+    in foldl f (Just False) maybes
+isMoreGeneral (TTup _ t1s) (TTup _ t2s)           = 
+    let t1s' = map deTupType t1s
+        t2s' = map deTupType t2s
+        maybes = zipWith isMoreGeneral t1s' t2s'
+        f (Just x) (Just y) = Just (x || y)
+        f Nothing  _        = Nothing
+        f _        Nothing  = Nothing
+    in foldl f (Just False) maybes
+isMoreGeneral _ _                                 = Nothing
 
 -- Input: a pattern
 -- output
