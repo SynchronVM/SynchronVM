@@ -29,24 +29,41 @@ separator    Ident "" ;
 -- This gives some shift/reduce conflicts (7), but it seems to parse
 -- as we want it to anyway! If you remove the [Type] after UIdent
 -- it will remove all shift/reduce conflicts.
-TLam.	Type  ::= Type1 "->" Type ;
-TVar.   Type1 ::= Ident ;
-TNil.   Type2 ::= "(" ")" ;
-TAdt.   Type2 ::= UIdent [Type1] ;
-TTup.   Type1   ::= "(" [TupType] ")" ;
+-- TLam.	Type  ::= Type1 "->" Type ;
+-- TVar.   Type1 ::= Ident ;
+-- TNil.   Type2 ::= "(" ")" ;
+-- TAdt.   Type2 ::= UIdent [Type1] ;
+-- TTup.   Type1 ::= "(" [TupType] ")" ;
+-- TBool. Type2  ::= "Bool" ;
+-- TInt. Type2   ::= "Int" ;
+-- TFloat. Type2 ::= "Float" ;
+
+STVar.      SimpleType1 ::= Ident ;
+STNil.      SimpleType2 ::= "(" ")" ;
+-- STBool.     SimpleType2 ::= "Bool" ;
+-- STInt.      SimpleType2 ::= "Int" ;
+-- STFloat.    SimpleType2 ::= "Float" ;
+STTup.      SimpleType1 ::= "(" TupType "," [ TupType] ")" ;
+STAdtUnary. SimpleType  ::= UIdent;
+coercions SimpleType 2 ;
+
+CTLam.      ComplexType ::= Type1 "->" Type ;
+CTAdtArgs.  ComplexType ::= UIdent AdtArg [ AdtArg ] ;
+
+TSimpleType.  Type1 ::= SimpleType;
+TComplexType. Type1 ::= ComplexType;
+coercions Type 1 ;
+
+AASimple.   AdtArg ::= SimpleType ;
+AAComplex.  AdtArg ::= "(" ComplexType ")" ;
+separator AdtArg "" ;
 
 TTupType. TupType ::= Type ;
-separator TupType "," ;
+separator nonempty TupType "," ;
 
--- Set these as internals, in the AST we can inspect a TAdt to see if it's a Int []
--- and return a TInt instead.
-internal TInt.   Type ::= ;
-internal TFloat. Type ::= ;
-internal TBool.  Type ::= ;
-
-separator Type1 "" ;
-separator Type "" ;
-coercions Type 2 ;
+-- separator Type1 "" ;
+-- separator Type "" ;
+-- coercions Type 2 ;
 
 -- Expressions
 
@@ -59,29 +76,30 @@ ELet.   Exp  ::= "let"    Pat "=" Exp "in" Exp ;
 ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
 ELam.   Exp  ::= "\\" Pat "->" Exp ;
 EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
-internal ECon.   Exp  ::= Con [Exp] ;
 EApp.   Exp6 ::= Exp6 Exp7 ; 
 EOr.    Exp1 ::= Exp2 "||" Exp1 ;
 EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
 ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
 EAdd.   Exp4 ::= Exp4 AddOp Exp5 ;
 EMul.   Exp5 ::= Exp5 MulOp Exp6 ;
-ENot.   Exp6 ::= "!" Exp7 ;
 ETup.   Exp7  ::= "(" [TupExp] ")" ;
-EUVar.  Exp7 ::= UIdent ;
+ENot.   Exp6 ::= "!" Exp7 ;
 EVar.   Exp7 ::= Ident ;
+EUVar.  Exp7 ::= UIdent ;
 EConst. Exp7 ::= Const ;
-internal ETyped. Exp ::= Exp Type ;
+internal ETyped. Exp ::= "(" Exp ":" Type ")" ;
 
 Plus.   AddOp ::= "+" ;
 FPlus.  AddOp ::= "+." ;
 Minus.  AddOp ::= "-" ;
 FMinus. AddOp ::= "-." ;
+internal AddOpTyped. AddOp ::= "(" AddOp ":" Type ")" ;
 
 Times.  MulOp ::= "*" ;
 FTImes. MulOp ::= "*." ;
 Div.    MulOp ::= "/" ;
 FDiv.   MulOp ::= "/." ;
+internal MulOpTyped. MulOp ::= "(" MulOp ":" Type ")" ;
 
 LTC.  RelOp ::= "<" ;
 FLTC. RelOp ::= "<." ;
@@ -92,6 +110,7 @@ FGTC. RelOp ::= ">." ;
 GEC.  RelOp ::= ">=" ;
 FGEC. RelOp ::= ">=." ;
 EQC.  RelOp ::= "==" ;
+internal RelOpTyped. RelOp ::= "(" RelOp ":" Type ")" ;
 
 coercions Exp 7 ;
 separator Exp "" ;
@@ -119,6 +138,9 @@ PNil.   Pat  ::= "(" ")" ;
 PTup.   Pat1 ::= "(" [TupPat] ")" ;
 PLay.   Pat2 ::= Ident "as" Pat ;
 
+-- for annotating the AST
+internal PTyped. Pat ::= "(" Pat ":" Type ")" ;
+
 PAdtPat. AdtPat ::= Pat ;
 separator nonempty AdtPat "" ;
 
@@ -132,4 +154,4 @@ coercions Pat 2 ;
 
 PM. PatMatch ::= Pat "->" Exp ;
 
-separator PatMatch ";"; 
+separator nonempty PatMatch ";"; 
