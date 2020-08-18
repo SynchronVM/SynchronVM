@@ -19,6 +19,7 @@ import Environment
 import AstUtils
 import Substitution
 import Constraint
+import TCUtils
 
 import Control.Monad.Writer
 import Control.Monad.State
@@ -28,16 +29,16 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- emit a constraint for unification
-uni :: Type () -> Type () -> TC ()
-uni t1 t2 = tell [C (t1, t2)]
+uni :: Type () -> Type () -> Maybe Test -> TC ()
+uni t1 t2 test = tell [C (t1, t2, test)]
 
 -- Do you want to unify more than two constraints?
 -- I convinced myself that if you can unify a and b, and b and c,
 -- then you can unify a and c. This SHOULD work! (please)
 uniMany :: [Type ()] -> TC ()
 uniMany []       = return ()
-uniMany [x]      = uni x x -- should be OK
-uniMany (x:y:xs) = uni x y >> uniMany (y:xs)
+uniMany [x]      = uni x x Nothing -- should be OK
+uniMany (x:y:xs) = uni x y Nothing >> uniMany (y:xs)
 
 -- TODO change to Identity from IO when done debugging
 type Solve a = ExceptT TCError IO a
@@ -50,9 +51,19 @@ solver :: (Subst, [Constraint]) -> Solve Subst
 solver (su, cs) =
     case cs of
         [] -> return su
-        (C (t1, t2):cs') -> do
+        (C (t1, t2, mtest):cs') -> do
             su1 <- unify t1 t2
-            solver (su1 `compose` su, apply su1 cs')
+            let newsu = su1 `compose` su
+
+            case mtest of
+                (Just test) -> do
+                    --liftIO $ putStrLn $ "*****\ntesting\n" ++ printTree (apply newsu t1) ++ " and\n" ++ printTree (apply newsu t2) ++ "\n*****"
+                    case test (apply newsu t1) (apply newsu t2) of
+                      (Just err) -> throwError err
+                      _          -> solver (newsu, apply su1 cs')
+                Nothing     -> solver (newsu, apply su1 cs')
+
+            --solver (su1 `compose` su, apply su1 cs')
 
 -- Does the free variable we are about to substitute for a type,
 -- occur in the new type? E.g we can not substitute a for List a, we
@@ -61,7 +72,7 @@ occursCheck :: Substitutable a => Ident -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
 
 unifyMany :: [Type ()] -> [Type ()] -> Solve Subst
-unifyMany [] [] = return $ nullSubst
+unifyMany [] [] = return nullSubst
 unifyMany (t1:ts) (t2:ts') = do
     su1 <- unify t1 t2
     su2 <- unifyMany (apply su1 ts) (apply su1 ts')
@@ -89,8 +100,8 @@ unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
 unify (TVar _ var) t = bind var t
 unify t (TVar _ var) = bind var t
 
-unify (TInt ()) (TInt ())     = return nullSubst
-unify (TBool ()) (TBool ())   = return nullSubst
+unify (TInt   ()) (TInt   ()) = return nullSubst
+unify (TBool  ()) (TBool  ()) = return nullSubst
 unify (TFloat ()) (TFloat ()) = return nullSubst
 
 unify t1 t2 = throwError $ UnificationFail t1 t2
@@ -98,4 +109,6 @@ unify t1 t2 = throwError $ UnificationFail t1 t2
 bind :: Ident -> Type () -> Solve Subst
 bind a t | t == TVar () a  = return nullSubst -- trying to substitue a for a, doesn't make sense
          | occursCheck a t = throwError $ InfiniteType a t
-         | otherwise       = return $ Map.singleton a t
+         | otherwise       = do
+             --liftIO $ putStrLn $ "binding " ++ printTree a ++ " to " ++ printTree t
+             return $ Map.singleton a t

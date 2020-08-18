@@ -43,6 +43,7 @@ library
       AstUtils
       Substitution
       Constraint
+      TCUtils
   hs-source-dirs:
       src
       src/Frontend

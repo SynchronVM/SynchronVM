@@ -37,3 +37,9 @@ zip (Cons a r1) (Cons b r2) = Cons (a, b) (zip r1 r2)
 zipWith : (a -> b -> c) -> List a -> List b -> List c
 zipWith f l1 l2 = let res = zip l1 l2
                   in map (\(o1, o2) -> f o1 o2) res
+
+foldl : (b -> a -> b) -> b -> List a -> b
+foldl _ b Nil = b
+foldl f b (Cons a rest) = foldl f (f b a) rest
+
+main = foldl (\b -> (\a -> b + a)) 0 (Cons 3 (Cons 5 (Cons 7 Nil)))

@@ -7,6 +7,7 @@ import PrintTinyCamiot
 import Environment
 import Unification
 import AstUtils
+import TCUtils
 
 import Control.Monad.Trans
 import Control.Monad.State
@@ -50,7 +51,6 @@ typecheck defs = runTC (check defs) emptyEnv
 gatherTypeSigs :: [Def ()] -> TC [(Ident, Scheme)]
 gatherTypeSigs ds = do
     let typesigs = catMaybes (map go ds)
-    liftIO $ putStrLn $ intercalate "\n" (map (show . snd) typesigs)
     let funs     = map fst typesigs
     e           <- ask
 
@@ -151,7 +151,11 @@ checkSingle d = case d of
         sig <- lookupTypeSig name
         case sig of
             -- if there is, try to unify the inferred and declared type
-            Just assigned -> uni assigned inferredType >> return (d', Nothing)
+            Just assigned -> do
+                let test _ t2 = case assigned `isMoreGeneral` t2 of
+                                   (Just True) -> Just $ TypeSignatureTooGeneral name assigned t2
+                                   otherwise   -> Nothing
+                uni assigned inferredType (Just test) >> return (d', Nothing)
             -- otherwise, just return TODO also add the function and inferred type to the env
             Nothing       -> do
                 e <- ask
@@ -218,17 +222,16 @@ checkPattern p allowConstants = case p of
         let typs  = map getPatType pats'
         let vars  = concat $ map snd res
         t <- lookupCons (Constructor () con)
-        let t'      = unwrap_function t
         let numargs = count_arguments t
 
         -- Is it fully applied? We only pattern match on fully applied constructors.
         case length pats == numargs of
-            -- If it is, the type of the pattern is the fully applied type, but with
-            -- the type variables in t' exchanged for the inferred types of the
-            -- recursive patterns.
-            True  -> let (TAdt () con' _) = t' 
-                         pats''           = map adtPat pats'
-                     in return $ (PTyped () (PNAdt a con pats'') (TAdt () con' typs), vars)
+            True  -> do
+                -- generate fresh type variable
+                tv <- fresh
+                -- unify the constructors type with the inferred type (patterns -> tv)
+                uni t (function_type typs tv) Nothing
+                return $ (PTyped () (PNAdt a con (map adtPat pats')) tv, vars)
             -- otherwise we are not fully applied, and we raise an error.
             False -> throwError $ ConstructorNotFullyApplied con numargs (length pats)
 
@@ -292,7 +295,7 @@ checkCase :: Type () -> PatMatch () -> TC (PatMatch ())
 checkCase t (PM () pat e1) = do
     (pat', vars) <- checkPattern pat True
     let t' = getPatType pat'
-    uni t t'
+    uni t t' Nothing
     e1' <- inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1)
     return $ PM () pat' e1'
 
@@ -317,7 +320,7 @@ checkExp e = case e of
         e1' <- checkExp e1
         let te1 = getExpType e1'
         -- unify them! e.g let (a,b) = Nothing in ... makes no sense
-        uni tpat te1
+        uni tpat te1 Nothing
         -- extend the environment with the new variable(s) and check e2
         e2' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e2)
         let te2 = getExpType e2'
@@ -347,9 +350,9 @@ checkExp e = case e of
         let te2 = getExpType e2'
         let te3 = getExpType e3'
         -- unify the first one with bool
-        uni te1 bool
+        uni te1 bool Nothing
         -- unify the other two, both branches must have the same type
-        uni te2 te3
+        uni te2 te3 Nothing
         -- return te2 (or te3, doesn't matter)
         return $ ETyped () (EIf () e1' e2' e3') te2
 
@@ -364,7 +367,7 @@ checkExp e = case e of
         tv <- fresh
         -- see if it is possible to unify the types. Essentially
         -- checking if the first argument of te1 is te2.
-        uni te1 (te2 *-> tv)
+        uni te1 (te2 *-> tv) Nothing
         return $ ETyped () (EApp a e1' e2') tv
 
     EOr _ e1 e2 -> do
@@ -373,8 +376,8 @@ checkExp e = case e of
         let te1 = getExpType e1'
         let te2 = getExpType e2'
         -- Are both expressions booleans? Then we are OK!
-        uni te1 bool
-        uni te2 bool
+        uni te1 bool Nothing
+        uni te2 bool Nothing
         return $ ETyped () (EOr () e1' e2') bool
 
     EAnd _ e1 e2 -> do
@@ -382,8 +385,8 @@ checkExp e = case e of
         e2' <- checkExp e2
         let te1 = getExpType e1'
         let te2 = getExpType e2'
-        uni te1 bool
-        uni te2 bool
+        uni te1 bool Nothing
+        uni te2 bool Nothing
         return $ ETyped () (EAnd () e1' e2') bool
 
     ERel _ e1 op e2 -> do
@@ -398,7 +401,7 @@ checkExp e = case e of
         let u1  = (te1 *-> te2 *-> tv)
             u2  = relOps Map.! op
             op' = RelOpTyped () op u2
-        uni u1 u2
+        uni u1 u2 Nothing
         return $ ETyped () (ERel () e1' op' e2') tv
 
     EAdd _ e1 op e2 -> do
@@ -410,7 +413,7 @@ checkExp e = case e of
         let u1  = (te1 *-> te2 *-> tv)
             u2  = addOps Map.! op
             op' = AddOpTyped () op u2
-        uni u1 u2
+        uni u1 u2 Nothing
         return $ ETyped () (EAdd () e1' op' e2') tv
 
     EMul _ e1 op e2 -> do
@@ -422,14 +425,14 @@ checkExp e = case e of
         let u1 = (te1 *-> te2 *-> tv)
             u2 = mulOps Map.! op
             op' = MulOpTyped () op u2
-        uni u1 u2
+        uni u1 u2 Nothing
         return $ ETyped () (EMul () e1' op' e2') tv
 
     ENot _ e1 -> do
         e1' <- checkExp e1
         let te1 = getExpType e1'
         -- We can only negate booleans :)
-        uni te1 bool
+        uni te1 bool Nothing
         return $ ETyped () (ENot () e1') bool
 
     -- Capital letter variables are constructors! Look up the type of it.

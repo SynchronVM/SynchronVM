@@ -33,6 +33,7 @@ import AbsTinyCamiot
 import PrintTinyCamiot
 import Substitution
 import Constraint
+import TCUtils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -136,71 +137,6 @@ data TCState = TCState {
 
 emptyState :: TCState
 emptyState = TCState 0 Map.empty
-
--- All potential errors that can be thrown. Feel free to
--- add more variants as you need.
--- They don't include much information about the source now, so they can be tricky to read.
-data TCError =
-    InfiniteType Ident (Type ())
-  | UnificationFail (Type ()) (Type ())
-  | UnboundVariable String
-  | UnboundConstructor UIdent
-  | DuplicateTypeSig Ident
-  | DuplicateConstructor UIdent (Type ())
-  | TypeArityError UIdent [Type ()] [Type ()]
-  | WrongConstructorGoal UIdent (Type ()) (Type ())
-  | LambdaConstError (Const ())
-  | ConstructorNotFullyApplied UIdent Int Int
-  | UnboundTypeVariable [Ident] [Ident]
-  | TypeSignatureTooGeneral (Type ()) (Type ())
-
-instance Show TCError where
-    show (InfiniteType var t) =
-        "Type error ---\n" ++
-        "Failed to create the infinite type from type variable " ++ printTree var ++ 
-        " with type " ++ printTree t
-    show (UnificationFail t1 t2) =
-        "Type error ---\n" ++
-        "Failed to unify the two types: \n" ++
-        printTree t1 ++ " and \n" ++
-        printTree t2
-    show (UnboundVariable var) =
-        "Type error ---\n" ++
-        "Unbound variable: " ++ var
-    show (UnboundConstructor (UIdent con)) =
-        "Type error ---\n" ++
-        "Unbound constructor: " ++ show con
-    show (DuplicateTypeSig (Ident fun)) =
-        "Type error ---\n" ++
-        "Type signature for " ++ fun ++ " declared more than once"
-    show (DuplicateConstructor c t) =
-        "Type error ---\n" ++
-        "Data constructor " ++ show c ++ " : " ++ printTree t ++ " declared more than once"
-    show (TypeArityError con' tvars vars) =
-        "Type error ---\n" ++
-        "Arity error - declared type " ++ printTree (TAdt () con' tvars) ++ " does not match " ++
-        "inferred type " ++ printTree (TAdt () con' vars)
-    show (WrongConstructorGoal con inferred declared) =
-        "Type error ---\n" ++
-        "Constructor " ++ printTree con ++ " attempts to create a value of type " ++ 
-        printTree inferred ++ ", but it has been declared to be of form " ++ printTree declared
-    show (LambdaConstError c) =
-        "Type error ---\n" ++
-        "Lambdas can only abstract over variables, not constants such as " ++ printTree c
-    show (ConstructorNotFullyApplied con expected found) =
-        "Type error ---\n" ++
-        "Data constructor " ++ printTree con ++ " applied to " ++ show found ++ " arguments, " ++
-        "but " ++ show expected ++ " is expected"
-    show (UnboundTypeVariable bound free) =
-        "Type error ---\n" ++
-        "Encountered unbound type variable \n" ++
-        "Bound: " ++ intercalate "," (map printTree bound) ++ "\n" ++
-        "Encountered: " ++ intercalate "," (map printTree free)
-    show (TypeSignatureTooGeneral t1 t2) =
-        "Type error ---\n" ++
-        "The declared type is more general than the inferred one:\n" ++
-        "Declared type: " ++ printTree t1 ++ "\n" ++
-        "Inferred type: " ++ printTree t2
 
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
