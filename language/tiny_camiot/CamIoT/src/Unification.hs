@@ -35,10 +35,10 @@ uni t1 t2 test = tell [C (t1, t2, test)]
 -- Do you want to unify more than two constraints?
 -- I convinced myself that if you can unify a and b, and b and c,
 -- then you can unify a and c. This SHOULD work! (please)
-uniMany :: [Type ()] -> TC ()
-uniMany []       = return ()
-uniMany [x]      = uni x x Nothing -- should be OK
-uniMany (x:y:xs) = uni x y Nothing >> uniMany (y:xs)
+uniMany :: [Type ()] -> Maybe Test -> TC ()
+uniMany []       _ = return ()
+uniMany [x]      t = uni x x t -- should be OK
+uniMany (x:y:xs) t = uni x y t >> uniMany (y:xs) t
 
 -- TODO change to Identity from IO when done debugging
 type Solve a = ExceptT TCError IO a

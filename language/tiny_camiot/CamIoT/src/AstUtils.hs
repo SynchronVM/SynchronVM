@@ -15,6 +15,8 @@ module AstUtils(
   , getExpType
   , getPMType
 
+  , usesVar
+
   , function_type
   , unwrap_function
   , count_arguments
@@ -134,6 +136,42 @@ int = TInt () --TAdt () (UIdent "Int") []
 
 float :: Type ()
 float = TFloat () -- TAdt () (UIdent "Float") []
+
+-- if _any_ of the expressions in the AST fulfils the predicate, return true
+usesVar :: Ident -> Exp () -> Bool
+usesVar id e = case e of
+    (ETyped a e1 t)   -> usesVar id e1
+    (ETup a texps)    -> any (usesVar id . deTupExp) texps
+    (ECase a e1 br)   -> usesVar id e1 || any (usesVarPatMatch id) br
+    (ELet a p e1 e2)  -> usesVarPat id p || usesVar id e1 || usesVar id e2
+    (ELetR a p e1 e2) -> usesVarPat id p || usesVar id e1 || usesVar id e2
+    (ELam a p e1)     -> usesVarPat id p || usesVar id e1
+    (EIf a e1 e2 e3)  -> usesVar id e1 || usesVar id e2 || usesVar id e3
+    (EApp a e1 e2)    -> usesVar id e1 || usesVar id e2
+    (EOr a e1 e2)     -> usesVar id e1 || usesVar id e2
+    (EAnd a e1 e2)    -> usesVar id e1 || usesVar id e2
+    (ERel a e1 op e2) -> usesVar id e1 || usesVar id e2
+    (EAdd a e1 op e2) -> usesVar id e1 || usesVar id e2
+    (EMul a e1 op e2) -> usesVar id e1 || usesVar id e2
+    (ENot a e1)       -> usesVar id e1
+    (EVar a id')      -> id == id'
+    (EUVar a _)       -> False
+    (EConst a c)      -> False
+
+usesVarPat :: Ident -> Pat () -> Bool
+usesVarPat id p = case p of
+    PTyped _ p _     -> usesVarPat id p
+    PConst _ c       -> False
+    PVar _ id'       -> id == id'
+    PZAdt _ _        -> False
+    PNAdt _ _ pats   -> any (usesVarPat id . deAdtPat) pats
+    PWild _          -> False
+    PNil _           -> False
+    PTup _ patterns  -> any (usesVarPat id . deTupPat) patterns
+    PLay _ id' pat   -> id == id' || usesVarPat id pat
+
+usesVarPatMatch :: Ident -> PatMatch () -> Bool
+usesVarPatMatch id (PM () pat exp) = usesVarPat id pat || usesVar id exp
 
 {- Substitution instances for backtracking -}
 

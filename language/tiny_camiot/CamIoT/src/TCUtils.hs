@@ -22,6 +22,8 @@ data TCError =
   | ConstructorNotFullyApplied UIdent Int Int
   | UnboundTypeVariable [Ident] [Ident]
   | TypeSignatureTooGeneral Ident (Type ()) (Type ())
+  | FunctionClausesNotEqual Ident (Type ()) (Type ())
+  | RecursiveFunctionWithoutTypesig Ident
 
 instance Show TCError where
     show (InfiniteType var t) =
@@ -75,3 +77,12 @@ instance Show TCError where
         "The declared type of " ++ printTree fun ++ " is more general than the inferred one:\n" ++
         "Declared type: " ++ printTree t1 ++ "\n" ++
         "Inferred type: " ++ printTree t2
+    show (FunctionClausesNotEqual id t1 t2) =
+        "Type error ---\n" ++
+        "The inferred types of the two function bodies are not the same\n" ++
+        printTree t1 ++ " and\n" ++
+        printTree t2
+    show (RecursiveFunctionWithoutTypesig name) =
+        "Type error ---\n" ++
+        "Recursive functions must have an accompanying type signature, declared above the first function clause\n" ++
+        printTree name ++ " does not have such a type signature"

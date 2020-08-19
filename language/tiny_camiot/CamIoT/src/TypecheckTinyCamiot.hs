@@ -45,7 +45,7 @@ runTC tc initEnv = do
 -- top level typecheck
 
 typecheck :: [Def ()] -> IO (Either TCError Subst)
-typecheck defs = runTC (check defs) emptyEnv
+typecheck defs = runTC (checkProgram defs) emptyEnv
 
 -- collect type sigs
 gatherTypeSigs :: [Def ()] -> TC [(Ident, Scheme)]
@@ -114,59 +114,114 @@ gatherDataDecs (d:ds) = case d of
 {- ******************** -}
 -- typecheck
 
-check :: [Def ()] -> TC [Def ()]
-check ds = do
-    -- updates state with data types
+data Function = FN Ident (Maybe (Type ())) [Def ()]
+
+checkProgram :: [Def ()] -> TC [Def ()]
+checkProgram ds = do
     gatherDataDecs ds
-    -- collect type signatures
     sigs <- gatherTypeSigs ds
-    -- typecheck the equations using the extended scope
+    e <- ask
     let scope e = foldl (\e' (x, sc) -> extend e' (x, sc)) e sigs
-    ds' <- local scope (checkMany ds)
-    return ds' -- TODO try to unify every case of each function
 
-checkMany :: [Def ()] -> TC [Def ()]
-checkMany [] = return []
-checkMany (d:ds) = do
-    (d', mt) <- checkSingle d
-    case mt of
-        Just (x,sc)  -> do
-            let scope e = extend e (x, sc)
-            ds' <- local scope (checkMany ds)
-            return $ d' : ds'
-        nothing      -> do
-            ds' <- checkMany ds
+    let (datadecls, functions) = makeFunctions ds
+    ((++) datadecls . concat . map unwrapDef) <$> local scope (single functions)
+
+  where single :: [Function] -> TC [Function]
+        single [] = return []
+        single (d:ds) = do
+            (t, d') <- checkFunction d
+            e <- ask
+            let scope e = extend e (getName d, generalize e t)
+            ds' <- local scope (single ds)
             return $ d' : ds'
 
--- if there was no type signature given for the declaration, return
--- a pair of the declarations name and the inferred type.
-checkSingle :: Def () -> TC (Def (), (Maybe (Ident, Scheme)))
-checkSingle d = case d of
-    DEquation () name pats exp -> do
-        -- get the types and variables bound in the declaration
-        patinfo <- mapM (flip checkPattern True) pats
-        let pats' = map fst patinfo
-        let types = map getPatType pats'
-        let vars  = concat $ map snd patinfo
-        -- extend the environment with the variables
-        exp' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
-        let t = getExpType exp'
-        let d' = DEquation () name pats' exp'
-        -- create the type inferred by the argument types and the result type
-        let inferredType = function_type types t
-        -- is there a type signature available for this function?
-        sig <- lookupTypeSig name
-        case sig of
-            -- if there is, try to unify the inferred and declared type
-            Just assigned -> do
-                let test _ t2 = case assigned `isMoreGeneral` t2 of
-                                   (Just True) -> Just $ TypeSignatureTooGeneral name assigned t2
-                                   otherwise   -> Nothing
-                uni assigned inferredType (Just test) >> return (d', Nothing)
-            Nothing       -> do
-                e <- ask
-                return $ (d', Just (name, generalize e inferredType))
-    _ -> return (d, Nothing)
+        getName (FN n _ _) = n
+
+        unwrapDef :: Function -> [Def ()]
+        unwrapDef (FN _ Nothing ds) = ds
+        unwrapDef (FN n (Just t) ds) = (DTypeSig () n t) : ds
+
+-- groups function clauses together. Assumes definitions are given in the
+-- proper order, i.d that they are not defined such as
+-- foldl _ b [] = b
+-- sum = foldl (+) 0
+-- foldl ....
+makeFunctions :: [Def ()] -> ([Def ()], [Function])
+makeFunctions ds =
+    let f (DEquation _ n1 _ _) (DEquation _ n2 _ _) = n1 == n2
+        f (DTypeSig _ n1 _) (DEquation _ n2 _ _)    = n1 == n2
+        f _ _                                       = False
+
+        groups = groupBy f ds
+
+        isDataDec [(DDataDec _ _ _ _)] = True
+        isDataDec _                    = False
+
+        (datadecs, funs) = partition isDataDec groups
+    in (concat datadecs, makeFunctions_ funs)
+
+makeFunctions_ :: [[Def ()]] -> [Function]
+makeFunctions_ = map makeFun
+  where makeFun ((DTypeSig _ name t):ds)      = FN name (Just t) ds
+        makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
+
+-- given an annotated definition, return its type
+typeOfAnnotatedDef :: Def () -> TC (Type ())
+typeOfAnnotatedDef (DEquation _ _ pats exp) = do
+    --e <- ask
+    return $ {-generalize e -}(function_type (map getPatType pats) (getExpType exp))
+typeOfAnnotatedDef _ = error "shouldn't end up here" -- TODO backtrack and solve
+
+-- is a function recursive? We deduce that it is so if any of the
+-- clause bodies uses the identifier bound in the definition.
+recursive :: Function -> Bool
+recursive (FN name _ bodies) = any recursiveSingle bodies
+  where recursiveSingle (DEquation _ n _ e) = usesVar n e
+
+hasTypeSig :: Function -> Bool
+hasTypeSig (FN _ (Just _) _) = True
+hasTypeSig _                 = False
+
+checkFunction :: Function -> TC (Type (), Function)
+checkFunction fun@(FN name sig clauses) = do
+    clauses' <- case recursive fun of
+        True  -> case hasTypeSig fun of
+            True  -> mapM checkClause clauses
+            False -> throwError $ error "" -- typesig needed error
+        False -> mapM checkClause clauses
+    t <- unifyClauses clauses'
+    case sig of
+        (Just typ) -> do
+            e <- ask
+            let gentype = generalize e typ
+            instantiated <- instantiate gentype
+            uni t instantiated Nothing
+            return (typ, FN name sig clauses')
+        Nothing    -> return (t, FN name sig clauses')
+
+checkClause :: Def () -> TC (Def ())
+checkClause (DEquation () name pats exp) = do
+    -- get the types and variables bound in the declaration
+    patinfo <- mapM (flip checkPattern True) pats
+    let pats' = map fst patinfo
+    let types = map getPatType pats'
+    let vars  = concat $ map snd patinfo
+    -- extend the environment with the variables
+    exp' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
+    -- get the result type and construct the annotated definition & the complete type
+    return $ DEquation () name pats' exp'
+
+-- given a function (the annotated clauses belonging to a single function), try to unify
+-- them all and make sure that they are of the same type. Return the unified type.
+unifyClauses :: [Def ()] -> TC (Type ())
+unifyClauses ds = do
+    types <- mapM typeOfAnnotatedDef ds
+    let test t1 t2 = if t1 /= t2
+                     then Just $ FunctionClausesNotEqual (name ds) t1 t2
+                     else Nothing
+    uniMany types (Just test)
+    return $ last types
+  where name ((DEquation _ n _ _):_) = n
 
 -- If the types are of the same shape, returns true if the first operand
 -- is more general than the second operand. If where there is a variable
@@ -289,7 +344,7 @@ checkCases :: Type () -> [PatMatch ()] -> TC [PatMatch ()]
 checkCases t pm = do
     pm' <- mapM (checkCase t) pm
     let types = map getPMType pm'
-    uniMany types
+    uniMany types Nothing
     return $ pm'
 
 -- Check that a case branch is correctly typed.
