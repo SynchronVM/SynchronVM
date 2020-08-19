@@ -46,6 +46,25 @@ heap_index heap_ptr_to_index(uintptr_t p) {
   return (heap_index)(p - heap_base_ptr);
 }
 
+UINT heap_fst(heap_index i) {
+  return heap[i].data[0];
+}
+
+UINT heap_snd(heap_index i) {
+  return heap[i].data[1];
+}
+
+unsigned int heap_num_free(void) {
+  heap_index curr = free_list;
+  unsigned int n = 0;
+  
+  while (curr != HEAP_NULL) {
+
+    curr = heap_snd(curr);
+    n ++;
+  }
+  return n;
+}
 
 
 /************************************/
@@ -75,7 +94,6 @@ int heap_init(unsigned int n_cells) {
   } else {
     return 0;
   }
-
 
   return 1;
 }
