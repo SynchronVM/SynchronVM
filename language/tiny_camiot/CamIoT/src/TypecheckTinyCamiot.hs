@@ -54,8 +54,12 @@ gatherTypeSigs ds = do
     let funs     = map fst typesigs
     e           <- ask
 
+    let typeschemes = map (\(n,t) -> (n, generalize e t)) typesigs
+
     case length funs == length (nub funs) of
-        True  -> return $ map (\(n, t) -> (n, (generalize e t))) typesigs
+        True  -> do
+            modify (\e -> e { typesignatures = Map.fromList typeschemes})
+            return $ map (\(n, t) -> (n, (generalize e t))) typesigs
         False -> throwError $ DuplicateTypeSig $ head (intersect funs (nub funs))
 
   where go (DTypeSig () fun t) = Just (fun, t)
@@ -118,7 +122,8 @@ check ds = do
     sigs <- gatherTypeSigs ds
     -- typecheck the equations using the extended scope
     let scope e = foldl (\e' (x, sc) -> extend e' (x, sc)) e sigs
-    local scope (checkMany ds)
+    ds' <- local scope (checkMany ds)
+    return ds' -- TODO try to unify every case of each function
 
 checkMany :: [Def ()] -> TC [Def ()]
 checkMany [] = return []
@@ -133,6 +138,8 @@ checkMany (d:ds) = do
             ds' <- checkMany ds
             return $ d' : ds'
 
+-- if there was no type signature given for the declaration, return
+-- a pair of the declarations name and the inferred type.
 checkSingle :: Def () -> TC (Def (), (Maybe (Ident, Scheme)))
 checkSingle d = case d of
     DEquation () name pats exp -> do
@@ -156,7 +163,6 @@ checkSingle d = case d of
                                    (Just True) -> Just $ TypeSignatureTooGeneral name assigned t2
                                    otherwise   -> Nothing
                 uni assigned inferredType (Just test) >> return (d', Nothing)
-            -- otherwise, just return TODO also add the function and inferred type to the env
             Nothing       -> do
                 e <- ask
                 return $ (d', Just (name, generalize e inferredType))

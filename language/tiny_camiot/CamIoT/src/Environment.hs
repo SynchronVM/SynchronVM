@@ -117,13 +117,21 @@ lookupCons (Constructor () con) = do
         Nothing -> throwError $ UnboundConstructor con
 
 -- If a type signature exists for the function, fetch and instantiate it.
+--lookupTypeSig :: Ident -> TC (Maybe (Type ()))
+--lookupTypeSig fun = do
+--    (TEnv env) <- ask
+--    let tsig = Map.lookup fun env
+--    case tsig of
+--        Just sig -> Just <$> instantiate sig
+--        Nothing  -> return Nothing
+
 lookupTypeSig :: Ident -> TC (Maybe (Type ()))
 lookupTypeSig fun = do
-    (TEnv env) <- ask
-    let tsig = Map.lookup fun env
-    case tsig of
+    (TCState _ _ e) <- get
+    case Map.lookup fun e of
         Just sig -> Just <$> instantiate sig
         Nothing  -> return Nothing
+
 {-*******************************-}
 
 {-
@@ -132,11 +140,12 @@ lookupTypeSig fun = do
                 they end up in this map.
 -}
 data TCState = TCState { 
-    num  :: Int
-  , constructors :: Map.Map UIdent Scheme }
+    num            :: Int
+  , constructors   :: Map.Map UIdent Scheme
+  , typesignatures :: Map.Map Ident Scheme }
 
 emptyState :: TCState
-emptyState = TCState 0 Map.empty
+emptyState = TCState 0 Map.empty Map.empty
 
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
