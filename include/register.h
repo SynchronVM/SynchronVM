@@ -22,9 +22,15 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __CAM_H_
-#define __CAM_H_
+#ifndef __REGISTER_H_
+#define __REGISTER_H_
 
-#include <stdint.h>
+#include <typedefs.h>
+
+typedef struct {
+  UINT flags;
+  UINT value;
+} register_t;
+
 
 #endif

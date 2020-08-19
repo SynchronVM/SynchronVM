@@ -25,16 +25,18 @@
 #ifndef __HEAP_H_
 #define __HEAP_H_
 
-/* Just a sketch */
-
-#include <stdint.h>
+#include <typedefs.h>
+#include <register.h>
 
 /* Bit masks for flags of a memory cell */ 
-const uint32_t flag_gc_mark       = 0x00000001;       /* Some GC algorithms require more bits */
+#define     HEAP_MARK_BIT_MASK        0x80000000
+#define     HEAP_PTR_MASK             0x40000000
+
+#define     HEAP_FLAGS_DEFAULT        0x00000000
 
 typedef struct {
-  uint32_t flags;
-  uint32_t data[2];
+  UINT flags;
+  UINT data[2];
 } heap_cell_t;
 
 

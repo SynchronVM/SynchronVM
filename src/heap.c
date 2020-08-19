@@ -26,14 +26,33 @@
 
 #include <stdlib.h> // later remove this include when no memory "malloced" in this file. 
 
+
+/************************************/
+/* Heap Creation and Initialization */
+/************************************/
+
+/*@ requires n_cells > 0; */ 
 heap_cell_t* heap_init(unsigned int n_cells) {
 
   heap_cell_t* heap = malloc(sizeof(heap_cell_t) * n_cells);
 
   if (heap) {
     for (unsigned int i = 0; i < n_cells; i ++) {
-      heap[i].flags = 0;
+      heap[i].flags = HEAP_FLAGS_DEFAULT;
     }
   }
   return heap;
 }
+
+
+
+
+
+
+
+/**********************/
+/* Garbage Collection */
+/**********************/
+
+
+

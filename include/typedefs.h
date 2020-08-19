@@ -22,9 +22,11 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __CAM_H_
-#define __CAM_H_
+#ifndef __TYPEDEFS_H_
+#define __TYPEDEFS_H_
 
 #include <stdint.h>
+
+typedef uint32_t UINT;
 
 #endif
