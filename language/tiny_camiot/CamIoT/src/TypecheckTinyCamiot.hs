@@ -187,7 +187,7 @@ checkFunction fun@(FN name sig clauses) = do
     clauses' <- case recursive fun of
         True  -> case hasTypeSig fun of
             True  -> mapM checkClause clauses
-            False -> throwError $ error "" -- typesig needed error
+            False -> throwError $ RecursiveFunctionWithoutTypesig name
         False -> mapM checkClause clauses
     t <- unifyClauses clauses'
     case sig of
@@ -199,7 +199,7 @@ checkFunction fun@(FN name sig clauses) = do
             let test _ t2 = case instantiated `isMoreGeneral` t2 of
                                 Just True -> Just $ TypeSignatureTooGeneral name typ t2
                                 _         -> Nothing
-            uni t instantiated (Just test)
+            uni instantiated t (Just test)
             return (typ, FN name sig clauses')
         Nothing    -> return (t, FN name sig clauses')
 
