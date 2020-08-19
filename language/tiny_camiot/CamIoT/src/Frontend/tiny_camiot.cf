@@ -31,7 +31,7 @@ separator    Ident "" ;
 -- it will remove all shift/reduce conflicts.
 TLam.	Type  ::= Type1 "->" Type ;
 TVar.   Type1 ::= Ident ;
-TNil.   Type2 ::= "(" ")" ;
+TNil.   Type2 ::= "()" ;
 TAdt.   Type2 ::= UIdent [Type1] ;
 TTup.   Type1 ::= "(" [TupType] ")" ;
 TBool. Type2  ::= "Bool" ;
@@ -70,25 +70,17 @@ EConst. Exp7 ::= Const ;
 internal ETyped. Exp ::= "(" Exp ":" Type ")" ;
 
 Plus.   AddOp ::= "+" ;
-FPlus.  AddOp ::= "+." ;
 Minus.  AddOp ::= "-" ;
-FMinus. AddOp ::= "-." ;
 internal AddOpTyped. AddOp ::= "(" AddOp ":" Type ")" ;
 
 Times.  MulOp ::= "*" ;
-FTImes. MulOp ::= "*." ;
 Div.    MulOp ::= "/" ;
-FDiv.   MulOp ::= "/." ;
 internal MulOpTyped. MulOp ::= "(" MulOp ":" Type ")" ;
 
 LTC.  RelOp ::= "<" ;
-FLTC. RelOp ::= "<." ;
 LEC.  RelOp ::= "<=" ;
-FLEC. RelOp ::= "<=." ;
 GTC.  RelOp ::= ">" ;
-FGTC. RelOp ::= ">." ;
 GEC.  RelOp ::= ">=" ;
-FGEC. RelOp ::= ">=." ;
 EQC.  RelOp ::= "==" ;
 internal RelOpTyped. RelOp ::= "(" RelOp ":" Type ")" ;
 

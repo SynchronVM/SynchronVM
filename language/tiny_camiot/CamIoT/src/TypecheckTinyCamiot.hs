@@ -460,13 +460,18 @@ checkExp e = case e of
         let te1 = getExpType e1'
         let te2 = getExpType e2'
         tv <- fresh
-        -- u2 will become e.g int -> int -> int for (+)
-        -- is it possible to unify te1 -> te2 -> tv and
-        --                         int -> int -> int?
         let u1  = (te1 *-> te2 *-> tv)
-            u2  = relOps Map.! op
-            op' = RelOpTyped () op u2
+        
+        u2 <- relOps op
+        let op' = RelOpTyped () op u2
+
         uni u1 u2 Nothing
+        case op of
+            EQC _ -> uniEither [(u1, int *-> int *-> tv),
+                                (u1, float *-> float *-> tv),
+                                (u1, bool *-> bool *-> tv)]
+            otherwise -> uniEither [(u1, int *-> int *-> tv),
+                                    (u1, float *-> float *-> tv)]
         return $ ETyped () (ERel () e1' op' e2') tv
 
     EAdd _ e1 op e2 -> do
@@ -476,9 +481,15 @@ checkExp e = case e of
         let te2 = getExpType e2'
         tv <- fresh
         let u1  = (te1 *-> te2 *-> tv)
-            u2  = addOps Map.! op
-            op' = AddOpTyped () op u2
+        -- u1 = inferred type
+
+        u2 <- addOps op
+        -- u2 = stored type
+        let op' = AddOpTyped () op u2
+        
         uni u1 u2 Nothing
+        uniEither [(u1, int *-> int *-> int),
+                   (u1, float *-> float *-> float)]
         return $ ETyped () (EAdd () e1' op' e2') tv
 
     EMul _ e1 op e2 -> do
@@ -488,9 +499,13 @@ checkExp e = case e of
         let te2 = getExpType e2'
         tv <- fresh
         let u1 = (te1 *-> te2 *-> tv)
-            u2 = mulOps Map.! op
-            op' = MulOpTyped () op u2
+
+        u2 <- mulOps op
+        let op' = MulOpTyped () op u2
+
         uni u1 u2 Nothing
+        uniEither [(u1, int *-> int *-> int),
+                   (u1, float *-> float *-> float)]
         return $ ETyped () (EMul () e1' op' e2') tv
 
     ENot _ e1 -> do
@@ -531,30 +546,53 @@ checkExp e = case e of
 -- unified with are not arbitrary, but actually a subset of all types.
 -- (I have an idea of how to do this, but let's do this when everything
 --  else is complete)
-addOps :: Map.Map (AddOp ()) (Type ())
-addOps = Map.fromList [
-    (Plus   (), TLam () int   (TLam () int   int)),
-    (FPlus  (), TLam () float (TLam () float float)),
-    (Minus  (), TLam () int   (TLam () int   int)),
-    (FMinus (), TLam () float (TLam () float float))]
+addOps :: AddOp () -> TC (Type ())
+addOps op = case Map.lookup op addOps_ of
+    Just t  -> instantiate t
+    Nothing -> error "see below"
 
-mulOps :: Map.Map (MulOp ()) (Type ())
-mulOps = Map.fromList [
-    (Times  (), TLam () int   (TLam () int   int)),
-    (FTImes (), TLam () float (TLam () float float)),
-    (Div    (), TLam () int   (TLam () int   int)),
-    (FDiv   (), TLam () float (TLam () float float))]
+addOps_ :: Map.Map (AddOp ()) Scheme
+addOps_ = Map.fromList [
+    (Plus   (), let id = Ident "a"
+                    a  = TVar () id
+                in Forall [id] (a *-> a *-> a)),
+    (Minus  (), let id = Ident "a"
+                    a  = TVar () id
+                in Forall [id] (a *-> a *-> a))]
 
-relOps :: Map.Map (RelOp ()) (Type ())
-relOps = Map.fromList [
-    (LTC  (), TLam () int   (TLam () int   bool)),
-    (FLTC (), TLam () float (TLam () float bool)),
-    (LEC  (), TLam () int   (TLam () int   bool)),
-    (FLEC (), TLam () float (TLam () float bool)),
-    (GTC  (), TLam () int   (TLam () int   bool)),
-    (FGTC (), TLam () float (TLam () float bool)),
-    (GEC  (), TLam () int   (TLam () int   bool)),
-    (FGEC (), TLam () float (TLam () float bool)),
-    (EQC  (), undefined {- TODO insert some type later, talk with Joel -})]
-    -- ok I know what to do now! The elements of the lists should be schemas, and
-    -- when we fetch a type based on an operator we return the instantiated type.
+mulOps :: MulOp () -> TC (Type ())
+mulOps op = case Map.lookup op mulOps_ of
+    Just t  -> instantiate t
+    Nothing -> error "see below"    
+
+mulOps_ :: Map.Map (MulOp ()) Scheme
+mulOps_ = Map.fromList [
+    (Times  (), let id = Ident "a"
+                    a = TVar () id
+                in Forall [id] (a *-> a *-> a)),
+    (Div    (), let id = Ident "a"
+                    a = TVar () id
+                in Forall [id] (a *-> a *-> a))]
+
+relOps :: RelOp () -> TC (Type ())
+relOps op = case Map.lookup op relOps_ of
+    Just t  -> instantiate t
+    Nothing -> error "we should not end up here, how can I enforce this?"
+
+relOps_ :: Map.Map (RelOp ()) Scheme
+relOps_ = Map.fromList [
+    (LTC  (), let id = Ident "a"
+                  a  = TVar () id
+              in Forall [id] (a *-> a *-> bool)),
+    (LEC  (), let id = Ident "a"
+                  a  = TVar () id
+              in Forall [id] (a *-> a *-> bool)),
+    (GTC  (), let id = Ident "a"
+                  a  = TVar () id
+              in Forall [id] (a *-> a *-> bool)),
+    (GEC  (), let id = Ident "a"
+                  a  = TVar () id
+              in Forall [id] (a *-> a *-> bool)),
+    (EQC  (), let id = Ident "a"
+                  a  = TVar () id
+              in Forall [id] (a *-> a *-> bool))]

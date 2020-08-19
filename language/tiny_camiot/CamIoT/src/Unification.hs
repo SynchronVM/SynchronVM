@@ -1,6 +1,7 @@
 module Unification(
     uni
   , uniMany
+  , uniEither
 
   , Solve(..)
   , runSolve
@@ -40,6 +41,9 @@ uniMany []       _ = return ()
 uniMany [x]      t = uni x x t -- should be OK
 uniMany (x:y:xs) t = uni x y t >> uniMany (y:xs) t
 
+uniEither :: [(Type (), Type ())] -> TC ()
+uniEither cs = tell [C2 (map (\(t1,t2) -> C (t1,t2,Nothing)) cs)]
+
 -- TODO change to Identity from IO when done debugging
 type Solve a = ExceptT TCError IO a
 
@@ -56,14 +60,20 @@ solver (su, cs) =
             let newsu = su1 `compose` su
 
             case mtest of
-                (Just test) -> do
-                    --liftIO $ putStrLn $ "*****\ntesting\n" ++ printTree (apply newsu t1) ++ " and\n" ++ printTree (apply newsu t2) ++ "\n*****"
-                    case test (apply newsu t1) (apply newsu t2) of
-                      (Just err) -> throwError err
-                      _          -> solver (newsu, apply su1 cs')
+                (Just test) -> case test (apply newsu t1) (apply newsu t2) of
+                    (Just err) -> throwError err
+                    _          -> solver (newsu, apply su1 cs')
                 Nothing     -> solver (newsu, apply su1 cs')
+        (C2 constraints : cs') -> do
+            su1 <- tryToUnifyEither constraints
+            let newsu = su1 `compose` su
+            solver (newsu, apply su1 cs')
 
-            --solver (su1 `compose` su, apply su1 cs')
+tryToUnifyEither :: [Constraint] -> Solve Subst
+tryToUnifyEither []                 = return nullSubst
+tryToUnifyEither [C (t1, t2, _)]    = unify t1 t2
+tryToUnifyEither (C (t1, t2, _):cs) =
+    catchError (unify t1 t2) (\e -> tryToUnifyEither cs)
 
 -- Does the free variable we are about to substitute for a type,
 -- occur in the new type? E.g we can not substitute a for List a, we
@@ -103,6 +113,7 @@ unify t (TVar _ var) = bind var t
 unify (TInt   ()) (TInt   ()) = return nullSubst
 unify (TBool  ()) (TBool  ()) = return nullSubst
 unify (TFloat ()) (TFloat ()) = return nullSubst
+unify (TNil ()) (TNil ())     = return nullSubst
 
 unify t1 t2 = throwError $ UnificationFail t1 t2
 

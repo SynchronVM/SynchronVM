@@ -1,0 +1,20 @@
+
+
+f : a -> a -> Bool
+f a b = a == b
+
+main = if 3 == 5 && True == False
+       then True
+       else False
+
+even : Int -> Bool
+even 0 = True
+even 1 = False
+even n = even (n-2)
+
+odd : Int -> Bool
+odd x = ! (even x)
+
+test = if 3 < 5 || 7 > 9
+       then 1
+       else 0

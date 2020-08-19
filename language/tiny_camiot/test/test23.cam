@@ -1,3 +1,30 @@
+data State s a where
+  ST : (s -> (a,s)) -> State s a
 
-f : (a, (b, c)) -> ((a, b), c)
-f (x, (y, z)) = ((x, y), z)
+bind : State s a -> (a -> State s b) -> State s b
+bind (ST f) k = ST (\s -> let (a,s') = f s in
+                          let (ST g) = k a in g s')
+
+return : a -> State s a
+return x = ST (\s -> (x, s))
+
+get : State s s
+get = ST (\s -> (s,s))
+
+-- we have actually not yet implemented () a the value level yet, as it turns out..
+put : s -> State s ()
+put s = ST (\_ -> ((), s))
+
+runState : State s a -> s -> (a, s)
+runState (ST f) s = f s
+
+tick : State Int ()
+tick = bind get (\i -> put (i+1))
+
+test : State Int ()
+test = bind tick (\_ ->
+       bind tick (\_ -> 
+       bind tick (\_ -> 
+       tick)))
+
+main = runState test 5

@@ -13,11 +13,15 @@ import qualified Data.Set as Set
    substitution that will make the two types equal.
 -}
 type Test = Type () -> Type () -> Maybe TCError
-newtype Constraint = C (Type (), Type (), Maybe Test)
+data Constraint = C (Type (), Type (), Maybe Test) | C2 [Constraint]
 
 instance Show Constraint where
     show (C (t1, t2, _)) = "Constraint: " ++ printTree t1 ++ ", " ++ printTree t2
+    show (C2 cs) = "Constraint v2: " ++ show cs
 
 instance Substitutable Constraint where
     apply s (C (t1, t2, test)) = C (apply s t1, apply s t2, test)
+    apply s (C2 cs)         = C2 (map (apply s) cs)
+
     ftv (C (t1, t2, _)) = Set.union (ftv t1) (ftv t2)
+    ftv (C2 cs)         = Set.unions (map ftv cs)
