@@ -47,6 +47,8 @@ typedef INT heap_index; /* size of pointers are platform specific
 			   Trying to use -1 as "heap NULL"
 			*/
 
+extern unsigned int heap_num_free(void);
+
 /* Later initialize heap from a preallocaed array provided by caller */
 extern int heap_init(unsigned int n_cells);
 extern void heap_destroy(void);

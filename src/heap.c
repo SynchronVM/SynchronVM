@@ -43,7 +43,9 @@ uintptr_t heap_base_ptr = 0;
 /*****************************/
 
 heap_index heap_ptr_to_index(uintptr_t p) {
-  return (heap_index)(p - heap_base_ptr);
+  /* 3 * 4 bytes per cell = 12 bytes */
+  uintptr_t ix = (p - heap_base_ptr) / 12;
+  return (heap_index)ix;
 }
 
 UINT heap_fst(heap_index i) {
@@ -89,12 +91,12 @@ int heap_init(unsigned int n_cells) {
       heap[i].flags = HEAP_FLAGS_DEFAULT;
       heap[i].flags = heap[i].flags | HEAP_PTR_MASK_1;
     }
-
+    
     heap[n_cells-1].data[1] = HEAP_NULL;
+    free_list = 0;
   } else {
     return 0;
   }
-
   return 1;
 }
 
@@ -102,10 +104,9 @@ int heap_init(unsigned int n_cells) {
 void heap_destroy(void) {
   if (heap)
     free(heap);
+
+  free_list = HEAP_NULL;
 }
-
-
-
 
 
 /**********************/
