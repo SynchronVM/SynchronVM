@@ -189,19 +189,10 @@ checkFunction fun@(FN name sig clauses) = do
             True  -> mapM checkClause clauses
             False -> throwError $ RecursiveFunctionWithoutTypesig name
         False -> mapM checkClause clauses
-    t <- unifyClauses clauses'
-    case sig of
-        (Just typ) -> do
-            e <- ask
-            let gentype = generalize e typ
-            instantiated <- instantiate gentype
-
-            let test _ t2 = case instantiated `isMoreGeneral` t2 of
-                                Just True -> Just $ TypeSignatureTooGeneral name typ t2
-                                _         -> Nothing
-            uni instantiated t (Just test)
-            return (typ, FN name sig clauses')
-        Nothing    -> return (t, FN name sig clauses')
+    
+    let fun' = FN name sig clauses'
+    t <- unifyClauses fun'
+    return $ (t, fun')
 
 checkClause :: Def () -> TC (Def ())
 checkClause (DEquation () name pats exp) = do
@@ -215,17 +206,26 @@ checkClause (DEquation () name pats exp) = do
     -- get the result type and construct the annotated definition & the complete type
     return $ DEquation () name pats' exp'
 
--- given a function (the annotated clauses belonging to a single function), try to unify
--- them all and make sure that they are of the same type. Return the unified type.
-unifyClauses :: [Def ()] -> TC (Type ())
-unifyClauses ds = do
+unifyClauses :: Function -> TC (Type ())
+unifyClauses (FN name sig ds) = do
     types <- mapM typeOfAnnotatedDef ds
     let test t1 t2 = if t1 /= t2
-                     then Just $ FunctionClausesNotEqual (name ds) t1 t2
+                     then Just $ FunctionClausesNotEqual name t1 t2
                      else Nothing
     uniMany types (Just test)
-    return $ last types
-  where name ((DEquation _ n _ _):_) = n
+
+    case sig of
+        (Just typ) -> do
+            e <- ask
+            let gentype = generalize e typ
+            instantiated <- instantiate gentype
+
+            let test _ t2 = case instantiated `isMoreGeneral` t2 of
+                                Just True -> Just $ TypeSignatureTooGeneral name typ t2
+                                _         -> Nothing
+            uni instantiated (last types) (Just test)
+            return typ
+        Nothing    -> return (last types)
 
 -- If the types are of the same shape, returns true if the first operand
 -- is more general than the second operand. If where there is a variable
