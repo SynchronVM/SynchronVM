@@ -195,7 +195,11 @@ checkFunction fun@(FN name sig clauses) = do
             e <- ask
             let gentype = generalize e typ
             instantiated <- instantiate gentype
-            uni t instantiated Nothing
+
+            let test _ t2 = case instantiated `isMoreGeneral` t2 of
+                                Just True -> Just $ TypeSignatureTooGeneral name typ t2
+                                _         -> Nothing
+            uni t instantiated (Just test)
             return (typ, FN name sig clauses')
         Nothing    -> return (t, FN name sig clauses')
 
