@@ -28,7 +28,7 @@
 #include <typedefs.h>
 
 typedef struct {
-  UINT flags;
+  UINT flags;      /* Could be half size of flags in heap potentially */
   UINT value;
 } register_t;
 

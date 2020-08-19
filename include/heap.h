@@ -28,9 +28,10 @@
 #include <typedefs.h>
 #include <register.h>
 
-/* Bit masks for flags of a memory cell */ 
+/* Bit masks for flags of a memory cell */
 #define     HEAP_MARK_BIT_MASK        0x80000000
-#define     HEAP_PTR_MASK             0x40000000
+#define     HEAP_PTR_MASK_1           0x40000000 /* is data[1] a ptr ? */
+#define     HEAP_PTR_MASK_0           0x20000000 /* is data[2] a ptr ? */
 
 #define     HEAP_FLAGS_DEFAULT        0x00000000
 
@@ -40,7 +41,7 @@ typedef struct {
 } heap_cell_t;
 
 
-/* Later initialize heap from a preallocaed array provided by caller */ 
+/* Later initialize heap from a preallocaed array provided by caller */
 extern heap_cell_t* heap_init(unsigned int n_cells);
 
 #endif
