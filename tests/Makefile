@@ -2,7 +2,7 @@
 # Tests
 
 
-CCFLAGS = -g -m32 -O2 -Wall -Wconversion -pedantic -std=c11 
+CCFLAGS = -g -O2 -Wall -Wconversion -pedantic -std=c11 
 CC=gcc
 
 SRC = src

@@ -99,6 +99,10 @@ int heap_init(unsigned int n_cells) {
 }
 
 
+void heap_destroy(void) {
+  if (heap)
+    free(heap);
+}
 
 
 

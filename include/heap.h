@@ -49,5 +49,5 @@ typedef INT heap_index; /* size of pointers are platform specific
 
 /* Later initialize heap from a preallocaed array provided by caller */
 extern int heap_init(unsigned int n_cells);
-
+extern void heap_destroy(void);
 #endif
