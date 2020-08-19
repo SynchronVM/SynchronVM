@@ -60,21 +60,21 @@ SWITCH <n> <n> <n> ..          0x13FF...                   1 + 1 + 512    The si
            string
          pool index
 
-ABS                            0x14
-NEG                            0x15
-NOT                            0x16
-DEC                            0x17
-ADDI                           0x18
-MULI                           0x19
-MINI                           0x1A
-ADDF                           0x1B
-MULF                           0x1C
-MINF                           0x1D
-GT                             0x1E
-LT                             0x1F
-EQ                             0x20
-GE                             0x21
-LE                             0x22
+ABS                            0x14                        1
+NEG                            0x15                        1
+NOT                            0x16                        1
+DEC                            0x17                        1
+ADDI                           0x18                        1
+MULI                           0x19                        1
+MINI                           0x1A                        1
+ADDF                           0x1B                        1
+MULF                           0x1C                        1
+MINF                           0x1D                        1
+GT                             0x1E                        1
+LT                             0x1F                        1
+EQ                             0x20                        1
+GE                             0x21                        1
+LE                             0x22                        1
 
 -}
 
