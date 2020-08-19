@@ -34,12 +34,18 @@
 #define     HEAP_PTR_MASK_0           0x20000000 /* is data[2] a ptr ? */
 
 #define     HEAP_FLAGS_DEFAULT        0x00000000
+#define     HEAP_NULL                 -1
+
 
 typedef struct {
   UINT flags;
   UINT data[2];
 } heap_cell_t;
 
+typedef INT heap_index; /* size of pointers are platform specific 
+                           so let's index into the heap as an array.
+			   Trying to use -1 as "heap NULL"
+			*/
 
 /* Later initialize heap from a preallocaed array provided by caller */
 extern heap_cell_t* heap_init(unsigned int n_cells);

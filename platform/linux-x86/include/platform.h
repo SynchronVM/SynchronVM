@@ -22,47 +22,21 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <heap.h>
-#include <platform.h>
+ /**********************/
+ /* LINUX x86 Platform */
+ /**********************/
 
-#include <stdlib.h> // later remove this include when no memory "malloced" in this file. 
-
-/************/
-/* Globals  */
-/************/
-
-
-heap_index free_list = HEAP_NULL;
-
-
-
-/************************************/
-/* Heap Creation and Initialization */
-/************************************/
-
-/*@ requires n_cells > 0 && n_cells < N_MAX_HEAP_CELLS ; */ 
-heap_cell_t* heap_init(unsigned int n_cells) {
-
-  heap_cell_t* heap = malloc(sizeof(heap_cell_t) * n_cells);
-
-  if (heap) {
-    for (unsigned int i = 0; i < n_cells; i ++) {
-      heap[i].flags = HEAP_FLAGS_DEFAULT;
-    }
-  }
-
-  return heap;
-}
+#ifndef __PLATFORM_H_
+#define __PLATFORM_H_
 
 
 
 
 
+/********************/
+/* VM Configuration */
+/********************/
 
+#define N_MAX_HEAP_CELLS 6000
 
-/**********************/
-/* Garbage Collection */
-/**********************/
-
-
-
+#endif

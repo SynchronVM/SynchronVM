@@ -28,5 +28,6 @@
 #include <stdint.h>
 
 typedef uint32_t UINT;
+typedef int32_t  INT;
 
 #endif
