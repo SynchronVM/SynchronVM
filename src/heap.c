@@ -38,9 +38,13 @@ heap_cell_t *heap = NULL;
 
 uintptr_t heap_base_ptr = 0;
 
+/*****************************/
+/* Smaller Utility Functions */
+/*****************************/
+
 heap_index heap_ptr_to_index(uintptr_t p) {
   return (heap_index)(p - heap_base_ptr);
-} 
+}
 
 
 
@@ -48,21 +52,21 @@ heap_index heap_ptr_to_index(uintptr_t p) {
 /* Heap Creation and Initialization */
 /************************************/
 
-/*@ requires n_cells > 0 && n_cells < N_MAX_HEAP_CELLS ; */ 
+/*@ requires n_cells > 0 && n_cells < N_MAX_HEAP_CELLS ; */
 int heap_init(unsigned int n_cells) {
 
   if (heap) {
     free(heap);
   }
-  
+
   heap = malloc(sizeof(heap_cell_t) * n_cells);
 
   if (heap) {
 
-    heap_base_ptr = (uintptr_t)heap; 
-    
+    heap_base_ptr = (uintptr_t)heap;
+
     for (unsigned int i = 0; i < n_cells; i ++) {
-      heap[i].data[1] = i + 1; 
+      heap[i].data[1] = i + 1;
       heap[i].flags = HEAP_FLAGS_DEFAULT;
       heap[i].flags = heap[i].flags | HEAP_PTR_MASK_1;
     }
@@ -72,7 +76,7 @@ int heap_init(unsigned int n_cells) {
     return 0;
   }
 
-  
+
   return 1;
 }
 
