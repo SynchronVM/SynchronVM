@@ -27,7 +27,12 @@ import Data.Word
 import GHC.Arr
 
 {-
-Bytecode format and its mapping to instructions will follow
+Bytecode format for CAM
+
+-}
+
+{-
+Opcode format for CAM
 
 Instructions                Hexadecimal                Size (bytes)                                   Comments
 ------------               ------------               -------------                                  ----------
