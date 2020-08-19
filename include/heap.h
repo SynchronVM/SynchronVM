@@ -38,7 +38,7 @@
 
 
 typedef struct {
-  UINT flags;
+  UINT flags;     /* Maybe the flags portion should be split up and structured a bit */
   UINT data[2];
 } heap_cell_t;
 
@@ -48,6 +48,6 @@ typedef INT heap_index; /* size of pointers are platform specific
 			*/
 
 /* Later initialize heap from a preallocaed array provided by caller */
-extern heap_cell_t* heap_init(unsigned int n_cells);
+extern int heap_init(unsigned int n_cells);
 
 #endif

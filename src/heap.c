@@ -34,6 +34,14 @@
 
 heap_index free_list = HEAP_NULL;
 
+heap_cell_t *heap = NULL;
+
+uintptr_t heap_base_ptr = 0;
+
+heap_index heap_ptr_to_index(uintptr_t p) {
+  return (heap_index)(p - heap_base_ptr);
+} 
+
 
 
 /************************************/
@@ -41,17 +49,31 @@ heap_index free_list = HEAP_NULL;
 /************************************/
 
 /*@ requires n_cells > 0 && n_cells < N_MAX_HEAP_CELLS ; */ 
-heap_cell_t* heap_init(unsigned int n_cells) {
-
-  heap_cell_t* heap = malloc(sizeof(heap_cell_t) * n_cells);
+int heap_init(unsigned int n_cells) {
 
   if (heap) {
+    free(heap);
+  }
+  
+  heap = malloc(sizeof(heap_cell_t) * n_cells);
+
+  if (heap) {
+
+    heap_base_ptr = (uintptr_t)heap; 
+    
     for (unsigned int i = 0; i < n_cells; i ++) {
+      heap[i].data[1] = i + 1; 
       heap[i].flags = HEAP_FLAGS_DEFAULT;
+      heap[i].flags = heap[i].flags | HEAP_PTR_MASK_1;
     }
+
+    heap[n_cells-1].data[1] = HEAP_NULL;
+  } else {
+    return 0;
   }
 
-  return heap;
+  
+  return 1;
 }
 
 
