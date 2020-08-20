@@ -20,8 +20,6 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-{-# LANGUAGE RecordWildCards #-}
-
 module Bytecode.InterpreterModel where
 
 import CAM
@@ -430,7 +428,7 @@ switch conds = do
   jumpTo label
 
 
-dummyLabel = "dummy"
+dummyLabel = Label (-1)
 
 -- NOTE:
 {-
