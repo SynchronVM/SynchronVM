@@ -40,9 +40,9 @@ data Type a
     | TNil a
     | TAdt a UIdent [Type a]
     | TTup a [TupType a]
+    | TBool a
     | TInt a
     | TFloat a
-    | TBool a
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Type where
@@ -52,9 +52,9 @@ instance C.Functor Type where
         TNil a -> TNil (f a)
         TAdt a uident types -> TAdt (f a) uident (map (fmap f) types)
         TTup a tuptypes -> TTup (f a) (map (fmap f) tuptypes)
+        TBool a -> TBool (f a)
         TInt a -> TInt (f a)
         TFloat a -> TFloat (f a)
-        TBool a -> TBool (f a)
 
 data TupType a = TTupType a (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -82,11 +82,12 @@ data Exp a
     | ERel a (Exp a) (RelOp a) (Exp a)
     | EAdd a (Exp a) (AddOp a) (Exp a)
     | EMul a (Exp a) (MulOp a) (Exp a)
-    | ENot a (Exp a)
     | ETup a [TupExp a]
-    | EUVar a UIdent
+    | ENot a (Exp a)
     | EVar a Ident
+    | EUVar a UIdent
     | EConst a (Const a)
+    | ETyped a (Exp a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Exp where
@@ -102,55 +103,48 @@ instance C.Functor Exp where
         ERel a exp1 relop exp2 -> ERel (f a) (fmap f exp1) (fmap f relop) (fmap f exp2)
         EAdd a exp1 addop exp2 -> EAdd (f a) (fmap f exp1) (fmap f addop) (fmap f exp2)
         EMul a exp1 mulop exp2 -> EMul (f a) (fmap f exp1) (fmap f mulop) (fmap f exp2)
-        ENot a exp -> ENot (f a) (fmap f exp)
         ETup a tupexps -> ETup (f a) (map (fmap f) tupexps)
-        EUVar a uident -> EUVar (f a) uident
+        ENot a exp -> ENot (f a) (fmap f exp)
         EVar a ident -> EVar (f a) ident
+        EUVar a uident -> EUVar (f a) uident
         EConst a const -> EConst (f a) (fmap f const)
+        ETyped a exp type_ -> ETyped (f a) (fmap f exp) (fmap f type_)
 
-data AddOp a = Plus a | FPlus a | Minus a | FMinus a
+data AddOp a = Plus a | Minus a | AddOpTyped a (AddOp a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor AddOp where
     fmap f x = case x of
         Plus a -> Plus (f a)
-        FPlus a -> FPlus (f a)
         Minus a -> Minus (f a)
-        FMinus a -> FMinus (f a)
+        AddOpTyped a addop type_ -> AddOpTyped (f a) (fmap f addop) (fmap f type_)
 
-data MulOp a = Times a | FTImes a | Div a | FDiv a
+data MulOp a = Times a | Div a | MulOpTyped a (MulOp a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor MulOp where
     fmap f x = case x of
         Times a -> Times (f a)
-        FTImes a -> FTImes (f a)
         Div a -> Div (f a)
-        FDiv a -> FDiv (f a)
+        MulOpTyped a mulop type_ -> MulOpTyped (f a) (fmap f mulop) (fmap f type_)
 
 data RelOp a
     = LTC a
-    | FLTC a
     | LEC a
-    | FLEC a
     | GTC a
-    | FGTC a
     | GEC a
-    | FGEC a
     | EQC a
+    | RelOpTyped a (RelOp a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor RelOp where
     fmap f x = case x of
         LTC a -> LTC (f a)
-        FLTC a -> FLTC (f a)
         LEC a -> LEC (f a)
-        FLEC a -> FLEC (f a)
         GTC a -> GTC (f a)
-        FGTC a -> FGTC (f a)
         GEC a -> GEC (f a)
-        FGEC a -> FGEC (f a)
         EQC a -> EQC (f a)
+        RelOpTyped a relop type_ -> RelOpTyped (f a) (fmap f relop) (fmap f type_)
 
 data Con a = Constructor a UIdent
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -180,6 +174,7 @@ data Pat a
     | PNil a
     | PTup a [TupPat a]
     | PLay a Ident (Pat a)
+    | PTyped a (Pat a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Pat where
@@ -192,6 +187,7 @@ instance C.Functor Pat where
         PNil a -> PNil (f a)
         PTup a tuppats -> PTup (f a) (map (fmap f) tuppats)
         PLay a ident pat -> PLay (f a) ident (fmap f pat)
+        PTyped a pat type_ -> PTyped (f a) (fmap f pat) (fmap f type_)
 
 data AdtPat a = PAdtPat a (Pat a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
