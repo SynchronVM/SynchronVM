@@ -116,7 +116,7 @@ LE                             0x22                        1
   <l> - Positive ints for label numbers - 1 byte long
   <b> - Boolean 1 byte long; 7 bits wasted
   <t> - Tag for a constructor - 2 bytes long
-
+  <i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long
 
 
 
