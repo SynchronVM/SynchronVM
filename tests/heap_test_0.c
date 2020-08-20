@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   } else {
     printf("heap_init: Failed!\n");
   }
-  
+
   heap_destroy();
   return r;
 }

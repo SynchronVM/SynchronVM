@@ -77,7 +77,7 @@ void heap_set_snd(heap_index i, UINT value, bool is_ptr) {
 unsigned int heap_num_free(void) {
   heap_index curr = free_list;
   unsigned int n = 0;
-  
+
   while (curr != HEAP_NULL) {
 
     curr = heap_snd(curr);
@@ -109,7 +109,7 @@ int heap_init(unsigned int n_cells) {
       heap[i].flags = HEAP_FLAGS_DEFAULT;
       heap[i].flags = heap[i].flags | HEAP_PTR_MASK_1;
     }
-    
+
     heap[n_cells-1].data[1] = HEAP_NULL;
     free_list = 0;
   } else {
@@ -138,7 +138,6 @@ heap_index heap_allocate(void) {
   free_list = heap_snd(i);
   return i;
 }
-
 
 /**********************/
 /* Garbage Collection */

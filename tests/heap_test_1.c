@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
     printf("heap_init: OK!\n");
   } else {
     printf("heap_init: Failed!\n");
+    return 0;
   }
 
   unsigned int n = heap_num_free();
@@ -45,9 +46,9 @@ int main(int argc, char **argv) {
   } else {
     printf("heap_num_free: Failed!\n");
     printf("Free elements: %u\n", n);
+    return 0;
   }
-  
-  
+
   heap_destroy();
   return r;
 }
