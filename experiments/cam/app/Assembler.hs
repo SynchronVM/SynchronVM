@@ -29,6 +29,35 @@ import GHC.Arr
 {-
 Bytecode format for CAM
 
+---------------------------
+
+
+FE ED CA FE    -- *Magic Number* - 4 bytes
+
+01 01          -- *Version of bytecode* - 1 byte; *architecture* - arm, x86 - 1 byte
+
+00 03          -- *Int Pool count* - 2 bytes - 65536 ints possible
+
+00 0E ED 24    -- example integer `978212`, size upto 4 bytes
+00 00 CE 35    -- example integer `52789`
+00 01 C4 4D    -- example integer `115789`
+
+00 0A          -- *String Pool count* - Each byte is indexed unlike Int Pool where every 4 bytes is an index.
+
+48 65 6c 6c 6f -- Example string "Hello"
+57 6f 72 6c 64 -- Example string "World"
+
+
+00 00          -- *Native Pool count* - 2 bytes - index for native functions
+
+
+00 00 00 FF    -- Code Length - Max size of 4 bytes
+<opcode> <data>
+.
+.
+
+
+
 -}
 
 {-
@@ -42,7 +71,7 @@ ACC  <n>                       0x02FF                      2              Assume
 REST <n>                       0x03FF                      2              Same as above
 PUSH                           0x04                        1
 SWAP                           0x05                        1
-LOADI <n>                      0x06FF                      2              Assumes the integer pool has a maximum of 256 integer, index size is 1 byte
+LOADI <n>                      0x06FFFF                    3              Assumes the integer pool has a maximum of 65536 ints, index size is 2 byte
 LOADB <b>                      0x07FF                      2              7 bits wasted as Boolean can be represented by 1 bit
 CLEAR                          0x08                        1
 CONS                           0x09                        1
