@@ -24,7 +24,10 @@ module Assembler where
 
 import CAM
 import Data.Word
+import Data.Primitive.ByteArray
 import GHC.Arr
+
+
 
 {-
 Bytecode format for CAM
@@ -122,8 +125,8 @@ LE                             0x22                        1
 
 -}
 
-translate :: CAM -> Array Int Word8
-translate cam = listArray (1, len) bytelist
+translate :: CAM -> ByteArray
+translate cam = byteArrayFromList bytelist
   where
     bytelist = assemble cam
     len = length bytelist
