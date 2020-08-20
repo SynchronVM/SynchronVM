@@ -27,8 +27,8 @@ import System.Exit
 
 import AbsTinyCamiot
 import ParseTinyCamiot
-import TypecheckTinyCamiot
-import Environment
+import Typechecker.TypecheckTinyCamiot
+import Typechecker.Environment
 
 readAndParse :: String -> IO (Either String Subst)
 readAndParse input = do

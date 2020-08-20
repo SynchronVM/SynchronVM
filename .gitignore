@@ -12,6 +12,15 @@
 
 # Haskell
 *.hi
+language/tiny_camiot/CamIoT/.stack-work/
+
+language/tiny_camiot/grammar/
+!language/tiny_camiot/grammar/tiny_camiot.cf
+
+language/tiny_camiot/CamIoT/src/Frontend/
+!language/tiny_camiot/CamIoT/src/Frontend/tiny_camiot.cf
+!language/tiny_camiot/CamIoT/src/Frontend/ParseTinyCamiot.hs
+
 
 # Directories
 

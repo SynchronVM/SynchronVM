@@ -37,13 +37,13 @@ library
       SkelTinyCamiot
       ParTinyCamiot
       ParseTinyCamiot
-      TypecheckTinyCamiot
-      Environment
-      Unification
-      AstUtils
-      Substitution
-      Constraint
-      TCUtils
+      Typechecker.TypecheckTinyCamiot
+      Typechecker.Environment
+      Typechecker.Unification
+      Typechecker.AstUtils
+      Typechecker.Substitution
+      Typechecker.Constraint
+      Typechecker.TCUtils
   hs-source-dirs:
       src
       src/Frontend

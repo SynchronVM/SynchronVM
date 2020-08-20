@@ -20,15 +20,15 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
-module TypecheckTinyCamiot where
+module Typechecker.TypecheckTinyCamiot where
 
 import AbsTinyCamiot
 import PrintTinyCamiot
 
-import Environment
-import Unification
-import AstUtils
-import TCUtils
+import Typechecker.Environment
+import Typechecker.Unification
+import Typechecker.AstUtils
+import Typechecker.TCUtils
 
 import Control.Monad.Trans
 import Control.Monad.State

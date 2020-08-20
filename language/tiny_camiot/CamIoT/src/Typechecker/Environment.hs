@@ -20,7 +20,7 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
-module Environment (
+module Typechecker.Environment (
     -- TODO now I manually added everything so that it is exported, but when we
     -- are done we should just expose what we need, I suppose..
     Scheme(..)
@@ -52,9 +52,9 @@ module Environment (
 
 import AbsTinyCamiot
 import PrintTinyCamiot
-import Substitution
-import Constraint
-import TCUtils
+import Typechecker.Substitution
+import Typechecker.Constraint
+import Typechecker.TCUtils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set

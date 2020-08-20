@@ -19,7 +19,7 @@
 -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
-module Unification(
+module Typechecker.Unification(
     uni
   , uniMany
   , uniEither
@@ -37,11 +37,11 @@ module Unification(
 import AbsTinyCamiot
 import PrintTinyCamiot
 
-import Environment
-import AstUtils
-import Substitution
-import Constraint
-import TCUtils
+import Typechecker.Environment
+import Typechecker.AstUtils
+import Typechecker.Substitution
+import Typechecker.Constraint
+import Typechecker.TCUtils
 
 import Control.Monad.Writer
 import Control.Monad.State

@@ -20,7 +20,7 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
-module AstUtils(
+module Typechecker.AstUtils(
     getExpvar
   , getTypvar  
 
@@ -49,7 +49,7 @@ module AstUtils(
 ) where
 
 import AbsTinyCamiot
-import Substitution
+import Typechecker.Substitution
 
 -- TODO make heavy use of this bad boy.... it would make
 -- the inference code easier to read, I believe
