@@ -25,6 +25,7 @@ data TCError =
   | FunctionClausesNotEqual Ident (Type ()) (Type ())
   | FunctionClauseWrongType Ident (Type ()) (Type ())
   | RecursiveFunctionWithoutTypesig Ident
+  | AloneTypeSignature Ident (Type ())
 
 instance Show TCError where
     show (InfiniteType var t) =
@@ -92,3 +93,7 @@ instance Show TCError where
         "Type error ---\n" ++
         "Recursive functions must have an accompanying type signature, declared above the first function clause\n" ++
         printTree name ++ " does not have such a type signature"
+    show (AloneTypeSignature name t) =
+        "Type error ---\n" ++
+        "The type signature " ++ printTree name ++ " : " ++ printTree t ++ " lacks " ++
+        "an accompanying function definition"

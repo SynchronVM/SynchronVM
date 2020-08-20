@@ -192,6 +192,7 @@ hasTypeSig (FN _ (Just _) _) = True
 hasTypeSig _                 = False
 
 checkFunction :: Function -> TC (Type (), Function)
+checkFunction (FN name (Just t) []) = throwError $ AloneTypeSignature name t
 checkFunction fun@(FN name sig clauses) = do
     clauses' <- case recursive fun of
         True  -> case hasTypeSig fun of

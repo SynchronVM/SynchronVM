@@ -1,13 +1,3 @@
 Todo items
 
-* Type checking recursive functions does not work unless there is an explicit type signature for the function.
-  Do we force type signatures on functions? I like the idea, but it will lead to very simple things being
-  unecessarily cluttered. Perhaps we can do a check on a functions body to see if it is recursive, and if it is,
-  force the user to annotate just _that_ function.
-* Maybe we want to generalise the types of variables found in patterns... take a look at how let expressions
-  are typechecked in this post: http://dev.stephendiehl.com/fun/006_hindley_milner.html
-* When we call `uni t1 t2` to unify the types `t2` and `t2` we could perhaps also return an error
-  that we will raise if the unification later failed. Right now we don't get much information from knowing that
-  unification failed since we don't track the constraints to their location in the source code.
-  E.g trying to unify `t1 = Int -> Int -> Int` and `t2 = Int`, we could perhaps do
-  `uni t1 t2 e where e = SomeErrorThatHasInformationFromTheSourceCode`.
+* Write more detailed error messages! The machinery is there already, it is just a matter of writing them.
