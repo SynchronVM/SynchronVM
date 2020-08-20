@@ -1,12 +1,5 @@
 
-
-
 # Sense-VM architecture 
-
-
-
-
-
 
 
 ## Overview
@@ -18,9 +11,9 @@
 ## Concurrent VM 
 
 ```plantuml
+left to right direction
 
-package "Virtual Machine" { 
-
+node "Virtual Machine" { 
 	frame "Registers" { 
 		[PC] 
 	    [SP] 
@@ -30,9 +23,13 @@ package "Virtual Machine" {
 	}
 	
 	[Context List]
-	[Scheduler]
 	[Execution Engine]
 	[Heap]
+	
+	Frame "Manager" {
+	[Scheduler]
+	[Progress Monitor]
+	}
 }
 
 
@@ -44,9 +41,33 @@ node "Avtive Execution Context" {
 	[Execution Parameters]
 }
 
-[Scheduler] --> [Execution Parameters]
 
+
+
+node "Runtime Support" { 
+	frame "Hardware Abstraction Layer" {
+		[Drivers]
+		[Interrupt routines]
+		[Communication]
+	}
+
+	frame "Virtual Machine Container" {
+		
+	}
+	
+	frame "Power Management" { 
+		[Power Monitor] 
+		[Sleep Manager] 
+	
+	}
+}
+
+ 
 ```
+
+<!-- [Scheduler] -> [Execution Parameters] -->
+<!-- [Scheduler] -> [Sleep Manager]  -->
+
 
 ### Activation of a context 
 
@@ -74,9 +95,8 @@ node "Avtive Execution Context" {
 	[Stack] --> [SP] : Copy
 	[Environment] --> [EP] : Copy
 	[Code Memory] --> [CP] : Store pointer to
-	[Scheduler] --> [Execution Parameters] : Load
+	[Execution Parameters] --> [Scheduler] : Load
 	
-
 ``` 
 
 
