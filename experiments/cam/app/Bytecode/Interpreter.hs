@@ -22,8 +22,9 @@
 
 module Bytecode.Interpreter where
 
+import Data.Primitive.ByteArray
 import Data.Word
 import GHC.Arr
 
-interpret :: Array Int Word16 -> Int
+interpret :: ByteArray -> Int
 interpret = undefined

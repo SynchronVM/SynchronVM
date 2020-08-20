@@ -37,6 +37,7 @@ executables:
     dependencies:
     - cam
     - mtl
+    - primitive
     default-extensions:
     - GeneralizedNewtypeDeriving
 
