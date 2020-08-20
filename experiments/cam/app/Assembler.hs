@@ -27,14 +27,67 @@ import Data.Word
 import GHC.Arr
 
 {-
-Bytecode format and its mapping to instructions will follow
+Bytecode format for CAM
+
 -}
 
-translate :: CAM -> Array Int Word16
+{-
+Opcode format for CAM
+
+Instructions                Hexadecimal                Size (bytes)                                   Comments
+------------               ------------               -------------                                  ----------
+FST                            0x00                        1
+SND                            0x01                        1
+ACC  <n>                       0x02FF                      2              Assumes a maximum of 256 levels of nesting
+REST <n>                       0x03FF                      2              Same as above
+PUSH                           0x04                        1
+SWAP                           0x05                        1
+LOADI <n>                      0x06FF                      2              Assumes the integer pool has a maximum of 256 integer, index size is 1 byte
+LOADB <b>                      0x07FF                      2              7 bits wasted as Boolean can be represented by 1 bit
+CLEAR                          0x08                        1
+CONS                           0x09                        1
+CUR <n>                        0x0AFF                      2              Assumes a max of 256 labels; we should use 3 or 4 bytes instead
+LABEL <n>                      0x0BFF                      2              Same as above
+PACK <n>                       0x0CFF                      2              Assumes max string pool size of 256, maybe should use 3 or 4 bytes
+                                                                          because ML/Haskell like langs have a lot of constructors
+SKIP                           0x0D                        1
+STOP                           0x0E                        1
+APP                            0x0F                        1
+RETURN                         0x0F                        1
+CALL <n>                       0x10FF                      2
+GOTOFALSE <n>                  0x11FF                      2
+GOTO <n>                       0x12FF                      2
+
+
+SWITCH <n> <n> <n> ..          0x13FF...                   1 + 1 + 512    The size can have a max value of 256, 2 indices (tag, label) hence 2 * 256
+        ^   ^   ^                                                         1 byte for size 1 for opcode. Note this is max possible size
+      size  | label index
+           string
+         pool index
+
+ABS                            0x14                        1
+NEG                            0x15                        1
+NOT                            0x16                        1
+DEC                            0x17                        1
+ADDI                           0x18                        1
+MULI                           0x19                        1
+MINI                           0x1A                        1
+ADDF                           0x1B                        1
+MULF                           0x1C                        1
+MINF                           0x1D                        1
+GT                             0x1E                        1
+LT                             0x1F                        1
+EQ                             0x20                        1
+GE                             0x21                        1
+LE                             0x22                        1
+
+-}
+
+translate :: CAM -> Array Int Word8
 translate cam = listArray (1, len) bytelist
   where
     bytelist = assemble cam
     len = length bytelist
 
-assemble :: CAM -> [Word16]
+assemble :: CAM -> [Word8]
 assemble = undefined
