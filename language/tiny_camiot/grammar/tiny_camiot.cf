@@ -29,41 +29,21 @@ separator    Ident "" ;
 -- This gives some shift/reduce conflicts (7), but it seems to parse
 -- as we want it to anyway! If you remove the [Type] after UIdent
 -- it will remove all shift/reduce conflicts.
--- TLam.	Type  ::= Type1 "->" Type ;
--- TVar.   Type1 ::= Ident ;
--- TNil.   Type2 ::= "(" ")" ;
--- TAdt.   Type2 ::= UIdent [Type1] ;
--- TTup.   Type1 ::= "(" [TupType] ")" ;
--- TBool. Type2  ::= "Bool" ;
--- TInt. Type2   ::= "Int" ;
--- TFloat. Type2 ::= "Float" ;
-
-STVar.      SimpleType1 ::= Ident ;
-STNil.      SimpleType2 ::= "(" ")" ;
--- STBool.     SimpleType2 ::= "Bool" ;
--- STInt.      SimpleType2 ::= "Int" ;
--- STFloat.    SimpleType2 ::= "Float" ;
-STTup.      SimpleType1 ::= "(" TupType "," [ TupType] ")" ;
-STAdtUnary. SimpleType  ::= UIdent;
-coercions SimpleType 2 ;
-
-CTLam.      ComplexType ::= Type1 "->" Type ;
-CTAdtArgs.  ComplexType ::= UIdent AdtArg [ AdtArg ] ;
-
-TSimpleType.  Type1 ::= SimpleType;
-TComplexType. Type1 ::= ComplexType;
-coercions Type 1 ;
-
-AASimple.   AdtArg ::= SimpleType ;
-AAComplex.  AdtArg ::= "(" ComplexType ")" ;
-separator AdtArg "" ;
+TLam.	Type  ::= Type1 "->" Type ;
+TVar.   Type1 ::= Ident ;
+TNil.   Type2 ::= "()" ;
+TAdt.   Type2 ::= UIdent [Type1] ;
+TTup.   Type1 ::= "(" [TupType] ")" ;
+TBool. Type2  ::= "Bool" ;
+TInt. Type2   ::= "Int" ;
+TFloat. Type2 ::= "Float" ;
 
 TTupType. TupType ::= Type ;
-separator nonempty TupType "," ;
+separator TupType "," ;
 
--- separator Type1 "" ;
--- separator Type "" ;
--- coercions Type 2 ;
+separator Type1 "" ;
+--separator Type "" ;
+coercions Type 2 ;
 
 -- Expressions
 
