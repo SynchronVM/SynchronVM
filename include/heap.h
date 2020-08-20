@@ -44,7 +44,7 @@ typedef struct {
   UINT data[2];
 } heap_cell_t;
 
-typedef INT heap_index; /* size of pointers are platform specific 
+typedef INT heap_index; /* size of pointers are platform specific
                            so let's index into the heap as an array.
 			   Trying to use -1 as "heap NULL"
 			*/
@@ -55,6 +55,7 @@ extern UINT heap_fst(heap_index i);
 extern UINT heap_snd(heap_index i);
 extern void heap_set_fst(heap_index i, UINT value, bool is_ptr);
 extern void heap_set_snd(heap_index i, UINT value, bool is_ptr);
+extern void heap_set_flags(heap_index i, UINT flags);
 
 /* Later initialize heap from a preallocaed array provided by caller */
 extern int heap_init(unsigned int n_cells);

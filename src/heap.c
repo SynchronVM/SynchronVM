@@ -74,6 +74,10 @@ void heap_set_snd(heap_index i, UINT value, bool is_ptr) {
   }
 }
 
+void heap_set_flags(heap_index i, UINT flags) {
+  heap[i].flags = flags;
+}
+
 unsigned int heap_num_free(void) {
   heap_index curr = free_list;
   unsigned int n = 0;
@@ -136,6 +140,7 @@ heap_index heap_allocate(void) {
 
   heap_index i = free_list;
   free_list = heap_snd(i);
+  heap_set_flags(i, HEAP_FLAGS_DEFAULT);
   return i;
 }
 
