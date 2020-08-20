@@ -159,7 +159,6 @@ checkProgram ds = do
         single [] = return []
         single (d:ds) = do
             (t, d') <- checkFunction d
-            liftIO $ putStrLn $ "function " ++ printTree (getName d') ++ " is typed as " ++ printTree t
             e <- ask
             let scope e = extend e (getName d', generalize e t)
             ds' <- local scope (single ds)
@@ -198,9 +197,9 @@ makeFunctions_ = map makeFun
 -- given an annotated definition, return its type
 typeOfAnnotatedDef :: Def () -> TC (Type ())
 typeOfAnnotatedDef (DEquation _ _ pats exp) = do
-    --e <- ask
-    return $ {-generalize e -}(function_type (map getPatType pats) (getExpType exp))
-typeOfAnnotatedDef _ = error "shouldn't end up here" -- TODO backtrack and solve
+    return $ (function_type (map getPatType pats) (getExpType exp))
+-- we only call this after we've already checked for single type definitions
+typeOfAnnotatedDef _ = error "shouldn't end up here"
 
 -- is a function recursive? We deduce that it is so if any of the
 -- clause bodies uses the identifier bound in the definition.
@@ -264,33 +263,6 @@ unifyClauses (FN name sig ds) = do
             uniMany types (Just noSigTest)
             return (last types)
 
--- Returns Just true if the first operand is of a more general type than
--- the type of the second operand.
--- TODO rewrite this to make the behaviour more specified perhaps.
--- Looking back, I am slightly confused myself as to what the returntype actually means.
-isMoreGeneral :: Type () -> Type () -> Maybe Bool
-isMoreGeneral (TLam _ t1 t1s) (TLam _ t2 t2s)     = (||) <$> 
-                                                      (isMoreGeneral t1 t2) <*> 
-                                                      (isMoreGeneral t1s t2s)
-isMoreGeneral (TVar _ _) (TVar _ _)               = Just False
-isMoreGeneral (TVar _ _) _                        = Just True
-isMoreGeneral (TAdt _ con1 t1s) (TAdt _ con2 t2s) =
-    -- there is surely something built in for this
-    let maybes = zipWith isMoreGeneral t1s t2s
-        f (Just x) (Just y) = Just (x || y)
-        f Nothing  _        = Nothing
-        f _        Nothing  = Nothing
-    in foldl f (Just False) maybes
-isMoreGeneral (TTup _ t1s) (TTup _ t2s)           = 
-    let t1s' = map deTupType t1s
-        t2s' = map deTupType t2s
-        maybes = zipWith isMoreGeneral t1s' t2s'
-        f (Just x) (Just y) = Just (x || y)
-        f Nothing  _        = Nothing
-        f _        Nothing  = Nothing
-    in foldl f (Just False) maybes
-isMoreGeneral _ _                                 = Nothing
-
 -- Input: a pattern
 -- output
 --   - component 1: Type of the top-level pattern
@@ -323,13 +295,17 @@ checkPattern p allowConstants = case p of
         t <- lookupCons (Constructor () con)
         let numargs = count_arguments t
 
+        let test t1 t2 = if t1 /= t2
+                         then Just $ PatternTypeError p t1 t2
+                         else Nothing
+
         -- Is it fully applied? We only pattern match on fully applied constructors.
         case length pats == numargs of
             True  -> do
                 -- generate fresh type variable
                 tv <- fresh
                 -- unify the constructors type with the inferred type (patterns -> tv)
-                uni t (function_type typs tv) Nothing
+                uni t (function_type typs tv) (Just test) -- Nothing
                 return $ (PTyped () (PNAdt a con (map adtPat pats')) tv, vars)
             -- otherwise we are not fully applied, and we raise an error.
             False -> throwError $ ConstructorNotFullyApplied con numargs (length pats)
@@ -394,7 +370,12 @@ checkCase :: Type () -> PatMatch () -> TC (PatMatch ())
 checkCase t (PM () pat e1) = do
     (pat', vars) <- checkPattern pat True
     let t' = getPatType pat'
-    uni t t' Nothing
+
+    let test t1 t2 = if t2 /= t
+                     then Just $ CaseExpressionError pat t2 t'
+                     else Nothing
+
+    uni t t' (Just test)
     e1' <- inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1)
     return $ PM () pat' e1'
 

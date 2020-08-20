@@ -33,6 +33,7 @@ data TCError =
     InfiniteType Ident (Type ())
   | UnificationFail (Type ()) (Type ())
   | TypeError (Exp ()) (Type ()) (Type ())
+  | PatternTypeError (Pat ()) (Type ()) (Type ())
   | UnboundVariable String
   | UnboundConstructor UIdent
   | DuplicateTypeSig Ident
@@ -40,6 +41,7 @@ data TCError =
   | TypeArityError UIdent [Type ()] [Type ()]
   | WrongConstructorGoal UIdent (Type ()) (Type ())
   | LambdaConstError (Const ())
+  | CaseExpressionError (Pat ()) (Type ()) (Type ())
   | ConstructorNotFullyApplied UIdent Int Int
   | UnboundTypeVariable [Ident] [Ident]
   | TypeSignatureTooGeneral Ident (Type ()) (Type ())
@@ -63,6 +65,11 @@ instance Show TCError where
         "Could not match the expected type of " ++ printTree exp ++ " with the actual type.\n" ++
         "Expected: " ++ printTree t1 ++ "\n" ++
         "Actual:   " ++ printTree t2
+    show (PatternTypeError pat t1 t2) =
+        "Type error ---\n" ++
+        "Cannot match the type of pattern " ++ printTree pat ++ " with the expected type\n" ++
+        "Actual type:   " ++ printTree t1 ++ "\n" ++
+        "Expected type: " ++ printTree t2
     show (UnboundVariable var) =
         "Type error ---\n" ++
         "Unbound variable: " ++ var
@@ -86,6 +93,11 @@ instance Show TCError where
     show (LambdaConstError c) =
         "Type error ---\n" ++
         "Lambdas can only abstract over variables, not constants such as " ++ printTree c
+    show (CaseExpressionError pat inferred expected) =
+        "Type error ---\n" ++
+        "Pattern " ++ printTree pat ++ " is of the wrong type \n" ++
+        "Expected: " ++ printTree expected ++ "\n" ++
+        "Inferred: " ++ printTree inferred
     show (ConstructorNotFullyApplied con expected found) =
         "Type error ---\n" ++
         "Data constructor " ++ printTree con ++ " applied to " ++ show found ++ " arguments, " ++

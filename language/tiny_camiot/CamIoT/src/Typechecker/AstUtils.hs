@@ -23,6 +23,7 @@
 module Typechecker.AstUtils(
     getExpvar
   , getTypvar  
+  , isMoreGeneral
 
   , tupExp
   , deTupExp
@@ -96,6 +97,33 @@ getPatvar p = case p of
     PTup a _     -> a
     PLay a _ _   -> a
     PTyped a _ _ -> a
+
+    -- Returns Just true if the first operand is of a more general type than
+-- the type of the second operand.
+-- TODO rewrite this to make the behaviour more specified perhaps.
+-- Looking back, I am slightly confused myself as to what the returntype actually means.
+isMoreGeneral :: Type () -> Type () -> Maybe Bool
+isMoreGeneral (TLam _ t1 t1s) (TLam _ t2 t2s)     = (||) <$> 
+                                                      (isMoreGeneral t1 t2) <*> 
+                                                      (isMoreGeneral t1s t2s)
+isMoreGeneral (TVar _ _) (TVar _ _)               = Just False
+isMoreGeneral (TVar _ _) _                        = Just True
+isMoreGeneral (TAdt _ con1 t1s) (TAdt _ con2 t2s) =
+    -- there is surely something built in for this
+    let maybes = zipWith isMoreGeneral t1s t2s
+        f (Just x) (Just y) = Just (x || y)
+        f Nothing  _        = Nothing
+        f _        Nothing  = Nothing
+    in foldl f (Just False) maybes
+isMoreGeneral (TTup _ t1s) (TTup _ t2s)           = 
+    let t1s' = map deTupType t1s
+        t2s' = map deTupType t2s
+        maybes = zipWith isMoreGeneral t1s' t2s'
+        f (Just x) (Just y) = Just (x || y)
+        f Nothing  _        = Nothing
+        f _        Nothing  = Nothing
+    in foldl f (Just False) maybes
+isMoreGeneral _ _                                 = Nothing
 
 {- Some conversion to and from closely related types -}
 tupExp :: Exp a -> TupExp a

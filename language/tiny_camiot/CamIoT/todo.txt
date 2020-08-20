@@ -4,3 +4,8 @@ Todo items
 * (manual work, might be tricky, I guess) make most of the TC functions polymorphic in the monad
   that does the typechecking. Create constraints instead! Say that it must be a monadState etc. This
   way we can reuse some of the utility functions!
+* typechecking patterns, in ADT's, make sure that it throws the custom error message instead of
+  throwing the one in the unifyer first. The test for the error is written now, but it isn't invoked.
+  The unifier can use `catchError` _if_ there is a custom error message given, otherwise it can throw
+  the one it seems fit (like the very non-descriptive unification errors etc).
+* case checking on line 374, the error is rendered incorrectly..
