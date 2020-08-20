@@ -31,7 +31,6 @@
 /* Globals  */
 /************/
 
-
 heap_index free_list = HEAP_NULL;
 
 heap_cell_t *heap = NULL;
@@ -90,7 +89,6 @@ unsigned int heap_num_free(void) {
   return n;
 }
 
-
 /************************************/
 /* Heap Creation and Initialization */
 /************************************/
@@ -144,9 +142,22 @@ heap_index heap_allocate(void) {
   return i;
 }
 
+/* Dangerous function */
+int heap_explicit_free(heap_index i) {
+
+  heap_index curr = free_list;
+  while (curr != HEAP_NULL) {
+    if (curr == i) return 0;  /* trying to explicitly free something
+                                 that is already on the free_list */
+    curr = heap_snd(curr);
+  }
+
+  heap_set_snd(i, free_list, true);
+  free_list = i;
+  return 1;
+}
+
 /**********************/
 /* Garbage Collection */
 /**********************/
-
-
 

@@ -62,4 +62,5 @@ extern int heap_init(unsigned int n_cells);
 extern void heap_destroy(void);
 
 extern heap_index heap_allocate(void);
+extern int heap_explicit_free(heap_index i);
 #endif
