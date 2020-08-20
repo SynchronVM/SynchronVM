@@ -25,6 +25,8 @@
 #ifndef __HEAP_H_
 #define __HEAP_H_
 
+#include <stdbool.h>
+
 #include <typedefs.h>
 #include <register.h>
 
@@ -49,7 +51,14 @@ typedef INT heap_index; /* size of pointers are platform specific
 
 extern unsigned int heap_num_free(void);
 
+extern UINT heap_fst(heap_index i);
+extern UINT heap_snd(heap_index i);
+extern void heap_set_fst(heap_index i, UINT value, bool is_ptr);
+extern void heap_set_snd(heap_index i, UINT value, bool is_ptr);
+
 /* Later initialize heap from a preallocaed array provided by caller */
 extern int heap_init(unsigned int n_cells);
 extern void heap_destroy(void);
+
+extern heap_index heap_allocate(void);
 #endif

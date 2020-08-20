@@ -56,6 +56,24 @@ UINT heap_snd(heap_index i) {
   return heap[i].data[1];
 }
 
+void heap_set_fst(heap_index i, UINT value, bool is_ptr) {
+  heap[i].data[0] = value;
+  if (is_ptr) {
+    heap[i].flags |= HEAP_PTR_MASK_0;
+  } else {
+    heap[i].flags &= !HEAP_PTR_MASK_0;
+  }
+}
+
+void heap_set_snd(heap_index i, UINT value, bool is_ptr) {
+  heap[i].data[1] = value;
+  if (is_ptr) {
+    heap[i].flags |= HEAP_PTR_MASK_1;
+  } else {
+    heap[i].flags &= !HEAP_PTR_MASK_1;
+  }
+}
+
 unsigned int heap_num_free(void) {
   heap_index curr = free_list;
   unsigned int n = 0;
@@ -106,6 +124,19 @@ void heap_destroy(void) {
     free(heap);
 
   free_list = HEAP_NULL;
+}
+
+/*******************/
+/* Heap Allocation */
+/*******************/
+
+heap_index heap_allocate(void) {
+
+  if (free_list == HEAP_NULL) return free_list;
+
+  heap_index i = free_list;
+  free_list = heap_snd(i);
+  return i;
 }
 
 
