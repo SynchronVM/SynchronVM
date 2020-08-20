@@ -71,28 +71,28 @@ ACC  <n>                       0x02FF                      2              Assume
 REST <n>                       0x03FF                      2              Same as above
 PUSH                           0x04                        1
 SWAP                           0x05                        1
-LOADI <n>                      0x06FFFF                    3              Assumes the integer pool has a maximum of 65536 ints, index size is 2 byte
+LOADI <i>                      0x06FFFF                    3              Assumes the integer pool has a maximum of 65536 ints, index size is 2 byte
 LOADB <b>                      0x07FF                      2              7 bits wasted as Boolean can be represented by 1 bit
 CLEAR                          0x08                        1
 CONS                           0x09                        1
-CUR <n>                        0x0AFF                      2              Assumes a max of 256 labels; we should use 3 or 4 bytes instead
-LABEL <n>                      0x0BFF                      2              Same as above
-PACK <n>                       0x0CFF                      2              Assumes max string pool size of 256, maybe should use 3 or 4 bytes
-                                                                          because ML/Haskell like langs have a lot of constructors
+CUR   <l>                      0x0AFF                      2              Assumes a max of 256 labels; we should use 3 or 4 bytes instead
+LABEL <l>                      0x0BFF                      2              Same as above
+PACK  <t>                      0x0CFFFF                    3              1 byte opcode; 2 bytes for tag encoded in hex, for ML/Haskell
+                                                                          like langs with a lot of constructors, consider 3 or 4 bytes
 SKIP                           0x0D                        1
 STOP                           0x0E                        1
 APP                            0x0F                        1
 RETURN                         0x0F                        1
-CALL <n>                       0x10FF                      2
-GOTOFALSE <n>                  0x11FF                      2
-GOTO <n>                       0x12FF                      2
+CALL <l>                       0x10FF                      2
+GOTO <l>                       0x11FF                      2
+GOTOFALSE <l>                  0x12FF                      2
 
 
-SWITCH <n> <n> <n> ..          0x13FF...                   1 + 1 + 512    The size can have a max value of 256, 2 indices (tag, label) hence 2 * 256
-        ^   ^   ^                                                         1 byte for size 1 for opcode. Note this is max possible size
+SWITCH <n> <t> <l> ..          0x13FF...                   1 + 1 + 768    The size can have a max value of 256, 2 indices (tag (2 bytes), label(1 bytes))
+        ^   ^   ^                                                         hence 2 * 256 = 768; 1 byte for size; 1 for opcode. Note this is max possible size
       size  | label index
-           string
-         pool index
+         tag for
+       constructors
 
 ABS                            0x14                        1
 NEG                            0x15                        1
@@ -109,6 +109,16 @@ LT                             0x1F                        1
 EQ                             0x20                        1
 GE                             0x21                        1
 LE                             0x22                        1
+
+
+
+* <n> - Positive ints - 1 byte long
+  <l> - Positive ints for label numbers - 1 byte long
+  <b> - Boolean 1 byte long; 7 bits wasted
+  <t> - Tag for a constructor - 2 bytes long
+  <i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long
+
+
 
 -}
 
