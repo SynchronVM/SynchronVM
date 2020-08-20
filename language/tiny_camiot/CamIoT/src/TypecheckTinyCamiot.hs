@@ -36,9 +36,12 @@ runTC tc initEnv = do
             case esubst of
                 (Left err')   -> return esubst
                 (Right subst) -> do
+                    --putStrLn $ showSubst subst
                     putStrLn $ printTree $ apply subst annotatedTree
                     return (Right subst) 
 
+showSubst :: Map.Map Ident (Type ()) -> String
+showSubst = intercalate "\n" . map (\(k,v) -> "binding " ++ printTree k ++ " to " ++ printTree v) . Map.toList
 
 {---------------------------------------------------------------------}
 {- ******************** -}
@@ -115,6 +118,11 @@ gatherDataDecs (d:ds) = case d of
 -- typecheck
 
 data Function = FN Ident (Maybe (Type ())) [Def ()]
+instance Show Function where
+  show(FN name sig clauses) =
+      "Function: " ++ printTree name ++ "\n" ++
+      "Type signature: " ++ show (fmap printTree sig) ++ "\n" ++
+      "Definitions:\n" ++ intercalate "\n" (map printTree clauses)
 
 checkProgram :: [Def ()] -> TC [Def ()]
 checkProgram ds = do
@@ -130,15 +138,16 @@ checkProgram ds = do
         single [] = return []
         single (d:ds) = do
             (t, d') <- checkFunction d
+            liftIO $ putStrLn $ "function " ++ printTree (getName d') ++ " is typed as " ++ printTree t
             e <- ask
-            let scope e = extend e (getName d, generalize e t)
+            let scope e = extend e (getName d', generalize e t)
             ds' <- local scope (single ds)
             return $ d' : ds'
 
         getName (FN n _ _) = n
 
         unwrapDef :: Function -> [Def ()]
-        unwrapDef (FN _ Nothing ds) = ds
+        unwrapDef (FN _ Nothing ds)  = ds
         unwrapDef (FN n (Just t) ds) = (DTypeSig () n t) : ds
 
 -- groups function clauses together. Assumes definitions are given in the
@@ -208,32 +217,35 @@ checkClause (DEquation () name pats exp) = do
 
 unifyClauses :: Function -> TC (Type ())
 unifyClauses (FN name sig ds) = do
-    types <- mapM typeOfAnnotatedDef ds
-    let test t1 t2 = if t1 /= t2
-                     then Just $ FunctionClausesNotEqual name t1 t2
-                     else Nothing
-    uniMany types (Just test)
+    let noSigTest t1 t2 = if t1 /= t2
+                          then Just $ FunctionClausesNotEqual name t1 t2
+                          else Nothing
+
+    let okSigTest instantiated t1 t2 = case instantiated `isMoreGeneral` t2 of
+            (Just True)  -> Just $ TypeSignatureTooGeneral name (fromJust sig) t2
+            (Just False) -> Nothing
+            Nothing      -> case t1 /= t2 of
+                True  -> Just $ FunctionClauseWrongType name instantiated t2
+                False -> Nothing
 
     case sig of
-        (Just typ) -> do
-            e <- ask
-            let gentype = generalize e typ
-            instantiated <- instantiate gentype
-
-            let test _ t2 = case instantiated `isMoreGeneral` t2 of
-                                Just True -> Just $ TypeSignatureTooGeneral name typ t2
-                                _         -> Nothing
-            uni instantiated (last types) (Just test)
+        Just typ -> do
+            mapM (\d -> do
+                e <- ask
+                let gentype = generalize e typ
+                instantiated <- instantiate gentype
+                t' <- typeOfAnnotatedDef d
+                uni instantiated t' (Just (okSigTest instantiated))) ds
             return typ
-        Nothing    -> return (last types)
+        Nothing  -> do
+            types <- mapM typeOfAnnotatedDef ds
+            uniMany types (Just noSigTest)
+            return (last types)
 
--- If the types are of the same shape, returns true if the first operand
--- is more general than the second operand. If where there is a variable
--- in the first operand there is something else in the second, the left one
--- is more general.
---
--- If they are of different shapes there is something else wrong, and we should
--- just let the unifier figure out what it is?
+-- Returns Just true if the first operand is of a more general type than
+-- the type of the second operand.
+-- TODO rewrite this to make the behaviour more specified perhaps.
+-- Looking back, I am slightly confused myself as to what the returntype actually means.
 isMoreGeneral :: Type () -> Type () -> Maybe Bool
 isMoreGeneral (TLam _ t1 t1s) (TLam _ t2 t2s)     = (||) <$> 
                                                       (isMoreGeneral t1 t2) <*> 

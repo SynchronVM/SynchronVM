@@ -23,6 +23,7 @@ data TCError =
   | UnboundTypeVariable [Ident] [Ident]
   | TypeSignatureTooGeneral Ident (Type ()) (Type ())
   | FunctionClausesNotEqual Ident (Type ()) (Type ())
+  | FunctionClauseWrongType Ident (Type ()) (Type ())
   | RecursiveFunctionWithoutTypesig Ident
 
 instance Show TCError where
@@ -82,6 +83,11 @@ instance Show TCError where
         "The inferred types of the two function bodies are not the same\n" ++
         printTree t1 ++ " and\n" ++
         printTree t2
+    show (FunctionClauseWrongType name t1 t2) =
+        "Type error ---\n" ++
+        "Definition of clause for function " ++ printTree name ++ " does not match inferred type\n" ++
+        "Declared type: " ++ printTree t1 ++ "\n" ++
+        "Actual type:   " ++ printTree t2
     show (RecursiveFunctionWithoutTypesig name) =
         "Type error ---\n" ++
         "Recursive functions must have an accompanying type signature, declared above the first function clause\n" ++

@@ -39,6 +39,7 @@ uni t1 t2 test = tell [C (t1, t2, test)]
 uniMany :: [Type ()] -> Maybe Test -> TC ()
 uniMany []       _ = return ()
 uniMany [x]      t = uni x x t -- should be OK
+uniMany [x,y]    t = uni x y t
 uniMany (x:y:xs) t = uni x y t >> uniMany (y:xs) t
 
 uniEither :: [(Type (), Type ())] -> TC ()
@@ -103,7 +104,9 @@ unify (TTup _ types1) (TTup _ types2) =
 unify (TAdt _ con []) (TAdt _ con' [])  | con == con' = return nullSubst
                                         | otherwise   = error "here"
 unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
-    let doOne subst (t1,t2) = unify (apply subst t1) (apply subst t2)
+    let doOne subst (t1,t2) = do
+            s' <- unify (apply subst t1) (apply subst t2)
+            return (s' `compose` subst)
     in foldlM doOne nullSubst (zip types types')
 
 -- variables will just be substituted for the other type
