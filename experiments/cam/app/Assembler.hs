@@ -92,7 +92,7 @@ GOTOFALSE <l>                  0x12FF                      2
 
 
 SWITCH <n> <t> <l> ..          0x13FF...                   1 + 1 + 768    The size can have a max value of 256, 2 indices (tag (2 bytes), label(1 bytes))
-        ^   ^   ^                                                         hence 2 * 256 = 768; 1 byte for size; 1 for opcode. Note this is max possible size
+        ^   ^   ^                                                         hence 3 * 256 = 768; 1 byte for size; 1 for opcode. Note this is max possible size
       size  | label index
          tag for
        constructors
