@@ -2,6 +2,8 @@ module Lib
     ( readAndParse
     ) where
 
+import System.Exit
+
 import AbsTinyCamiot
 import ParseTinyCamiot
 import TypecheckTinyCamiot
