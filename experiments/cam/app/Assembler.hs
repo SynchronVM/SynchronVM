@@ -79,12 +79,11 @@ LOADB <b>                      0x07FF                      2              7 bits
 CLEAR                          0x08                        1
 CONS                           0x09                        1
 CUR   <l>                      0x0AFF                      2              Assumes a max of 256 labels; we should use 3 or 4 bytes instead
-LABEL <l>                      0x0BFF                      2              Same as above
-PACK  <t>                      0x0CFFFF                    3              1 byte opcode; 2 bytes for tag encoded in hex, for ML/Haskell
+PACK  <t>                      0x0BFFFF                    3              1 byte opcode; 2 bytes for tag encoded in hex, for ML/Haskell
                                                                           like langs with a lot of constructors, consider 3 or 4 bytes
-SKIP                           0x0D                        1
-STOP                           0x0E                        1
-APP                            0x0F                        1
+SKIP                           0x0C                        1
+STOP                           0x0D                        1
+APP                            0x0E                        1
 RETURN                         0x0F                        1
 CALL <l>                       0x10FF                      2
 GOTO <l>                       0x11FF                      2
