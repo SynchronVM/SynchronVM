@@ -2,18 +2,15 @@
 # Sense-VM architecture 
 
 
-## Overview
-
-
 ## Single Threaded VM 
+
 
 
 ## Concurrent VM 
 
-```plantuml
-left to right direction
 
-node "Virtual Machine" { 
+```plantuml
+node "Virtual Machine" as vm { 
 	frame "Registers" { 
 		[PC] 
 	    [SP] 
@@ -24,50 +21,65 @@ node "Virtual Machine" {
 	
 	[Context List]
 	[Execution Engine]
-	[Heap]
 	
 	Frame "Manager" {
 	[Scheduler]
 	[Progress Monitor]
 	}
-}
+} 
+```
 
-
-node "Avtive Execution Context" { 
-	[Code Memory] 
-	[Stack]
-	[PC-RESUME]
-	[Environment]
-	[Execution Parameters]
-}
-
-
-
-
-node "Runtime Support" { 
+```plantuml
+node "Runtime Support"  as rs { 
 	frame "Hardware Abstraction Layer" {
 		[Drivers]
 		[Interrupt routines]
 		[Communication]
+		[Timers]
 	}
 
-	frame "Virtual Machine Container" {
-		
-	}
+	rectangle "Virtual Machine Container 0" as vmc0
+	rectangle "Virtual Machine Container N ?" as vmcn
 	
-	frame "Power Management" { 
+	vmc0 -[hidden]-> vmcn
+	
+	
+	frame "Power Management" as pm { 
 		[Power Monitor] 
 		[Sleep Manager] 
-	
 	}
+	
+	frame "Container Scheduler" as cs { 
+		rectangle "Ensure higher priority container\ncan execute when needed"
+	}
+	
+	pm -[hidden]-> cs
 }
-
  
 ```
 
+```plantuml
+node "Virtual Machine Container" {
+	
+   	rectangle "Memory" as mem {
+		rectangle "Heap Memory" 
+		rectangle "Stack Memory"
+		rectangle "Constants Memory"
+		rectangle "Array Storage Memory"
+		rectangle "Code Memory"
+	}
+	rectangle "Virtual Machine" as vm
+		
+	rectangle "Memory Management\nRuntime Support" as mm
+	
+	vm -> mm 
+	mm --> mem
+	
+}
+``` 
+
 <!-- [Scheduler] -> [Execution Parameters] -->
 <!-- [Scheduler] -> [Sleep Manager]  -->
-
 
 ### Activation of a context 
 
