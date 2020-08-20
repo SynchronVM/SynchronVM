@@ -1,3 +1,6 @@
 Todo items
 
-* Write more detailed error messages! The machinery is there already, it is just a matter of writing them.
+* (manual work, not difficult) Write more detailed error messages! The machinery is there already, it is just a matter of writing them.
+* (manual work, might be tricky, I guess) make most of the TC functions polymorphic in the monad
+  that does the typechecking. Create constraints instead! Say that it must be a monadState etc. This
+  way we can reuse some of the utility functions!
