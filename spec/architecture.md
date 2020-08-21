@@ -87,7 +87,9 @@ node "Virtual Machine Container" {
 	
 	vm -> mm 
 	mm -> mem
-	
+
+	caption A VM container consist of a virtual machine instance and a set of dedicated and private memory resources.
+
 }
 ``` 
 
@@ -121,10 +123,13 @@ over the state.
 
 **Context Scheduler and Context List**
 
-There is a list of contexts (separate instances of code and state) that can execute in a time-shared fasion on the 
+There is a list of contexts (separate instances of code and state) that can execute in a time-shared fashion on the 
 execution unit. 
 
-TODO: Maybe cooperative scheduling at this level? This would require "go to sleep" operations in the bytecode. 
+(TODO: Maybe cooperative scheduling at this level? This would require "go to sleep" operations in the bytecode.)
+
+The contexts that are executed on one VM are sharing the memory resources of the Virtual Machine Container. 
+
 
 
 <!-- [Scheduler] -> [Execution Parameters] -->
@@ -189,3 +194,11 @@ into the VM. Putting a context to sleep works in the reversed way.
  
 
 
+## Thoughts 
+
+Splitting concurrency up between internal to VM container via contexts and external between containers open 
+up to running VM containers on different cores in parallel. 
+
+Management of other resources is also important. Communication interfaces, sensors etc. I think it would 
+be beneficial to assign such resources to a VM Container and never allow the same interface to be connected to 
+more than one VM Container. 
