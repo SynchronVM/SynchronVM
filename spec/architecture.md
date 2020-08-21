@@ -5,29 +5,7 @@
 ## Single Threaded VM 
 
 
-
 ## Concurrent VM 
-
-
-```plantuml
-node "Virtual Machine" as vm { 
-	frame "Registers" { 
-		[PC] 
-	    [SP] 
-		[CP]
-		[EP]
-		
-	}
-	
-	[Context List]
-	[Execution Engine]
-	
-	Frame "Manager" {
-	[Scheduler]
-	[Progress Monitor]
-	}
-} 
-```
 
 ```plantuml
 node "Runtime Support"  as rs { 
@@ -58,30 +36,96 @@ node "Runtime Support"  as rs {
  
 ```
 
+**Hardware Abstraction Layer**
+
+The hardware abstraction layer (HAL) will probably be implemented by building upon an existing HAL system such as ChibiOS, ContikiOs or ZephyrOS.
+Other HALs could also be candidates: CMSIS, HAL from ST for STM32 platforms for example. We should try to keep as much of the code as possible portable 
+so that it can be ported to HALs that parhaps have more desirable features. 
+It will be a collection of functions (and perhaps routines running on a timer interrupt periodically if needed) that can be called 
+from the runtime support system.
+
+**Sleep Manager** 
+
+If there is no processing going on (reported from the various schedulers) the sleep manager puts the system to sleep for a period of time such that 
+it wakes up when it is time for the context/container with the earliest "wake-up" time to start executing.
+
+**Container Scheduler and Virtual Machine Containers**
+
+A virtual machine container should be an isolated executing environment for a virtual machine. 
+(TODO: Should there really be more than one container? )
+
+The container scheduler ensures that each container gets a time slot to execute. 
+Possibly, these containers could be implemented using a "thread" feature of an underlying OS/RTOS/HAL or be given a certain number of iterations 
+of some main loop. 
+
+Containers should be isolated from eachother to allow different level of criticality to different containers. High criticality containers should 
+be prioritised over low criticality containers.
+ 
+
 ```plantuml
 node "Virtual Machine Container" {
 	
    	rectangle "Memory" as mem {
-		rectangle "Heap Memory" 
-		rectangle "Stack Memory"
-		rectangle "Constants Memory"
-		rectangle "Array Storage Memory"
-		rectangle "Code Memory"
+		rectangle "Flash" {
+			rectangle "Constants"
+			rectangle "Code"
+		}
+		rectangle "RWM" {
+			rectangle "Heap" 
+			rectangle "Stack"
+			rectangle "Array storage"
+		}
 	}
 	rectangle "Virtual Machine" as vm
 		
 	rectangle "Memory Management\nRuntime Support" as mm
 	
 	vm -> mm 
-	mm --> mem
+	mm -> mem
 	
 }
 ``` 
 
+```plantuml
+node "Virtual Machine" as vm { 
+	frame "Registers" { 
+		[PC] 
+	    [SP] 
+		[CP]
+		[EP]
+		
+	}
+	
+	[Context List]
+	[Execution Unit]
+	
+	Frame "Manager" {
+	[Context Scheduler]
+	[Progress Monitor]
+	}
+} 
+```
+**Virtual Machine** 
+
+The virtual machine is based upon the Categorical Abstract Machine (CAM) and consists of number of registers and 
+and an execution unit. (More details later)
+
+**Execution Unit** 
+The execution unit reads instructions from code memory at location stored in PC register and evaluates each instruction 
+over the state. 
+
+**Context Scheduler and Context List**
+
+There is a list of contexts (separate instances of code and state) that can execute in a time-shared fasion on the 
+execution unit. 
+
+TODO: Maybe cooperative scheduling at this level? This would require "go to sleep" operations in the bytecode. 
+
+
 <!-- [Scheduler] -> [Execution Parameters] -->
 <!-- [Scheduler] -> [Sleep Manager]  -->
 
-### Activation of a context 
+**Context Switching**
 
 ```plantuml
 
@@ -95,7 +139,7 @@ node "Virtual Machine Container" {
 	
 	[Scheduler]
 
-	node "Avtive Execution Context" { 
+	node "Execution Context to Activate" { 
 		[Code Memory] 
 		[Stack]
 		[PC-RESUME]
@@ -110,6 +154,9 @@ node "Virtual Machine Container" {
 	[Execution Parameters] --> [Scheduler] : Load
 	
 ``` 
+
+The context list consists of some number of "Execution Context to Activate". A context is activated by copying the stored register state 
+into the VM. Putting a context to sleep works in the reversed way.
 
 
 
