@@ -112,7 +112,11 @@ data Instruction
    | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
 
-type Label = String -- labels to identify a subroutine
+-- labels to identify a subroutine
+newtype Label = Label Int deriving (Ord, Eq)
+
+instance Show Label where
+  show (Label i) = show i
 
 -- compile time environment
 data Env = EnvEmpty                 -- empty environment
@@ -130,7 +134,7 @@ instance Show CAM where
   show (Seq c1 c2) =
     show c1 <> ";\n" <> show c2
   show (Lab label cam) =
-    show label <> " : " <> show cam
+    "lab_"  <> show label <> " : " <> show cam
 
 instance Semigroup CAM where
   (<>) = (<+>)
@@ -152,11 +156,12 @@ newtype Codegen a =
     }
   deriving (Functor, Applicative, Monad, S.MonadState CodegenState)
 
+
 freshLabel :: Codegen Label
 freshLabel = do
   i <- S.gets count
   S.modify $ \s -> s {count = 1 + i}
-  return $ "label_" <> (show i)
+  return $ Label i
 
 
 interpret :: Exp -> CAM
