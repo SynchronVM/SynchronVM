@@ -371,11 +371,7 @@ checkCase t (PM () pat e1) = do
     (pat', vars) <- checkPattern pat True
     let t' = getPatType pat'
 
-    let test t1 t2 = if t2 /= t
-                     then Just $ CaseExpressionError pat t2 t'
-                     else Nothing
-
-    uni t t' (Just test)
+    uni t t' Nothing
     e1' <- inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1)
     return $ PM () pat' e1'
 
