@@ -41,7 +41,7 @@ node "Runtime Support"  as rs {
 The hardware abstraction layer (HAL) will probably be implemented by building upon an existing HAL system such as ChibiOS, ContikiOs or ZephyrOS.
 Other HALs could also be candidates: CMSIS, HAL from ST for STM32 platforms for example. We should try to keep as much of the code as possible portable 
 so that it can be ported to HALs that parhaps have more desirable features. 
-It will be a collection of functions (and perhaps routines running on a timer interrupt periodically if needed) that can be called 
+The HAL will be a collection of functions (and perhaps routines running on a timer interrupt periodically if needed) that can be called 
 from the runtime support system.
 
 **Sleep Manager** 
