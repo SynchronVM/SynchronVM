@@ -1,11 +1,32 @@
 
-# Sense-VM architecture 
+# The Safe and Secure Virtual Machine - Sense-VM architecture 
+
+Sense-VM is a virtual machine for IoT and embedded application in
+general. The goal with Sense-VM it to construct a virtual machine for
+bytecode execution (think Java-VM, not an operating system hypervisor)
+that provides a base level of safety, robustness and security.
+
+Sense-VM target 32/64Bit microcontroller based systems with about 128Kb of
+Read Write Memory (RWM) or more.
+
+Sense-VM consists of a runtime-system for exection of compiled
+linearised bytecode within isolated containers. The bytecode programs
+cannot mutate arbitrary memory addresses and all accesses to
+underlying hardware goes via the runtime system.
+
+Sense-VM can concurrently run a number of isolated virtual exection
+environments, called Virtual Machine Containers.  Each virtual machine
+container contains the resources needed to execute one program and
+consist of registers and memory that is private to that environment. A
+program running within a virtual machine container could potentially
+be concurrent, running a cooperative scheduler. A criticality level can
+be associated with each virtual machine container. Peripherals and
+external hardware resources are assigned to a single virtual machine
+container to rule out competition for resources between
 
 
-## Single Threaded VM 
 
-
-## Concurrent VM 
+# The Sense-VM Virtual Machine 
 
 ```plantuml
 node "Runtime Support"  as rs { 
@@ -23,16 +44,21 @@ node "Runtime Support"  as rs {
 	
 	
 	frame "Power Management" as pm { 
-		[Power Monitor] 
-		[Sleep Manager] 
+		[Sleep Manager]
 	}
+
+	frame "Low Level Security" as sec {
+	      [Power Monitor]
+	      [Clock Monitor]
+	}	
 	
 	frame "Container Scheduler" as cs { 
 		rectangle "Ensure higher priority container\ncan execute when needed"
 	}
 	
-	pm -[hidden]-> cs
+	pm -[hidden]-> sec
 }
+
  
 ```
 
@@ -97,10 +123,9 @@ node "Virtual Machine Container" {
 node "Virtual Machine" as vm { 
 	frame "Registers" { 
 		[PC] 
-	    [SP] 
+	        [SP]
 		[CP]
 		[EP]
-		
 	}
 	
 	[Context List]
@@ -169,29 +194,16 @@ The context list consists of some number of "Execution Context to Activate". A c
 into the VM. Putting a context to sleep works in the reversed way.
 
 
-
-<!-- node "Virtual Machine" { -->
-<!-- 	[Registers] -->
-<!-- 	[Stack] -->
-	
-<!-- 	[Execution engine] -->
-	
-<!-- 	[Linear Code Memory] -->
-<!-- 	[Heap] -->
-<!-- } -->
+# The Categorical Abstract Machine
 
 
-<!-- node "Execution context" {  -->
-<!-- 	[Registers Storage] -->
-<!-- 	[Stack Storage]  -->
-<!-- 	[Code] -->
-<!-- } -->
+# Instruction set
+
+# Security Measures
+
+# Fault Tolerance and Reliability
 
 
-<!--  [Registers] -\-> [Registers Storage]  -->
-<!--  [Stack] -\-> [Stack Storage] -->
-<!--  [Code] -\-> [Linear Code Memory] -->
- 
 
 
 ## Thoughts 
