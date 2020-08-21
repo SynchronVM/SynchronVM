@@ -49,6 +49,11 @@ from the runtime support system.
 If there is no processing going on (reported from the various schedulers) the sleep manager puts the system to sleep for a period of time such that 
 it wakes up when it is time for the context/container with the earliest "wake-up" time to start executing.
 
+The sleep manager may also be prompted to wake the system up by for example a sensor driver when the sensor has new samples to process. 
+
+It is not unthinkable that there are applications that will just sleep indefinitely unless there is outside stimulus. It may still be 
+desirable that these applications wake up periodically and just let the monitoring system know that it is still alive and ok (a heartbeat).
+
 **Container Scheduler and Virtual Machine Containers**
 
 A virtual machine container should be an isolated executing environment for a virtual machine. 
