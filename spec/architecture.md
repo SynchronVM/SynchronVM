@@ -2,29 +2,28 @@
 # The Safe and Secure Virtual Machine - Sense-VM architecture 
 
 Sense-VM is a virtual machine for IoT and embedded application in
-general. The goal with Sense-VM it to construct a virtual machine for
+general. Sense-VM is a virtual machine for
 bytecode execution (think Java-VM, not an operating system hypervisor)
 that provides a base level of safety, robustness and security.
 
-Sense-VM target 32/64Bit microcontroller based systems with about 128Kb of
-Read Write Memory (RWM) or more.
+Sense-VM target 32/64Bit microcontroller based systems with at least
+about 128Kb of Read Write Memory (RWM).
 
 Sense-VM consists of a runtime-system for exection of compiled
 linearised bytecode within isolated containers. The bytecode programs
 cannot mutate arbitrary memory addresses and all accesses to
-underlying hardware goes via the runtime system.
+underlying hardware goes via the runtime system. 
 
 Sense-VM can concurrently run a number of isolated virtual exection
 environments, called Virtual Machine Containers.  Each virtual machine
 container contains the resources needed to execute one program and
 consist of registers and memory that is private to that environment. A
 program running within a virtual machine container could potentially
-be concurrent, running a cooperative scheduler. A criticality level can
-be associated with each virtual machine container. Peripherals and
-external hardware resources are assigned to a single virtual machine
-container to rule out competition for resources between
-
-
+be concurrent itself, running a cooperative scheduler. A criticality
+level can be associated with each virtual machine
+container. Peripherals and external hardware resources are assigned to
+a single virtual machine container to rule out competition for
+resources between
 
 # The Sense-VM Virtual Machine 
 
@@ -64,33 +63,46 @@ node "Runtime Support"  as rs {
 
 **Hardware Abstraction Layer**
 
-The hardware abstraction layer (HAL) will probably be implemented by building upon an existing HAL system such as ChibiOS, ContikiOs or ZephyrOS.
-Other HALs could also be candidates: CMSIS, HAL from ST for STM32 platforms for example. We should try to keep as much of the code as possible portable 
-so that it can be ported to HALs that parhaps have more desirable features. 
-The HAL will be a collection of functions (and perhaps routines running on a timer interrupt periodically if needed) that can be called 
-from the runtime support system.
+The hardware abstraction layer (HAL) will probably be implemented by
+building upon an existing HAL system such as ChibiOS, ContikiOs or
+ZephyrOS.  Other HALs could also be candidates: CMSIS, HAL from ST for
+STM32 platforms for example. We should try to keep as much of the code
+as possible portable so that it can be ported to HALs that parhaps
+have more desirable features.  The HAL will be a collection of
+functions (and perhaps routines running on a timer interrupt
+periodically if needed) that can be called from the runtime support
+system.
 
 **Sleep Manager** 
 
-If there is no processing going on (reported from the various schedulers) the sleep manager puts the system to sleep for a period of time such that 
-it wakes up when it is time for the context/container with the earliest "wake-up" time to start executing.
+If there is no processing going on (reported from the various
+schedulers) the sleep manager puts the system to sleep for a period of
+time such that it wakes up when it is time for the context/container
+with the earliest "wake-up" time to start executing.
 
-The sleep manager may also be prompted to wake the system up by for example a sensor driver when the sensor has new samples to process. 
+The sleep manager may also be prompted to wake the system up by for
+example a sensor driver when the sensor has new samples to process.
 
-It is not unthinkable that there are applications that will just sleep indefinitely unless there is outside stimulus. It may still be 
-desirable that these applications wake up periodically and just let the monitoring system know that it is still alive and ok (a heartbeat).
+It is not unthinkable that there are applications that will just sleep
+indefinitely unless there is outside stimulus. It may still be
+desirable that these applications wake up periodically and just let
+the monitoring system know that it is still alive and ok (a
+heartbeat).
 
 **Container Scheduler and Virtual Machine Containers**
 
-A virtual machine container should be an isolated executing environment for a virtual machine. 
-(TODO: Should there really be more than one container? )
+A virtual machine container is an isolated executing environment for a
+virtual machine.  (TODO: Should there really be more than one
+container? )
 
-The container scheduler ensures that each container gets a time slot to execute. 
-Possibly, these containers could be implemented using a "thread" feature of an underlying OS/RTOS/HAL or be given a certain number of iterations 
-of some main loop. 
+The container scheduler ensures that each container gets a time slot
+to execute.  Possibly, these containers could be implemented using a
+"thread" feature of an underlying OS/RTOS/HAL or be given a certain
+number of iterations of some main loop.
 
-Containers should be isolated from eachother to allow different level of criticality to different containers. High criticality containers should 
-be prioritised over low criticality containers.
+Containers should be isolated from eachother to allow different level
+of criticality to different containers. High criticality containers
+should be prioritised over low criticality containers.
  
 
 ```plantuml
@@ -139,21 +151,26 @@ node "Virtual Machine" as vm {
 ```
 **Virtual Machine** 
 
-The virtual machine is based upon the Categorical Abstract Machine (CAM) and consists of number of registers and 
-and an execution unit. (More details later)
+The virtual machine is based upon the Categorical Abstract Machine
+(CAM) and consists of number of registers and and an execution
+unit. (More details later)
 
-**Execution Unit** 
-The execution unit reads instructions from code memory at location stored in PC register and evaluates each instruction 
-over the state. 
+**Execution Unit**
+
+The execution unit reads instructions from code
+memory at location stored in PC register and evaluates each
+instruction over the state.
 
 **Context Scheduler and Context List**
 
-There is a list of contexts (separate instances of code and state) that can execute in a time-shared fashion on the 
-execution unit. 
+There is a list of contexts (separate instances of code and state)
+that can execute in a time-shared fashion on the execution unit.
 
-(TODO: Maybe cooperative scheduling at this level? This would require "go to sleep" operations in the bytecode.)
+(TODO: Maybe cooperative scheduling at this level? This would require
+"go to sleep" operations in the bytecode.)
 
-The contexts that are executed on one VM are sharing the memory resources of the Virtual Machine Container. 
+The contexts that are executed on one VM are sharing the memory
+resources of the Virtual Machine Container.
 
 
 
@@ -190,12 +207,24 @@ The contexts that are executed on one VM are sharing the memory resources of the
 	
 ``` 
 
-The context list consists of some number of "Execution Context to Activate". A context is activated by copying the stored register state 
+The context list consists of some number of "Execution Context to
+Activate". A context is activated by copying the stored register state
 into the VM. Putting a context to sleep works in the reversed way.
 
+# Scheduling
+
+## Virtual Machine Container Scheduling
+
+Priority based scheduling with pre-emption.
+   
+
+## Cooperative scheduling within a Virtual Machine
+
+A program may consist of a number of cooperating tasks that are never
+pre-empted. The running task gives up the Execution Unit by executing
+`sleep ns` instruction.
 
 # The Categorical Abstract Machine
-
 
 # Instruction set
 
@@ -203,14 +232,32 @@ into the VM. Putting a context to sleep works in the reversed way.
 
 # Fault Tolerance and Reliability
 
+# Communication
+
+## Between contexts within a Virtual Machine Container
+
+Contexts executing within a virtual machine container share a
+heap. Data can easily be exchanged between tasks if both tasks know of
+a common name referencing a heap structure.  Since the Heap is private
+to the container and contexts never pre-empt eachother, no locking
+mechanism should be needed for accesses to these shared structures.
+
+## Between Virtual Machine Containers
+
+Low criticality containers should not be able to influence the
+execution of a higher criticality container in any way.  (TODO: What
+mechanisms for communication do we need to add for Container ->
+Container communication?)
 
 
 
 ## Thoughts 
 
-Splitting concurrency up between internal to VM container via contexts and external between containers open 
-up to running VM containers on different cores in parallel. 
+Splitting concurrency up between internal to VM container via contexts
+and external between containers open up to running VM containers on
+different cores in parallel.
 
-Management of other resources is also important. Communication interfaces, sensors etc. I think it would 
-be beneficial to assign such resources to a VM Container and never allow the same interface to be connected to 
-more than one VM Container. 
+Management of other resources is also important. Communication
+interfaces, sensors etc. I think it would be beneficial to assign such
+resources to a VM Container and never allow the same interface to be
+connected to more than one VM Container.
