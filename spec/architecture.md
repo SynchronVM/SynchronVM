@@ -122,9 +122,17 @@ node "Virtual Machine Container" {
 	rectangle "Virtual Machine" as vm
 		
 	rectangle "Memory Management\nRuntime Support" as mm
+
+	rectangle "Private Peripherals and Resources" as ppr
+
+	rectangle "Peripheral Drivers\nRuntime Support" as pd
+
 	
 	vm -> mm 
 	mm -> mem
+
+	vm --> pd
+	pd -> ppr
 
 	caption A VM container consist of a virtual machine instance and a set of dedicated and private memory resources.
 
