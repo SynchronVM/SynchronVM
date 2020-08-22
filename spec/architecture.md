@@ -134,7 +134,7 @@ node "Virtual Machine Container" {
 	vm --> pd
 	pd -> ppr
 
-	caption A VM container consist of a virtual machine instance and a set of dedicated and private memory resources.
+	caption A VM container consist of a virtual machine instance and a set of dedicated and private resources.
 
 }
 ``` 
