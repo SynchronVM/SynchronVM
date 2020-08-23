@@ -58,21 +58,31 @@ const uint8_t vmc_container_2_code[] = {
 #endif
 
 
-
 int vmc_init(void) {
 
+  int r = 0;
+  int rl = 0;
+  
   #if VMC_NUM_CONTAINERS >= 1
-  vm_containers[VMC_CONTAINER_1].heap_memory  = vmc_container_1_heap;
+  rl = heap_init(&vm_containers[VMC_CONTAINER_1].heap, vmc_container_1_heap, VMC_CONTAINER_1_HEAP_SIZE_BYTES);
+  if (!rl) {
+    return 0;
+  }
   vm_containers[VMC_CONTAINER_1].stack_memory = vmc_container_1_stack;
   vm_containers[VMC_CONTAINER_1].code_memory  = vmc_container_1_code;
+  r++;
   #endif
 
   #if VMC_NUM_CONTAINERS >= 2
-  vm_containers[VMC_CONTAINER_2].heap_memory = vmc_container_2_heap;
+  rl = heap_init(&vm_containers[VMC_CONTAINER_2].heap, vmc_container_2_heap, VMC_CONTAINER_2_HEAP_SIZE_BYTES);
+  if (!rl) {
+    return 0;
+  }
   vm_containers[VMC_CONTAINER_2].stack_memory = vmc_container_2_stack;
   vm_containers[VMC_CONTAINER_2].code_memory = vmc_container_2_code;
+  r++;
   #endif
 
 
-  return 1;
+  return r;
 }

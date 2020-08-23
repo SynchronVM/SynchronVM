@@ -1,23 +1,39 @@
 
 # Tests
 
+SENSEVM_DIR = ../
 
-CCFLAGS = -g -O2 -Wall -Wconversion -pedantic -std=c11 
-CC=gcc
+include $(SENSEVM_DIR)sense-vm.mk
 
-SRC = src
-OBJ = obj
+SOURCE_DIR = $(SENSEVM_DIR)/src
+INCLUDE_DIR = $(SENSEVM_DIR)/include
 
-SOURCES = $(wildcard *.c)
-EXECS = $(patsubst %.c, %.exe, $(SOURCES))
+INCLUDES = -I$(INCLUDE_DIR) -I$(SENSEVM_DIR)$(PLATFORM_INCLUDE) -I.
 
-INCLUDES = -I../include -I../platform/linux-x86/include
+$(shell mkdir -p ${BUILD_DIR})
 
-all: $(EXECS)
 
-%.exe: %.c
-	$(CC) $(INCLUDES) $(CCFLAGS) $< ../build/linux-x86/libsensevm.a -o $@ 
+vpath %.c $(SOURCE_DIR) $(SENSEVM_DIR)$(PLATFORM_SOURCE)
+SOURCES_P = $(wildcard $(SOURCE_DIR)/*.c) $(wildcard $(SENSEVM_DIR)$(PLATFORM_SOURCE)/*.c)
+SOURCES = $(notdir $(SOURCES_P))
+OBJECTS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
+$(info $(SOURCES_P))
+$(info $(SOURCES))
+$(info $(OBJECTS))
+
+TEST_SOURCES = $(wildcard *.c)
+TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))
+
+TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I.
+
+all: $(TEST_EXECS) $(OBJECTS)
+
+%.exe: %.c $(OBJECTS)
+	$(CC) $(TEST_INCLUDES) $(CCFLAGS) $(OBJECTS) $< -o $@ 
+
+$(BUILD_DIR)/%.o: %.c
+	$(CC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
 
 clean:
 	rm *.exe

@@ -22,55 +22,37 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __HEAP_H_
-#define __HEAP_H_
+#ifndef __VM_CONF_H_
+#define __VM_CONF_H_
 
-#include <stdbool.h>
-
-#include <typedefs.h>
-#include <register.h>
-
-/* Bit masks for flags of a memory cell */
-#define     HEAP_MARK_BIT_MASK        0x80000000
-#define     HEAP_PTR_MASK_1           0x40000000 /* is data[1] a ptr ? */
-#define     HEAP_PTR_MASK_0           0x20000000 /* is data[2] a ptr ? */
-
-#define     HEAP_FLAGS_DEFAULT        0x00000000
-#define     HEAP_NULL                 -1
+/***********************************************/
+/* Sense-VM Application Configuration Settings */
+/***********************************************/
 
 
-typedef INT heap_index; /* size of pointers are platform specific
-                           so let's index into the heap as an array.
-			   Trying to use -1 as "heap NULL"
-			*/
+/********************************************/
+/* Virtual Machine Container (VMC) settings */
+/********************************************/
+
+#define VMC_NUM_CONTAINERS 1 // Defines the number of Virtual Machine Containers to run
 
 
-typedef struct {
-  UINT data[2];
-} heap_cell_t;
+/*********/
+/* VMC 1 */
+/*********/
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES      8192
+#define VMC_CONTAINER_1_BYTECODE_FILE        "test.X"
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES     1024
 
 
-typedef struct {
-  UINT *flags;
-  heap_cell_t *cells;
-  uintptr_t bptr;
-  unsigned int size_bytes;
-  unsigned int size_cells;
-  heap_index free_list; 
-} heap_t;
+/*********/
+/* VMC 2 */
+/*********/
+//#define VMC_CONTAINER_2_HEAP_SIZE_BYTES      8192
+//#define VMC_CONTAINER_2_BYTECODE_FILE        "tests/test.X"
+//#define VMC_CONTAINER_2_STACK_SIZE_BYTES     1024
 
 
 
-extern unsigned int heap_num_free(heap_t *heap);
 
-extern UINT heap_fst(heap_t *heap, heap_index i);
-extern UINT heap_snd(heap_t *heap, heap_index i);
-extern void heap_set_fst(heap_t *heap, heap_index i, UINT value, bool is_ptr);
-extern void heap_set_snd(heap_t *heap, heap_index i, UINT value, bool is_ptr);
-extern void heap_set_flags(heap_t *heap, heap_index i, UINT flags);
-
-extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
-
-extern heap_index heap_allocate(heap_t *heap);
-extern int heap_explicit_free(heap_t *heap, heap_index i);
 #endif

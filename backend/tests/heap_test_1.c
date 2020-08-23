@@ -22,33 +22,18 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <heap.h>
+#include <VMC.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 
-
 int main(int argc, char **argv) {
+  (void)argc;
+  (void)argv;
 
-  int r = heap_init(1000);
-
-  if (r) {
-    printf("heap_init: OK!\n");
-  } else {
-    printf("heap_init: Failed!\n");
+  if (!vmc_init()) {
     return 0;
   }
 
-  unsigned int n = heap_num_free();
-
-  if (n == 1000) {
-    printf("heap_num_free: OK!\n");
-  } else {
-    printf("heap_num_free: Failed!\n");
-    printf("Free elements: %u\n", n);
-    return 0;
-  }
-
-  heap_destroy();
-  return r;
+  return 1;
 }

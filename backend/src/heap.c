@@ -27,63 +27,45 @@
 
 #include <stdlib.h> // later remove this include when no memory "malloced" in this file. 
 
-/************/
-/* Globals  */
-/************/
-
-heap_index free_list = HEAP_NULL;
-
-heap_cell_t *heap = NULL;
-
-uintptr_t heap_base_ptr = 0;
-
 /*****************************/
 /* Smaller Utility Functions */
 /*****************************/
 
-heap_index heap_ptr_to_index(uintptr_t p) {
-  /* 3 * 4 bytes per cell = 12 bytes */
-  uintptr_t ix = (p - heap_base_ptr) / 12;
-  return (heap_index)ix;
+UINT heap_fst(heap_t *heap, heap_index i) {
+  return heap->cells[i].data[0];
 }
 
-UINT heap_fst(heap_index i) {
-  return heap[i].data[0];
+UINT heap_snd(heap_t *heap, heap_index i) {
+  return heap->cells[i].data[1];
 }
 
-UINT heap_snd(heap_index i) {
-  return heap[i].data[1];
-}
-
-void heap_set_fst(heap_index i, UINT value, bool is_ptr) {
-  heap[i].data[0] = value;
+void heap_set_fst(heap_t *heap, heap_index i, UINT value, bool is_ptr) {
+  heap->cells[i].data[0] = value;
   if (is_ptr) {
-    heap[i].flags |= HEAP_PTR_MASK_0;
+    heap->flags[i] |= HEAP_PTR_MASK_0;
   } else {
-    heap[i].flags &= !HEAP_PTR_MASK_0;
+    heap->flags[i] &= !HEAP_PTR_MASK_0;
   }
 }
 
-void heap_set_snd(heap_index i, UINT value, bool is_ptr) {
-  heap[i].data[1] = value;
+void heap_set_snd(heap_t *heap, heap_index i, UINT value, bool is_ptr) {
+  heap->cells[i].data[1] = value;
   if (is_ptr) {
-    heap[i].flags |= HEAP_PTR_MASK_1;
+    heap->flags[i] |= HEAP_PTR_MASK_1;
   } else {
-    heap[i].flags &= !HEAP_PTR_MASK_1;
+    heap->flags[i] &= !HEAP_PTR_MASK_1;
   }
 }
 
-void heap_set_flags(heap_index i, UINT flags) {
-  heap[i].flags = flags;
+void heap_set_flags(heap_t *heap, heap_index i, UINT flags) {
+  heap->flags[i] = flags;
 }
 
-unsigned int heap_num_free(void) {
-  heap_index curr = free_list;
+unsigned int heap_num_free(heap_t *heap) {
+  heap_index curr = heap->free_list;
   unsigned int n = 0;
-
   while (curr != HEAP_NULL) {
-
-    curr = heap_snd(curr);
+    curr = heap_snd(heap, curr);
     n ++;
   }
   return n;
@@ -93,67 +75,60 @@ unsigned int heap_num_free(void) {
 /* Heap Creation and Initialization */
 /************************************/
 
-/*@ requires n_cells > 0 && n_cells < N_MAX_HEAP_CELLS ; */
-int heap_init(unsigned int n_cells) {
+int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
-  if (heap) {
-    free(heap);
+  if (!mem || size_bytes < 1024) return 0;
+  
+  unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(UINT));
+
+  // Maybe check to make sure that mem is 4bytes aligned,
+  // it doesn't need to be as it is a uint8_t type. 
+  heap->cells = (heap_cell_t *)mem;
+
+  heap->flags = (UINT*)(mem + (8 * n_cells));
+ 
+  heap->bptr = (uintptr_t)heap;
+
+  for (unsigned int i = 0; i < n_cells; i ++) {
+    heap->cells[i].data[1] = i + 1;
+    heap->flags[i] = HEAP_FLAGS_DEFAULT;
+    heap->flags[i] = heap->flags[i] | HEAP_PTR_MASK_1;
   }
+  
+  heap->cells[n_cells-1].data[1] = HEAP_NULL;
+  heap->free_list = 0;
 
-  heap = malloc(sizeof(heap_cell_t) * n_cells);
-
-  if (heap) {
-
-    heap_base_ptr = (uintptr_t)heap;
-
-    for (unsigned int i = 0; i < n_cells; i ++) {
-      heap[i].data[1] = i + 1;
-      heap[i].flags = HEAP_FLAGS_DEFAULT;
-      heap[i].flags = heap[i].flags | HEAP_PTR_MASK_1;
-    }
-
-    heap[n_cells-1].data[1] = HEAP_NULL;
-    free_list = 0;
-  } else {
-    return 0;
-  }
   return 1;
-}
-
-
-void heap_destroy(void) {
-  if (heap)
-    free(heap);
-
-  free_list = HEAP_NULL;
 }
 
 /*******************/
 /* Heap Allocation */
 /*******************/
 
-heap_index heap_allocate(void) {
+heap_index heap_allocate(heap_t *heap) {
 
-  if (free_list == HEAP_NULL) return free_list;
+  heap_index fl = heap->free_list;
+  
+  if (fl == HEAP_NULL) return fl;
 
-  heap_index i = free_list;
-  free_list = heap_snd(i);
-  heap_set_flags(i, HEAP_FLAGS_DEFAULT);
+  heap_index i = fl;
+  fl = heap_snd(heap, i);
+  heap_set_flags(heap, i, HEAP_FLAGS_DEFAULT);
   return i;
 }
 
 /* Dangerous function */
-int heap_explicit_free(heap_index i) {
+int heap_explicit_free(heap_t *heap, heap_index i) {
 
-  heap_index curr = free_list;
+  heap_index curr = heap->free_list;
   while (curr != HEAP_NULL) {
     if (curr == i) return 0;  /* trying to explicitly free something
                                  that is already on the free_list */
-    curr = heap_snd(curr);
+    curr = heap_snd(heap, curr);
   }
 
-  heap_set_snd(i, free_list, true);
-  free_list = i;
+  heap_set_snd(heap, i, heap->free_list, true);
+  heap->free_list = i;
   return 1;
 }
 

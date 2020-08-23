@@ -26,6 +26,9 @@
 #define __VMC_H_
 
 #include <vm-conf.h>
+#include <typedefs.h>
+#include <register.h>
+#include <heap.h>
 
 #include <stdint.h>
 
@@ -33,7 +36,7 @@
 #define VMC_CONTAINER_2 1
 
 typedef struct {
-  uint8_t       *heap_memory;
+  heap_t        heap;
   uint8_t       *stack_memory;
   const uint8_t *code_memory;
 } vmc_t;
@@ -44,8 +47,6 @@ extern vmc_t vm_containers[]; /* For testing, remove this later */
 /* External Interface */
 /**********************/
 
-
 extern int vmc_init(void);
-
 
 #endif
