@@ -26,6 +26,18 @@
 
 
 
-int f(void) {
-  return VMC_NUM_CONTAINERS;
+int vmc_init(void) {
+
+  #if VMC_NUM_CONTAINERS >= 1
+  vm_containers[VMC_CONTAINER_1].heap_memory = vmc_container_1_heap;
+  vm_containers[VMC_CONTAINER_1].code_memory = vmc_container_1_code;
+  #endif
+
+  #if VMC_NUM_CONTAINERS >= 2
+  vm_containers[VMC_CONTAINER_2].heap_memory = vmc_container_2_heap;
+  vm_containers[VMC_CONTAINER_2].code_memory = vmc_container_2_code;
+  #endif
+
+
+  return 1;
 }

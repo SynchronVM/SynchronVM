@@ -37,7 +37,8 @@
 
 #define VMC_NUM_CONTAINERS 1 // Defines the number of Virtual Machine Containers to run
 
-
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES      1024
+#define VMC_CONTAINER_1_BYTECODE_FILE        "tests/test.X" 
 
 
 
