@@ -114,7 +114,7 @@ heap_index heap_allocate(heap_t *heap) {
   if (fl == HEAP_NULL) return fl;
 
   heap_index i = fl;
-  fl = heap_snd(heap, i);
+  heap->free_list = heap_snd(heap, i);
   heap_set_flags(heap, i, HEAP_FLAGS_DEFAULT);
   return i;
 }

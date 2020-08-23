@@ -36,5 +36,6 @@ $(BUILD_DIR)/%.o: %.c
 	$(CC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
 
 clean:
+	rm $(BUILD_DIR)/*.o
 	rm *.exe
 
