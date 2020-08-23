@@ -48,7 +48,7 @@ SOURCE_DIR = src
 INCLUDE_DIR = include
 
 
-INCLUDES = -I$(INCLUDE_DIR) -I$(PLATFORM_INCLUDE)
+INCLUDES = -I$(INCLUDE_DIR) -I$(PLATFORM_INCLUDE) -I.
 
 $(shell mkdir -p ${BUILD_DIR})
 
@@ -60,7 +60,6 @@ SOURCES_P = $(wildcard $(SOURCE_DIR)/*.c) $(wildcard $(PLATFORM_SOURCE)/*.c)
 SOURCES = $(notdir $(SOURCES_P))
 OBJECTS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
-
 LIB = $(BUILD_DIR)/libsensevm.a
 all: $(OBJECTS) $(LIB)
 
@@ -70,7 +69,7 @@ debug: $(OBJECTS) $(LIB)
 $(LIB): $(OBJECTS) 
 	$(AR) -rcs $@ $(OBJECTS)
 
-$(BUILD_DIR)/%.o: $(SOURCES) 
+$(BUILD_DIR)/%.o: %.c
 	$(CC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
 
 clean:
