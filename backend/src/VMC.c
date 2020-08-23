@@ -83,6 +83,5 @@ int vmc_init(void) {
   r++;
   #endif
 
-
   return r;
 }

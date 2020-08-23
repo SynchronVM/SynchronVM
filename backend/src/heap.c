@@ -25,8 +25,6 @@
 #include <heap.h>
 #include <platform.h>
 
-#include <stdlib.h> // later remove this include when no memory "malloced" in this file. 
-
 /*****************************/
 /* Smaller Utility Functions */
 /*****************************/
