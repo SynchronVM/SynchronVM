@@ -113,7 +113,9 @@ data Instruction
    deriving (Ord, Show, Eq)
 
 -- labels to identify a subroutine
-newtype Label = Label Int deriving (Ord, Eq)
+newtype Label =
+  Label { getLabel :: Int }
+  deriving (Ord, Eq)
 
 instance Show Label where
   show (Label i) = show i

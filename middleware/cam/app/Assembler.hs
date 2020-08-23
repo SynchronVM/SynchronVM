@@ -20,6 +20,7 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+{-# LANGUAGE LambdaCase #-}
 module Assembler where
 
 import CAM
@@ -124,11 +125,126 @@ LE                             0x22                        1
 
 -}
 
+type Index = Int
+
+type SymbolTable = [(Label, Index)]
+
 translate :: CAM -> ByteArray
 translate cam = byteArrayFromList bytelist
   where
-    bytelist = assemble cam
+    bytelist = assemble i st
     len = length bytelist
+    i   = instructions cam
+    st  = buildST cam
 
-assemble :: CAM -> [Word8]
-assemble = undefined
+foo = byteArrayFromList [1::Word8]
+
+assemble :: [Instruction] -> SymbolTable -> [Word8]
+assemble [] _ = []
+assemble (i : is) st =
+  case i of
+    FST -> first  : restInstrs
+    SND -> second : restInstrs
+    ACC  n ->  acc : byte n : restInstrs
+    REST n -> rest : byte n : restInstrs
+    PUSH -> push : restInstrs
+    SWAP -> swap : restInstrs
+    QUOTE (LInt i) -> undefined -- LOADI
+    QUOTE (LBool b) -> loadb : bool b : restInstrs -- LOADB
+    CLEAR -> clear : restInstrs
+    CONS  ->  cons : restInstrs
+    CUR l -> cur : byte (getLabel l) : restInstrs
+    PACK t -> undefined
+    SKIP -> skip : restInstrs
+    STOP -> stop : restInstrs
+    APP  -> app  : restInstrs
+    RETURN -> ret : restInstrs
+  where
+    restInstrs = assemble is st
+
+buildST :: CAM -> SymbolTable
+buildST cam = filteredEntries
+  where
+    instrsLabs = genInstrs cam dummyLabel
+    indexedinstrsLabs = zip instrsLabs [0..]
+    entries = map (\((_,l),idx) -> (l,idx)) indexedinstrsLabs
+    filteredEntries = filter (\(l,_) -> l /= dummyLabel) entries
+
+instructions :: CAM -> [Instruction]
+instructions (Ins i) = [i]
+instructions (Seq c1 c2) = instructions c1 ++ instructions c2
+instructions (Lab _ c)   = instructions c
+
+-- CAM is a linear sequence so when we encounter
+-- Label l (Seq i1 i2).. the label `l` is for i1
+-- only and we give the dummylabel to i2. If there
+-- are labels associated with i2 they get labeled
+-- with future labeled instructions
+genInstrs :: CAM -> Label -> [(Instruction, Label)]
+genInstrs (Ins i) l = [(i, l)]
+genInstrs (Seq c1 c2) l = genInstrs c1 l ++ genInstrs c2 dummyLabel
+genInstrs (Lab l c) _   = genInstrs c l
+
+
+first, second :: Word8
+first  = 0
+second = 1
+
+acc, rest :: Word8
+acc  = 2
+rest = 3
+
+push,swap :: Word8
+push = 4
+swap = 5
+
+loadi, loadb :: Word8
+loadi = 6
+loadb = 7
+
+bool :: Bool -> Word8
+bool = \case
+  True  -> 1
+  False -> 0
+
+clear, cons :: Word8
+clear = 8
+cons  = 9
+
+cur :: Word8
+cur = 10
+
+pack :: Word8
+pack = 11
+
+skip, stop, app, ret :: Word8
+skip = 12
+stop = 13
+app  = 14
+ret  = 15
+
+byte :: Int -> Word8
+byte n
+  | n < 0 = error "unsigned byte not allowed"
+  | n > 255 = error "value greater than one byte"
+  | otherwise = fromIntegral n
+
+(!!!) :: ByteArray -> Int -> Word8
+(!!!) = indexByteArray
+
+-- In this case we have a common error message
+-- because this operation is only on a symbol table
+(~>) :: SymbolTable -> Label -> Index
+(~>) [] _ = error "Label missing in symbol table"
+(~>) ((label,idx):st) l
+  | l == label = idx
+  | otherwise  = st ~> l
+
+put :: SymbolTable -> Label -> Index -> SymbolTable
+put st l idx = (l,idx) : st
+
+
+emptyST :: SymbolTable
+emptyST = []
+
+dummyLabel = Label (-1)
