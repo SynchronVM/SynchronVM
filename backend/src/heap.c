@@ -97,6 +97,8 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
   
   heap->cells[n_cells-1].data[1] = HEAP_NULL;
   heap->free_list = 0;
+  heap->size_bytes = size_bytes;
+  heap->size_cells = n_cells;
 
   return 1;
 }

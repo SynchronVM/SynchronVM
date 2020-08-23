@@ -24,6 +24,8 @@
 
 #include <VMC.h>
 
+#include <vm-conf.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -34,6 +36,21 @@ int main(int argc, char **argv) {
   if (!vmc_init()) {
     return 0;
   }
+
+  heap_t *hptr = &vm_containers[VMC_CONTAINER_1].heap;
+
+  printf("Heap size bytes: %u\n", hptr->size_bytes);
+  printf("Heap size cells: %u\n", hptr->size_cells);
+  printf("Heap free: %u\n", heap_num_free(hptr));
+
+  if (hptr->size_cells != heap_num_free(hptr)) {
+    return 0;
+  }
+
+  if ((hptr->bptr & 0x3) != 0) {
+    printf("Heap is not 4 byte aligned\n");
+    return 0;
+  } 
 
   return 1;
 }
