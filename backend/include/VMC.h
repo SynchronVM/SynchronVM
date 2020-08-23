@@ -34,42 +34,11 @@
 
 typedef struct {
   uint8_t       *heap_memory;
+  uint8_t       *stack_memory;
   const uint8_t *code_memory;
 } vmc_t;
 
-
-#if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 10 
-
-vmc_t vm_containers[VMC_NUM_CONTAINERS];
-
-#else
-/* This is just an experiment and if we end up building on it, the 
-   range of numbers can be extended */
-#error "VMC_NUM_CONTAINERS must be set to an integer value from 1 to 2"
-#endif 
-
-
-#if VMC_NUM_CONTAINERS >= 1
-uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];
-
-const uint8_t vmc_container_1_code[] = {
-  #include VMC_CONTAINER_1_BYTECODE_FILE
-  ,0
-};
-				      
-#endif 
-
-#if VMC_NUM_CONTAINERS >= 2
-unsigned char vmc_container_2_heap[VMC_CONTAINER_2_HEAP_SIZE_BYTES];
-
-const uint8_t vmc_container_2_code[] = {
-  #include VMC_CONTAINER_2_BYTECODE_FILE
-  ,0
-};
-
-#endif 
-
-
+extern vmc_t vm_containers[]; /* For testing, remove this later */
 
 /**********************/
 /* External Interface */
