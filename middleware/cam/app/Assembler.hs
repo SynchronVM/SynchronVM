@@ -153,12 +153,15 @@ assemble (i : is) st =
     QUOTE (LBool b) -> loadb : bool b : restInstrs -- LOADB
     CLEAR -> clear : restInstrs
     CONS  ->  cons : restInstrs
-    CUR l -> cur : byte (getLabel l) : restInstrs
+    CUR l -> cur : byte (st ~> l) : restInstrs
     PACK t -> undefined
     SKIP -> skip : restInstrs
     STOP -> stop : restInstrs
     APP  -> app  : restInstrs
     RETURN -> ret : restInstrs
+    CALL l -> call : byte (st ~> l) : restInstrs
+    GOTO l -> goto : byte (st ~> l) : restInstrs
+    GOTOFALSE l -> gotofalse : byte (st ~> l) : restInstrs
   where
     restInstrs = assemble is st
 
@@ -217,11 +220,16 @@ cur = 10
 pack :: Word8
 pack = 11
 
-skip, stop, app, ret :: Word8
+skip, stop, app, ret, call, goto :: Word8
 skip = 12
 stop = 13
 app  = 14
 ret  = 15
+call = 16
+goto = 17
+
+gotofalse :: Word8
+gotofalse = 18
 
 byte :: Int -> Word8
 byte n
