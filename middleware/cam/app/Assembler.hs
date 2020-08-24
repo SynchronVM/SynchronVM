@@ -23,12 +23,13 @@
 {-# LANGUAGE LambdaCase #-}
 module Assembler where
 
-import CAM
-import Data.Word
+import CAM hiding (initState)
+import Control.Monad.State.Strict
+import Data.Int (Int32)
 import Data.Primitive.ByteArray
-import GHC.Arr
+import Data.Word
 
-
+import qualified Data.ByteString as B
 
 {-
 Bytecode format for CAM
@@ -129,41 +130,66 @@ type Index = Int
 
 type SymbolTable = [(Label, Index)]
 
+data AssemblerState =
+  AssemblerState
+  { intpool :: [Word8]
+  , strpool :: [Word8]
+  , nativepool  :: [Word8]
+  , symbolTable :: SymbolTable
+  }
+
+
+newtype Assembler a =
+  Assembler
+    { runAssembler :: State AssemblerState a
+    }
+  deriving (Functor, Applicative, Monad, MonadState AssemblerState)
+
+initState :: AssemblerState
+initState = undefined
+
 translate :: CAM -> ByteArray
 translate cam = byteArrayFromList bytelist
   where
-    bytelist = assemble i st
-    len = length bytelist
+    (bytelist, _) = runState (runAssembler (assemble i)) initState
     i   = instructions cam
     st  = buildST cam
 
-foo = byteArrayFromList [1::Word8]
-
-assemble :: [Instruction] -> SymbolTable -> [Word8]
-assemble [] _ = []
-assemble (i : is) st =
+assemble :: [Instruction] -> Assembler [Word8]
+assemble [] = pure []
+assemble (i : is) =
   case i of
-    FST -> first  : restInstrs
-    SND -> second : restInstrs
-    ACC  n ->  acc : byte n : restInstrs
-    REST n -> rest : byte n : restInstrs
-    PUSH -> push : restInstrs
-    SWAP -> swap : restInstrs
-    QUOTE (LInt i) -> undefined -- LOADI
-    QUOTE (LBool b) -> loadb : bool b : restInstrs -- LOADB
-    CLEAR -> clear : restInstrs
-    CONS  ->  cons : restInstrs
-    CUR l -> cur : byte (st ~> l) : restInstrs
-    PACK t -> undefined
-    SKIP -> skip : restInstrs
-    STOP -> stop : restInstrs
-    APP  -> app  : restInstrs
-    RETURN -> ret : restInstrs
-    CALL l -> call : byte (st ~> l) : restInstrs
-    GOTO l -> goto : byte (st ~> l) : restInstrs
-    GOTOFALSE l -> gotofalse : byte (st ~> l) : restInstrs
-  where
-    restInstrs = assemble is st
+    FST -> gen1 first
+    SND -> gen1 second
+    ACC  n -> gen2 acc  (byte n)
+    REST n -> gen2 rest (byte n)
+    PUSH -> gen1 push
+    SWAP -> gen1 swap
+    -- QUOTE (LInt i) -> undefined -- LOADI
+    QUOTE (LBool b) ->
+      gen2 loadb (bool b)
+    CLEAR -> gen1 clear
+    CONS  -> gen1 cons
+    -- CUR l -> cur : byte (st ~> l) : restInstrs
+    -- PACK t -> undefined
+    SKIP -> gen1 skip
+    STOP -> gen1 stop
+    APP  -> gen1 app
+    RETURN -> gen1 ret
+    -- CALL l -> call : byte (st ~> l) : restInstrs
+    -- GOTO l -> goto : byte (st ~> l) : restInstrs
+    -- GOTOFALSE l -> gotofalse : byte (st ~> l) : restInstrs
+    where
+      gen1 word = do
+        rs <- assemble is
+        pure $! word : rs
+      gen2 word1 word2 = do
+        rs <- assemble is
+        pure $! word1 : word2 : rs
+      genLabel word label = do
+        st <- gets symbolTable
+        rs <- assemble is
+        pure undefined
 
 buildST :: CAM -> SymbolTable
 buildST cam = filteredEntries
@@ -256,3 +282,8 @@ emptyST :: SymbolTable
 emptyST = []
 
 dummyLabel = Label (-1)
+
+writeAssembly :: [Word8] -> IO ()
+writeAssembly = B.writeFile filepath . B.pack
+
+filepath = "/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/file.sense"
