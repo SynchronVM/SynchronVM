@@ -26,9 +26,11 @@
 #define __STACK_H_
 
 #include <typedefs.h>
+#include <register.h>
 
 #define STACK_IS_PTR_MASK 0x1
 
+/* TODO: Stack should have same flags structure as registers */
 typedef struct {
   uint8_t *flags;
   UINT    *data;
@@ -36,7 +38,10 @@ typedef struct {
   unsigned int size;
 } stack_t;
 
-
 extern int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes);
+
+extern int stack_push(stack_t *s, UINT value);
+extern int stack_push_ptr(stack_t *s, UINT ptr);
+extern int stack_pop(stack_t *s, register_t *r); 
 
 #endif

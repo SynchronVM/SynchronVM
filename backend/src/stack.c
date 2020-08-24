@@ -40,3 +40,27 @@ int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 
   return 1;
 }
+
+int stack_push(stack_t *s, UINT value) {
+  if (s->sp == s->size) return 0;
+
+  s->data[s->sp] = value;
+  s->flags[s->sp++] = 0;
+  return 1;
+}
+int stack_push_ptr(stack_t *s, UINT ptr) {
+  if (s->sp == s->size) return 0;
+
+  s->data[s->sp] = ptr;
+  s->flags[s->sp++] = STACK_IS_PTR_MASK;
+  return 1;
+}
+int stack_pop(stack_t *s, register_t *r) {
+  if (s->sp == 0) return 0;
+
+  s->sp--;
+  r->value = s->data[s->sp];
+  r->flags = s->flags[s->sp];
+  return 1;
+}
+

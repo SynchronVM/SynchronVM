@@ -1,16 +1,18 @@
 
-# The Safe and Secure Virtual Machine - Sense-VM architecture 
+# The Safe and Secure Virtual Machine - Sense-VM architecture
 
-Sense-VM is a virtual machine for IoT and embedded application in
-general. Sense-VM is a virtual machine for
-bytecode execution (think Java-VM, not an operating system hypervisor)
-that provides a base level of safety, robustness and security.
+**WORK IN PROGRESS - DRAFT** 
 
-Sense-VM target 32/64Bit microcontroller based systems with at least
+Sense-VM is a virtual machine for IoT and embedded applications in
+general. Sense-VM is a bytecode virtual machine (think Java-VM, not an
+operating system hypervisor) that provides a base level of safety,
+robustness and security.
+
+Sense-VM targets 32/64Bit microcontroller based systems with at least
 about 128Kb of Read Write Memory (RWM).
 
-Sense-VM consists of a runtime-system for exection of compiled
-linearised bytecode within isolated containers. The bytecode programs
+Sense-VM consists of a runtime-system for execution of compiled
+linearly-stored bytecode within isolated containers. The bytecode programs
 cannot mutate arbitrary memory addresses and all accesses to
 underlying hardware goes via the runtime system. 
 
@@ -20,10 +22,24 @@ container contains the resources needed to execute one program and
 consist of registers and memory that is private to that environment. A
 program running within a virtual machine container could potentially
 be concurrent itself, running a cooperative scheduler. A criticality
-level can be associated with each virtual machine
+level (priorities) can be associated with each virtual machine
 container. Peripherals and external hardware resources are assigned to
 a single virtual machine container to rule out competition for
-resources between
+resources between applications of different criticality (priority).
+
+Sense-VM is implemented in standard C for portability and static
+analysers, infer (from Facebook) and scan-build (from the Clang
+framework) are used to detect problematic code.
+
+Sense-VM specifies an interface downwards towards hardware
+functionality and peripherals, but implemnetation of that interface
+from below is not considered a part of Sense-VM per
+se. Microcontroller platforms come in very different forms so it makes
+sense to leave the low-level implementation to the specific use
+case. We do however provide implementations based on ChibiOS (Or
+contikiOs or ST HAL, or so on..)
+(TODO: Such interfaces downwards towards the hardware are not yet specified)
+(TODO: No such "ref" implementation is implemented or specified)
 
 # The Sense-VM Virtual Machine 
 
@@ -92,8 +108,7 @@ heartbeat).
 **Container Scheduler and Virtual Machine Containers**
 
 A virtual machine container is an isolated executing environment for a
-virtual machine.  (TODO: Should there really be more than one
-container? )
+virtual machine. 
 
 The container scheduler ensures that each container gets a time slot
 to execute.  Possibly, these containers could be implemented using a
