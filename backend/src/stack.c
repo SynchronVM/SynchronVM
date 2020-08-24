@@ -22,33 +22,21 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __VMC_H_
-#define __VMC_H_
-
-#include <vm-conf.h>
-#include <typedefs.h>
-#include <register.h>
-#include <heap.h>
 #include <stack.h>
 
-#include <stdint.h>
+int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 
-#define VMC_CONTAINER_1 0
-#define VMC_CONTAINER_2 1
+  if (!mem || !s || size_bytes < 256) return 0;
 
-typedef struct {
-  heap_t        heap;
-  stack_t       stack;
-  uint8_t       *arrays_memory;
-  const uint8_t *code_memory;
-} vmc_t;
+  unsigned int num_elt = size_bytes / (sizeof(UINT) + sizeof(uint8_t));
 
-extern vmc_t vm_containers[]; /* For testing, remove this later */
+  // Maybe make sure that the s->data becomes 4 bytes aligned?
+  s->data = (UINT*)mem;
 
-/**********************/
-/* External Interface */
-/**********************/
+  s->flags = (uint8_t*)(mem + sizeof(UINT) * num_elt);
 
-extern int vmc_init(void);
+  s->sp = 0;
+  s->size = num_elt;
 
-#endif
+  return 1;
+}

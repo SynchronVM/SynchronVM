@@ -22,33 +22,21 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __VMC_H_
-#define __VMC_H_
+#ifndef __STACK_H_
+#define __STACK_H_
 
-#include <vm-conf.h>
 #include <typedefs.h>
-#include <register.h>
-#include <heap.h>
-#include <stack.h>
 
-#include <stdint.h>
-
-#define VMC_CONTAINER_1 0
-#define VMC_CONTAINER_2 1
+#define STACK_IS_PTR_MASK 0x1
 
 typedef struct {
-  heap_t        heap;
-  stack_t       stack;
-  uint8_t       *arrays_memory;
-  const uint8_t *code_memory;
-} vmc_t;
+  uint8_t *flags;
+  UINT    *data;
+  unsigned int sp;
+  unsigned int size;
+} stack_t;
 
-extern vmc_t vm_containers[]; /* For testing, remove this later */
 
-/**********************/
-/* External Interface */
-/**********************/
-
-extern int vmc_init(void);
+extern int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes);
 
 #endif

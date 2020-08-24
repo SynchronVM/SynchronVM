@@ -67,10 +67,9 @@ int vmc_init(void) {
   
   #if VMC_NUM_CONTAINERS >= 1
   rl = heap_init(&vm_containers[VMC_CONTAINER_1].heap, vmc_container_1_heap, VMC_CONTAINER_1_HEAP_SIZE_BYTES);
-  if (!rl) {
-    return 0;
-  }
-  vm_containers[VMC_CONTAINER_1].stack_memory = vmc_container_1_stack;
+  if (!rl) return 0;
+  rl = stack_init(&vm_containers[VMC_CONTAINER_1].stack, vmc_container_1_stack, VMC_CONTAINER_1_STACK_SIZE_BYTES);
+  if (!rl) return 0;
   vm_containers[VMC_CONTAINER_1].code_memory  = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   r++;
@@ -78,9 +77,9 @@ int vmc_init(void) {
 
   #if VMC_NUM_CONTAINERS >= 2
   rl = heap_init(&vm_containers[VMC_CONTAINER_2].heap, vmc_container_2_heap, VMC_CONTAINER_2_HEAP_SIZE_BYTES);
-  if (!rl) {
-    return 0;
-  }
+  if (!rl) return 0;
+  rl = stack_init(&vm_containers[VMC_CONTAINER_2].stack, vmc_container_2_stack, VMC_CONTAINER_2_STACK_SIZE_BYTES);
+  if (!rl) return 0;
   vm_containers[VMC_CONTAINER_2].stack_memory = vmc_container_2_stack;
   vm_containers[VMC_CONTAINER_2].code_memory = vmc_container_2_code;
   vm_containers[VMC_CONTAINER_2].arrays_memory = vmc_container_2_arrays;

@@ -75,7 +75,7 @@ unsigned int heap_num_free(heap_t *heap) {
 
 int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
-  if (!mem || size_bytes < 1024) return 0;
+  if (!mem || !heap || size_bytes < 1024) return 0;
   
   unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(UINT));
 
@@ -83,7 +83,7 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
   // it doesn't need to be as it is a uint8_t type. 
   heap->cells = (heap_cell_t *)mem;
 
-  heap->flags = (UINT*)(mem + (8 * n_cells));
+  heap->flags = (UINT*)(mem + (sizeof(heap_cell_t) * n_cells));
  
   heap->bptr = (uintptr_t)heap;
 
