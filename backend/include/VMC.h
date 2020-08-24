@@ -38,6 +38,7 @@
 typedef struct {
   heap_t        heap;
   uint8_t       *stack_memory;
+  uint8_t       *arrays_memory;
   const uint8_t *code_memory;
 } vmc_t;
 

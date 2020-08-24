@@ -39,6 +39,7 @@ vmc_t vm_containers[VMC_NUM_CONTAINERS];
 #if VMC_NUM_CONTAINERS >= 1
 uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];
 uint8_t vmc_container_1_stack[VMC_CONTAINER_1_STACK_SIZE_BYTES];
+uint8_t vmc_container_1_arrays[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];
 
 const uint8_t vmc_container_1_code[] = {
   #include VMC_CONTAINER_1_BYTECODE_FILE
@@ -49,6 +50,7 @@ const uint8_t vmc_container_1_code[] = {
 #if VMC_NUM_CONTAINERS >= 2
 uint8_t vmc_container_2_heap[VMC_CONTAINER_2_HEAP_SIZE_BYTES];
 uint8_t vmc_container_2_stack[VMC_CONTAINER_2_STACK_SIZE_BYTES];
+uint8_t vmc_container_2_arrays[VMC_CONTAINER_2_ARRAY_MEM_SIZE_BYTES];
 
 const uint8_t vmc_container_2_code[] = {
   #include VMC_CONTAINER_2_BYTECODE_FILE
@@ -70,6 +72,7 @@ int vmc_init(void) {
   }
   vm_containers[VMC_CONTAINER_1].stack_memory = vmc_container_1_stack;
   vm_containers[VMC_CONTAINER_1].code_memory  = vmc_container_1_code;
+  vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   r++;
   #endif
 
@@ -80,6 +83,7 @@ int vmc_init(void) {
   }
   vm_containers[VMC_CONTAINER_2].stack_memory = vmc_container_2_stack;
   vm_containers[VMC_CONTAINER_2].code_memory = vmc_container_2_code;
+  vm_containers[VMC_CONTAINER_2].arrays_memory = vmc_container_2_arrays;
   r++;
   #endif
 
