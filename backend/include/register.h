@@ -26,10 +26,11 @@
 #define __REGISTER_H_
 
 #include <typedefs.h>
+#include <flags.h>
 
 typedef struct {
-  UINT flags;      /* Could be half size of flags in heap or smaller ?? potentially */
-  UINT value;
+  value_flags_t flags;      
+  UINT          value;
 } register_t;
 
 

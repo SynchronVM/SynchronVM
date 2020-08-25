@@ -29,13 +29,9 @@
 
 #include <typedefs.h>
 #include <register.h>
+#include <flags.h>
 
-/* Bit masks for flags of a memory cell */
-#define     HEAP_MARK_BIT_MASK        0x80000000
-#define     HEAP_PTR_MASK_1           0x40000000 /* is data[1] a ptr ? */
-#define     HEAP_PTR_MASK_0           0x20000000 /* is data[2] a ptr ? */
 
-#define     HEAP_FLAGS_DEFAULT        0x00000000
 #define     HEAP_NULL                 -1
 
 
@@ -51,14 +47,13 @@ typedef struct {
 
 
 typedef struct {
-  UINT *flags;
-  heap_cell_t *cells;
-  uintptr_t bptr;
+  heap_flags_t *flags;
+  heap_cell_t  *cells;
+  uintptr_t    bptr;
   unsigned int size_bytes;
   unsigned int size_cells;
-  heap_index free_list; 
+  heap_index   free_list; 
 } heap_t;
-
 
 
 extern unsigned int heap_num_free(heap_t *heap);
@@ -67,7 +62,7 @@ extern UINT heap_fst(heap_t *heap, heap_index i);
 extern UINT heap_snd(heap_t *heap, heap_index i);
 extern void heap_set_fst(heap_t *heap, heap_index i, UINT value, bool is_ptr);
 extern void heap_set_snd(heap_t *heap, heap_index i, UINT value, bool is_ptr);
-extern void heap_set_flags(heap_t *heap, heap_index i, UINT flags);
+extern void heap_set_flags(heap_t *heap, heap_index i, heap_flags_t flags);
 
 extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
 

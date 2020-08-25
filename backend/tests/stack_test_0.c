@@ -22,24 +22,41 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __STACK_H_
-#define __STACK_H_
-
+#include <VMC.h>
 #include <typedefs.h>
 #include <register.h>
-#include <flags.h>
 
-typedef struct {
-  value_flags_t *flags;
-  UINT          *data;
-  unsigned int   sp;
-  unsigned int   size;
-} stack_t;
+#include <stdlib.h>
+#include <stdio.h>
 
-extern int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes);
+int main(int argc, char **argv) {
+  (void)argc;
+  (void)argv;
 
-extern int stack_push(stack_t *s, UINT value);
-extern int stack_push_ptr(stack_t *s, UINT ptr);
-extern int stack_pop(stack_t *s, register_t *r); 
+  if (!vmc_init()) {
+    return 0;
+  }
 
-#endif
+  stack_t *s = &vm_containers[0].stack;
+
+  for (UINT i = 0; i < 10; i ++) {
+    stack_push(s, i);
+  }
+
+  for (UINT i = 10; i > 0; i --) {
+    register_t r;
+    UINT expected = i - 1;
+    stack_pop(s, &r);
+    if (r.value != expected) {
+      printf("Stack error: expected %u, got %u\n", expected, r.value);
+      return 0;
+    }
+  }
+
+  if (s->sp != 0) {
+    printf("Stack error: SP == %u\n",s->sp);
+    return 0;
+  }
+  
+  return 1;
+}

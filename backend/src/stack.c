@@ -28,12 +28,12 @@ int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 
   if (!mem || !s || size_bytes < 256) return 0;
 
-  unsigned int num_elt = size_bytes / (sizeof(UINT) + sizeof(uint8_t));
+  unsigned int num_elt = size_bytes / (sizeof(UINT) + sizeof(value_flags_t));
 
   // Maybe make sure that the s->data becomes 4 bytes aligned?
   s->data = (UINT*)mem;
 
-  s->flags = (uint8_t*)(mem + sizeof(UINT) * num_elt);
+  s->flags = (value_flags_t*)(mem + sizeof(UINT) * num_elt);
 
   s->sp = 0;
   s->size = num_elt;
@@ -52,7 +52,7 @@ int stack_push_ptr(stack_t *s, UINT ptr) {
   if (s->sp == s->size) return 0;
 
   s->data[s->sp] = ptr;
-  s->flags[s->sp++] = STACK_IS_PTR_MASK;
+  s->flags[s->sp++] = VALUE_PTR_MASK;
   return 1;
 }
 int stack_pop(stack_t *s, register_t *r) {
