@@ -28,7 +28,6 @@ import CAM hiding (initState)
 import Control.Monad.State.Strict hiding (put)
 import Data.Binary
 import Data.Int (Int32)
-import Data.Primitive.ByteArray
 import Data.Word
 import GHC.Generics
 import System.Directory.ProjectRoot
@@ -378,9 +377,6 @@ byte n
   | n < 0 = error "unsigned byte not allowed"
   | n > 255 = error "value greater than one byte"
   | otherwise = fromIntegral n
-
-(!!!) :: ByteArray -> Int -> Word8
-(!!!) = indexByteArray
 
 byte2 :: Int -> Word16
 byte2 n

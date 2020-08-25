@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bcf678e3ca08f3bb959ed3a4fdb5a0158d07a3a95e47663d50047d74105a9013
+-- hash: 447473933b63b02ad9b955561510fc60fd2e17754ec2f85395d9c50e8b0107b6
 
 name:           cam
 version:        0.1.0.0
@@ -55,7 +55,6 @@ executable cam-exe
     , bytestring
     , cam
     , mtl
-    , primitive
     , projectroot
   default-language: Haskell2010
 

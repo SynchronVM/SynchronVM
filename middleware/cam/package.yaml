@@ -39,7 +39,6 @@ executables:
     - bytestring
     - cam
     - mtl
-    - primitive
     - projectroot
     default-extensions:
     - GeneralizedNewtypeDeriving
