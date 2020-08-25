@@ -8,4 +8,9 @@ all: $(PDFS)
 
 
 %.pdf: %.md
-	pandoc $< -o $@ --filter pandoc-plantuml	
+	pandoc -V linkcolor:blue $< -o $@ --filter pandoc-plantuml	
+
+
+
+clean:
+	rm *.pdf
