@@ -35,6 +35,7 @@ executables:
     - -with-rtsopts=-N
     - -fwarn-incomplete-patterns
     dependencies:
+    - binary
     - bytestring
     - cam
     - mtl

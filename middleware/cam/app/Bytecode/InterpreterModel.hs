@@ -23,6 +23,7 @@
 module Bytecode.InterpreterModel where
 
 import CAM
+import Data.Int (Int32)
 import Data.List (find)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
@@ -60,9 +61,9 @@ newtype Evaluate a =
 
 
 -- Val is basically Weak Head Normal Form
-data Val = VInt  Int  -- constants s(0)
-         | VBool Bool -- constants s(0)
-         | VEmpty     -- empty tuple
+data Val = VInt  Int32   -- constants s(0)
+         | VBool Bool    -- constants s(0)
+         | VEmpty        -- empty tuple
          | VPair Val Val -- Pair
          | VCon Tag Val  -- first arg is the tag second is value with tag
          | VClosure Val Label -- closure; Val is the environment
@@ -262,7 +263,7 @@ swap = do
                      , environment = h
                      }
 
-loadi :: Int -> Evaluate ()
+loadi :: Int32 -> Evaluate ()
 loadi i = S.modify $ \s -> s { environment = VInt i }
 
 loadb :: Bool -> Evaluate ()

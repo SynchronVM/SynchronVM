@@ -25,12 +25,12 @@ module Assembler where
 
 import CAM hiding (initState)
 import Control.Monad.State.Strict
-import Data.Int (Int32)
 import Data.Primitive.ByteArray
+import Data.Binary (Binary, encode)
 import Data.Word
 
 import qualified Data.ByteString as B
-
+import qualified Data.ByteString.Lazy as BL
 {-
 Bytecode format for CAM
 
@@ -132,7 +132,7 @@ type SymbolTable = [(Label, Index)]
 
 data AssemblerState =
   AssemblerState
-  { intpool :: [Word8]
+  { intpool :: [[Word8]]
   , strpool :: [Word8]
   , nativepool  :: [Word8]
   , symbolTable :: SymbolTable
@@ -165,20 +165,26 @@ assemble (i : is) =
     REST n -> gen2 rest (byte n)
     PUSH -> gen1 push
     SWAP -> gen1 swap
-    -- QUOTE (LInt i) -> undefined -- LOADI
+    QUOTE (LInt i32) -> do
+      ipool <- gets intpool
+      rs    <- assemble is
+      let word8X4 = serializeToBytes i32
+      modify $ \s -> s { intpool = ipool ++ [word8X4] }
+      let word8X2 = serializeToBytes $ idx (length ipool)
+      pure $! loadi : word8X2 ++ rs
     QUOTE (LBool b) ->
       gen2 loadb (bool b)
     CLEAR -> gen1 clear
     CONS  -> gen1 cons
-    -- CUR l -> cur : byte (st ~> l) : restInstrs
+    CUR l -> genLabel cur l
     -- PACK t -> undefined
     SKIP -> gen1 skip
     STOP -> gen1 stop
     APP  -> gen1 app
     RETURN -> gen1 ret
-    -- CALL l -> call : byte (st ~> l) : restInstrs
-    -- GOTO l -> goto : byte (st ~> l) : restInstrs
-    -- GOTOFALSE l -> gotofalse : byte (st ~> l) : restInstrs
+    CALL l -> genLabel call l
+    GOTO l -> genLabel goto l
+    GOTOFALSE l -> genLabel gotofalse l
     where
       gen1 word = do
         rs <- assemble is
@@ -189,7 +195,7 @@ assemble (i : is) =
       genLabel word label = do
         st <- gets symbolTable
         rs <- assemble is
-        pure undefined
+        pure $! word : byte (st ~> label) : rs
 
 buildST :: CAM -> SymbolTable
 buildST cam = filteredEntries
@@ -265,6 +271,15 @@ byte n
 
 (!!!) :: ByteArray -> Int -> Word8
 (!!!) = indexByteArray
+
+idx :: Int -> Word16
+idx n
+  | n < 0 = error "unsigned byte not allowed"
+  | n > 65535 = error "index greater than tw0 byte"
+  | otherwise = fromIntegral n
+
+serializeToBytes :: (Binary a) => a -> [Word8]
+serializeToBytes a = BL.unpack $ encode a
 
 -- In this case we have a common error message
 -- because this operation is only on a symbol table

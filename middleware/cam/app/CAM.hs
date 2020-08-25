@@ -24,6 +24,7 @@ module CAM where
 
 import Control.Monad (replicateM)
 import Data.Foldable (fold)
+import Data.Int (Int32)
 import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
 
@@ -46,7 +47,7 @@ data Exp = Var Var  -- variable
 
 data Sys = Sys2 BinOp Exp Exp -- BinOp
          | Sys1 UnaryOp Exp     -- UnaryOp
-         | LInt Int     -- Int s(0) in cam
+         | LInt Int32   -- Int s(0) in cam
          | LBool Bool   -- Bool s(0) in cam
          deriving (Ord, Show, Eq)
 
