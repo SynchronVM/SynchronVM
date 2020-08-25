@@ -3,17 +3,32 @@
 
 [Cyber threat analysis ref.](https://cyberexperts.com/cyber-threat-analysis-a-complete-overview/)
 
+## Introduction
+
 A threat analysis is usually performed in relation to an *applicaiton*.
-In a way a VM is an application, but as its indendent use is to host
+In a way a virtual machine (VM) is an application, but as its indendent use is to host
 applications, further threat analysis must be performed on a per application basis.
 Sense-VM should provide a base-level of security that will be inherited by
 applications running on top of the VM as specified in (TODO: application-security-contract).
 
 (TODO: Actually I think that the application-security-contract could be
        the result of doing this threat analysis rather than the input.
-       We need to think about this.) 
+       We need to think about this.)
 
 
+### Scope
+
+This threat analysis focuses on the virtual machine and the interfaces it provides to an application
+running on the VM. The VM also lives on top of a Hardware abstraction layer. The implementation
+of the HAL is not in scope for this threat analysis and must be analysed per HAL. 
+
+### Goal
+
+The goal is a set of mechanisms to build into the VM and the interfaces it provides that establishes a
+a set of security targets. (TODO: Formulate targets/goals).
+
+
+# Threat Modeling
 
 ## Assets
 
