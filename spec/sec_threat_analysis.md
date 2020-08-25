@@ -3,6 +3,17 @@
 
 [Cyber threat analysis ref.](https://cyberexperts.com/cyber-threat-analysis-a-complete-overview/)
 
+A threat analysis is usually performed in relation to an *applicaiton*.
+In a way a VM is an application, but as its indendent use is to host
+applications, further threat analysis must be performed on a per application basis.
+Sense-VM should provide a base-level of security that will be inherited by
+applications running on top of the VM as specified in (TODO: application-security-contract).
+
+(TODO: Actually I think that the application-security-contract could be
+       the result of doing this threat analysis rather than the input.
+       We need to think about this.) 
+
+
 
 ## Assets
 
@@ -35,6 +46,8 @@ be protected.
 ## Security Breakdown and Profiling
 
 *The primary objective creating a security profile is to uncover each and every vulnerability in the system’s design, configuration or implementation.*
+
+
 
 ## Risks
 
