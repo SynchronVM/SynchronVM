@@ -22,12 +22,13 @@
 
 module Examples where
 
+import Assembler
 import Bytecode.InterpreterModel
 import CAM
 
-example0 = Sys $ Sys2 Minus (Sys $ LInt 5) (Sys $ LInt 4)
+example0 = Sys $ Sys2 MinusI (Sys $ LInt 5) (Sys $ LInt 4)
 
-example1 = Lam (PatVar "x") (Sys $ Sys2 Plus (Sys $ LInt 3) (Var "x"))
+example1 = Lam (PatVar "x") (Sys $ Sys2 PlusI (Sys $ LInt 3) (Var "x"))
 
 example2 = App example1 (Sys $ LInt 1)
 
@@ -54,7 +55,7 @@ let a = 5 in
 (a * a)
 -}
 
-example6 = Let (PatVar "a") (Sys $ LInt 5) (Sys $ Sys2 Multiply (Var "a") (Var "a"))
+example6 = Let (PatVar "a") (Sys $ LInt 5) (Sys $ Sys2 MultiplyI (Var "a") (Var "a"))
 
 {-
 letrec even = \n -> if (n == 0) then true else not (even (n - 1))
@@ -120,7 +121,7 @@ let y = 1 in
 -}
 
 example8 = Let (PatVar "y") (Sys $ LInt 1)
-           (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y")))
+           (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "y")))
 
 {-
 let y = 1 in
@@ -128,7 +129,7 @@ let y = 1 in
 -}
 
 example9 = Let (PatVar "y") (Sys $ LInt 1)
-               (App (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y"))) (Sys $ LInt 4))
+               (App (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "y"))) (Sys $ LInt 4))
 
 {-
 (let y = 1 in
@@ -136,7 +137,7 @@ example9 = Let (PatVar "y") (Sys $ LInt 1)
 -}
 
 example10 = App (Let (PatVar "y") (Sys $ LInt 1)
-                 (Lam (PatVar "x") (Sys $ Sys2 Plus (Var "x") (Var "y")))) (Sys $ LInt 4)
+                 (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "y")))) (Sys $ LInt 4)
 
 
 {-
@@ -147,8 +148,8 @@ let foo = let m = \x -> x
 -}
 
 example11 = Let (PatVar "foo") (Let (PatVar "m") (Lam (PatVar "x") (Var "x")) (Sys $ LInt 3))
-                (Let (PatVar "baz") (Sys $ Sys2 Plus (Var "foo") (Sys $ LInt 2))
-                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                (Let (PatVar "baz") (Sys $ Sys2 PlusI (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 PlusI (Var "baz") (Sys $ LInt 4))
                 )
 
 {-
@@ -159,8 +160,8 @@ let foo = let m = 11
 -}
 
 example12 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Sys $ LInt 3))
-                (Let (PatVar "baz") (Sys $ Sys2 Plus (Var "foo") (Sys $ LInt 2))
-                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                (Let (PatVar "baz") (Sys $ Sys2 PlusI (Var "foo") (Sys $ LInt 2))
+                     (Sys $ Sys2 PlusI (Var "baz") (Sys $ LInt 4))
                 )
 
 {-
@@ -174,7 +175,7 @@ let foo = let m = 11
 
 example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x") (Var "x")))
                 (Let (PatVar "baz") (App (Var "foo") (Sys $ LInt 2))
-                     (Sys $ Sys2 Plus (Var "baz") (Sys $ LInt 4))
+                     (Sys $ Sys2 PlusI (Var "baz") (Sys $ LInt 4))
                 )
 
 {-

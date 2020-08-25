@@ -128,6 +128,18 @@ LE                             0x22                        1
 
 -}
 
+genbytecode :: CAM -> IO ()
+genbytecode = writeAssembly . translate
+
+
+writeAssembly :: [Word8] -> IO ()
+writeAssembly = B.writeFile filepath . B.pack
+
+type Arch = Word8
+
+armv7 = 0
+x86 = 1
+
 type Index = Int
 
 type SymbolTable = [(Label, Index)]
@@ -157,15 +169,31 @@ newtype Assembler a =
     }
   deriving (Functor, Applicative, Monad, MonadState AssemblerState)
 
-initState :: AssemblerState
-initState = undefined
+initState :: SymbolTable -> AssemblerState
+initState st = AssemblerState [] [] [] st
 
-translate :: CAM -> ByteArray
-translate cam = byteArrayFromList bytelist
+translate :: CAM -> [Word8]
+translate cam =
+  let (AssemblerState ipool spool npool _) = pools
+      ipoolSize = serializeToBytes $ byte2 $ length ipool
+      spoolSize = serializeToBytes $ byte2 $ sum $ map length spool
+      npoolSize = serializeToBytes $ byte2 $ length npool
+      bytelistSize = serializeToBytes $ byte4 $ length bytelist
+   in magic ++ versionArch ++
+      ipoolSize ++ join ipool ++
+      spoolSize ++ join spool ++
+      npoolSize ++ join npool ++
+      bytelistSize ++ bytelist
   where
-    (bytelist, _) = runState (runAssembler (assemble i)) initState
+    (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
     i   = instructions cam
     st  = buildST cam
+
+magic :: [Word8]
+magic = [254,237,202,254]
+
+versionArch :: [Word8]
+versionArch = [1, x86]
 
 assemble :: [Instruction] -> Assembler [Word8]
 assemble [] = pure []
@@ -242,14 +270,14 @@ modifyIntPool i32 = do
   ipool <- gets intpool
   let word8X4 = serializeToBytes i32
   modify $ \s -> s { intpool = ipool <~: word8X4 }
-  pure $! serializeToBytes $ idx (length ipool)
+  pure $! serializeToBytes $ byte2 (length ipool)
 
 modifyStringPool :: String -> Assembler [Word8]
 modifyStringPool s = do
   spool <- gets strpool
   let word8Xn = serializeToBytes (Str s)
   modify $ \s -> s { strpool = spool <~: word8Xn }
-  pure $! serializeToBytes $ idx (sum $ map length spool)
+  pure $! serializeToBytes $ byte2 (sum $ map length spool)
 
 
 buildST :: CAM -> SymbolTable
@@ -351,11 +379,18 @@ byte n
 (!!!) :: ByteArray -> Int -> Word8
 (!!!) = indexByteArray
 
-idx :: Int -> Word16
-idx n
+byte2 :: Int -> Word16
+byte2 n
   | n < 0 = error "unsigned byte not allowed"
-  | n > 65535 = error "index greater than tw0 byte"
+  | n > 65535 = error "index greater than two bytes"
   | otherwise = fromIntegral n
+
+byte4 :: Int -> Word32
+byte4 n
+  | n < 0 = error "unsigned byte not allowed"
+  | n > 4294967295 = error "index greater than four bytes"
+  | otherwise = fromIntegral n
+
 
 -- In this case we have a common error message
 -- because this operation is only on a symbol table
@@ -377,8 +412,5 @@ emptyST :: SymbolTable
 emptyST = []
 
 dummyLabel = Label (-1)
-
-writeAssembly :: [Word8] -> IO ()
-writeAssembly = B.writeFile filepath . B.pack
 
 filepath = "/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/file.sense"
