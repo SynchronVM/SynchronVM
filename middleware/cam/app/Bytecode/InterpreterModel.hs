@@ -20,7 +20,8 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-module Bytecode.InterpreterModel where
+module Bytecode.InterpreterModel ( Val (..)
+                                 , evaluate) where
 
 import CAM
 import Data.Int (Int32)

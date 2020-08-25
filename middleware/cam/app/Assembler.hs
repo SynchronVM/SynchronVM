@@ -22,7 +22,9 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
-module Assembler where
+module Assembler ( translate
+                 , genbytecode
+                 , writeAssembly) where
 
 import CAM hiding (initState)
 import Control.Monad.State.Strict hiding (put)

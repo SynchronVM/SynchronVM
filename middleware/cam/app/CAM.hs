@@ -20,7 +20,18 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-module CAM where
+module CAM ( Exp (..)
+           , Var
+           , Tag
+           , Sys (..)
+           , BinOp (..)
+           , UnaryOp (..)
+           , Label (..)
+           , Instruction (..)
+           , CAM (..)
+           , Pat (..)
+           , interpret
+           )where
 
 import Control.Monad (replicateM)
 import Data.Foldable (fold)
