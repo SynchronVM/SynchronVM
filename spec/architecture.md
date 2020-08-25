@@ -238,14 +238,19 @@ into the VM. Putting a context to sleep works in the reversed way.
 
 ## Virtual Machine Container Scheduling
 
-Priority based scheduling with pre-emption.
+Priority based scheduling with pre-emption between virtual machine
+containers. The VMC scheduling is implemented on top of threading
+functionality of the underlying HAL. If there are no threading
+abstractions in the HAL, the scheduling can be implemented using a
+periodic timer interrupt or explicitly allocating a number of
+iterations of a main-loop to each VMC. 
    
 
 ## Cooperative scheduling within a Virtual Machine
 
 A program may consist of a number of cooperating tasks that are never
 pre-empted. The running task gives up the Execution Unit by executing
-`sleep ns` instruction.
+`sleep ns` instruction. 
 
 # The Categorical Abstract Machine
 
@@ -253,7 +258,11 @@ pre-empted. The running task gives up the Execution Unit by executing
 
 # Security Measures
 
+(TODO: This needs to be thought out parhaps after doing some kind of a Threat Analysis) 
+
 # Fault Tolerance and Reliability
+
+(TODO: Try to build in a base set of functionality for fault tolerance and reliability)
 
 # Communication
 

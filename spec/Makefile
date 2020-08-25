@@ -7,5 +7,5 @@ all: $(PDFS)
 
 
 
-%.pdf: $(SOURCES)
+%.pdf: %.md
 	pandoc $< -o $@ --filter pandoc-plantuml	
