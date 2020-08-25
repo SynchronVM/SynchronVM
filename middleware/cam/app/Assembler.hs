@@ -31,6 +31,7 @@ import Data.Int (Int32)
 import Data.Primitive.ByteArray
 import Data.Word
 import GHC.Generics
+import System.Directory.ProjectRoot
 
 import qualified Data.ByteString.Lazy as B
 {-
@@ -133,7 +134,9 @@ genbytecode = writeAssembly . translate
 
 
 writeAssembly :: [Word8] -> IO ()
-writeAssembly = B.writeFile filepath . B.pack
+writeAssembly bytes = do
+  f <- filepath
+  B.writeFile f (B.pack bytes)
 
 type Arch = Word8
 
@@ -413,4 +416,9 @@ emptyST = []
 
 dummyLabel = Label (-1)
 
-filepath = "/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/file.sense"
+filepath :: IO FilePath
+filepath = do
+  fpath <- getProjectRootCurrent
+  case fpath of
+    Just f -> pure $! f <> "/file.sense"
+    Nothing -> error "Cannot detect project root"

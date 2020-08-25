@@ -40,6 +40,7 @@ executables:
     - cam
     - mtl
     - primitive
+    - projectroot
     default-extensions:
     - GeneralizedNewtypeDeriving
 
