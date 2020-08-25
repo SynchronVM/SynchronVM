@@ -20,17 +20,19 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 module Assembler where
 
 import CAM hiding (initState)
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict hiding (put)
+import Data.Binary
+import Data.Int (Int32)
 import Data.Primitive.ByteArray
-import Data.Binary (Binary, encode)
 import Data.Word
+import GHC.Generics
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy as B
 {-
 Bytecode format for CAM
 
@@ -122,7 +124,7 @@ LE                             0x22                        1
   <t> - Tag for a constructor - 2 bytes long
   <i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long
 
-
+** FIXME: Currently we use the string pool for tags and not some fixed size 2 bytes tag
 
 -}
 
@@ -130,11 +132,21 @@ type Index = Int
 
 type SymbolTable = [(Label, Index)]
 
+-- The standard Binary instance for String
+-- prefixes the length of the String, this
+-- type simply doesn't do that and encodes
+-- only the characters to binary
+newtype Str = Str { getStr :: String }
+  deriving (Ord, Show, Eq, Generic)
+
+instance Binary Str where
+    put = mapM_ put . getStr
+
 data AssemblerState =
   AssemblerState
   { intpool :: [[Word8]]
-  , strpool :: [Word8]
-  , nativepool  :: [Word8]
+  , strpool :: [[Word8]]
+  , nativepool  :: [[Word8]]
   , symbolTable :: SymbolTable
   }
 
@@ -166,18 +178,18 @@ assemble (i : is) =
     PUSH -> gen1 push
     SWAP -> gen1 swap
     QUOTE (LInt i32) -> do
-      ipool <- gets intpool
+      word8X2 <- modifyIntPool i32 -- index of int pool (16 bits)
       rs    <- assemble is
-      let word8X4 = serializeToBytes i32
-      modify $ \s -> s { intpool = ipool ++ [word8X4] }
-      let word8X2 = serializeToBytes $ idx (length ipool)
       pure $! loadi : word8X2 ++ rs
     QUOTE (LBool b) ->
       gen2 loadb (bool b)
     CLEAR -> gen1 clear
     CONS  -> gen1 cons
     CUR l -> genLabel cur l
-    -- PACK t -> undefined
+    PACK t -> do
+      word8X2 <- modifyStringPool t -- index of string pool (16 bits)
+      rs    <- assemble is
+      pure $! pack : word8X2 ++ rs
     SKIP -> gen1 skip
     STOP -> gen1 stop
     APP  -> gen1 app
@@ -185,6 +197,11 @@ assemble (i : is) =
     CALL l -> genLabel call l
     GOTO l -> genLabel goto l
     GOTOFALSE l -> genLabel gotofalse l
+    SWITCH tagsandlabels -> do
+      bytes <- mapM (\(t,l) -> genTagLabel t l) tagsandlabels
+      let size = byte (length tagsandlabels)
+      rs <- assemble is
+      pure $! switch : size : join bytes ++ rs
     where
       gen1 word = do
         rs <- assemble is
@@ -196,6 +213,28 @@ assemble (i : is) =
         st <- gets symbolTable
         rs <- assemble is
         pure $! word : byte (st ~> label) : rs
+      genTagLabel tag label = do
+       word8X2 <- modifyStringPool tag
+       st <- gets symbolTable
+       pure $! word8X2 <~: byte (st ~> label)
+
+serializeToBytes :: (Binary a) => a -> [Word8]
+serializeToBytes a = B.unpack $ encode a
+
+modifyIntPool :: Int32 -> Assembler [Word8]
+modifyIntPool i32 = do
+  ipool <- gets intpool
+  let word8X4 = serializeToBytes i32
+  modify $ \s -> s { intpool = ipool <~: word8X4 }
+  pure $! serializeToBytes $ idx (length ipool)
+
+modifyStringPool :: String -> Assembler [Word8]
+modifyStringPool s = do
+  spool <- gets strpool
+  let word8Xn = serializeToBytes (Str s)
+  modify $ \s -> s { strpool = spool <~: word8Xn }
+  pure $! serializeToBytes $ idx (sum $ map length spool)
+
 
 buildST :: CAM -> SymbolTable
 buildST cam = filteredEntries
@@ -260,8 +299,9 @@ ret  = 15
 call = 16
 goto = 17
 
-gotofalse :: Word8
+gotofalse, switch :: Word8
 gotofalse = 18
+switch = 19
 
 byte :: Int -> Word8
 byte n
@@ -278,9 +318,6 @@ idx n
   | n > 65535 = error "index greater than tw0 byte"
   | otherwise = fromIntegral n
 
-serializeToBytes :: (Binary a) => a -> [Word8]
-serializeToBytes a = BL.unpack $ encode a
-
 -- In this case we have a common error message
 -- because this operation is only on a symbol table
 (~>) :: SymbolTable -> Label -> Index
@@ -289,8 +326,12 @@ serializeToBytes a = BL.unpack $ encode a
   | l == label = idx
   | otherwise  = st ~> l
 
-put :: SymbolTable -> Label -> Index -> SymbolTable
-put st l idx = (l,idx) : st
+putST :: SymbolTable -> Label -> Index -> SymbolTable
+putST st l idx = (l,idx) : st
+
+-- snoc
+(<~:) :: [a] -> a -> [a]
+(<~:) xs x = xs ++ [x]
 
 
 emptyST :: SymbolTable
