@@ -52,14 +52,18 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          deriving (Ord, Show, Eq)
 
 
-data BinOp = Plus | Multiply  | Minus |
-              BGT | BLT | BEQ | BGE   | BLE
+data BinOp = PlusI | MultiplyI  | MinusI |
+             PlusF | MultiplyF  | MinusF |
+               BGT | BLT | BEQ  | BGE    | BLE
            deriving (Ord, Eq)
 
 instance Show BinOp where
-  show Plus     = "+"
-  show Multiply = "*"
-  show Minus    = "-"
+  show PlusI     = "+"
+  show MultiplyI = "*"
+  show MinusI    = "-"
+  show PlusF     = "+."
+  show MultiplyF = "*."
+  show MinusF    = "-."
   show BGT       = ">"
   show BLT       = "<"
   show BEQ       = "=="

@@ -202,6 +202,22 @@ assemble (i : is) =
       let size = byte (length tagsandlabels)
       rs <- assemble is
       pure $! switch : size : join bytes ++ rs
+    PRIM1 Abs -> gen1 absinst
+    PRIM1 Neg -> gen1 neg
+    PRIM1 NOT -> gen1 notinst
+    PRIM1 DEC -> gen1 dec
+    PRIM2 PlusI     -> gen1 addi
+    PRIM2 MultiplyI -> gen1 muli
+    PRIM2 MinusI    -> gen1 mini
+    PRIM2 PlusF     -> gen1 addf
+    PRIM2 MultiplyF -> gen1 mulf
+    PRIM2 MinusF    -> gen1 minf
+    PRIM2 BGT -> gen1 gt
+    PRIM2 BLT -> gen1 lt
+    PRIM2 BEQ -> gen1 eq
+    PRIM2 BGE -> gen1 ge
+    PRIM2 BLE -> gen1 le
+    _ -> error $! "Impossible instruction : " <> show i
     where
       gen1 word = do
         rs <- assemble is
@@ -302,6 +318,29 @@ goto = 17
 gotofalse, switch :: Word8
 gotofalse = 18
 switch = 19
+
+absinst, neg, notinst, dec :: Word8
+absinst = 20
+neg     = 21
+notinst = 22
+dec     = 23
+
+addi, muli, mini :: Word8
+addi = 24
+muli = 25
+mini = 26
+
+addf, mulf, minf :: Word8
+addf = 27
+mulf = 28
+minf = 29
+
+gt, lt, eq, ge, le :: Word8
+gt = 30
+lt = 31
+eq = 32
+ge = 33
+le = 34
 
 byte :: Int -> Word8
 byte n

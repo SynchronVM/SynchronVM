@@ -294,19 +294,37 @@ binaryop bop = do
   e      <- getEnv
   (h, t) <- popAndRest
   case bop of
-    Plus -> do
+    PlusI -> do
       let (VInt i1) = e -- XXX: Partial
       let (VInt i2) = h
       S.modify $ \s -> s { environment = VInt (i2 + i1)
                          , stack = t
                          }
-    Multiply -> do
+    MultiplyI -> do
       let (VInt i1) = e
       let (VInt i2) = h
       S.modify $ \s -> s { environment = VInt (i2 * i1)
                          , stack = t
                          }
-    Minus -> do
+    MinusI -> do
+      let (VInt i1) = e
+      let (VInt i2) = h
+      S.modify $ \s -> s { environment = VInt (i2 - i1)
+                         , stack = t
+                         }
+    PlusF -> do
+      let (VInt i1) = e -- XXX: Partial
+      let (VInt i2) = h
+      S.modify $ \s -> s { environment = VInt (i2 + i1)
+                         , stack = t
+                         }
+    MultiplyF -> do
+      let (VInt i1) = e
+      let (VInt i2) = h
+      S.modify $ \s -> s { environment = VInt (i2 * i1)
+                         , stack = t
+                         }
+    MinusF -> do
       let (VInt i1) = e
       let (VInt i2) = h
       S.modify $ \s -> s { environment = VInt (i2 - i1)
