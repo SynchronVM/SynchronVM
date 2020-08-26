@@ -44,8 +44,8 @@ se. Microcontroller platforms come in very different forms so it makes
 sense to leave the low-level implementation to the specific use
 case. We do however provide implementations based on ChibiOS (Or
 contikiOs or ST HAL, or so on..)
-(TODO: Such interfaces downwards towards the hardware are not yet specified)
-(TODO: No such "ref" implementation is implemented or specified)
+_Todo: Such interfaces downwards towards the hardware are not yet specified)_
+_Todo: No such "ref" implementation is implemented or specified)_
 
 # The Sense-VM Virtual Machine 
 
@@ -163,8 +163,9 @@ node "Virtual Machine Container" {
 ```plantuml
 node "Virtual Machine" as vm { 
 	frame "Registers" { 
+		[GR]
 		[PC] 
-	        [SP]
+	    [SP]
 		[CP]
 		[EP]
 	}
@@ -184,6 +185,15 @@ The virtual machine is based upon the Categorical Abstract Machine
 (CAM) and consists of number of registers and and an execution
 unit. (More details later)
 
+**Registers**
+
+- GR - General register. Used ot hold intermediate values, results and
+  one of the arguments in a function call.
+- PC - Program Counter. Instruction to execute. Index into code memory. 
+- SP - Pointer to stack data structure current in use (not a traditional stack pointer) 
+- CP - Pointer to location in code area. The base address for the PC indices. 
+- EP - Pointer to an environment datastructure.
+
 **Execution Unit**
 
 The execution unit reads instructions from code
@@ -195,13 +205,11 @@ instruction over the state.
 There is a list of contexts (separate instances of code and state)
 that can execute in a time-shared fashion on the execution unit.
 
-(TODO: Maybe cooperative scheduling at this level? This would require
-"go to sleep" operations in the bytecode.)
+_Todo: Maybe cooperative scheduling at this level? This would require
+"go to sleep" operations in the bytecode._
 
 The contexts that are executed on one VM are sharing the memory
 resources of the Virtual Machine Container.
-
-
 
 <!-- [Scheduler] -> [Execution Parameters] -->
 <!-- [Scheduler] -> [Sleep Manager]  -->
@@ -211,6 +219,7 @@ resources of the Virtual Machine Container.
 ```plantuml
 
 	frame "Registers" { 
+		[GR]
 		[PC] 
 	    [SP] 
 		[CP]
@@ -221,6 +230,7 @@ resources of the Virtual Machine Container.
 	[Scheduler]
 
 	node "Execution Context to Activate" { 
+		[Stored GR]
 		[Code Memory] 
 		[Stack]
 		[PC-RESUME]
@@ -228,6 +238,7 @@ resources of the Virtual Machine Container.
 		[Execution Parameters]
 	}
 
+	[Stored GR] --> [GR] : Copy
     [PC-RESUME] --> [PC] : Copy
 	[Stack] --> [SP] : Copy
 	[Environment] --> [EP] : Copy
@@ -360,9 +371,9 @@ mechanism should be needed for accesses to these shared structures.
 ## Between Virtual Machine Containers
 
 Low criticality containers should not be able to influence the
-execution of a higher criticality container in any way.  (TODO: What
-mechanisms for communication do we need to add for Container ->
-Container communication?)
+execution of a higher criticality container in any way.  
+_Todo: What mechanisms for communication do we need to add for Container ->
+Container communication?_
 
 
 
