@@ -5,7 +5,7 @@ header-includes: \usepackage{color}
 
 # The Safe and Secure Virtual Machine - Sense-VM architecture
 
-_Author: Bo Joel Svensson_
+_Author: Bo Joel Svensson, Abhiroop Sarkar_
 
 **WORK IN PROGRESS - DRAFT** 
 
@@ -321,7 +321,7 @@ _TODO: We should also make room in the bytecode format for checksums_
 | Bytecode file contents | Explanation                                                                                 |
 | :---                   | :---                                                                                        |
 | FE ED CA FE            | *Magic Number* - 4 bytes                                                                    |
-| 01 01                  | *Version of bytecode* - 1 byte; *architecture* - arm, x86 - 1 byte                          |
+| FF                     | *Version of bytecode* - 1 byte;                                                             |
 | 00 03                  | *Int Pool count* - 2 bytes - 65536 ints possible                                            |
 | 00 0E ED 24            | Example integer `978212`, size upto 4 bytes                                                 |
 | 00 00 CE 35            | Example integer `52789`                                                                     |
