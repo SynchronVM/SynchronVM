@@ -43,7 +43,7 @@ Bytecode format for CAM
 
 FE ED CA FE    -- *Magic Number* - 4 bytes
 
-01 01          -- *Version of bytecode* - 1 byte; *architecture* - arm, x86 - 1 byte
+FF             -- *Version of bytecode* - 1 byte;
 
 00 03          -- *Int Pool count* - 2 bytes - 65536 ints possible
 
@@ -139,11 +139,6 @@ writeAssembly bytes = do
   f <- filepath
   B.writeFile f (B.pack bytes)
 
-type Arch = Word8
-
-armv7 = 0
-x86 = 1
-
 type Index = Int
 
 type SymbolTable = [(Label, Index)]
@@ -183,7 +178,7 @@ translate cam =
       spoolSize = serializeToBytes $ byte2 $ sum $ map length spool
       npoolSize = serializeToBytes $ byte2 $ length npool
       bytelistSize = serializeToBytes $ byte4 $ length bytelist
-   in magic ++ versionArch ++
+   in magic ++ version ++
       ipoolSize ++ join ipool ++
       spoolSize ++ join spool ++
       npoolSize ++ join npool ++
@@ -196,8 +191,8 @@ translate cam =
 magic :: [Word8]
 magic = [254,237,202,254]
 
-versionArch :: [Word8]
-versionArch = [1, x86]
+version :: [Word8]
+version = [1]
 
 assemble :: [Instruction] -> Assembler [Word8]
 assemble [] = pure []
