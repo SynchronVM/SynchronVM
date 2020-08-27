@@ -60,7 +60,6 @@
 //#define VMC_CONTAINER_2_USE_UART_1            1
 
 
-
 /********************************/
 /* Configuration error checking */
 /********************************/
