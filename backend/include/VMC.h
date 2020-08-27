@@ -29,7 +29,7 @@
 #include <typedefs.h>
 #include <register.h>
 #include <heap.h>
-#include <stack.h>
+#include <VM.h>
 
 #include <stdint.h>
 
@@ -38,9 +38,10 @@
 
 typedef struct {
   heap_t        heap;
-  stack_t       stack;
+  uint8_t       *stack_memory;
   uint8_t       *arrays_memory;
   const uint8_t *code_memory;
+  VM_t          vm;
 } vmc_t;
 
 extern vmc_t vm_containers[]; /* For testing, remove this later */

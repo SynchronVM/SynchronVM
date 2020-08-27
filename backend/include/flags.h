@@ -22,43 +22,24 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <VMC.h>
-#include <typedefs.h>
-#include <register.h>
+#ifndef __FLAGS_H_
+#define __FLAGS_H_
 
-#include <stdlib.h>
-#include <stdio.h>
+typedef uint32_t heap_flags_t;
+typedef uint16_t value_flags_t;
 
-int main(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
+/* Bit masks for flags of a memory cell */
+/* Tweak these later to make more sense */ 
+#define     HEAP_MARK_BIT_MASK        0x80000000
+#define     HEAP_PTR_MASK_1           0x40000000 /* is data[1] a ptr ? */
+#define     HEAP_PTR_MASK_0           0x00004000 /* is data[2] a ptr ? */
 
-  printf("TODO: Implement\n"); 
-  
-  /* if (!vmc_init()) { */
-  /*   return 0; */
-  /* } */
+#define     HEAP_FLAGS_DEFAULT        0x00000000
 
-  /* stack_t *s = &vm_containers[0].stack; */
 
-  /* for (UINT i = 0; i < 10; i ++) { */
-  /*   stack_push(s, i); */
-  /* } */
 
-  /* for (UINT i = 10; i > 0; i --) { */
-  /*   register_t r; */
-  /*   UINT expected = i - 1; */
-  /*   stack_pop(s, &r); */
-  /*   if (r.value != expected) { */
-  /*     printf("Stack error: expected %u, got %u\n", expected, r.value); */
-  /*     return 0; */
-  /*   } */
-  /* } */
+#define     VALUE_PTR_MASK            0x4000
 
-  /* if (s->sp != 0) { */
-  /*   printf("Stack error: SP == %u\n",s->sp); */
-  /*   return 0; */
-  /* } */
-  
-  return 1;
-}
+
+
+#endif

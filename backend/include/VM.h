@@ -22,43 +22,23 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <VMC.h>
+#ifndef __VM_H_
+#define __VM_H_
+
+#include <vm-conf.h>
 #include <typedefs.h>
 #include <register.h>
+#include <stack.h>
 
-#include <stdlib.h>
-#include <stdio.h>
-
-int main(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
-
-  printf("TODO: Implement\n"); 
+typedef struct {
+  register_t value;
+  register_t env;
+  UINT       pc;
+  stack_t    stack;
+  uint8_t    *code;
   
-  /* if (!vmc_init()) { */
-  /*   return 0; */
-  /* } */
+} VM_t;
 
-  /* stack_t *s = &vm_containers[0].stack; */
+extern int vm_init(uint8_t *code);
 
-  /* for (UINT i = 0; i < 10; i ++) { */
-  /*   stack_push(s, i); */
-  /* } */
-
-  /* for (UINT i = 10; i > 0; i --) { */
-  /*   register_t r; */
-  /*   UINT expected = i - 1; */
-  /*   stack_pop(s, &r); */
-  /*   if (r.value != expected) { */
-  /*     printf("Stack error: expected %u, got %u\n", expected, r.value); */
-  /*     return 0; */
-  /*   } */
-  /* } */
-
-  /* if (s->sp != 0) { */
-  /*   printf("Stack error: SP == %u\n",s->sp); */
-  /*   return 0; */
-  /* } */
-  
-  return 1;
-}
+#endif
