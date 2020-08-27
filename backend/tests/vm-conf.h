@@ -45,6 +45,9 @@
 #define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
 #define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  4096
 
+#define VMC_CONTAINER_1_USE_UART_0            1
+//#define VMC_CONTAINER_1_USE_UART_1            1
+
 /*********/
 /* VMC 2 */
 /*********/
@@ -52,6 +55,26 @@
 //#define VMC_CONTAINER_2_BYTECODE_FILE        "tests/test.X"
 //#define VMC_CONTAINER_2_STACK_SIZE_BYTES     1024
 //#define VMC_CONTAINER_2_ARRAY_MEM_SIZE_BYTES  4096
+
+//#define VMC_CONTAINER_2_USE_UART_0            1
+//#define VMC_CONTAINER_2_USE_UART_1            1
+
+
+
+/********************************/
+/* Configuration error checking */
+/********************************/
+/* TODO: Autogenerate these rules */ 
+
+#if defined VMC_CONTAINER_1_USE_UART_0 && \
+    defined VMC_CONTAINER_2_USE_UART_0  
+#error Resource UART_0 shared between containers 
+#endif
+
+#if defined VMC_CONTAINER_1_USE_UART_1 && \
+    defined VMC_CONTAINER_2_USE_UART_1  
+#error Resource UART_1 shared between containers 
+#endif
 
 
 
