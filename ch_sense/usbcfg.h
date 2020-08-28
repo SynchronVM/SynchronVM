@@ -18,10 +18,8 @@
 #define USBCFG_H
 
 extern const USBConfig usbcfg;
-extern SerialUSBConfig serusbcfg1;
-extern SerialUSBConfig serusbcfg2;
+extern SerialUSBConfig serusbcfg;
 extern SerialUSBDriver SDU1;
-extern SerialUSBDriver SDU2;
 
 #endif  /* USBCFG_H */
 

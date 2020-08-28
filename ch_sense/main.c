@@ -85,17 +85,17 @@ int main(void) {
   chSysInit();
 
   sduObjectInit(&SDU1);
-  sduStart(&SDU1, &serusbcfg1);
+  sduStart(&SDU1, &serusbcfg);
 
   /*
    * Activates the USB driver and then the USB bus pull-up on D+.
    * Note, a delay is inserted in order to not have to disconnect the cable
    * after a reset.
    */
-  usbDisconnectBus(serusbcfg1.usbp);
+  usbDisconnectBus(serusbcfg.usbp);
   chThdSleepMilliseconds(1500);
-  usbStart(serusbcfg1.usbp, &usbcfg);
-  usbConnectBus(serusbcfg1.usbp);	
+  usbStart(serusbcfg.usbp, &usbcfg);
+  usbConnectBus(serusbcfg.usbp);	
 
   chp = (BaseSequentialStream*)&SDU1;
   
