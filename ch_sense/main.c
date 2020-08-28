@@ -100,8 +100,8 @@ int main(void) {
   chp = (BaseSequentialStream*)&SDU1;
   
   while(1) {
-    chprintf(chp, "Tick!\n");
-    chThdSleepMilliseconds(500);
+    chprintf(chp, "Tick!\r\n");
+    chThdSleepMilliseconds(1000);
   }
 
 }
