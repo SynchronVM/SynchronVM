@@ -3,7 +3,7 @@
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module AbsTinyCamiot where
+module Parser.AbsTinyCamiot where
 
 import Prelude (Char, Double, Integer, String, map, fmap)
 import qualified Prelude as C (Eq, Ord, Show, Read, Functor)
@@ -39,7 +39,7 @@ data Type a
     | TVar a Ident
     | TNil a
     | TAdt a UIdent [Type a]
-    | TTup a [TupType a]
+    | TTup a [Type a]
     | TBool a
     | TInt a
     | TFloat a
@@ -56,20 +56,6 @@ instance C.Functor Type where
         TInt a -> TInt (f a)
         TFloat a -> TFloat (f a)
 
-data TupType a = TTupType a (Type a)
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor TupType where
-    fmap f x = case x of
-        TTupType a type_ -> TTupType (f a) (fmap f type_)
-
-data TupExp a = ETupExp a (Exp a)
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor TupExp where
-    fmap f x = case x of
-        ETupExp a exp -> ETupExp (f a) (fmap f exp)
-
 data Exp a
     = ECase a (Exp a) [PatMatch a]
     | ELet a (Pat a) (Exp a) (Exp a)
@@ -82,7 +68,7 @@ data Exp a
     | ERel a (Exp a) (RelOp a) (Exp a)
     | EAdd a (Exp a) (AddOp a) (Exp a)
     | EMul a (Exp a) (MulOp a) (Exp a)
-    | ETup a [TupExp a]
+    | ETup a [Exp a]
     | ENot a (Exp a)
     | EVar a Ident
     | EUVar a UIdent
@@ -169,10 +155,10 @@ data Pat a
     = PConst a (Const a)
     | PVar a Ident
     | PZAdt a UIdent
-    | PNAdt a UIdent [AdtPat a]
+    | PNAdt a UIdent [Pat a]
     | PWild a
     | PNil a
-    | PTup a [TupPat a]
+    | PTup a [Pat a]
     | PLay a Ident (Pat a)
     | PTyped a (Pat a) (Type a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -188,20 +174,6 @@ instance C.Functor Pat where
         PTup a tuppats -> PTup (f a) (map (fmap f) tuppats)
         PLay a ident pat -> PLay (f a) ident (fmap f pat)
         PTyped a pat type_ -> PTyped (f a) (fmap f pat) (fmap f type_)
-
-data AdtPat a = PAdtPat a (Pat a)
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor AdtPat where
-    fmap f x = case x of
-        PAdtPat a pat -> PAdtPat (f a) (fmap f pat)
-
-data TupPat a = PTupPat a (Pat a)
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor TupPat where
-    fmap f x = case x of
-        PTupPat a pat -> PTupPat (f a) (fmap f pat)
 
 data PatMatch a = PM a (Pat a) (Exp a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)

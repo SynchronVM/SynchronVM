@@ -21,8 +21,8 @@
 -- SOFTWARE.
 module Typechecker.Constraint(Constraint(..), Test) where
 
-import AbsTinyCamiot
-import PrintTinyCamiot
+import Parser.AbsTinyCamiot
+import Parser.PrintTinyCamiot
 import Typechecker.Substitution
 import Typechecker.TCUtils
 

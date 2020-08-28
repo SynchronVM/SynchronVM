@@ -22,8 +22,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Typechecker.TypecheckTinyCamiot where
 
-import AbsTinyCamiot
-import PrintTinyCamiot
+import Parser.AbsTinyCamiot
+import Parser.PrintTinyCamiot
 
 import Typechecker.Environment
 import Typechecker.Unification
@@ -286,8 +286,7 @@ checkPattern p allowConstants = case p of
 
     -- N-ary ADT constructor
     PNAdt a con pats  -> do
-        let unwrapped_pats = map deAdtPat pats
-        res <- mapM (flip checkPattern allowConstants) unwrapped_pats
+        res <- mapM (flip checkPattern allowConstants) pats
 
         let pats' = map fst res
         let typs  = map getPatType pats'
@@ -306,7 +305,7 @@ checkPattern p allowConstants = case p of
                 tv <- fresh
                 -- unify the constructors type with the inferred type (patterns -> tv)
                 uni t (function_type typs tv) (Just test) -- Nothing
-                return $ (PTyped () (PNAdt a con (map adtPat pats')) tv, vars)
+                return $ (PTyped () (PNAdt a con pats') tv, vars)
             -- otherwise we are not fully applied, and we raise an error.
             False -> throwError $ ConstructorNotFullyApplied con numargs (length pats)
 
@@ -318,14 +317,12 @@ checkPattern p allowConstants = case p of
     -- The type of a pattern such as (3,5) is (Int, Int). Recursively check what type the
     -- patterns 3 and 5 have, and use those results to build a TTup node.
     PTup a patterns -> do
-        let unwrapped_patterns = map deTupPat patterns
-        res <- mapM (flip checkPattern allowConstants) unwrapped_patterns
+        res <- mapM (flip checkPattern allowConstants) patterns
 
         let patterns'  = map fst res
         let pat_types  = map getPatType patterns'
         let vars       = concat $ map snd res
-        let patterns'' = map tupPat patterns'
-        return $ (PTyped () (PTup a patterns'') (TTup () (map tupType pat_types)), vars)
+        return $ (PTyped () (PTup a patterns') (TTup () pat_types), vars)
 
         --res <- mapM (flip checkPattern allowConstants) (map deTupPat patterns)
         --let types = map fst res
@@ -535,15 +532,11 @@ checkExp e = case e of
         t <- lookupVar var
         return $ ETyped () (EVar () var) t
 
-    ETup _ tupExps -> do
-        let exps = map deTupExp tupExps
+    ETup _ exps -> do
         -- check the types of the tuple expressions
         exps' <- mapM checkExp exps
         let texps = map getExpType exps'
-        -- simply build a tuple type of the inferred types. Nothing to unify, tuples
-        -- are polymorphic in their contents.
-        let tupExps' = map tupExp exps'
-        return $ ETyped () (ETup () tupExps') (TTup () (map tupType texps))
+        return $ ETyped () (ETup () exps') (TTup () texps)
 
     EConst _ const -> case const of
         CInt a i   -> return $ ETyped () (EConst () const) int

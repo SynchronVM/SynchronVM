@@ -25,14 +25,6 @@ module Typechecker.AstUtils(
   , getTypvar  
   , isMoreGeneral
 
-  , tupExp
-  , deTupExp
-  , tupType
-  , deTupType
-  , deTupPat
-  , tupPat
-  , deAdtPat
-  , adtPat
   , getPatType
   , getExpType
   , getPMType
@@ -49,7 +41,7 @@ module Typechecker.AstUtils(
   , float
 ) where
 
-import AbsTinyCamiot
+import Parser.AbsTinyCamiot
 import Typechecker.Substitution
 
 -- TODO make heavy use of this bad boy.... it would make
@@ -116,39 +108,12 @@ isMoreGeneral (TAdt _ con1 t1s) (TAdt _ con2 t2s) =
         f _        Nothing  = Nothing
     in foldl f (Just False) maybes
 isMoreGeneral (TTup _ t1s) (TTup _ t2s)           = 
-    let t1s' = map deTupType t1s
-        t2s' = map deTupType t2s
-        maybes = zipWith isMoreGeneral t1s' t2s'
+    let maybes = zipWith isMoreGeneral t1s t2s
         f (Just x) (Just y) = Just (x || y)
         f Nothing  _        = Nothing
         f _        Nothing  = Nothing
     in foldl f (Just False) maybes
 isMoreGeneral _ _                                 = Nothing
-
-{- Some conversion to and from closely related types -}
-tupExp :: Exp a -> TupExp a
-tupExp e = ETupExp (getExpvar e) e
-
-deTupExp :: TupExp a -> Exp a
-deTupExp (ETupExp _ e) = e
-
-tupType :: Type a -> TupType a
-tupType t = TTupType (getTypvar t) t
-
-deTupType :: TupType a -> Type a
-deTupType (TTupType _ t) = t
-
-deTupPat :: TupPat a -> Pat a
-deTupPat (PTupPat _ p) = p
-
-tupPat :: Pat a -> TupPat a
-tupPat p = PTupPat (getPatvar p) p
-
-deAdtPat :: AdtPat a -> Pat a
-deAdtPat (PAdtPat _ p) = p
-
-adtPat :: Pat a -> AdtPat a
-adtPat p = PAdtPat (getPatvar p) p
 
 getPatType :: Pat () -> Type ()
 getPatType (PTyped _ _ t) = t
@@ -190,7 +155,7 @@ float = TFloat () -- TAdt () (UIdent "Float") []
 usesVar :: Ident -> Exp () -> Bool
 usesVar id e = case e of
     (ETyped a e1 t)   -> usesVar id e1
-    (ETup a texps)    -> any (usesVar id . deTupExp) texps
+    (ETup a texps)    -> any (usesVar id) texps
     (ECase a e1 br)   -> usesVar id e1 || any (usesVarPatMatch id) br
     (ELet a p e1 e2)  -> usesVarPat id p || usesVar id e1 || usesVar id e2
     (ELetR a p e1 e2) -> usesVarPat id p || usesVar id e1 || usesVar id e2
@@ -213,10 +178,10 @@ usesVarPat id p = case p of
     PConst _ c       -> False
     PVar _ id'       -> id == id'
     PZAdt _ _        -> False
-    PNAdt _ _ pats   -> any (usesVarPat id . deAdtPat) pats
+    PNAdt _ _ pats   -> any (usesVarPat id) pats
     PWild _          -> False
     PNil _           -> False
-    PTup _ patterns  -> any (usesVarPat id . deTupPat) patterns
+    PTup _ patterns  -> any (usesVarPat id) patterns
     PLay _ id' pat   -> id == id' || usesVarPat id pat
 
 usesVarPatMatch :: Ident -> PatMatch () -> Bool
@@ -242,14 +207,6 @@ instance Substitutable (Pat ()) where
   ftv p = undefined -- don't think we need this.. TODO backtrack here,
                     -- either implement for good measure or think of something else
 
-instance Substitutable (AdtPat ()) where
-  apply s (PAdtPat a p) = PAdtPat a (apply s p)
-  
-  ftv p = undefined -- same reasoning as above
-
-instance Substitutable (TupPat ()) where
-  apply s (PTupPat a p) = PTupPat a (apply s p)
-
   ftv p = undefined -- same reasoning as above
 
 instance Substitutable (Exp ()) where
@@ -270,10 +227,6 @@ instance Substitutable (Exp ()) where
   apply s e = e
 
   ftv p = undefined -- same reasoning as above
-
-instance Substitutable (TupExp ()) where
-  apply s (ETupExp a e) = ETupExp a (apply s e)
-  ftv e = undefined -- same reasoning as above
 
 instance Substitutable (PatMatch ()) where
   apply s (PM a p e) = PM a (apply s p) (apply s e)

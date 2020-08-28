@@ -34,8 +34,8 @@ module Typechecker.Unification(
   , bind
 ) where
 
-import AbsTinyCamiot
-import PrintTinyCamiot
+import Parser.AbsTinyCamiot
+import Parser.PrintTinyCamiot
 
 import Typechecker.Environment
 import Typechecker.AstUtils
@@ -117,10 +117,7 @@ unify (TLam _ t1 t2) (TLam _ t1' t2') = do
     s2 <- unify (apply s1 t2) (apply s1 t2')
     return (s2 `compose` s1)
 
-unify (TTup _ types1) (TTup _ types2) = 
-    let types1' = map deTupType types1
-        types2' = map deTupType types2
-    in unifyMany types1' types2'
+unify (TTup _ types1) (TTup _ types2) = unifyMany types1 types2
 
 unify (TAdt _ con []) (TAdt _ con' [])  | con == con' = return nullSubst
                                         | otherwise   = error "here"

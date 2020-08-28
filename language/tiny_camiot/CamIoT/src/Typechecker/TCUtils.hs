@@ -21,8 +21,8 @@
 -- SOFTWARE.
 module Typechecker.TCUtils(TCError(..)) where
 
-import AbsTinyCamiot
-import PrintTinyCamiot
+import Parser.AbsTinyCamiot
+import Parser.PrintTinyCamiot
 
 import Data.List
 

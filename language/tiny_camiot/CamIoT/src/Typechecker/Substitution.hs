@@ -27,7 +27,7 @@ module Typechecker.Substitution(
   , compose
     ) where
 
-import AbsTinyCamiot
+import Parser.AbsTinyCamiot
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -69,11 +69,6 @@ instance Substitutable (Type ()) where
     ftv (TInt a)           = Set.empty
     ftv (TBool a)          = Set.empty
     ftv (TFloat a)         = Set.empty
-
-instance Substitutable (TupType ()) where
-    apply s (TTupType a t) = TTupType a (apply s t)
-
-    ftv (TTupType a t) = ftv t
 
 instance Substitutable a => Substitutable [a] where
     apply = fmap . apply

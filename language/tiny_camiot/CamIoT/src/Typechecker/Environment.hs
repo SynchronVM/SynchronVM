@@ -50,8 +50,8 @@ module Typechecker.Environment (
   , Substitutable(..)
     )where
 
-import AbsTinyCamiot
-import PrintTinyCamiot
+import Parser.AbsTinyCamiot
+import Parser.PrintTinyCamiot
 import Typechecker.Substitution
 import Typechecker.Constraint
 import Typechecker.TCUtils

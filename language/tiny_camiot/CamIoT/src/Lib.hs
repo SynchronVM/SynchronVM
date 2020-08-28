@@ -25,17 +25,23 @@ module Lib
 
 import System.Exit
 
-import AbsTinyCamiot
-import ParseTinyCamiot
+import Parser.AbsTinyCamiot
+
+import qualified Parser.Parser as P
+import qualified Parser.Preprocessor as PreP
+import qualified Data.Text.IO as T
+import Text.Megaparsec
+
 import Typechecker.TypecheckTinyCamiot
 import Typechecker.Environment
 
 readAndParse :: String -> IO (Either String Subst)
 readAndParse input = do
-    contents <- readFile input
-    let parsed = parse contents
+    contents <- T.readFile input
+    let processed = PreP.process contents
+    let parsed = Text.Megaparsec.parse P.pProgram input processed
     case parsed of
-        Left err   -> return (Left err)
+        Left err   -> return (Left (show err))
         Right defs -> do
             tc <- typecheck defs
             case tc of

@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Parser (pProgram, Parser) where
+module Parser.Parser (pProgram, Parser) where
 
 import Prelude hiding (unlines)
-import AbsTinyCamiot
+import Parser.AbsTinyCamiot
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -39,7 +39,7 @@ pClosed = choice [ TInt   () <$ pSymbol "Int"
                  , TFloat () <$ pSymbol "Float"
                  , TVar   () <$> pIdent
                  , do pChar '('
-                      ts <- sepBy1 pFun (pChar ',') <* pChar ')'
+                      ts <- sepBy pFun (pChar ',') <* pChar ')'
                       case ts of
                           []  -> pure $ TNil ()
                           [t] -> pure t
@@ -110,27 +110,27 @@ pExpOr = foldr1 (EOr ()) <$> sepBy1 pExpAnd (pSymbol "||")
 pExpVerbose :: Parser (Exp ())
 pExpVerbose = choice [
     do pSymbol "let"
-       p <- pPat False
+       p <- pPat False False
        pSymbol "="
-       e1 <- pExpOr
+       e1 <- pExpVerbose
        pSymbol "in"
-       ELet () p e1 <$> pExpOr
+       ELet () p e1 <$> pExpVerbose
   , do pChar '\\'
-       p <- pPat False
+       p <- pPat False False
        pSymbol "->"
-       ELam () p <$> pExpOr
+       ELam () p <$> pExpVerbose
   , do pSymbol "if"
-       e1 <- pExpOr
+       e1 <- pExpVerbose
        pSymbol "then"
-       e2 <- pExpOr
+       e2 <- pExpVerbose
        pSymbol "else"
-       EIf () e1 e2 <$> pExpOr
+       EIf () e1 e2 <$> pExpVerbose
   , do pSymbol "case"
-       e <- pExpOr
+       e <- pExpVerbose
        pSymbol "of"
        pChar '{'
        branches <- sepBy1 (do
-           pat <- pPat True
+           pat <- pPat True True
            pSymbol "->"
            PM () pat <$> pExpVerbose) (pChar ';')
        pChar '}'
@@ -172,7 +172,7 @@ pTypeSignature = do
 pEquation :: Parser (Def ())
 pEquation = do
     name <- pIdent
-    patterns <- many (pPat True)
+    patterns <- many (pPat True False)
     pSymbol "="
     exp <- pExp
     pChar ';'
@@ -180,32 +180,54 @@ pEquation = do
 
 -- parse patterns
 
-pPatClosed :: Bool -> Parser (Pat ())
-pPatClosed allowConstants = choice $ maybe ++ always
+pPatClosed :: Bool -> Bool -> Parser (Pat ())
+pPatClosed allowConstants allowNAry = choice $ maybe ++ always
   where maybe  = [PConst () <$> pConst | allowConstants]
         always = [ PVar  () <$> pIdent
                  , PWild () <$ pChar '_'
                  , do pChar '('
-                      ps <- sepBy1 (pPatAs allowConstants) (pChar ',') <* pChar ')'
+                      ps <- sepBy1 (pPatAs allowConstants allowNAry) (pChar ',') <* pChar ')'
                       case ps of
                         [p] -> pure p
                         _   -> pure (PTup () ps)]
 
-pPatApp :: Bool -> Parser (Pat ())
-pPatApp allowConstants = choice [ PAdt () <$> pUIdent <*> many (pPatClosed allowConstants)
-                                , pPatClosed allowConstants]
+--pPatApp :: Bool -> Parser (Pat ())
+--pPatApp allowConstants = choice [ do
+--  con <- pUIdent
+--  vars <- many (pPatClosed allowConstants)
+--  case vars of
+--    [] -> return $ PZAdt () con
+--    _  -> return $ PNAdt () con (map (PAdtPat ()) vars)
+--  ,
+--
+--  pPatClosed allowConstants
+--  ]
 
-pPatAs :: Bool -> Parser (Pat ())
-pPatAs allowConstants = choice [try $ do
+pPatApp :: Bool -> Bool -> Parser (Pat ())
+pPatApp allowConstants allowNAry = choice $ adt' ++ [pPatClosed allowConstants allowNAry]
+  where adt' = if allowNAry
+                then [adt]
+                else [try (pChar '(' >> adt <* pChar ')'), PZAdt () <$> pUIdent]
+        adt = do con <- pUIdent
+                 vars <- many (pPatClosed allowConstants False)
+                 case vars of
+                   [] -> return $ PZAdt () con
+                   _ -> return $ PNAdt () con vars
+
+--pPatApp allowConstants = choice [ PAdt () <$> pUIdent <*> many (pPatClosed allowConstants)
+--                                , pPatClosed allowConstants]
+
+pPatAs :: Bool -> Bool -> Parser (Pat ())
+pPatAs allowConstants allowNAry = choice [try $ do
     x <- pIdent
     pSymbol "as"
-    p <- pPatApp allowConstants
+    p <- pPatApp allowConstants False
     return $ PLay () x p,
 
-    pPatApp allowConstants]
+    pPatApp allowConstants allowNAry]
 
-pPat :: Bool -> Parser (Pat ())
-pPat allowConstants = pSpace *> pPatAs allowConstants
+pPat :: Bool -> Bool -> Parser (Pat ())
+pPat allowConstants allowNAry = pSpace *> pPatAs allowConstants allowNAry
 
 -- parse constants
 
@@ -241,8 +263,9 @@ pIdent :: Parser Ident
 pIdent = try $ do
     a <- lowerChar
     rest <- many $ choice [letterChar, digitChar, char '_']
+    trailings <- many (char '\'')
     pSpace
-    let x = a:rest
+    let x = a:(rest++trailings)
     if x `elem` keywords
         then fail "found keyword, expected identifier"
         else return $ Ident x

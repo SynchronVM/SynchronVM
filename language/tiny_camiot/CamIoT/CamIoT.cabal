@@ -29,14 +29,12 @@ library
   exposed-modules:
       Lib
   other-modules:
+      -- what is this?
       Paths_CamIoT
-      AbsTinyCamiot
-      LayoutTinyCamiot
-      LexTinyCamiot
-      PrintTinyCamiot
-      SkelTinyCamiot
-      ParTinyCamiot
-      ParseTinyCamiot
+      Parser.AbsTinyCamiot
+      Parser.PrintTinyCamiot
+      Parser.Parser
+      Parser.Preprocessor
       Typechecker.TypecheckTinyCamiot
       Typechecker.Environment
       Typechecker.Unification
@@ -46,13 +44,15 @@ library
       Typechecker.TCUtils
   hs-source-dirs:
       src
-      src/Frontend
   build-depends:
       base >=4.7 && <5
     , array
     , mtl
     , containers
     , transformers
+    , text
+    , megaparsec
+    , parser-combinators
   default-language: Haskell2010
 
 executable CamIoT-exe

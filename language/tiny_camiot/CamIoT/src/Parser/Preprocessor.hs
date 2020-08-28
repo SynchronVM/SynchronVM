@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Preprocessor (process) where
+module Parser.Preprocessor (process) where
 
 import Control.Monad.State.Lazy
 import Control.Monad.Writer
@@ -25,14 +25,19 @@ process :: T.Text -> T.Text
 process t =
     let wr = runStateT process_ (ST t 0 [0])
         ((_,_),w) = runWriter wr
-    in T.snoc (T.tail w) ';'
+        w' = T.dropWhile (/= ';') w
+    in T.snoc (T.tail w') ';'
 
 process_ :: PP ()
 process_ = do
     (t,i) <- nextToken
     if t /= T.empty
         then (do
-            while (getCurrentTarget >>= \i' -> emitFluff i i')
+            while (getCurrentTarget >>= \i' -> if t `T.isPrefixOf` "--" ||
+                                                  t `T.isPrefixOf` "{-" ||
+                                                  t `T.isPrefixOf` "-}"
+                                               then return False
+                                               else emitFluff i i')
             tell t
             when (isKeyword t) (do
                 tell "{"
