@@ -251,6 +251,21 @@ The context list consists of some number of "Execution Context to
 Activate". A context is activated by copying the stored register state
 into the VM. Putting a context to sleep works in the reversed way.
 
+# Memory subsystem 
+
+Each Virtual Machine Container (VMC) has access to a private memory subsystem consisting of 
+a garbage collected heap, array storage memory, constants memory and code memory. 
+
+_Todo: The current garbage collected heap is a placeholder for now. Later we plan ot experiment with different kinds of managed memory subsystems that may be better suited for embedded and IoT._
+
+## Garbage collected heap 
+
+## Array storage 
+
+## Constants memory
+
+## Code memory
+
 # Scheduling
 
 ## Virtual Machine Container Scheduling
