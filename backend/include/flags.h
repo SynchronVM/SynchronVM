@@ -30,15 +30,16 @@ typedef uint16_t value_flags_t;
 
 /* Bit masks for flags of a memory cell */
 /* Tweak these later to make more sense */ 
-#define     HEAP_MARK_BIT_MASK        0x80000000
-#define     HEAP_PTR_MASK_1           0x40000000 /* is data[1] a ptr ? */
-#define     HEAP_PTR_MASK_0           0x00004000 /* is data[2] a ptr ? */
+#define     HEAP_GC_MARK_BIT_MASK     0x80000000
+#define     HEAP_GC_FLAG_BIT_MASK     0x40000000
+#define     HEAP_PTR_MASK_1           0x08000000 /* is data[1] a ptr ? */
+#define     HEAP_PTR_MASK_0           0x00000800 /* is data[2] a ptr ? */
 
 #define     HEAP_FLAGS_DEFAULT        0x00000000
 
 
 
-#define     VALUE_PTR_MASK            0x4000
+#define     VALUE_PTR_MASK            0x0800
 
 
 

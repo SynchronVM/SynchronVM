@@ -33,26 +33,28 @@ UINT heap_fst(heap_t *heap, heap_index i) {
   return heap->cells[i].data[0];
 }
 
+value_flags_t heap_fst_flags(heap_t *heap, heap_index i) {
+  return (value_flags_t) heap->flags[i];
+}
+
+value_flags_t heap_snd_flags(heap_t *heap, heap_index i) {
+  return (value_flags_t) heap->flags[i] >> 16;
+}
+
+
 UINT heap_snd(heap_t *heap, heap_index i) {
   return heap->cells[i].data[1];
 }
 
-void heap_set_fst(heap_t *heap, heap_index i, UINT value, bool is_ptr) {
+void heap_set_fst(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
   heap->cells[i].data[0] = value;
-  if (is_ptr) {
-    heap->flags[i] |= HEAP_PTR_MASK_0;
-  } else {
-    heap->flags[i] &= !HEAP_PTR_MASK_0;
-  }
+  heap->flags[i] |= flags;
 }
 
-void heap_set_snd(heap_t *heap, heap_index i, UINT value, bool is_ptr) {
+void heap_set_snd(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
   heap->cells[i].data[1] = value;
-  if (is_ptr) {
-    heap->flags[i] |= HEAP_PTR_MASK_1;
-  } else {
-    heap->flags[i] &= !HEAP_PTR_MASK_1;
-  }
+  heap->flags[i] |= (((heap_flags_t)flags) << 16);
+
 }
 
 void heap_set_flags(heap_t *heap, heap_index i, UINT flags) {
@@ -67,6 +69,26 @@ unsigned int heap_num_free(heap_t *heap) {
     n ++;
   }
   return n;
+}
+
+inline void set_gc_mark(heap_t *heap, heap_index i) {
+  heap->flags[i] = heap->flags[i] | HEAP_GC_MARK_BIT_MASK;
+}
+
+inline void set_gc_flag(heap_t *heap, heap_index i) {
+  heap->flags[i] = heap->flags[i] | HEAP_GC_FLAG_BIT_MASK;
+}
+
+inline int is_atomic(value_flags_t flags) {
+  return flags & VALUE_PTR_MASK;
+}
+
+inline int get_gc_mark(heap_t *heap, heap_index i) {
+  return heap->flags[i] & HEAP_GC_MARK_BIT_MASK;
+}
+
+inline int get_gc_flag(heap_t *heap, heap_index i) {
+  return heap->flags[i] & HEAP_GC_FLAG_BIT_MASK;
 }
 
 /************************************/
@@ -135,4 +157,74 @@ int heap_explicit_free(heap_t *heap, heap_index i) {
 /**********************/
 /* Garbage Collection */
 /**********************/
+
+void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
+
+  bool done = false;
+  
+  UINT curr_val = value;
+  value_flags_t curr_flags = v_flags;
+  UINT prev_val = HEAP_NULL;
+  value_flags_t prev_flags = VALUE_PTR_MASK;
+
+  // Abort if value is not a pointer to a heap structure. 
+  if (is_atomic(curr_flags)) return;
+
+  // curr_val is a pointer onto the heap.
+
+  while (!done) {
+
+    // Follow left pointers
+    while (curr_flags & VALUE_PTR_MASK &&
+	   (heap_index)curr_val != HEAP_NULL &&
+	   !get_gc_mark(heap, curr_val)) {
+      set_gc_mark(heap, curr_val);
+      UINT next_val = heap_fst(heap, curr_val);
+      value_flags_t next_flags = heap_fst_flags(heap, curr_val);
+      heap_set_fst(heap, curr_val, prev_val, prev_flags);
+
+      prev_val   = curr_val;
+      prev_flags = curr_flags;
+
+      curr_val   = next_val;
+      curr_flags = next_flags;
+    }
+
+    while  (prev_flags & VALUE_PTR_MASK &&
+	    (heap_index)prev_val != HEAP_NULL &&
+	    get_gc_flag(heap, prev_val)) {
+
+      UINT next_val = heap_snd(heap, prev_val);
+      value_flags_t next_flags = heap_snd_flags(heap, prev_val);
+
+      heap_set_snd(heap, prev_val, curr_val, curr_flags);
+
+      curr_val = prev_val;
+      curr_flags = prev_flags;
+
+      prev_val = next_val;
+      prev_flags = next_flags;
+    }
+
+    if (prev_flags & VALUE_PTR_MASK &&
+	(heap_index)prev_val == HEAP_NULL){
+      done = true;
+
+    } else {
+      // switch to right subgraph
+
+      set_gc_flag(heap, prev_val);
+      UINT next_val = heap_fst(heap, prev_val);
+      value_flags_t next_flags = heap_fst_flags(heap, prev_val);
+
+      heap_set_fst(heap, prev_val, curr_val, curr_flags);
+
+      curr_val = heap_snd(heap, prev_val);
+      curr_flags = heap_snd_flags(heap, prev_val);
+
+      heap_set_snd(heap, prev_val, next_val, next_flags);
+    }
+  }
+}
+
 

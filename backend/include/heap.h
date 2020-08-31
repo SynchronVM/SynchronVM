@@ -45,6 +45,14 @@ typedef struct {
   UINT data[2];
 } heap_cell_t;
 
+// Todo (This should be easier. But spends more bits. Optimize later)
+/*
+typedef struct { 
+  value_flags_t flags[2]; 
+  unsigned char gc_flags;
+} heap_flags_t;
+*/ 
+
 
 typedef struct {
   heap_flags_t *flags;
@@ -60,8 +68,8 @@ extern unsigned int heap_num_free(heap_t *heap);
 
 extern UINT heap_fst(heap_t *heap, heap_index i);
 extern UINT heap_snd(heap_t *heap, heap_index i);
-extern void heap_set_fst(heap_t *heap, heap_index i, UINT value, bool is_ptr);
-extern void heap_set_snd(heap_t *heap, heap_index i, UINT value, bool is_ptr);
+extern void heap_set_fst(heap_t *heap, heap_index i, UINT value, value_flags_t flags);
+extern void heap_set_snd(heap_t *heap, heap_index i, UINT value, value_flags_t flags);
 extern void heap_set_flags(heap_t *heap, heap_index i, heap_flags_t flags);
 
 extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
