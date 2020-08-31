@@ -9,6 +9,8 @@ _Author: Bo Joel Svensson, Abhiroop Sarkar_
 
 **WORK IN PROGRESS - DRAFT** 
 
+_Todo: add something about mailboxes, message passing_
+
 Sense-VM is a virtual machine for IoT and embedded applications in
 general. Sense-VM is a bytecode virtual machine (think Java-VM, not an
 operating system hypervisor) that provides a base level of safety,
