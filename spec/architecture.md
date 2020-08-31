@@ -260,6 +260,69 @@ _Todo: The current garbage collected heap is a placeholder for now. Later we pla
 
 ## Garbage collected heap 
 
+The garbage collected heap is a supply of pairs. The pairs can contain
+values, pointers to arrays in the Array store, pointers to values in
+the constants memory or pointers into the heap (for the purpose of
+building linked structures). 
+
+The heap consists of a fixed numer of pairs that is decided at
+compilation time for each VMC. 
+
+Unused pairs are linked together into a structure referred to as the _free list_.
+
+Each pair cell consists of 2 bit quantities: 
+
+
+```plantuml
+rectangle "Pair cell" { 
+	rectangle "Fst" 
+	rectangle "Snd"
+
+	Fst -[hidden]> Snd
+}
+``` 
+
+The free list is linked up at the _snd_ component. 
+
+```plantuml
+
+rectangle "Free list" as fl
+
+rectangle "Pair cell N" as n { 
+	rectangle "Fst" as fst0
+	rectangle "Snd" as snd0
+	fst0 -[hidden]> snd0
+}
+
+rectangle "Pair cell M" as m { 
+	rectangle "Fst" as fst1
+	rectangle "Snd" as snd1
+	fst1 -[hidden]> snd1
+}
+
+rectangle "Pair cell X" as x { 
+	rectangle "Fst" as fst2
+	rectangle "Snd" as snd2
+	fst2 -[hidden]> snd2
+}
+
+rectangle "Pair cell Y" as y { 
+	rectangle "Fst" as fst3
+	rectangle "Snd" as snd3
+	fst3 -[hidden]> snd3
+}
+
+rectangle "NULL" as null
+
+fl -> n
+snd0 -> m
+snd1 --> x
+snd2 -> y
+snd3 --> null 
+```
+
+
+
 ## Array storage 
 
 ## Constants memory
