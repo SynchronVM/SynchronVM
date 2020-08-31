@@ -321,7 +321,8 @@ snd2 -> y
 snd3 --> null 
 ```
 
-
+The value -1 (negative one) or 4294967295 depending on how you want to
+view it, is the representative of NULL when it comes to heap pointers.
 
 ## Array storage 
 
