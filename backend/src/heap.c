@@ -102,7 +102,7 @@ static inline int get_gc_flag(heap_t *heap, heap_index i) {
 int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
   if (!mem || !heap || size_bytes < 1024) return 0;
-  
+
   unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(heap_flags_t) + sizeof(uint8_t));
 
   // Maybe check to make sure that mem is 4bytes aligned,
@@ -110,11 +110,11 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
   unsigned int value_flags_start = sizeof(heap_cell_t) * n_cells;
   unsigned int flags_start = value_flags_start + (sizeof(heap_flags_t) * n_cells);
-  
+
   heap->cells = (heap_cell_t *)mem;
   heap->value_flags = (heap_flags_t*)(mem + value_flags_start);
   heap->flags = (uint8_t *)(mem + flags_start);
- 
+
   heap->bptr = (uintptr_t)heap;
 
   for (unsigned int i = 0; i < n_cells; i ++) {
@@ -122,7 +122,7 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
     heap->flags[i] = 0;
     heap->value_flags[i].snd = VALUE_PTR_BIT;
   }
-  
+
   heap->cells[n_cells-1].snd = HEAP_NULL;
   heap->sweep_pos  = 0;
   heap->size_bytes = size_bytes;
@@ -139,7 +139,7 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 /* Hughes Lazy sweep */
 
 heap_index heap_allocate(heap_t *heap) {
-  
+
   while (heap->sweep_pos < heap->size_cells) {
 
     if (get_gc_mark(heap, heap->sweep_pos)) {
@@ -163,13 +163,13 @@ heap_index heap_allocate(heap_t *heap) {
 void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 
   bool done = false;
-  
+
   UINT curr_val = value;
   value_flags_t curr_flags = v_flags;
   UINT prev_val = HEAP_NULL;
   value_flags_t prev_flags = VALUE_PTR_BIT;
 
-  // Abort if value is not a pointer to a heap structure. 
+  // Abort if value is not a pointer to a heap structure.
   if (is_atomic(curr_flags)) return;
 
   // curr_val is a pointer onto the heap.
@@ -195,9 +195,9 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
     while  (prev_flags & VALUE_PTR_BIT &&
 	    (heap_index)prev_val != HEAP_NULL &&
 	    get_gc_flag(heap, prev_val)) {
-      
+
       clr_gc_flag(heap, prev_val);
-      
+
       UINT next_val = heap_snd(heap, prev_val);
       value_flags_t next_flags = heap_snd_flags(heap, prev_val);
 
@@ -230,5 +230,3 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
     }
   }
 }
-
-
