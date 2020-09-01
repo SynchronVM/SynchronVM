@@ -51,19 +51,19 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- emit a constraint for unification
-uni :: Type () -> Type () -> Maybe Test -> TC ()
+uni :: Type -> Type -> Maybe Test -> TC ()
 uni t1 t2 test = tell [C (t1, t2, test)]
 
 -- Do you want to unify more than two constraints?
 -- I convinced myself that if you can unify a and b, and b and c,
 -- then you can unify a and c. This SHOULD work! (please)
-uniMany :: [Type ()] -> Maybe Test -> TC ()
+uniMany :: [Type] -> Maybe Test -> TC ()
 uniMany []       _ = return ()
 uniMany [x]      t = uni x x t -- should be OK
 uniMany [x,y]    t = uni x y t
 uniMany (x:y:xs) t = uni x y t >> uniMany (y:xs) t
 
-uniEither :: [(Type (), Type ())] -> TC ()
+uniEither :: [(Type, Type)] -> TC ()
 uniEither cs = tell [C2 (map (\(t1,t2) -> C (t1,t2,Nothing)) cs)]
 
 -- TODO change to Identity from IO when done debugging
@@ -103,7 +103,7 @@ tryToUnifyEither (C (t1, t2, _):cs) =
 occursCheck :: Substitutable a => Ident -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
 
-unifyMany :: [Type ()] -> [Type ()] -> Solve Subst
+unifyMany :: [Type] -> [Type] -> Solve Subst
 unifyMany [] [] = return nullSubst
 unifyMany (t1:ts) (t2:ts') = do
     su1 <- unify t1 t2
@@ -111,35 +111,35 @@ unifyMany (t1:ts) (t2:ts') = do
     return $ su2 `compose` su1
 unifyMany _ _ = error "" -- throwError with a smarter error
 
-unify ::  Type () -> Type () -> Solve Subst
-unify (TLam _ t1 t2) (TLam _ t1' t2') = do
+unify ::  Type -> Type -> Solve Subst
+unify (TLam t1 t2) (TLam t1' t2') = do
     s1 <- unify t1 t1'
     s2 <- unify (apply s1 t2) (apply s1 t2')
     return (s2 `compose` s1)
 
-unify (TTup _ types1) (TTup _ types2) = unifyMany types1 types2
+unify (TTup types1) (TTup types2) = unifyMany types1 types2
 
-unify (TAdt _ con []) (TAdt _ con' [])  | con == con' = return nullSubst
+unify (TAdt con []) (TAdt con' [])  | con == con' = return nullSubst
                                         | otherwise   = error "here"
-unify (TAdt _ con types) (TAdt _ con' types') | con == con' =
+unify (TAdt con types) (TAdt con' types') | con == con' =
     let doOne subst (t1,t2) = do
             s' <- unify (apply subst t1) (apply subst t2)
             return (s' `compose` subst)
     in foldlM doOne nullSubst (zip types types')
 
 -- variables will just be substituted for the other type
-unify (TVar _ var) t = bind var t
-unify t (TVar _ var) = bind var t
+unify (TVar var) t = bind var t
+unify t (TVar var) = bind var t
 
-unify (TInt   ()) (TInt   ()) = return nullSubst
-unify (TBool  ()) (TBool  ()) = return nullSubst
-unify (TFloat ()) (TFloat ()) = return nullSubst
-unify (TNil ()) (TNil ())     = return nullSubst
+unify TInt TInt = return nullSubst
+unify TBool TBool = return nullSubst
+unify TFloat TFloat = return nullSubst
+unify TNil TNil     = return nullSubst
 
 unify t1 t2 = throwError $ UnificationFail t1 t2
 
-bind :: Ident -> Type () -> Solve Subst
-bind a t | t == TVar () a  = return nullSubst -- trying to substitue a for a, doesn't make sense
+bind :: Ident -> Type -> Solve Subst
+bind a t | t == TVar a     = return nullSubst -- trying to substitue a for a, doesn't make sense
          | occursCheck a t = throwError $ InfiniteType a t
          | otherwise       = do
              --liftIO $ putStrLn $ "binding " ++ printTree a ++ " to " ++ printTree t

@@ -61,7 +61,7 @@ runTC tc initEnv = do
                     putStrLn $ printTree $ apply subst annotatedTree
                     return (Right subst) 
 
-showSubst :: Map.Map Ident (Type ()) -> String
+showSubst :: Map.Map Ident Type -> String
 showSubst = intercalate "\n" . map (\(k,v) -> "binding " ++ printTree k ++ " to " ++ printTree v) . Map.toList
 
 {---------------------------------------------------------------------}
@@ -99,7 +99,7 @@ gatherDataDecs (d:ds) = case d of
         gatherDataDecs ds
     _ -> gatherDataDecs ds
   where
-      tryInsert :: [(UIdent, Type ())] -> TC ()
+      tryInsert :: [(UIdent, Type)] -> TC ()
       tryInsert []         = return ()
       tryInsert ((c,t):xs) = do
           env <- get
@@ -112,14 +112,14 @@ gatherDataDecs (d:ds) = case d of
       -- Given a UIdent, e.g 'Maybe', and a list of type vars, e,g [a], and
       -- a constructor, e.g Just, see if the type for Just is correct
       -- TODO check that the type variables are bound by the data declaration
-      consDecToType :: UIdent -> [Ident] -> ConstructorDec () -> TC (UIdent, Type ())
+      consDecToType :: UIdent -> [Ident] -> ConstructorDec () -> TC (UIdent, Type)
       consDecToType typ tvars (ConstDec () con t) =
           -- get the intended creation
           let goal = getGoal t
           -- Is the intended creation an ADT?
           in case goal of
                                      -- Is it the correct ADT?
-              (TAdt () con' vars) -> case typ == con' of
+              (TAdt con' vars) -> case typ == con' of
                            -- Is the arity correct?
                   True  -> case length tvars == length vars of
                                -- good!
@@ -128,17 +128,17 @@ gatherDataDecs (d:ds) = case d of
                                in case isOk of
                                     True  -> return $ (con, t)
                                     False -> throwError $ UnboundTypeVariable tvars (Set.toList diff)
-                      False -> throwError $ TypeArityError con' (map (TVar ()) tvars) vars
-                  False -> throwError $ WrongConstructorGoal con goal (TAdt () typ (map (TVar ()) tvars))
-              _ -> throwError $ WrongConstructorGoal con goal (TAdt () typ (map (TVar ()) tvars))
+                      False -> throwError $ TypeArityError con' (map TVar tvars) vars
+                  False -> throwError $ WrongConstructorGoal con goal (TAdt typ (map TVar tvars))
+              _ -> throwError $ WrongConstructorGoal con goal (TAdt typ (map TVar tvars))
       
-      getGoal (TLam _ _ r) = getGoal r
+      getGoal (TLam  _ r) = getGoal r
       getGoal t            = t
 
 {- ******************** -}
 -- typecheck
 
-data Function = FN Ident (Maybe (Type ())) [Def ()]
+data Function = FN Ident (Maybe Type) [Def ()]
 instance Show Function where
   show(FN name sig clauses) =
       "Function: " ++ printTree name ++ "\n" ++
@@ -197,7 +197,7 @@ makeFunctions_ = map makeFun
         makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
 
 -- given an annotated definition, return its type
-typeOfAnnotatedDef :: Def () -> TC (Type ())
+typeOfAnnotatedDef :: Def () -> TC Type
 typeOfAnnotatedDef (DEquation _ _ pats exp) = do
     return $ (function_type (map getPatType pats) (getExpType exp))
 -- we only call this after we've already checked for single type definitions
@@ -213,7 +213,7 @@ hasTypeSig :: Function -> Bool
 hasTypeSig (FN _ (Just _) _) = True
 hasTypeSig _                 = False
 
-checkFunction :: Function -> TC (Type (), Function)
+checkFunction :: Function -> TC (Type, Function)
 checkFunction (FN name (Just t) []) = throwError $ AloneTypeSignature name t
 checkFunction fun@(FN name sig clauses) = do
     clauses' <- case recursive fun of
@@ -238,7 +238,7 @@ checkClause (DEquation () name pats exp) = do
     -- get the result type and construct the annotated definition & the complete type
     return $ DEquation () name pats' exp'
 
-unifyClauses :: Function -> TC (Type ())
+unifyClauses :: Function -> TC Type
 unifyClauses (FN name sig ds) = do
     let noSigTest t1 t2 = if t1 /= t2
                           then Just $ FunctionClausesNotEqual name t1 t2
@@ -270,7 +270,7 @@ unifyClauses (FN name sig ds) = do
 --   - component 1: Type of the top-level pattern
 --   - component 2: List of variables and their type variables created by the pattern
 -- e.g pattern Just (a,2) gives us (Maybe (a, Int), [a, Int])
-checkPattern :: Pat () -> Bool -> TC (Pat (), [(Ident, Type ())])
+checkPattern :: Pat () -> Bool -> TC (Pat (), [(Ident, Type)])
 checkPattern p allowConstants = case p of
     -- Are constaints allowed? In e.g lambda abstractions we don't
     -- allow constants such as 3
@@ -314,7 +314,7 @@ checkPattern p allowConstants = case p of
     -- wildcards can have any type they like?
     PWild a          -> fresh >>= \tv -> return (PTyped () p tv, [])
 
-    PNil a           -> return (PTyped () p (TNil ()), [])
+    PNil a           -> return (PTyped () p TNil, [])
 
     -- The type of a pattern such as (3,5) is (Int, Int). Recursively check what type the
     -- patterns 3 and 5 have, and use those results to build a TTup node.
@@ -324,7 +324,7 @@ checkPattern p allowConstants = case p of
         let patterns'  = map fst res
         let pat_types  = map getPatType patterns'
         let vars       = concat $ map snd res
-        return $ (PTyped () (PTup a patterns') (TTup () pat_types), vars)
+        return $ (PTyped () (PTup a patterns') (TTup pat_types), vars)
 
         --res <- mapM (flip checkPattern allowConstants) (map deTupPat patterns)
         --let types = map fst res
@@ -339,15 +339,15 @@ checkPattern p allowConstants = case p of
         -- return the annotated pattern and the new environment variables
         return $ (PTyped () (PLay a var pat') tv, (var, tv) : vars)
 
-checkConstType :: Const () -> Type ()
+checkConstType :: Const () -> Type
 checkConstType const = case const of
     CInt a integer  -> int
     CFloat a double -> float
     CTrue a         -> bool
     CFalse a        -> bool
-    CNil a          -> TNil ()
+    CNil a          -> TNil
 
-checkCases :: Type () -> [PatMatch ()] -> TC [PatMatch ()]
+checkCases :: Type -> [PatMatch ()] -> TC [PatMatch ()]
 checkCases t pm = do
     pm' <- mapM (checkCase t) pm
     let types = map getPMType pm'
@@ -359,7 +359,7 @@ checkCases t pm = do
 -- variables it might create before we check that the result is well typed.
 -- We also verify that the pattern is of the correct type, which is the type
 -- given as an argument.
-checkCase :: Type () -> PatMatch () -> TC (PatMatch ())
+checkCase :: Type -> PatMatch () -> TC (PatMatch ())
 checkCase t (PM () pat e1) = do
     (pat', vars) <- checkPattern pat True
     let t' = getPatType pat'
@@ -532,16 +532,16 @@ checkExp e = case e of
         -- check the types of the tuple expressions
         exps' <- mapM checkExp exps
         let texps = map getExpType exps'
-        return $ ETyped () (ETup () exps') (TTup () texps)
+        return $ ETyped () (ETup () exps') (TTup texps)
 
     EConst _ const -> case const of
         CInt a i   -> return $ ETyped () (EConst () const) int
         CFloat a f -> return $ ETyped () (EConst () const) float
         CTrue a    -> return $ ETyped () (EConst () const) bool
         CFalse a   -> return $ ETyped () (EConst () const) bool
-        CNil a     -> return $ ETyped () (EConst () const) (TNil ())
+        CNil a     -> return $ ETyped () (EConst () const) TNil
 
-addOps :: AddOp () -> TC (Type ())
+addOps :: AddOp () -> TC Type
 addOps op = case Map.lookup op addOps_ of
     Just t  -> instantiate t
     Nothing -> error "see below"
@@ -549,13 +549,13 @@ addOps op = case Map.lookup op addOps_ of
 addOps_ :: Map.Map (AddOp ()) Scheme
 addOps_ = Map.fromList [
     (Plus   (), let id = Ident "a"
-                    a  = TVar () id
+                    a  = TVar id
                 in Forall [id] (a *-> a *-> a)),
     (Minus  (), let id = Ident "a"
-                    a  = TVar () id
+                    a  = TVar id
                 in Forall [id] (a *-> a *-> a))]
 
-mulOps :: MulOp () -> TC (Type ())
+mulOps :: MulOp () -> TC Type
 mulOps op = case Map.lookup op mulOps_ of
     Just t  -> instantiate t
     Nothing -> error "see below"    
@@ -563,13 +563,13 @@ mulOps op = case Map.lookup op mulOps_ of
 mulOps_ :: Map.Map (MulOp ()) Scheme
 mulOps_ = Map.fromList [
     (Times  (), let id = Ident "a"
-                    a = TVar () id
+                    a = TVar id
                 in Forall [id] (a *-> a *-> a)),
     (Div    (), let id = Ident "a"
-                    a = TVar () id
+                    a = TVar id
                 in Forall [id] (a *-> a *-> a))]
 
-relOps :: RelOp () -> TC (Type ())
+relOps :: RelOp () -> TC Type
 relOps op = case Map.lookup op relOps_ of
     Just t  -> instantiate t
     Nothing -> error "we should not end up here, how can I enforce this?"
@@ -577,17 +577,17 @@ relOps op = case Map.lookup op relOps_ of
 relOps_ :: Map.Map (RelOp ()) Scheme
 relOps_ = Map.fromList [
     (LTC  (), let id = Ident "a"
-                  a  = TVar () id
+                  a  = TVar id
               in Forall [id] (a *-> a *-> bool)),
     (LEC  (), let id = Ident "a"
-                  a  = TVar () id
+                  a  = TVar id
               in Forall [id] (a *-> a *-> bool)),
     (GTC  (), let id = Ident "a"
-                  a  = TVar () id
+                  a  = TVar id
               in Forall [id] (a *-> a *-> bool)),
     (GEC  (), let id = Ident "a"
-                  a  = TVar () id
+                  a  = TVar id
               in Forall [id] (a *-> a *-> bool)),
     (EQC  (), let id = Ident "a"
-                  a  = TVar () id
+                  a  = TVar id
               in Forall [id] (a *-> a *-> bool))]

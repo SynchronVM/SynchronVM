@@ -30,25 +30,25 @@ import Data.List
 -- add more variants as you need.
 -- They don't include much information about the source now, so they can be tricky to read.
 data TCError =
-    InfiniteType Ident (Type ())
-  | UnificationFail (Type ()) (Type ())
-  | TypeError (Exp ()) (Type ()) (Type ())
-  | PatternTypeError (Pat ()) (Type ()) (Type ())
+    InfiniteType Ident Type
+  | UnificationFail Type Type
+  | TypeError (Exp ()) Type Type
+  | PatternTypeError (Pat ()) Type Type
   | UnboundVariable String
   | UnboundConstructor UIdent
   | DuplicateTypeSig Ident
-  | DuplicateConstructor UIdent (Type ())
-  | TypeArityError UIdent [Type ()] [Type ()]
-  | WrongConstructorGoal UIdent (Type ()) (Type ())
+  | DuplicateConstructor UIdent Type
+  | TypeArityError UIdent [Type] [Type]
+  | WrongConstructorGoal UIdent Type Type
   | LambdaConstError (Const ())
-  | CaseExpressionError (Pat ()) (Type ()) (Type ())
+  | CaseExpressionError (Pat ()) Type Type
   | ConstructorNotFullyApplied UIdent Int Int
   | UnboundTypeVariable [Ident] [Ident]
-  | TypeSignatureTooGeneral Ident (Type ()) (Type ())
-  | FunctionClausesNotEqual Ident (Type ()) (Type ())
-  | FunctionClauseWrongType Ident (Type ()) (Type ())
+  | TypeSignatureTooGeneral Ident Type Type
+  | FunctionClausesNotEqual Ident Type Type
+  | FunctionClauseWrongType Ident Type Type
   | RecursiveFunctionWithoutTypesig Ident
-  | AloneTypeSignature Ident (Type ())
+  | AloneTypeSignature Ident Type
 
 instance Show TCError where
     show (InfiniteType var t) =
@@ -84,8 +84,8 @@ instance Show TCError where
         "Data constructor " ++ show c ++ " : " ++ printTree t ++ " declared more than once"
     show (TypeArityError con' tvars vars) =
         "Type error ---\n" ++
-        "Arity error - declared type " ++ printTree (TAdt () con' tvars) ++ " does not match " ++
-        "inferred type " ++ printTree (TAdt () con' vars)
+        "Arity error - declared type " ++ printTree (TAdt con' tvars) ++ " does not match " ++
+        "inferred type " ++ printTree (TAdt con' vars)
     show (WrongConstructorGoal con inferred declared) =
         "Type error ---\n" ++
         "Constructor " ++ printTree con ++ " attempts to create a value of type " ++ 

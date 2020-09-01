@@ -70,7 +70,7 @@ import Control.Monad.Except
 {-*******************************-}
 -- Type scheme
 -- e.g id :: a -> a has type scheme forall a . a -> a
-data Scheme = Forall [Ident] (Type ())
+data Scheme = Forall [Ident] Type
 
 instance Substitutable Scheme where
     apply s (Forall vars t) = Forall vars $ apply s' t
@@ -106,7 +106,7 @@ inEnvMany xs m = do
 -- Given a type scheme, this function will generate fresh
 -- names for the bound type variables, replace them and then
 -- return the new 'fresh' type.
-instantiate ::  Scheme -> TC (Type ())
+instantiate ::  Scheme -> TC Type
 instantiate (Forall vars t) = do
   vars' <- mapM (const fresh) vars
   let s = Map.fromList $ zip vars vars'
@@ -114,12 +114,12 @@ instantiate (Forall vars t) = do
 
 -- Given a type such as id : a -> a, return a scheme such as
 -- forall a . a -> a
-generalize :: TEnv -> Type () -> Scheme
+generalize :: TEnv -> Type -> Scheme
 generalize env t  = Forall vars t
     where vars = Set.toList $ ftv t `Set.difference` ftv env
 
 -- Look up a type scheme from the environment and instantiate it
-lookupVar :: Ident -> TC (Type ())
+lookupVar :: Ident -> TC Type
 lookupVar x@(Ident name) = do
     (TEnv env) <- ask
     case Map.lookup x env of
@@ -130,7 +130,7 @@ lookupVar x@(Ident name) = do
 -- declared data constructors instead of the declared function
 -- signatures. Not sure why this is treated separately, honestly.
 -- It does probably not have to be.
-lookupCons :: Con () -> TC (Type ())
+lookupCons :: Con () -> TC Type
 lookupCons (Constructor () con) = do
     env <- get
     case Map.lookup con (constructors env) of
@@ -146,7 +146,7 @@ lookupCons (Constructor () con) = do
 --        Just sig -> Just <$> instantiate sig
 --        Nothing  -> return Nothing
 
-lookupTypeSig :: Ident -> TC (Maybe (Type ()))
+lookupTypeSig :: Ident -> TC (Maybe Type)
 lookupTypeSig fun = do
     (TCState _ _ e) <- get
     case Map.lookup fun e of
@@ -179,8 +179,8 @@ type TC a = ReaderT TEnv (
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
 
-fresh :: TC (Type ())
+fresh :: TC Type
 fresh = do
   s <- get
-  put $ s { num = (num s) + 1}
-  return $ TVar () (Ident (letters !! (num s)))
+  put $ s { num = num s + 1}
+  return $ TVar (Ident (letters !! num s))

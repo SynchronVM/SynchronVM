@@ -33,8 +33,8 @@ import qualified Data.Set as Set
    simply pairs of types. It is up for the unifier to see if there is a
    substitution that will make the two types equal.
 -}
-type Test = Type () -> Type () -> Maybe TCError
-data Constraint = C (Type (), Type (), Maybe Test) | C2 [Constraint]
+type Test = Type -> Type -> Maybe TCError
+data Constraint = C (Type, Type, Maybe Test) | C2 [Constraint]
 
 instance Show Constraint where
     show (C (t1, t2, _)) = "Constraint: " ++ printTree t1 ++ ", " ++ printTree t2

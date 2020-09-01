@@ -130,21 +130,21 @@ instance Print [ConstructorDec a] where
 instance Print [Ident] where
   prt = prtList
 
-instance Print (Type a) where
+instance Print Type where
   prt i e = case e of
-    TLam _ type_1 type_2 -> prPrec i 0 (concatD [prt 1 type_1, doc (showString "->"), prt 0 type_2])
-    TVar _ id -> prPrec i 1 (concatD [prt 0 id])
-    TNil _ -> prPrec i 2 (concatD [doc (showString "()")])
-    TAdt _ uident types -> prPrec i 2 (concatD [prt 0 uident, prt 1 types])
-    TTup _ tuptypes -> prPrec i 1 (concatD [doc (showString "("), prt 0 tuptypes, doc (showString ")")])
-    TBool _ -> prPrec i 2 (concatD [doc (showString "Bool")])
-    TInt _ -> prPrec i 2 (concatD [doc (showString "Int")])
-    TFloat _ -> prPrec i 2 (concatD [doc (showString "Float")])
+    TLam type_1 type_2 -> prPrec i 0 (concatD [prt 1 type_1, doc (showString "->"), prt 0 type_2])
+    TVar id -> prPrec i 1 (concatD [prt 0 id])
+    TNil -> prPrec i 2 (concatD [doc (showString "()")])
+    TAdt uident types -> prPrec i 2 (concatD [prt 0 uident, prt 1 types])
+    TTup tuptypes -> prPrec i 1 (concatD [doc (showString "("), prt 0 tuptypes, doc (showString ")")])
+    TBool -> prPrec i 2 (concatD [doc (showString "Bool")])
+    TInt -> prPrec i 2 (concatD [doc (showString "Int")])
+    TFloat -> prPrec i 2 (concatD [doc (showString "Float")])
   prtList n [] = concatD []
   prtList n (x:xs) = concatD [prt n x, prt n xs]
 
 
-instance Print [Type a] where
+instance Print [Type] where
   prt = prtList
 
 instance Print (Exp a) where

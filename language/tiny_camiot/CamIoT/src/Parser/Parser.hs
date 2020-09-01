@@ -33,26 +33,26 @@ pProgram :: Parser [Def ()]
 pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation
 
 -- parse types
-pClosed :: Parser (Type ())
-pClosed = choice [ TInt   () <$ pSymbol "Int"
-                 , TBool  () <$ pSymbol "Bool"
-                 , TFloat () <$ pSymbol "Float"
-                 , TVar   () <$> pIdent
+pClosed :: Parser Type
+pClosed = choice [ TInt    <$ pSymbol "Int"
+                 , TBool   <$ pSymbol "Bool"
+                 , TFloat  <$ pSymbol "Float"
+                 , TVar    <$> pIdent
                  , do pChar '('
                       ts <- sepBy pFun (pChar ',') <* pChar ')'
                       case ts of
-                          []  -> pure $ TNil ()
+                          []  -> pure TNil
                           [t] -> pure t
-                          _   -> pure (TTup () ts)
+                          _   -> pure (TTup ts)
                  ]
 
-pApp :: Parser (Type ())
-pApp = choice [TAdt () <$> pUIdent <*> many pClosed, pClosed]
+pApp :: Parser Type
+pApp = choice [TAdt <$> pUIdent <*> many pClosed, pClosed]
 
-pFun :: Parser (Type ())
-pFun = foldr1 (TLam ()) <$> sepBy1 pApp (pSymbol "->")
+pFun :: Parser Type
+pFun = foldr1 TLam <$> sepBy1 pApp (pSymbol "->")
 
-pType :: Parser (Type ())
+pType :: Parser Type
 pType = pSpace *> pFun
 
 -- parse expressions

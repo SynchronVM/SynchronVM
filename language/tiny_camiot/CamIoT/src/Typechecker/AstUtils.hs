@@ -22,7 +22,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Typechecker.AstUtils(
     getExpvar
-  , getTypvar  
   , isMoreGeneral
 
   , getPatType
@@ -47,8 +46,8 @@ import Typechecker.Substitution
 -- TODO make heavy use of this bad boy.... it would make
 -- the inference code easier to read, I believe
 infixr 8 *->
-(*->) :: Type () -> Type () -> Type ()
-t1 *-> t2 = TLam () t1 t2
+(*->) :: Type -> Type -> Type
+t1 *-> t2 = TLam t1 t2
 
 getExpvar :: Exp a -> a
 getExpvar e = case e of
@@ -68,16 +67,6 @@ getExpvar e = case e of
     EVar a _      -> a
     EConst a _    -> a
 
-getTypvar :: Type a -> a
-getTypvar (TLam a _ _) = a
-getTypvar (TTup a _)   = a
-getTypvar (TNil a)     = a
-getTypvar (TVar a _)   = a
-getTypvar (TAdt a _ _) = a
-getTypvar (TInt a)     = a
-getTypvar (TBool a)    = a
-getTypvar (TFloat a)   = a
-
 getPatvar :: Pat a -> a
 getPatvar p = case p of
     PConst a _   -> a
@@ -94,20 +83,20 @@ getPatvar p = case p of
 -- the type of the second operand.
 -- TODO rewrite this to make the behaviour more specified perhaps.
 -- Looking back, I am slightly confused myself as to what the returntype actually means.
-isMoreGeneral :: Type () -> Type () -> Maybe Bool
-isMoreGeneral (TLam _ t1 t1s) (TLam _ t2 t2s)     = (||) <$> 
-                                                      (isMoreGeneral t1 t2) <*> 
-                                                      (isMoreGeneral t1s t2s)
-isMoreGeneral (TVar _ _) (TVar _ _)               = Just False
-isMoreGeneral (TVar _ _) _                        = Just True
-isMoreGeneral (TAdt _ con1 t1s) (TAdt _ con2 t2s) =
+isMoreGeneral :: Type -> Type -> Maybe Bool
+isMoreGeneral (TLam t1 t1s) (TLam t2 t2s)     = (||) <$> 
+                                                  isMoreGeneral t1 t2 <*> 
+                                                  isMoreGeneral t1s t2s
+isMoreGeneral (TVar _) (TVar _)               = Just False
+isMoreGeneral (TVar _) _                      = Just True
+isMoreGeneral (TAdt con1 t1s) (TAdt con2 t2s) =
     -- there is surely something built in for this
     let maybes = zipWith isMoreGeneral t1s t2s
         f (Just x) (Just y) = Just (x || y)
         f Nothing  _        = Nothing
         f _        Nothing  = Nothing
     in foldl f (Just False) maybes
-isMoreGeneral (TTup _ t1s) (TTup _ t2s)           = 
+isMoreGeneral (TTup t1s) (TTup t2s)           = 
     let maybes = zipWith isMoreGeneral t1s t2s
         f (Just x) (Just y) = Just (x || y)
         f Nothing  _        = Nothing
@@ -115,41 +104,41 @@ isMoreGeneral (TTup _ t1s) (TTup _ t2s)           =
     in foldl f (Just False) maybes
 isMoreGeneral _ _                                 = Nothing
 
-getPatType :: Pat () -> Type ()
+getPatType :: Pat () -> Type
 getPatType (PTyped _ _ t) = t
 getPatType _ = error "please don't end up here" -- TODO backtrack and take care of this
 
-getExpType :: Exp () -> Type ()
+getExpType :: Exp () -> Type
 getExpType (ETyped _ _ t) = t
 getExpType _ = error "please don't end up here" -- TODO backtrack and take care of this
 
-getPMType :: PatMatch () -> Type ()
+getPMType :: PatMatch () -> Type
 getPMType (PM _ _ (ETyped _ _ t)) = t
 
 -- builds a function type from the list of argument types and the result type
-function_type :: [Type ()] -> Type () -> Type ()
+function_type :: [Type] -> Type -> Type
 function_type [] res     = res
-function_type (x:xs) res = TLam () x (function_type xs res)
+function_type (x:xs) res = TLam x (function_type xs res)
 
 -- fetch the final construction of a type
 -- e.g unwrap function (a -> b -> Either a b) = Either a b
-unwrap_function :: Type () -> Type ()
-unwrap_function (TLam () _ t) = unwrap_function t
+unwrap_function :: Type -> Type
+unwrap_function (TLam _ t) = unwrap_function t
 unwrap_function t             = t
 
-count_arguments :: Type () -> Int
-count_arguments (TLam () _ t) = 1 + count_arguments t
+count_arguments :: Type -> Int
+count_arguments (TLam _ t) = 1 + count_arguments t
 count_arguments _             = 0
 
 -- synonyms for the built-in types
-bool :: Type ()
-bool = TBool () --TAdt () (UIdent "Bool") []
+bool :: Type
+bool = TBool --TAdt () (UIdent "Bool") []
 
-int :: Type ()
-int = TInt () --TAdt () (UIdent "Int") []
+int :: Type
+int = TInt --TAdt () (UIdent "Int") []
 
-float :: Type ()
-float = TFloat () -- TAdt () (UIdent "Float") []
+float :: Type
+float = TFloat -- TAdt () (UIdent "Float") []
 
 -- if _any_ of the expressions in the AST fulfils the predicate, return true
 usesVar :: Ident -> Exp () -> Bool
@@ -206,8 +195,6 @@ instance Substitutable (Pat ()) where
 
   ftv p = undefined -- don't think we need this.. TODO backtrack here,
                     -- either implement for good measure or think of something else
-
-  ftv p = undefined -- same reasoning as above
 
 instance Substitutable (Exp ()) where
   apply s (ETyped a e t) = ETyped a (apply s e) (apply s t)
