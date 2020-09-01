@@ -162,6 +162,9 @@ int heap_explicit_free(heap_t *heap, heap_index i) {
 /* Garbage Collection */
 /**********************/
 
+
+// Deutsch-Schorr-Waite pointer reversal marking
+
 void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 
   bool done = false;
