@@ -71,23 +71,27 @@ unsigned int heap_num_free(heap_t *heap) {
   return n;
 }
 
-inline void set_gc_mark(heap_t *heap, heap_index i) {
+static inline void set_gc_mark(heap_t *heap, heap_index i) {
   heap->flags[i] = heap->flags[i] | HEAP_GC_MARK_BIT_MASK;
 }
 
-inline void set_gc_flag(heap_t *heap, heap_index i) {
+static inline void set_gc_flag(heap_t *heap, heap_index i) {
   heap->flags[i] = heap->flags[i] | HEAP_GC_FLAG_BIT_MASK;
 }
 
-inline int is_atomic(value_flags_t flags) {
+static inline void clr_gc_flag(heap_t *heap, heap_index i) {
+  heap->flags[i] = heap->flags[i] & !HEAP_GC_FLAG_BIT_MASK;
+}
+
+static inline int is_atomic(value_flags_t flags) {
   return flags & VALUE_PTR_MASK;
 }
 
-inline int get_gc_mark(heap_t *heap, heap_index i) {
+static inline int get_gc_mark(heap_t *heap, heap_index i) {
   return heap->flags[i] & HEAP_GC_MARK_BIT_MASK;
 }
 
-inline int get_gc_flag(heap_t *heap, heap_index i) {
+static inline int get_gc_flag(heap_t *heap, heap_index i) {
   return heap->flags[i] & HEAP_GC_FLAG_BIT_MASK;
 }
 
@@ -193,7 +197,9 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
     while  (prev_flags & VALUE_PTR_MASK &&
 	    (heap_index)prev_val != HEAP_NULL &&
 	    get_gc_flag(heap, prev_val)) {
-
+      
+      clr_gc_flag(heap, prev_val);
+      
       UINT next_val = heap_snd(heap, prev_val);
       value_flags_t next_flags = heap_snd_flags(heap, prev_val);
 
