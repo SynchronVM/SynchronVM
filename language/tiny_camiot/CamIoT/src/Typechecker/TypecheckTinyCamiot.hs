@@ -155,6 +155,8 @@ checkProgram ds = do
     let (datadecls, functions) = makeFunctions ds
     ((++) datadecls . concat . map unwrapDef) <$> local scope (single functions)
 
+     -- typechecks the functions one by one, extending the environment
+     -- with the previously typechecked functions types.
   where single :: [Function] -> TC [Function]
         single [] = return []
         single (d:ds) = do
@@ -345,12 +347,6 @@ checkConstType const = case const of
     CFalse a        -> bool
     CNil a          -> TNil ()
 
--- Check many case branches. They must be of the same type.
--- E.g we do not allow
--- case x of
---   (Just a) -> 3
---   Nothing  -> True
--- as that is just silly
 checkCases :: Type () -> [PatMatch ()] -> TC [PatMatch ()]
 checkCases t pm = do
     pm' <- mapM (checkCase t) pm
@@ -545,11 +541,6 @@ checkExp e = case e of
         CFalse a   -> return $ ETyped () (EConst () const) bool
         CNil a     -> return $ ETyped () (EConst () const) (TNil ())
 
--- TODO we can remove the 'duplice' operators and try to overload them
--- when we know how to attempt the unification when the types it can be
--- unified with are not arbitrary, but actually a subset of all types.
--- (I have an idea of how to do this, but let's do this when everything
---  else is complete)
 addOps :: AddOp () -> TC (Type ())
 addOps op = case Map.lookup op addOps_ of
     Just t  -> instantiate t

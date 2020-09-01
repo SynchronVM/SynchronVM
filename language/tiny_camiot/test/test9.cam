@@ -1,4 +1,4 @@
-apa : Int -> Int 
+apa : Int -> Int
 apa = \x -> x + 1
 
 data Apa where

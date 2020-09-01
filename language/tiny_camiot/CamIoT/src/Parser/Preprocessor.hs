@@ -6,6 +6,12 @@ import Control.Monad.Writer
 import Control.Monad.Except
 import qualified Data.Text as T
 
+{-
+
+case x of { Just a -> x; Nothing -> b}
+
+-}
+
 data PPState = ST { source       :: T.Text
                   , current      :: Int
                   , targetIndent :: [Int]} deriving Show
