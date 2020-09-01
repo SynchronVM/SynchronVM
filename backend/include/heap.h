@@ -53,7 +53,7 @@ typedef struct {
   heap_cell_t  *cells;
   uintptr_t    bptr;
   unsigned int size_bytes;
-  unsigned int size_cells;
+  heap_index   size_cells;
   heap_index   sweep_pos;
   heap_flags_t *value_flags;     // Security and is_ptr flags
   uint8_t      *flags;           // GC flags

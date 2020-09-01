@@ -135,37 +135,27 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 /* Heap Allocation */
 /*******************/
 
-/* heap_index heap_allocate(heap_t *heap) { */
 
-/*   heap_index fl = heap->free_list; */
+/* Hughes Lazy sweep */
+
+heap_index heap_allocate(heap_t *heap) {
   
-/*   if (fl == HEAP_NULL) return fl; */
+  while (heap->sweep_pos < heap->size_cells) {
 
-/*   heap_index i = fl; */
-/*   heap->free_list = heap_snd(heap, i); */
-/*   heap_set_flags(heap, i, HEAP_FLAGS_DEFAULT); */
-/*   return i; */
-/* } */
-
-/* /\* Dangerous function *\/ */
-/* int heap_explicit_free(heap_t *heap, heap_index i) { */
-
-/*   heap_index curr = heap->free_list; */
-/*   while (curr != HEAP_NULL) { */
-/*     if (curr == i) return 0;  /\* trying to explicitly free something */
-/*                                  that is already on the free_list *\/ */
-/*     curr = heap_snd(heap, curr); */
-/*   } */
-
-/*   heap_set_snd(heap, i, heap->free_list, true); */
-/*   heap->free_list = i; */
-/*   return 1; */
-/* } */
+    if (get_gc_mark(heap, heap->sweep_pos)) {
+      clr_gc_mark(heap, heap->sweep_pos);
+      heap->sweep_pos++;
+    } else {
+      return heap->sweep_pos++;
+    }
+  }
+  heap->sweep_pos = 0;
+  return HEAP_NULL; // Heap is full and a mark phase should be run
+}
 
 /**********************/
 /* Garbage Collection */
 /**********************/
-
 
 // Deutsch-Schorr-Waite pointer reversal marking
 // Todo: lots of testing and tweaking until it works.
