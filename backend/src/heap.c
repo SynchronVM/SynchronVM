@@ -29,70 +29,70 @@
 /* Smaller Utility Functions */
 /*****************************/
 
-UINT heap_fst(heap_t *heap, heap_index i) {
-  return heap->cells[i].data[0];
-}
 
 value_flags_t heap_fst_flags(heap_t *heap, heap_index i) {
-  return (value_flags_t) heap->flags[i];
+  return (value_flags_t) heap->value_flags[i].fst;
 }
 
 value_flags_t heap_snd_flags(heap_t *heap, heap_index i) {
-  return (value_flags_t) heap->flags[i] >> 16;
+  return (value_flags_t) heap->value_flags[i].snd;
 }
 
+UINT heap_fst(heap_t *heap, heap_index i) {
+  return heap->cells[i].fst;
+}
 
 UINT heap_snd(heap_t *heap, heap_index i) {
-  return heap->cells[i].data[1];
+  return heap->cells[i].snd;
 }
 
 void heap_set_fst(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
-  heap->cells[i].data[0] = value;
-  heap->flags[i] |= flags;
+  heap->cells[i].fst = value;
+  heap->value_flags[i].fst |= flags;
 }
 
 void heap_set_snd(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
-  heap->cells[i].data[1] = value;
-  heap->flags[i] |= (((heap_flags_t)flags) << 16);
+  heap->cells[i].snd = value;
+  heap->value_flags[i].snd |= flags;
 
 }
 
-void heap_set_flags(heap_t *heap, heap_index i, UINT flags) {
-  heap->flags[i] = flags;
-}
-
-unsigned int heap_num_free(heap_t *heap) {
-  heap_index curr = heap->free_list;
-  unsigned int n = 0;
-  while (curr != HEAP_NULL) {
-    curr = heap_snd(heap, curr);
-    n ++;
-  }
-  return n;
-}
+/* unsigned int heap_num_free(heap_t *heap) { */
+/*   heap_index curr = heap->free_list; */
+/*   unsigned int n = 0; */
+/*   while (curr != HEAP_NULL) { */
+/*     curr = heap_snd(heap, curr); */
+/*     n ++; */
+/*   } */
+/*   return n; */
+/* } */
 
 static inline void set_gc_mark(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] | HEAP_GC_MARK_BIT_MASK;
+  heap->flags[i] = heap->flags[i] | HEAP_GC_MARK_BIT;
 }
 
 static inline void set_gc_flag(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] | HEAP_GC_FLAG_BIT_MASK;
+  heap->flags[i] = heap->flags[i] | HEAP_GC_FLAG_BIT;
+}
+
+static inline void clr_gc_mark(heap_t *heap, heap_index i) {
+  heap->flags[i] = heap->flags[i] & !HEAP_GC_MARK_BIT;
 }
 
 static inline void clr_gc_flag(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] & !HEAP_GC_FLAG_BIT_MASK;
+  heap->flags[i] = heap->flags[i] & !HEAP_GC_FLAG_BIT;
 }
 
 static inline int is_atomic(value_flags_t flags) {
-  return flags & VALUE_PTR_MASK;
+  return flags & VALUE_PTR_BIT;
 }
 
 static inline int get_gc_mark(heap_t *heap, heap_index i) {
-  return heap->flags[i] & HEAP_GC_MARK_BIT_MASK;
+  return heap->flags[i] & HEAP_GC_MARK_BIT;
 }
 
 static inline int get_gc_flag(heap_t *heap, heap_index i) {
-  return heap->flags[i] & HEAP_GC_FLAG_BIT_MASK;
+  return heap->flags[i] & HEAP_GC_FLAG_BIT;
 }
 
 /************************************/
@@ -103,24 +103,28 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
   if (!mem || !heap || size_bytes < 1024) return 0;
   
-  unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(UINT));
+  unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(heap_flags_t) + sizeof(uint8_t));
 
   // Maybe check to make sure that mem is 4bytes aligned,
-  // it doesn't need to be as it is a uint8_t type. 
-  heap->cells = (heap_cell_t *)mem;
+  // it doesn't need to be as it is a uint8_t type.
 
-  heap->flags = (UINT*)(mem + (sizeof(heap_cell_t) * n_cells));
+  unsigned int value_flags_start = sizeof(heap_cell_t) * n_cells;
+  unsigned int flags_start = value_flags_start + (sizeof(heap_flags_t) * n_cells);
+  
+  heap->cells = (heap_cell_t *)mem;
+  heap->value_flags = (heap_flags_t*)(mem + value_flags_start);
+  heap->flags = (uint8_t *)(mem + flags_start);
  
   heap->bptr = (uintptr_t)heap;
 
   for (unsigned int i = 0; i < n_cells; i ++) {
-    heap->cells[i].data[1] = i + 1;
-    heap->flags[i] = HEAP_FLAGS_DEFAULT;
-    heap->flags[i] = heap->flags[i] | HEAP_PTR_MASK_1;
+    heap->cells[i].snd = i + 1;
+    heap->flags[i] = 0;
+    heap->value_flags[i].snd = VALUE_PTR_BIT;
   }
   
-  heap->cells[n_cells-1].data[1] = HEAP_NULL;
-  heap->free_list = 0;
+  heap->cells[n_cells-1].snd = HEAP_NULL;
+  heap->sweep_pos  = 0;
   heap->size_bytes = size_bytes;
   heap->size_cells = n_cells;
 
@@ -131,32 +135,32 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 /* Heap Allocation */
 /*******************/
 
-heap_index heap_allocate(heap_t *heap) {
+/* heap_index heap_allocate(heap_t *heap) { */
 
-  heap_index fl = heap->free_list;
+/*   heap_index fl = heap->free_list; */
   
-  if (fl == HEAP_NULL) return fl;
+/*   if (fl == HEAP_NULL) return fl; */
 
-  heap_index i = fl;
-  heap->free_list = heap_snd(heap, i);
-  heap_set_flags(heap, i, HEAP_FLAGS_DEFAULT);
-  return i;
-}
+/*   heap_index i = fl; */
+/*   heap->free_list = heap_snd(heap, i); */
+/*   heap_set_flags(heap, i, HEAP_FLAGS_DEFAULT); */
+/*   return i; */
+/* } */
 
-/* Dangerous function */
-int heap_explicit_free(heap_t *heap, heap_index i) {
+/* /\* Dangerous function *\/ */
+/* int heap_explicit_free(heap_t *heap, heap_index i) { */
 
-  heap_index curr = heap->free_list;
-  while (curr != HEAP_NULL) {
-    if (curr == i) return 0;  /* trying to explicitly free something
-                                 that is already on the free_list */
-    curr = heap_snd(heap, curr);
-  }
+/*   heap_index curr = heap->free_list; */
+/*   while (curr != HEAP_NULL) { */
+/*     if (curr == i) return 0;  /\* trying to explicitly free something */
+/*                                  that is already on the free_list *\/ */
+/*     curr = heap_snd(heap, curr); */
+/*   } */
 
-  heap_set_snd(heap, i, heap->free_list, true);
-  heap->free_list = i;
-  return 1;
-}
+/*   heap_set_snd(heap, i, heap->free_list, true); */
+/*   heap->free_list = i; */
+/*   return 1; */
+/* } */
 
 /**********************/
 /* Garbage Collection */
@@ -164,6 +168,7 @@ int heap_explicit_free(heap_t *heap, heap_index i) {
 
 
 // Deutsch-Schorr-Waite pointer reversal marking
+// Todo: lots of testing and tweaking until it works.
 
 void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 
@@ -172,7 +177,7 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
   UINT curr_val = value;
   value_flags_t curr_flags = v_flags;
   UINT prev_val = HEAP_NULL;
-  value_flags_t prev_flags = VALUE_PTR_MASK;
+  value_flags_t prev_flags = VALUE_PTR_BIT;
 
   // Abort if value is not a pointer to a heap structure. 
   if (is_atomic(curr_flags)) return;
@@ -182,7 +187,7 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
   while (!done) {
 
     // Follow left pointers
-    while (curr_flags & VALUE_PTR_MASK &&
+    while (curr_flags & VALUE_PTR_BIT &&
 	   (heap_index)curr_val != HEAP_NULL &&
 	   !get_gc_mark(heap, curr_val)) {
       set_gc_mark(heap, curr_val);
@@ -197,7 +202,7 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
       curr_flags = next_flags;
     }
 
-    while  (prev_flags & VALUE_PTR_MASK &&
+    while  (prev_flags & VALUE_PTR_BIT &&
 	    (heap_index)prev_val != HEAP_NULL &&
 	    get_gc_flag(heap, prev_val)) {
       
@@ -215,7 +220,7 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
       prev_flags = next_flags;
     }
 
-    if (prev_flags & VALUE_PTR_MASK &&
+    if (prev_flags & VALUE_PTR_BIT &&
 	(heap_index)prev_val == HEAP_NULL){
       done = true;
 

@@ -32,35 +32,31 @@
 #include <flags.h>
 
 
-#define     HEAP_NULL                 -1
+#define  HEAP_NULL                 -1
 
+
+#define  HEAP_GC_MARK_BIT           0x80   
+#define  HEAP_GC_FLAG_BIT           0x40
 
 typedef INT heap_index; /* size of pointers are platform specific
                            so let's index into the heap as an array.
 			   Trying to use -1 as "heap NULL"
 			*/
 
-
 typedef struct {
-  UINT data[2];
+  UINT fst;
+  UINT snd;
 } heap_cell_t;
 
-// Todo (This should be easier. But spends more bits. Optimize later)
-/*
-typedef struct { 
-  value_flags_t flags[2]; 
-  unsigned char gc_flags;
-} heap_flags_t;
-*/ 
-
 
 typedef struct {
-  heap_flags_t *flags;
   heap_cell_t  *cells;
   uintptr_t    bptr;
   unsigned int size_bytes;
   unsigned int size_cells;
-  heap_index   free_list; 
+  heap_index   sweep_pos;
+  heap_flags_t *value_flags;     // Security and is_ptr flags
+  uint8_t      *flags;           // GC flags
 } heap_t;
 
 

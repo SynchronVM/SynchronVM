@@ -25,22 +25,17 @@
 #ifndef __FLAGS_H_
 #define __FLAGS_H_
 
-typedef uint32_t heap_flags_t;
 typedef uint16_t value_flags_t;
 
+typedef struct { 
+  value_flags_t fst;
+  value_flags_t snd;
+} heap_flags_t;
+ 
 /* Bit masks for flags of a memory cell */
 /* Tweak these later to make more sense */ 
-#define     HEAP_GC_MARK_BIT_MASK     0x80000000
-#define     HEAP_GC_FLAG_BIT_MASK     0x40000000
-#define     HEAP_PTR_MASK_1           0x08000000 /* is data[1] a ptr ? */
-#define     HEAP_PTR_MASK_0           0x00000800 /* is data[2] a ptr ? */
 
-#define     HEAP_FLAGS_DEFAULT        0x00000000
-
-
-
-#define     VALUE_PTR_MASK            0x0800
-
+#define     VALUE_PTR_BIT            0x8000
 
 
 #endif

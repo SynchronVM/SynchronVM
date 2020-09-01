@@ -41,11 +41,11 @@ int main(int argc, char **argv) {
 
   printf("Heap size bytes: %u\n", hptr->size_bytes);
   printf("Heap size cells: %u\n", hptr->size_cells);
-  printf("Heap free: %u\n", heap_num_free(hptr));
+  //printf("Heap free: %u\n", heap_num_free(hptr));
 
-  if (hptr->size_cells != heap_num_free(hptr)) {
-    return 0;
-  }
+  //if (hptr->size_cells != heap_num_free(hptr)) {
+  //  return 0;
+  //}
 
   if ((hptr->bptr & 0x3) != 0) {
     printf("Heap is not 4 byte aligned\n");

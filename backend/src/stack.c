@@ -52,7 +52,7 @@ int stack_push_ptr(stack_t *s, UINT ptr) {
   if (s->sp == s->size) return 0;
 
   s->data[s->sp] = ptr;
-  s->flags[s->sp++] = VALUE_PTR_MASK;
+  s->flags[s->sp++] = VALUE_PTR_BIT;
   return 1;
 }
 int stack_pop(stack_t *s, register_t *r) {
