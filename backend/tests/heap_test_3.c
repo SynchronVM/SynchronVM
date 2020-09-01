@@ -23,6 +23,8 @@
 /**********************************************************************************/
 
 #include <VMC.h>
+#include <heap.h>
+#include <flags.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,11 +52,42 @@ int main(int argc, char **argv) {
     return 0;
   } 
 
+  heap_index indices[100];
 
-  //for (int i = 0; i < 100; i ++) {
-  //  heap_allocate(hptr);
-  //}
+  for (int i = 0; i < 100; i ++) {
+    indices[i] = heap_allocate(hptr);
+  }
 
+  printf("Indices allocated: ");
+  for (int i = 0; i < 100; i ++) {
+    
+    printf("%d", indices[i]);
+
+    if (i != 99) printf(", ");
+  }
+  printf("\n");
+
+  printf("Marking indices[4]\n");
+  heap_mark(hptr, indices[4], VALUE_PTR_BIT);
+
+  printf("Resetting sweep position\n");
+  hptr->sweep_pos = 0;
+
+  for (int i = 0; i < 100; i ++) {
+    indices[i] = heap_allocate(hptr);
+  }
+
+  printf("Indices allocated: ");
+  for (int i = 0; i < 100; i ++) {
+    
+    printf("%d", indices[i]);
+
+    if (i != 99) printf(", ");
+  }
+  printf("\n");
+
+
+  
   //printf("Heap free: %u\n", heap_num_free(hptr));
 
   //if ((hptr->size_cells - 100)!= heap_num_free(hptr)) {

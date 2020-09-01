@@ -29,7 +29,6 @@
 /* Smaller Utility Functions */
 /*****************************/
 
-
 value_flags_t heap_fst_flags(heap_t *heap, heap_index i) {
   return (value_flags_t) heap->value_flags[i].fst;
 }
@@ -68,23 +67,23 @@ void heap_set_snd(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
 /* } */
 
 static inline void set_gc_mark(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] | HEAP_GC_MARK_BIT;
+  heap->flags[i] |= HEAP_GC_MARK_BIT;
 }
 
 static inline void set_gc_flag(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] | HEAP_GC_FLAG_BIT;
+  heap->flags[i] |= HEAP_GC_FLAG_BIT;
 }
 
 static inline void clr_gc_mark(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] & !HEAP_GC_MARK_BIT;
+  heap->flags[i] &= ~HEAP_GC_MARK_BIT;
 }
 
 static inline void clr_gc_flag(heap_t *heap, heap_index i) {
-  heap->flags[i] = heap->flags[i] & !HEAP_GC_FLAG_BIT;
+  heap->flags[i] &= ~HEAP_GC_FLAG_BIT;
 }
 
 static inline int is_atomic(value_flags_t flags) {
-  return flags & VALUE_PTR_BIT;
+  return (flags & VALUE_PTR_BIT) == 0;
 }
 
 static inline int get_gc_mark(heap_t *heap, heap_index i) {
@@ -95,6 +94,13 @@ static inline int get_gc_flag(heap_t *heap, heap_index i) {
   return heap->flags[i] & HEAP_GC_FLAG_BIT;
 }
 
+static inline void clr_cell(heap_t *heap, heap_index i) {
+  heap->flags[i] = 0;
+  heap->cells[i].fst = 0;
+  heap->cells[i].snd = 0;
+  heap->value_flags[i].fst = 0;
+  heap->value_flags[i].snd = 0;
+}
 /************************************/
 /* Heap Creation and Initialization */
 /************************************/
@@ -114,7 +120,6 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
   heap->cells = (heap_cell_t *)mem;
   heap->value_flags = (heap_flags_t*)(mem + value_flags_start);
   heap->flags = (uint8_t *)(mem + flags_start);
-
   heap->bptr = (uintptr_t)heap;
 
   for (unsigned int i = 0; i < n_cells; i ++) {
@@ -146,9 +151,11 @@ heap_index heap_allocate(heap_t *heap) {
       clr_gc_mark(heap, heap->sweep_pos);
       heap->sweep_pos++;
     } else {
+      clr_cell(heap, heap->sweep_pos);
       return heap->sweep_pos++;
     }
   }
+
   heap->sweep_pos = 0;
   return HEAP_NULL; // Heap is full and a mark phase should be run
 }
@@ -181,21 +188,22 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 	   (heap_index)curr_val != HEAP_NULL &&
 	   !get_gc_mark(heap, curr_val)) {
       set_gc_mark(heap, curr_val);
-      UINT next_val = heap_fst(heap, curr_val);
-      value_flags_t next_flags = heap_fst_flags(heap, curr_val);
-      heap_set_fst(heap, curr_val, prev_val, prev_flags);
+      if (!is_atomic(curr_flags)) {
+	UINT next_val = heap_fst(heap, curr_val);
+	value_flags_t next_flags = heap_fst_flags(heap, curr_val);
+	heap_set_fst(heap, curr_val, prev_val, prev_flags);
 
-      prev_val   = curr_val;
-      prev_flags = curr_flags;
+	prev_val   = curr_val;
+	prev_flags = curr_flags;
 
-      curr_val   = next_val;
-      curr_flags = next_flags;
+	curr_val   = next_val;
+	curr_flags = next_flags;
+      }
     }
 
     while  (prev_flags & VALUE_PTR_BIT &&
 	    (heap_index)prev_val != HEAP_NULL &&
 	    get_gc_flag(heap, prev_val)) {
-
       clr_gc_flag(heap, prev_val);
 
       UINT next_val = heap_snd(heap, prev_val);
@@ -215,8 +223,6 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
       done = true;
 
     } else {
-      // switch to right subgraph
-
       set_gc_flag(heap, prev_val);
       UINT next_val = heap_fst(heap, prev_val);
       value_flags_t next_flags = heap_fst_flags(heap, prev_val);
