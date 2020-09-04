@@ -473,3 +473,23 @@ interfaces, sensors etc. I think it would be beneficial to assign such
 resources to a VM Container and never allow the same interface to be
 connected to more than one VM Container.
 
+
+## This is needed in the HAL layer for safety.
+
+- How is volatile memory handled secured : Double storage or memory check
+  - Everything stored twice once bitreversed.
+  - The smaller "doubling" the worse.
+  - Checkerboard memory testing. 
+  
+- Check on flash memory constants etc, CRC checksum (CRC Signature of flash memory)
+  CCIT
+
+- Sequence-Control: a token that is incremented. 
+  - Connected to a watch-dog. Check that token only takes valid values.
+  - What about Erlang like supervisor processes? 
+    - Look at Erlang handling of failures. 
+
+- Redundancy mechinism
+  3 way voting etc?
+
+
