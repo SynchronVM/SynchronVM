@@ -23,22 +23,70 @@
 module Typechecker.TypecheckTinyCamiot where
 
 import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
+    ( PatMatch(..),
+      Pat(..),
+      Const(..),
+      RelOp(..),
+      MulOp(Div, Times),
+      AddOp(Minus, Plus),
+      Exp(..),
+      Type(TAdt, TLam, TVar, TTup, TNil),
+      ConstructorDec(..),
+      Def(..),
+      UIdent,
+      Ident(..) )
+import Parser.PrintTinyCamiot ( printTree )
 
 import Typechecker.Environment
+    ( Substitutable(ftv, apply),
+      Subst,
+      TCError(ConstructorNotFullyApplied, DuplicateTypeSig,
+              DuplicateConstructor, UnboundTypeVariable, TypeArityError,
+              WrongConstructorGoal, AloneTypeSignature,
+              RecursiveFunctionWithoutTypesig, FunctionClausesNotEqual,
+              TypeSignatureTooGeneral, FunctionClauseWrongType, LambdaConstError,
+              PatternTypeError),
+      TC,
+      TCState(typesignatures, constructors),
+      TEnv,
+      Scheme(..),
+      emptyEnv,
+      extend,
+      inEnvMany,
+      instantiate,
+      generalize,
+      lookupVar,
+      lookupCons,
+      emptyState,
+      fresh )
 import Typechecker.Unification
+    ( uni, uniMany, uniEither, runSolve )
 import Typechecker.AstUtils
-import Typechecker.TCUtils
+    ( (*->),
+      isMoreGeneral,
+      getPatType,
+      getExpType,
+      getPMType,
+      function_type,
+      count_arguments,
+      bool,
+      int,
+      float,
+      usesVar,
+      getAddopVar,
+      getMulopVar,
+      getRelopVar )
 
-import Control.Monad.Trans
 import Control.Monad.State
+    ( modify, MonadState(put, get), StateT(runStateT) )
 import Control.Monad.Reader
-import Control.Monad.Writer
-import Control.Monad.Identity
-import Control.Monad.Except
-import Data.Maybe
+    ( MonadReader(ask, local), ReaderT(runReaderT) )
+import Control.Monad.Writer ( WriterT(runWriterT) )
+import Control.Monad.Except ( runExceptT, MonadError(throwError) )
+import Data.Maybe ( catMaybes, fromJust )
 import Data.List
-import Data.Foldable
+    ( groupBy, intercalate, intersect, nub, partition )
+import Data.Foldable ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

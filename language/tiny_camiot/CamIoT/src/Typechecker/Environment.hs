@@ -50,21 +50,23 @@ module Typechecker.Environment (
   , Substitutable(..)
     )where
 
-import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
+import Parser.AbsTinyCamiot ( Type(TVar), UIdent, Ident(..) )
+import Parser.PrintTinyCamiot ()
 import Typechecker.Substitution
-import Typechecker.Constraint
-import Typechecker.TCUtils
+    ( Substitutable(..), Subst, nullSubst, compose )
+import Typechecker.Constraint ( Constraint )
+import Typechecker.TCUtils ( TCError(..) )
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List
 
-import Control.Monad.Trans
 import Control.Monad.State
+    ( replicateM, MonadState(put, get), StateT )
 import Control.Monad.Reader
-import Control.Monad.Writer
+    ( replicateM, MonadReader(ask, local), ReaderT )
+import Control.Monad.Writer ( replicateM, WriterT )
 import Control.Monad.Except
+    ( replicateM, MonadError(throwError), ExceptT )
 
 {- Type schemes and environments -}
 {-*******************************-}

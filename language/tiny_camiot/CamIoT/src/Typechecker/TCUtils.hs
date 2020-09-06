@@ -22,9 +22,10 @@
 module Typechecker.TCUtils(TCError(..)) where
 
 import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
+    ( Pat, Const, Exp, Type(TAdt), UIdent(..), Ident(..) )
+import Parser.PrintTinyCamiot ( printTree )
 
-import Data.List
+import Data.List ( intercalate )
 
 -- All potential errors that can be thrown. Feel free to
 -- add more variants as you need.

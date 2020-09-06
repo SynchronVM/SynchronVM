@@ -2,8 +2,10 @@
 module Parser.Preprocessor (process) where
 
 import Control.Monad.State.Lazy
+    ( when, gets, modify, MonadState(get), StateT(runStateT) )
 import Control.Monad.Writer
-import Control.Monad.Except
+    ( when, runWriter, MonadWriter(tell), Writer )
+import Control.Monad.Except ( when )
 import qualified Data.Text as T
 
 {-

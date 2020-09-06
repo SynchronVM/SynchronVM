@@ -21,10 +21,10 @@
 -- SOFTWARE.
 module Typechecker.Constraint(Constraint(..), Test) where
 
-import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
-import Typechecker.Substitution
-import Typechecker.TCUtils
+import Parser.AbsTinyCamiot ( Type )
+import Parser.PrintTinyCamiot ( printTree )
+import Typechecker.Substitution ( Substitutable(..) )
+import Typechecker.TCUtils ( TCError )
 
 import qualified Data.Set as Set
 

@@ -44,7 +44,16 @@ module Typechecker.AstUtils(
 ) where
 
 import Parser.AbsTinyCamiot
-import Typechecker.Substitution
+    ( PatMatch(..),
+      Pat(..),
+      RelOp(..),
+      MulOp(Div, Times),
+      AddOp(Minus, Plus),
+      Exp(..),
+      Type(TFloat, TVar, TAdt, TTup, TLam, TBool, TInt),
+      Def(DEquation),
+      Ident )
+import Typechecker.Substitution ( Substitutable(..) )
 
 -- TODO make heavy use of this bad boy.... it would make
 -- the inference code easier to read, I believe
@@ -81,7 +90,6 @@ getPatvar p = case p of
     PNil a       -> a
     PTup a _     -> a
     PLay a _ _   -> a
-    PTyped a _ _ -> a
 
 getAddopVar :: AddOp a -> a
 getAddopVar op = case op of
@@ -167,7 +175,6 @@ float = TFloat -- TAdt () (UIdent "Float") []
 -- if _any_ of the expressions in the AST fulfils the predicate, return true
 usesVar :: Ident -> Exp a -> Bool
 usesVar id e = case e of
-    (ETyped a e1 t)   -> usesVar id e1
     (ETup a texps)    -> any (usesVar id) texps
     (ECase a e1 br)   -> usesVar id e1 || any (usesVarPatMatch id) br
     (ELet a p e1 e2)  -> usesVarPat id p || usesVar id e1 || usesVar id e2
@@ -187,7 +194,6 @@ usesVar id e = case e of
 
 usesVarPat :: Ident -> Pat a -> Bool
 usesVarPat id p = case p of
-    PTyped _ p _     -> usesVarPat id p
     PConst _ c       -> False
     PVar _ id'       -> id == id'
     PZAdt _ _        -> False

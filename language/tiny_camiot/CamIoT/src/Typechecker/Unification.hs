@@ -34,19 +34,22 @@ module Typechecker.Unification(
   , bind
 ) where
 
-import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
+import Parser.AbsTinyCamiot ( Type(..), Ident )
+import Parser.PrintTinyCamiot ()
 
 import Typechecker.Environment
-import Typechecker.AstUtils
-import Typechecker.Substitution
-import Typechecker.Constraint
-import Typechecker.TCUtils
+    ( Substitutable(..),
+      Subst,
+      nullSubst,
+      compose,
+      TCError(InfiniteType, UnificationFail),
+      TC )
+import Typechecker.Constraint ( Constraint(..), Test )
 
-import Control.Monad.Writer
-import Control.Monad.State
+import Control.Monad.Writer ( MonadWriter(tell) )
 import Control.Monad.Except
-import Data.Foldable
+    ( runExceptT, MonadError(throwError, catchError), ExceptT )
+import Data.Foldable ( foldlM )
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

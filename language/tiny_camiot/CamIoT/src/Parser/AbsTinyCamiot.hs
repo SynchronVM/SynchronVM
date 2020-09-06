@@ -58,7 +58,6 @@ data Exp a
     | EVar a Ident
     | EUVar a UIdent
     | EConst a Const
-    | ETyped a (Exp a) Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Exp where
@@ -79,7 +78,6 @@ instance C.Functor Exp where
         EVar a ident -> EVar (f a) ident
         EUVar a uident -> EUVar (f a) uident
         EConst a const -> EConst (f a) const
-        ETyped a exp type_ -> ETyped (f a) (fmap f exp) type_
 
 data AddOp a = Plus a | Minus a | AddOpTyped a (AddOp a) Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -88,7 +86,6 @@ instance C.Functor AddOp where
     fmap f x = case x of
         Plus a -> Plus (f a)
         Minus a -> Minus (f a)
-        AddOpTyped a addop type_ -> AddOpTyped (f a) (fmap f addop) type_
 
 data MulOp a = Times a | Div a | MulOpTyped a (MulOp a) Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
@@ -97,7 +94,6 @@ instance C.Functor MulOp where
     fmap f x = case x of
         Times a -> Times (f a)
         Div a -> Div (f a)
-        MulOpTyped a mulop type_ -> MulOpTyped (f a) (fmap f mulop) type_
 
 data RelOp a
     = LTC a
@@ -105,7 +101,6 @@ data RelOp a
     | GTC a
     | GEC a
     | EQC a
-    | RelOpTyped a (RelOp a) Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor RelOp where
@@ -115,7 +110,6 @@ instance C.Functor RelOp where
         GTC a -> GTC (f a)
         GEC a -> GEC (f a)
         EQC a -> EQC (f a)
-        RelOpTyped a relop type_ -> RelOpTyped (f a) (fmap f relop) type_
 
 data Const
     = CInt Integer | CFloat Double | CTrue | CFalse | CNil
@@ -130,7 +124,6 @@ data Pat a
     | PNil a
     | PTup a [Pat a]
     | PLay a Ident (Pat a)
-    | PTyped a (Pat a) Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Pat where
@@ -143,7 +136,6 @@ instance C.Functor Pat where
         PNil a -> PNil (f a)
         PTup a tuppats -> PTup (f a) (map (fmap f) tuppats)
         PLay a ident pat -> PLay (f a) ident (fmap f pat)
-        PTyped a pat type_ -> PTyped (f a) (fmap f pat) type_
 
 data PatMatch a = PM (Pat a) (Exp a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)

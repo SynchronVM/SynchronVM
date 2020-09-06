@@ -11,7 +11,19 @@
 module Parser.PrintTinyCamiot where
 
 import Parser.AbsTinyCamiot
-import Data.Char
+    ( PatMatch(..),
+      Pat(..),
+      Const(..),
+      RelOp(..),
+      MulOp(Div, Times),
+      AddOp(Minus, Plus),
+      Exp(..),
+      Type(..),
+      ConstructorDec(..),
+      Def(..),
+      UIdent(..),
+      Ident(..) )
+import Data.Char ( isSpace )
 
 -- | The top-level printing method.
 
@@ -165,7 +177,6 @@ instance Print (Exp a) where
     EVar _ id -> prPrec i 7 (concatD [prt 0 id])
     EUVar _ uident -> prPrec i 7 (concatD [prt 0 uident])
     EConst _ const -> prPrec i 7 (concatD [prt 0 const])
-    ETyped _ exp type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 exp, doc (showString ":"), prt 0 type_, doc (showString ")")])
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
@@ -173,14 +184,12 @@ instance Print (AddOp a) where
   prt i e = case e of
     Plus _ -> prPrec i 0 (concatD [doc (showString "+")])
     Minus _ -> prPrec i 0 (concatD [doc (showString "-")])
-    AddOpTyped _ addop type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 addop, doc (showString ":"), prt 0 type_, doc (showString ")")])
-
+    
 instance Print (MulOp a) where
   prt i e = case e of
     Times _ -> prPrec i 0 (concatD [doc (showString "*")])
     Div _ -> prPrec i 0 (concatD [doc (showString "/")])
-    MulOpTyped _ mulop type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 mulop, doc (showString ":"), prt 0 type_, doc (showString ")")])
-
+    
 instance Print (RelOp a) where
   prt i e = case e of
     LTC _ -> prPrec i 0 (concatD [doc (showString "<")])
@@ -188,8 +197,7 @@ instance Print (RelOp a) where
     GTC _ -> prPrec i 0 (concatD [doc (showString ">")])
     GEC _ -> prPrec i 0 (concatD [doc (showString ">=")])
     EQC _ -> prPrec i 0 (concatD [doc (showString "==")])
-    RelOpTyped _ relop type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 relop, doc (showString ":"), prt 0 type_, doc (showString ")")])
-
+    
 instance Print [Exp a] where
   prt = prtList
 
@@ -211,7 +219,6 @@ instance Print (Pat a) where
     PNil _ -> prPrec i 0 (concatD [doc (showString "("), doc (showString ")")])
     PTup _ tuppats -> prPrec i 1 (concatD [doc (showString "("), prt 0 tuppats, doc (showString ")")])
     PLay _ id pat -> prPrec i 2 (concatD [prt 0 id, doc (showString "as"), prt 0 pat])
-    PTyped _ pat type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 pat, doc (showString ":"), prt 0 type_, doc (showString ")")])
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
@@ -226,4 +233,3 @@ instance Print (PatMatch a) where
 
 instance Print [PatMatch a] where
   prt = prtList
-
