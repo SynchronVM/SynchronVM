@@ -27,6 +27,9 @@ module Typechecker.AstUtils(
   , getPatType
   , getExpType
   , getPMType
+  , getAddopVar
+  , getMulopVar
+  , getRelopVar
 
   , usesVar
 
@@ -64,6 +67,7 @@ getExpvar e = case e of
     EAdd a _ _ _  -> a
     EMul a _ _ _  -> a
     ENot a _      -> a
+    EUVar a _     -> a
     EVar a _      -> a
     EConst a _    -> a
 
@@ -78,6 +82,24 @@ getPatvar p = case p of
     PTup a _     -> a
     PLay a _ _   -> a
     PTyped a _ _ -> a
+
+getAddopVar :: AddOp a -> a
+getAddopVar op = case op of
+    Plus a  -> a
+    Minus a -> a
+
+getMulopVar :: MulOp a -> a
+getMulopVar op = case op of
+  Times a -> a
+  Div a   -> a
+
+getRelopVar :: RelOp a -> a
+getRelopVar op = case op of
+  LTC a -> a
+  LEC a -> a
+  GTC a -> a
+  GEC a -> a
+  EQC a -> a
 
     -- Returns Just true if the first operand is of a more general type than
 -- the type of the second operand.
@@ -104,16 +126,18 @@ isMoreGeneral (TTup t1s) (TTup t2s)           =
     in foldl f (Just False) maybes
 isMoreGeneral _ _                                 = Nothing
 
-getPatType :: Pat () -> Type
-getPatType (PTyped _ _ t) = t
-getPatType _ = error "please don't end up here" -- TODO backtrack and take care of this
+getPatType :: Pat Type -> Type
+getPatType = getPatvar
+--getPatType (PTyped _ _ t) = t
+--getPatType _ = error "please don't end up here" -- TODO backtrack and take care of this
 
-getExpType :: Exp () -> Type
-getExpType (ETyped _ _ t) = t
-getExpType _ = error "please don't end up here" -- TODO backtrack and take care of this
+getExpType :: Exp Type -> Type
+getExpType = getExpvar
+--getExpType (ETyped _ _ t) = t
+--getExpType _ = error "please don't end up here" -- TODO backtrack and take care of this
 
-getPMType :: PatMatch () -> Type
-getPMType (PM _ _ (ETyped _ _ t)) = t
+getPMType :: PatMatch Type -> Type
+getPMType (PM _ e) = getExpvar e
 
 -- builds a function type from the list of argument types and the result type
 function_type :: [Type] -> Type -> Type
@@ -141,7 +165,7 @@ float :: Type
 float = TFloat -- TAdt () (UIdent "Float") []
 
 -- if _any_ of the expressions in the AST fulfils the predicate, return true
-usesVar :: Ident -> Exp () -> Bool
+usesVar :: Ident -> Exp a -> Bool
 usesVar id e = case e of
     (ETyped a e1 t)   -> usesVar id e1
     (ETup a texps)    -> any (usesVar id) texps
@@ -161,7 +185,7 @@ usesVar id e = case e of
     (EUVar a _)       -> False
     (EConst a c)      -> False
 
-usesVarPat :: Ident -> Pat () -> Bool
+usesVarPat :: Ident -> Pat a -> Bool
 usesVarPat id p = case p of
     PTyped _ p _     -> usesVarPat id p
     PConst _ c       -> False
@@ -173,60 +197,69 @@ usesVarPat id p = case p of
     PTup _ patterns  -> any (usesVarPat id) patterns
     PLay _ id' pat   -> id == id' || usesVarPat id pat
 
-usesVarPatMatch :: Ident -> PatMatch () -> Bool
-usesVarPatMatch id (PM () pat exp) = usesVarPat id pat || usesVar id exp
+usesVarPatMatch :: Ident -> PatMatch a -> Bool
+usesVarPatMatch id (PM pat exp) = usesVarPat id pat || usesVar id exp
 
 {- Substitution instances for backtracking -}
 
 -- these instances are meant to be used when applying the inferred substitution to the
 -- type annotated AST produced while typechecking.
-instance Substitutable (Def ()) where
-  apply s (DEquation a ident pats exp) = DEquation a ident (apply s pats) (apply s exp)
+instance Substitutable a => Substitutable (Def a) where
+  apply s (DEquation t ident pats exp) = DEquation (apply s t) ident (apply s pats) (apply s exp)
   apply _ d = d
 
   ftv d = undefined -- see below
 
-instance Substitutable (Pat ()) where
-  apply s (PTyped a p t)        = PTyped a (apply s p) (apply s t)
-  apply s (PNAdt a con adtpats) = PNAdt a con (map (apply s) adtpats)
-  apply s (PTup a tuppats)      = PTup a (map (apply s) tuppats)
-  apply s (PLay a var pat)      = PLay a var (apply s pat)
+instance Substitutable a => Substitutable (Pat a) where
+  --apply s (PTyped a p t)        = PTyped a (apply s p) (apply s t)
+  apply s (PNAdt a con adtpats) = PNAdt (apply s a) con (map (apply s) adtpats)
+  apply s (PTup a tuppats)      = PTup (apply s a) (map (apply s) tuppats)
+  apply s (PLay a var pat)      = PLay (apply s a) var (apply s pat)
   apply s p                     = p
 
   ftv p = undefined -- don't think we need this.. TODO backtrack here,
                     -- either implement for good measure or think of something else
 
-instance Substitutable (Exp ()) where
-  apply s (ETyped a e t) = ETyped a (apply s e) (apply s t)
-  apply s (ETup a texps) = ETup a (map (apply s) texps)
-  apply s (ECase a e branches) = ECase a (apply s e) (map (apply s) branches)
-  apply s (ELet a p e1 e2) = ELet a (apply s p) (apply s e1) (apply s e2)
-  apply s (ELetR a p e1 e2) = ELetR a (apply s p) (apply s e1) (apply s e2)
-  apply s (ELam a p e)   = ELam a (apply s p) (apply s e)
-  apply s (EIf a e1 e2 e3)  = EIf a (apply s e1) (apply s e2) (apply s e3)
-  apply s (EApp a e1 e2)   = EApp a (apply s e1) (apply s e2)
-  apply s (EOr a e1 e2)    = EOr a (apply s e1) (apply s e2)
-  apply s (EAnd a e1 e2)   = EAnd a (apply s e1) (apply s e2)
-  apply s (ERel a e1 op e2) = ERel a (apply s e1) (apply s op) (apply s e2)
-  apply s (EAdd a e1 op e2) = EAdd a (apply s e1) (apply s op) (apply s e2)
-  apply s (EMul a e1 op e2) = EMul a (apply s e1) (apply s op) (apply s e2)
-  apply s (ENot a e)     = ENot a (apply s e)
+instance Substitutable a => Substitutable (Exp a) where
+  --apply s (ETyped a e t) = ETyped a (apply s e) (apply s t)
+  apply s (ETup a texps) = ETup (apply s a) (map (apply s) texps)
+  apply s (ECase a e branches) = ECase (apply s a) (apply s e) (map (apply s) branches)
+  apply s (ELet a p e1 e2) = ELet (apply s a) (apply s p) (apply s e1) (apply s e2)
+  apply s (ELetR a p e1 e2) = ELetR (apply s a) (apply s p) (apply s e1) (apply s e2)
+  apply s (ELam a p e)   = ELam (apply s a) (apply s p) (apply s e)
+  apply s (EIf a e1 e2 e3)  = EIf (apply s a) (apply s e1) (apply s e2) (apply s e3)
+  apply s (EApp a e1 e2)   = EApp (apply s a) (apply s e1) (apply s e2)
+  apply s (EOr a e1 e2)    = EOr (apply s a) (apply s e1) (apply s e2)
+  apply s (EAnd a e1 e2)   = EAnd (apply s a) (apply s e1) (apply s e2)
+  apply s (ERel a e1 op e2) = ERel (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (EAdd a e1 op e2) = EAdd (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (EMul a e1 op e2) = EMul (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (ENot a e)     = ENot (apply s a) (apply s e)
   apply s e = e
 
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (PatMatch ()) where
-  apply s (PM a p e) = PM a (apply s p) (apply s e)
+instance Substitutable a => Substitutable (PatMatch a) where
+  apply s (PM p e) = PM (apply s p) (apply s e)
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (AddOp ()) where
-  apply s (AddOpTyped a op t) = AddOpTyped a op (apply s t)
+instance Substitutable a => Substitutable (AddOp a) where
+  apply s (Plus a) = Plus (apply s a)
+  apply s (Minus a) = Minus (apply s a)
+  --apply s (AddOpTyped a op t) = AddOpTyped a op (apply s t)
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (MulOp ()) where
-  apply s (MulOpTyped a op t) = MulOpTyped a op (apply s t)
+instance Substitutable a => Substitutable (MulOp a) where
+  apply s (Times a) = Times (apply s a)
+  apply s (Div a) = Div (apply s a)
+  --apply s (MulOpTyped a op t) = MulOpTyped a op (apply s t)
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (RelOp ()) where
-  apply s (RelOpTyped a op t) = RelOpTyped a op (apply s t)
+instance Substitutable a => Substitutable (RelOp a) where
+  apply s (LTC a) = LTC (apply s a)
+  apply s (LEC a) = LEC (apply s a)
+  apply s (GTC a) = GTC (apply s a)
+  apply s (GEC a) = GEC (apply s a)
+  apply s (EQC a) = EQC (apply s a)
+  --apply s (RelOpTyped a op t) = RelOpTyped a op (apply s t)
   ftv p = undefined -- same reasoning as above

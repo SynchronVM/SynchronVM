@@ -17,22 +17,18 @@ newtype UIdent = UIdent String
 
 data Def a
     = DEquation a Ident [Pat a] (Exp a)
-    | DTypeSig a Ident Type
-    | DDataDec a UIdent [Ident] [ConstructorDec a]
+    | DTypeSig Ident Type
+    | DDataDec UIdent [Ident] [ConstructorDec]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor Def where
     fmap f x = case x of
         DEquation a ident pats exp -> DEquation (f a) ident (map (fmap f) pats) (fmap f exp)
-        DTypeSig a ident type_ -> DTypeSig (f a) ident type_
-        DDataDec a uident idents constructordecs -> DDataDec (f a) uident idents (map (fmap f) constructordecs)
+        DTypeSig ident type_ -> DTypeSig ident type_
+        DDataDec uident idents constructordecs -> DDataDec uident idents constructordecs
 
-data ConstructorDec a = ConstDec a UIdent Type
+data ConstructorDec = ConstDec UIdent Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor ConstructorDec where
-    fmap f x = case x of
-        ConstDec a uident type_ -> ConstDec (f a) uident type_
 
 data Type
     = TLam Type Type
@@ -61,7 +57,7 @@ data Exp a
     | ENot a (Exp a)
     | EVar a Ident
     | EUVar a UIdent
-    | EConst a (Const a)
+    | EConst a Const
     | ETyped a (Exp a) Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
@@ -82,7 +78,7 @@ instance C.Functor Exp where
         ENot a exp -> ENot (f a) (fmap f exp)
         EVar a ident -> EVar (f a) ident
         EUVar a uident -> EUVar (f a) uident
-        EConst a const -> EConst (f a) (fmap f const)
+        EConst a const -> EConst (f a) const
         ETyped a exp type_ -> ETyped (f a) (fmap f exp) type_
 
 data AddOp a = Plus a | Minus a | AddOpTyped a (AddOp a) Type
@@ -121,27 +117,12 @@ instance C.Functor RelOp where
         EQC a -> EQC (f a)
         RelOpTyped a relop type_ -> RelOpTyped (f a) (fmap f relop) type_
 
-data Con a = Constructor a UIdent
+data Const
+    = CInt Integer | CFloat Double | CTrue | CFalse | CNil
   deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor Con where
-    fmap f x = case x of
-        Constructor a uident -> Constructor (f a) uident
-
-data Const a
-    = CInt a Integer | CFloat a Double | CTrue a | CFalse a | CNil a
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-instance C.Functor Const where
-    fmap f x = case x of
-        CInt a integer -> CInt (f a) integer
-        CFloat a double -> CFloat (f a) double
-        CTrue a -> CTrue (f a)
-        CFalse a -> CFalse (f a)
-        CNil a -> CNil (f a)
 
 data Pat a
-    = PConst a (Const a)
+    = PConst a Const
     | PVar a Ident
     | PZAdt a UIdent
     | PNAdt a UIdent [Pat a]
@@ -154,7 +135,7 @@ data Pat a
 
 instance C.Functor Pat where
     fmap f x = case x of
-        PConst a const -> PConst (f a) (fmap f const)
+        PConst a const -> PConst (f a) const
         PVar a ident -> PVar (f a) ident
         PZAdt a uident -> PZAdt (f a) uident
         PNAdt a uident adtpats -> PNAdt (f a) uident (map (fmap f) adtpats)
@@ -164,10 +145,10 @@ instance C.Functor Pat where
         PLay a ident pat -> PLay (f a) ident (fmap f pat)
         PTyped a pat type_ -> PTyped (f a) (fmap f pat) type_
 
-data PatMatch a = PM a (Pat a) (Exp a)
+data PatMatch a = PM (Pat a) (Exp a)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor PatMatch where
     fmap f x = case x of
-        PM a pat exp -> PM (f a) (fmap f pat) (fmap f exp)
+        PM pat exp -> PM (fmap f pat) (fmap f exp)
 

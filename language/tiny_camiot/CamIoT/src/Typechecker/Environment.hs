@@ -130,8 +130,8 @@ lookupVar x@(Ident name) = do
 -- declared data constructors instead of the declared function
 -- signatures. Not sure why this is treated separately, honestly.
 -- It does probably not have to be.
-lookupCons :: Con () -> TC Type
-lookupCons (Constructor () con) = do
+lookupCons :: UIdent -> TC Type
+lookupCons con = do
     env <- get
     case Map.lookup con (constructors env) of
         Just t  -> instantiate t

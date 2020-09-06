@@ -42,7 +42,7 @@ import Data.Foldable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-runTC :: TC [Def ()] -> TEnv -> IO (Either TCError Subst)
+runTC :: TC [Def Type] -> TEnv -> IO (Either TCError Subst)
 runTC tc initEnv = do
     let rd = runReaderT tc initEnv
     let wr = runWriterT rd
@@ -86,14 +86,14 @@ gatherTypeSigs ds = do
             return $ map (\(n, t) -> (n, (generalize e t))) typesigs
         False -> throwError $ DuplicateTypeSig $ head (intersect funs (nub funs))
 
-  where go (DTypeSig () fun t) = Just (fun, t)
+  where go (DTypeSig fun t) = Just (fun, t)
         go _                   = Nothing
 
 -- Gather type information about data declarations and their constructors
 gatherDataDecs :: [Def ()] -> TC ()
 gatherDataDecs [] = return ()
 gatherDataDecs (d:ds) = case d of
-    DDataDec () typ tvars cons -> do
+    DDataDec typ tvars cons -> do
         constructors <- mapM (consDecToType typ tvars) cons
         tryInsert constructors
         gatherDataDecs ds
@@ -112,8 +112,8 @@ gatherDataDecs (d:ds) = case d of
       -- Given a UIdent, e.g 'Maybe', and a list of type vars, e,g [a], and
       -- a constructor, e.g Just, see if the type for Just is correct
       -- TODO check that the type variables are bound by the data declaration
-      consDecToType :: UIdent -> [Ident] -> ConstructorDec () -> TC (UIdent, Type)
-      consDecToType typ tvars (ConstDec () con t) =
+      consDecToType :: UIdent -> [Ident] -> ConstructorDec -> TC (UIdent, Type)
+      consDecToType typ tvars (ConstDec con t) =
           -- get the intended creation
           let goal = getGoal t
           -- Is the intended creation an ADT?
@@ -138,14 +138,20 @@ gatherDataDecs (d:ds) = case d of
 {- ******************** -}
 -- typecheck
 
-data Function = FN Ident (Maybe Type) [Def ()]
-instance Show Function where
+data Function a = FN Ident (Maybe Type) [Def a]
+instance Show a => Show (Function a) where
   show(FN name sig clauses) =
       "Function: " ++ printTree name ++ "\n" ++
       "Type signature: " ++ show (fmap printTree sig) ++ "\n" ++
       "Definitions:\n" ++ intercalate "\n" (map printTree clauses)
 
-checkProgram :: [Def ()] -> TC [Def ()]
+-- changing phantom type for definitions
+fakeCoerce :: Def a -> Def Type
+fakeCoerce (DDataDec tyvar vars cons) = DDataDec tyvar vars cons
+fakeCoerce (DTypeSig name sig) = DTypeSig name sig
+fakeCoerce otherwise = error "should not be invoked"
+
+checkProgram :: [Def ()] -> TC [Def Type]
 checkProgram ds = do
     gatherDataDecs ds
     sigs <- gatherTypeSigs ds
@@ -153,11 +159,12 @@ checkProgram ds = do
     let scope e = foldl (\e' (x, sc) -> extend e' (x, sc)) e sigs
 
     let (datadecls, functions) = makeFunctions ds
-    ((++) datadecls . concat . map unwrapDef) <$> local scope (single functions)
+    let datadecls' = map fakeCoerce datadecls -- TODO omg get back to this
+    ((++) datadecls' . concat . map unwrapDef) <$> local scope (single functions)
 
      -- typechecks the functions one by one, extending the environment
      -- with the previously typechecked functions types.
-  where single :: [Function] -> TC [Function]
+  where single :: [Function ()] -> TC [Function Type]
         single [] = return []
         single (d:ds) = do
             (t, d') <- checkFunction d
@@ -168,36 +175,36 @@ checkProgram ds = do
 
         getName (FN n _ _) = n
 
-        unwrapDef :: Function -> [Def ()]
+        unwrapDef :: Function Type -> [Def Type]
         unwrapDef (FN _ Nothing ds)  = ds
-        unwrapDef (FN n (Just t) ds) = (DTypeSig () n t) : ds
+        unwrapDef (FN n (Just t) ds) = (DTypeSig n t) : ds
 
 -- groups function clauses together. Assumes definitions are given in the
 -- proper order, i.d that they are not defined such as
 -- foldl _ b [] = b
 -- sum = foldl (+) 0
 -- foldl ....
-makeFunctions :: [Def ()] -> ([Def ()], [Function])
+makeFunctions :: [Def ()] -> ([Def ()], [Function ()])
 makeFunctions ds =
     let f (DEquation _ n1 _ _) (DEquation _ n2 _ _) = n1 == n2
-        f (DTypeSig _ n1 _) (DEquation _ n2 _ _)    = n1 == n2
+        f (DTypeSig n1 _) (DEquation _ n2 _ _)      = n1 == n2
         f _ _                                       = False
 
         groups = groupBy f ds
 
-        isDataDec [(DDataDec _ _ _ _)] = True
-        isDataDec _                    = False
+        isDataDec [(DDataDec _ _ _)] = True
+        isDataDec _                  = False
 
         (datadecs, funs) = partition isDataDec groups
     in (concat datadecs, makeFunctions_ funs)
 
-makeFunctions_ :: [[Def ()]] -> [Function]
+makeFunctions_ :: [[Def ()]] -> [Function ()]
 makeFunctions_ = map makeFun
-  where makeFun ((DTypeSig _ name t):ds)      = FN name (Just t) ds
+  where makeFun ((DTypeSig name t):ds)        = FN name (Just t) ds
         makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
 
 -- given an annotated definition, return its type
-typeOfAnnotatedDef :: Def () -> TC Type
+typeOfAnnotatedDef :: Def Type -> TC Type
 typeOfAnnotatedDef (DEquation _ _ pats exp) = do
     return $ (function_type (map getPatType pats) (getExpType exp))
 -- we only call this after we've already checked for single type definitions
@@ -205,15 +212,15 @@ typeOfAnnotatedDef _ = error "shouldn't end up here"
 
 -- is a function recursive? We deduce that it is so if any of the
 -- clause bodies uses the identifier bound in the definition.
-recursive :: Function -> Bool
+recursive :: Function a -> Bool
 recursive (FN name _ bodies) = any recursiveSingle bodies
   where recursiveSingle (DEquation _ n _ e) = usesVar n e
 
-hasTypeSig :: Function -> Bool
+hasTypeSig :: Function a -> Bool
 hasTypeSig (FN _ (Just _) _) = True
 hasTypeSig _                 = False
 
-checkFunction :: Function -> TC (Type, Function)
+checkFunction :: Function () -> TC (Type, Function Type)
 checkFunction (FN name (Just t) []) = throwError $ AloneTypeSignature name t
 checkFunction fun@(FN name sig clauses) = do
     clauses' <- case recursive fun of
@@ -226,7 +233,7 @@ checkFunction fun@(FN name sig clauses) = do
     t <- unifyClauses fun'
     return $ (t, fun')
 
-checkClause :: Def () -> TC (Def ())
+checkClause :: Def () -> TC (Def Type)
 checkClause (DEquation () name pats exp) = do
     -- get the types and variables bound in the declaration
     patinfo <- mapM (flip checkPattern True) pats
@@ -236,9 +243,9 @@ checkClause (DEquation () name pats exp) = do
     -- extend the environment with the variables
     exp' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp exp)
     -- get the result type and construct the annotated definition & the complete type
-    return $ DEquation () name pats' exp'
+    return $ DEquation (function_type types (getExpType exp')) name pats' exp'
 
-unifyClauses :: Function -> TC Type
+unifyClauses :: Function Type -> TC Type
 unifyClauses (FN name sig ds) = do
     let noSigTest t1 t2 = if t1 /= t2
                           then Just $ FunctionClausesNotEqual name t1 t2
@@ -270,21 +277,21 @@ unifyClauses (FN name sig ds) = do
 --   - component 1: Type of the top-level pattern
 --   - component 2: List of variables and their type variables created by the pattern
 -- e.g pattern Just (a,2) gives us (Maybe (a, Int), [a, Int])
-checkPattern :: Pat () -> Bool -> TC (Pat (), [(Ident, Type)])
+checkPattern :: Pat () -> Bool -> TC (Pat Type, [(Ident, Type)])
 checkPattern p allowConstants = case p of
     -- Are constaints allowed? In e.g lambda abstractions we don't
     -- allow constants such as 3
     PConst a c       -> if allowConstants 
-                        then return $ (PTyped () p (checkConstType c), []) 
+                        then return $ (PConst (checkConstType c) c, [])
                         else throwError $ LambdaConstError c
 
     -- variables are easy! Just generate a fresh type variable for it and return that
-    PVar a var       -> fresh >>= \tv -> return (PTyped () p tv, [(var, tv)])
+    PVar a var       -> fresh >>= \tv -> return (PVar tv var, [(var, tv)])
 
     -- 0-ary ADT constructor, just look up the type. No local variables are introduced
     PZAdt a con -> do
-        t <- lookupCons (Constructor () con)
-        return (PTyped () p t, [])
+        t <- lookupCons con
+        return $ (PZAdt t con, [])
 
     -- N-ary ADT constructor
     PNAdt a con pats  -> do
@@ -293,7 +300,7 @@ checkPattern p allowConstants = case p of
         let pats' = map fst res
         let typs  = map getPatType pats'
         let vars  = concat $ map snd res
-        t <- lookupCons (Constructor () con)
+        t <- lookupCons con
         let numargs = count_arguments t
 
         let test t1 t2 = if t1 /= t2
@@ -307,14 +314,14 @@ checkPattern p allowConstants = case p of
                 tv <- fresh
                 -- unify the constructors type with the inferred type (patterns -> tv)
                 uni t (function_type typs tv) (Just test) -- Nothing
-                return $ (PTyped () (PNAdt a con pats') tv, vars)
+                return $ (PNAdt tv con pats', vars)
             -- otherwise we are not fully applied, and we raise an error.
             False -> throwError $ ConstructorNotFullyApplied con numargs (length pats)
 
     -- wildcards can have any type they like?
-    PWild a          -> fresh >>= \tv -> return (PTyped () p tv, [])
+    PWild a          -> fresh >>= \tv -> return (PWild tv, [])
 
-    PNil a           -> return (PTyped () p TNil, [])
+    PNil a           -> return (PNil TNil, [])
 
     -- The type of a pattern such as (3,5) is (Int, Int). Recursively check what type the
     -- patterns 3 and 5 have, and use those results to build a TTup node.
@@ -324,30 +331,22 @@ checkPattern p allowConstants = case p of
         let patterns'  = map fst res
         let pat_types  = map getPatType patterns'
         let vars       = concat $ map snd res
-        return $ (PTyped () (PTup a patterns') (TTup pat_types), vars)
-
-        --res <- mapM (flip checkPattern allowConstants) (map deTupPat patterns)
-        --let types = map fst res
-        --let vars  = concat $ map snd res
-        --return $ (TTup () (map tupType types), vars)
+        return (PTup (TTup pat_types) patterns', vars)
     
     PLay a var pat   -> do
-        -- recursively check pattern
         (pat', vars) <- checkPattern pat allowConstants
-        -- get the type of the pattern
         let tv = getPatType pat'
-        -- return the annotated pattern and the new environment variables
-        return $ (PTyped () (PLay a var pat') tv, (var, tv) : vars)
+        return (PLay tv var pat', (var, tv) : vars)
 
-checkConstType :: Const () -> Type
+checkConstType :: Const -> Type
 checkConstType const = case const of
-    CInt a integer  -> int
-    CFloat a double -> float
-    CTrue a         -> bool
-    CFalse a        -> bool
-    CNil a          -> TNil
+    CInt integer  -> int
+    CFloat double -> float
+    CTrue         -> bool
+    CFalse        -> bool
+    CNil          -> TNil
 
-checkCases :: Type -> [PatMatch ()] -> TC [PatMatch ()]
+checkCases :: Type -> [PatMatch ()] -> TC [PatMatch Type]
 checkCases t pm = do
     pm' <- mapM (checkCase t) pm
     let types = map getPMType pm'
@@ -359,17 +358,17 @@ checkCases t pm = do
 -- variables it might create before we check that the result is well typed.
 -- We also verify that the pattern is of the correct type, which is the type
 -- given as an argument.
-checkCase :: Type -> PatMatch () -> TC (PatMatch ())
-checkCase t (PM () pat e1) = do
+checkCase :: Type -> PatMatch () -> TC (PatMatch Type)
+checkCase t (PM pat e1) = do
     (pat', vars) <- checkPattern pat True
     let t' = getPatType pat'
 
     uni t t' Nothing
     e1' <- inEnvMany (map (\(x, t'') -> (x, Forall [] t'')) vars) (checkExp e1)
-    return $ PM () pat' e1'
+    return $ PM pat' e1'
 
 -- Type check an expression!
-checkExp :: Exp () -> TC (Exp ())
+checkExp :: Exp () -> TC (Exp Type)
 checkExp e = case e of
     ECase _ e1 patterns -> do
         -- check the type of the expression we are casing over
@@ -379,7 +378,7 @@ checkExp e = case e of
         patterns' <- checkCases te1 patterns
                                                      -- TODO backtrack and see why it has to be reversed here
         let t = getPMType (head (reverse patterns')) -- parser only parses nonempty lists
-        return $ ETyped () (ECase () e1' patterns') t
+        return $ ECase t e1' patterns'
 
     ELet _ p e1 e2 -> do
         -- Check the type of the pattern
@@ -393,7 +392,7 @@ checkExp e = case e of
         -- extend the environment with the new variable(s) and check e2
         e2' <- inEnvMany (map (\(x,t') -> (x, Forall [] t')) vars) (checkExp e2)
         let te2 = getExpType e2'
-        return $ ETyped () (ELet () p' e1' e2') te2
+        return $ ELet te2 p' e1' e2'
 
     -- TODO
     ELetR _ pattern e1 e2 -> undefined
@@ -408,7 +407,7 @@ checkExp e = case e of
         let t = getExpType e1'
         -- The whole expressions is of the type
         -- (type of pattern) -> (type of expression)
-        return $ ETyped () (ELam () pattern' e1') (tpat *-> t)
+        return $ ELam (tpat *-> t) pattern' e1'
 
     EIf _ e1 e2 e3 -> do
         -- check all three expression
@@ -423,7 +422,7 @@ checkExp e = case e of
         -- unify the other two, both branches must have the same type
         uni te2 te3 Nothing
         -- return te2 (or te3, doesn't matter)
-        return $ ETyped () (EIf () e1' e2' e3') te2
+        return $ EIf te2 e1' e2' e3'
 
     EApp a e1 e2 -> do
         -- check the type of the (hopefully) function we are applying
@@ -437,7 +436,7 @@ checkExp e = case e of
         -- see if it is possible to unify the types. Essentially
         -- checking if the first argument of te1 is te2.
         uni te1 (te2 *-> tv) Nothing
-        return $ ETyped () (EApp a e1' e2') tv
+        return $ EApp tv e1' e2'
 
     EOr _ e1 e2 -> do
         e1' <- checkExp e1
@@ -447,7 +446,7 @@ checkExp e = case e of
         -- Are both expressions booleans? Then we are OK!
         uni te1 bool Nothing
         uni te2 bool Nothing
-        return $ ETyped () (EOr () e1' e2') bool
+        return $ EOr bool e1' e2'
 
     EAnd _ e1 e2 -> do
         e1' <- checkExp e1
@@ -456,7 +455,7 @@ checkExp e = case e of
         let te2 = getExpType e2'
         uni te1 bool Nothing
         uni te2 bool Nothing
-        return $ ETyped () (EAnd () e1' e2') bool
+        return $ EAnd bool e1' e2'
 
     ERel _ e1 op e2 -> do
         e1' <- checkExp e1
@@ -466,8 +465,8 @@ checkExp e = case e of
         tv <- fresh
         let u1  = (te1 *-> te2 *-> tv)
         
-        u2 <- relOps op
-        let op' = RelOpTyped () op u2
+        op' <- relOps op
+        let u2 = getRelopVar op'
 
         uni u1 u2 Nothing
         case op of
@@ -476,7 +475,7 @@ checkExp e = case e of
                                 (u1, bool *-> bool *-> tv)]
             otherwise -> uniEither [(u1, int *-> int *-> tv),
                                     (u1, float *-> float *-> tv)]
-        return $ ETyped () (ERel () e1' op' e2') tv
+        return $ ERel tv e1' op' e2'
 
     EAdd _ e1 op e2 -> do
         e1' <- checkExp e1
@@ -485,16 +484,14 @@ checkExp e = case e of
         let te2 = getExpType e2'
         tv <- fresh
         let u1  = (te1 *-> te2 *-> tv)
-        -- u1 = inferred type
 
-        u2 <- addOps op
-        -- u2 = stored type
-        let op' = AddOpTyped () op u2
-        
+        op' <- addOps op
+        let u2 = getAddopVar op'
+ 
         uni u1 u2 Nothing
         uniEither [(u1, int *-> int *-> int),
                    (u1, float *-> float *-> float)]
-        return $ ETyped () (EAdd () e1' op' e2') tv
+        return $ EAdd tv e1' op' e2'
 
     EMul _ e1 op e2 -> do
         e1' <- checkExp e1
@@ -504,46 +501,47 @@ checkExp e = case e of
         tv <- fresh
         let u1 = (te1 *-> te2 *-> tv)
 
-        u2 <- mulOps op
-        let op' = MulOpTyped () op u2
+        op' <- mulOps op
+        let u2 = getMulopVar op'
 
         uni u1 u2 Nothing
         uniEither [(u1, int *-> int *-> int),
                    (u1, float *-> float *-> float)]
-        return $ ETyped () (EMul () e1' op' e2') tv
+        return $ EMul tv e1' op' e2'
 
     ENot _ e1 -> do
         e1' <- checkExp e1
         let te1 = getExpType e1'
         -- We can only negate booleans :)
         uni te1 bool Nothing
-        return $ ETyped () (ENot () e1') bool
+        return $ ENot bool e1'
 
     -- Capital letter variables are constructors! Look up the type of it.
     EUVar _ con -> do
-        t <- lookupCons (Constructor () con)
-        return $ ETyped () (EUVar () con) t
+        t <- lookupCons con
+        return $ EUVar t con
+
     -- otherwise it is a function or something else, like an x bound by a \x.
     EVar _ var  -> do
         t <- lookupVar var
-        return $ ETyped () (EVar () var) t
+        return $ EVar t var
 
     ETup _ exps -> do
         -- check the types of the tuple expressions
         exps' <- mapM checkExp exps
         let texps = map getExpType exps'
-        return $ ETyped () (ETup () exps') (TTup texps)
+        return $ ETup (TTup texps) exps'
 
     EConst _ const -> case const of
-        CInt a i   -> return $ ETyped () (EConst () const) int
-        CFloat a f -> return $ ETyped () (EConst () const) float
-        CTrue a    -> return $ ETyped () (EConst () const) bool
-        CFalse a   -> return $ ETyped () (EConst () const) bool
-        CNil a     -> return $ ETyped () (EConst () const) TNil
+        CInt i   -> return $ EConst int (CInt i)
+        CFloat f -> return $ EConst float (CFloat f)
+        CTrue    -> return $ EConst bool CTrue
+        CFalse   -> return $ EConst bool CFalse
+        CNil     -> return $ EConst TNil CNil
 
-addOps :: AddOp () -> TC Type
+addOps :: AddOp () -> TC (AddOp Type)
 addOps op = case Map.lookup op addOps_ of
-    Just t  -> instantiate t
+    Just t  -> instantiate t >>= (\t' -> return $ fmap (\_ -> t') op)
     Nothing -> error "see below"
 
 addOps_ :: Map.Map (AddOp ()) Scheme
@@ -555,9 +553,9 @@ addOps_ = Map.fromList [
                     a  = TVar id
                 in Forall [id] (a *-> a *-> a))]
 
-mulOps :: MulOp () -> TC Type
+mulOps :: MulOp () -> TC (MulOp Type)
 mulOps op = case Map.lookup op mulOps_ of
-    Just t  -> instantiate t
+    Just t  -> instantiate t >>= (\t' -> return $ fmap (\_ -> t') op)
     Nothing -> error "see below"    
 
 mulOps_ :: Map.Map (MulOp ()) Scheme
@@ -569,9 +567,9 @@ mulOps_ = Map.fromList [
                     a = TVar id
                 in Forall [id] (a *-> a *-> a))]
 
-relOps :: RelOp () -> TC Type
+relOps :: RelOp () -> TC (RelOp Type)
 relOps op = case Map.lookup op relOps_ of
-    Just t  -> instantiate t
+    Just t  -> instantiate t >>= (\t' -> return $ fmap (\_ -> t') op)
     Nothing -> error "we should not end up here, how can I enforce this?"
 
 relOps_ :: Map.Map (RelOp ()) Scheme

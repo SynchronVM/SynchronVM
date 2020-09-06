@@ -132,7 +132,7 @@ pExpVerbose = choice [
        branches <- sepBy1 (do
            pat <- pPat True True
            pSymbol "->"
-           PM () pat <$> pExpVerbose) (pChar ';')
+           PM pat <$> pExpVerbose) (pChar ';')
        pChar '}'
        return $ ECase () e branches
   , pExpOr]
@@ -153,11 +153,11 @@ pDataDec = do
     constructors <- sepBy (do
       con <- pUIdent
       pChar ':'
-      ConstDec () con <$> pType  
+      ConstDec con <$> pType  
       ) (pSymbol ";")
     pChar '}'
     pChar ';'
-    return $ DDataDec () tycon variables constructors
+    return $ DDataDec tycon variables constructors
 
   -- parse type signatures
 pTypeSignature :: Parser (Def ())
@@ -166,7 +166,7 @@ pTypeSignature = do
     pChar ':'
     t <- pType
     pChar ';'
-    return $ DTypeSig () name t
+    return $ DTypeSig name t
 
   -- parse function clauses
 pEquation :: Parser (Def ())
@@ -231,13 +231,13 @@ pPat allowConstants allowNAry = pSpace *> pPatAs allowConstants allowNAry
 
 -- parse constants
 
-pConst :: Parser (Const ())
+pConst :: Parser Const
 pConst = choice [
-    try $ CFloat () <$> Lexer.lexeme pSpace Lexer.float
-  , CInt   ()       <$> Lexer.lexeme pSpace Lexer.decimal
-  , CTrue  ()       <$  pSymbol "True"
-  , CFalse ()       <$  pSymbol "False"
-  , CNil   ()       <$  pSymbol "()" 
+    try $ CFloat  <$> Lexer.lexeme pSpace Lexer.float
+  , CInt          <$> Lexer.lexeme pSpace Lexer.decimal
+  , CTrue         <$  pSymbol "True"
+  , CFalse        <$  pSymbol "False"
+  , CNil          <$  pSymbol "()" 
   ]
 
 -- parser utilities

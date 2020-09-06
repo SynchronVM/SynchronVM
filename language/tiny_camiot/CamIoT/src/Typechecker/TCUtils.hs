@@ -40,7 +40,7 @@ data TCError =
   | DuplicateConstructor UIdent Type
   | TypeArityError UIdent [Type] [Type]
   | WrongConstructorGoal UIdent Type Type
-  | LambdaConstError (Const ())
+  | LambdaConstError Const
   | CaseExpressionError (Pat ()) Type Type
   | ConstructorNotFullyApplied UIdent Int Int
   | UnboundTypeVariable [Ident] [Ident]

@@ -111,20 +111,20 @@ instance Print [Def a] where
 instance Print (Def a) where
   prt i e = case e of
     DEquation _ id pats exp -> prPrec i 0 (concatD [prt 0 id, prt 0 pats, doc (showString "="), prt 0 exp])
-    DTypeSig _ id type_ -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_])
-    DDataDec _ uident ids constructordecs -> prPrec i 0 (concatD [doc (showString "data"), prt 0 uident, prt 0 ids, doc (showString "where"), doc (showString "{"), prt 0 constructordecs, doc (showString "}")])
+    DTypeSig id type_ -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_])
+    DDataDec uident ids constructordecs -> prPrec i 0 (concatD [doc (showString "data"), prt 0 uident, prt 0 ids, doc (showString "where"), doc (showString "{"), prt 0 constructordecs, doc (showString "}")])
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
 
-instance Print (ConstructorDec a) where
+instance Print ConstructorDec where
   prt i e = case e of
-    ConstDec _ uident type_ -> prPrec i 0 (concatD [prt 0 uident, doc (showString ":"), prt 0 type_])
+    ConstDec uident type_ -> prPrec i 0 (concatD [prt 0 uident, doc (showString ":"), prt 0 type_])
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
 
-instance Print [ConstructorDec a] where
+instance Print [ConstructorDec] where
   prt = prtList
 
 instance Print [Ident] where
@@ -193,17 +193,13 @@ instance Print (RelOp a) where
 instance Print [Exp a] where
   prt = prtList
 
-instance Print (Con a) where
+instance Print Const where
   prt i e = case e of
-    Constructor _ uident -> prPrec i 0 (concatD [prt 0 uident])
-
-instance Print (Const a) where
-  prt i e = case e of
-    CInt _ n -> prPrec i 0 (concatD [prt 0 n])
-    CFloat _ d -> prPrec i 0 (concatD [prt 0 d])
-    CTrue _ -> prPrec i 0 (concatD [doc (showString "True")])
-    CFalse _ -> prPrec i 0 (concatD [doc (showString "False")])
-    CNil _ -> prPrec i 0 (concatD [doc (showString "()")])
+    CInt n -> prPrec i 0 (concatD [prt 0 n])
+    CFloat d -> prPrec i 0 (concatD [prt 0 d])
+    CTrue -> prPrec i 0 (concatD [doc (showString "True")])
+    CFalse -> prPrec i 0 (concatD [doc (showString "False")])
+    CNil -> prPrec i 0 (concatD [doc (showString "()")])
 
 instance Print (Pat a) where
   prt i e = case e of
@@ -224,7 +220,7 @@ instance Print [Pat a] where
 
 instance Print (PatMatch a) where
   prt i e = case e of
-    PM _ pat exp -> prPrec i 0 (concatD [prt 0 pat, doc (showString "->"), prt 0 exp])
+    PM pat exp -> prPrec i 0 (concatD [prt 0 pat, doc (showString "->"), prt 0 exp])
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
 
