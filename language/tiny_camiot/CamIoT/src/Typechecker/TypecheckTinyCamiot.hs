@@ -187,11 +187,11 @@ gatherDataDecs (d:ds) = case d of
 -- typecheck
 
 data Function a = FN Ident (Maybe Type) [Def a]
-instance Show a => Show (Function a) where
-  show(FN name sig clauses) =
-      "Function: " ++ printTree name ++ "\n" ++
-      "Type signature: " ++ show (fmap printTree sig) ++ "\n" ++
-      "Definitions:\n" ++ intercalate "\n" (map printTree clauses)
+--instance Show a => Show (Function a) where
+--  show(FN name sig clauses) =
+--      "Function: " ++ printTree name ++ "\n" ++
+--      "Type signature: " ++ show (fmap printTree sig) ++ "\n" ++
+--      "Definitions:\n" ++ intercalate "\n" (map printTree clauses)
 
 -- changing phantom type for definitions
 fakeCoerce :: Def a -> Def Type
