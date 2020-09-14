@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -31,10 +31,10 @@
 #include <stack.h>
 
 typedef struct {
-  register_t value;
-  register_t env;
+  cam_register_t value;
+  cam_register_t env;
   UINT       pc;
-  stack_t    stack;
+  cam_stack_t    stack;
   uint8_t    *code;
   
 } VM_t;

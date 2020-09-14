@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -33,20 +33,20 @@ int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
 
-  printf("TODO: Implement\n"); 
-  
+  printf("TODO: Implement\n");
+
   /* if (!vmc_init()) { */
   /*   return 0; */
   /* } */
 
-  /* stack_t *s = &vm_containers[0].stack; */
+  /* cam_stack_t *s = &vm_containers[0].stack; */
 
   /* for (UINT i = 0; i < 10; i ++) { */
   /*   stack_push(s, i); */
   /* } */
 
   /* for (UINT i = 10; i > 0; i --) { */
-  /*   register_t r; */
+  /*   cam_register_t r; */
   /*   UINT expected = i - 1; */
   /*   stack_pop(s, &r); */
   /*   if (r.value != expected) { */

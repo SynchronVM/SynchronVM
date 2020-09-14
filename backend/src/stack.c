@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -24,7 +24,7 @@
 
 #include <stack.h>
 
-int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes) {
+int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 
   if (!mem || !s || size_bytes < 256) return 0;
 
@@ -41,21 +41,21 @@ int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes) {
   return 1;
 }
 
-int stack_push(stack_t *s, UINT value) {
+int stack_push(cam_stack_t *s, UINT value) {
   if (s->sp == s->size) return 0;
 
   s->data[s->sp] = value;
   s->flags[s->sp++] = 0;
   return 1;
 }
-int stack_push_ptr(stack_t *s, UINT ptr) {
+int stack_push_ptr(cam_stack_t *s, UINT ptr) {
   if (s->sp == s->size) return 0;
 
   s->data[s->sp] = ptr;
   s->flags[s->sp++] = VALUE_PTR_BIT;
   return 1;
 }
-int stack_pop(stack_t *s, register_t *r) {
+int stack_pop(cam_stack_t *s, cam_register_t *r) {
   if (s->sp == 0) return 0;
 
   s->sp--;

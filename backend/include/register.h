@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -29,9 +29,9 @@
 #include <flags.h>
 
 typedef struct {
-  value_flags_t flags;      
+  value_flags_t flags;
   UINT          value;
-} register_t;
+} cam_register_t;
 
 
 #endif

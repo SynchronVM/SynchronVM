@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -34,12 +34,12 @@ typedef struct {
   UINT          *data;
   unsigned int   sp;
   unsigned int   size;
-} stack_t;
+} cam_stack_t;
 
-extern int stack_init(stack_t *s, uint8_t *mem, unsigned int size_bytes);
+extern int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes);
 
-extern int stack_push(stack_t *s, UINT value);
-extern int stack_push_ptr(stack_t *s, UINT ptr);
-extern int stack_pop(stack_t *s, register_t *r); 
+extern int stack_push(cam_stack_t *s, UINT value);
+extern int stack_push_ptr(cam_stack_t *s, UINT ptr);
+extern int stack_pop(cam_stack_t *s, cam_register_t *r);
 
 #endif
