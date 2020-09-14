@@ -10,6 +10,15 @@ else
   AR=${CROSS_COMPILE}ar
 endif
 
+ifeq ($(PLATFORM), macosx)
+  BUILD_DIR = build/macosx
+  CCFLAGS =  -O2 -Wall -Wextra -pedantic -std=c99
+  CC=gcc
+  AR=ar
+  PLATFORM_INCLUDE = platform/macosx/include
+  PLATFORM_SOURCE  = platform/macosx/src
+endif
+
 ifeq ($(PLATFORM), zynq)
   CROSS_COMPILE = arm-none-eabi-
   BUILD_DIR = build/zynq
