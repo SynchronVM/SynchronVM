@@ -103,9 +103,10 @@ eval_fun evaluators[] =
 
 
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest) {
+  (void)bc_rest;
   cam_register_t e = vmc->vm.env;
   UINT h = heap_fst(&vmc->heap, (INT)e.value);
-  e.value = h;
+  vmc->vm.env.value = h;
   return 1;
 }
 
