@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -103,8 +103,9 @@ eval_fun evaluators[] =
 
 
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
-  (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  UINT h = heap_fst(&vmc->heap, (INT)e.value);
+  e.value = h;
   return 1;
 }
 

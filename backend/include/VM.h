@@ -36,7 +36,6 @@ typedef struct {
   UINT       pc;
   cam_stack_t    stack;
   uint8_t    *code;
-  
 } VM_t;
 
 extern int vm_init(uint8_t *code);
