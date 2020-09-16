@@ -34,6 +34,7 @@ import Text.Megaparsec
 
 import Typechecker.TypecheckTinyCamiot
 import Typechecker.Environment
+import Typechecker.Substitution
 
 readAndParse :: String -> IO (Either String Subst)
 readAndParse input = do

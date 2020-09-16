@@ -23,19 +23,18 @@
 module Parser.Preprocessor (process) where
 
 import Control.Monad.State.Lazy
+    ( when, gets, modify, MonadState(get), StateT(runStateT) )
 import Control.Monad.Writer
-import Control.Monad.Except
+    ( when, runWriter, MonadWriter(tell), Writer )
+import Control.Monad.Except ( when )
 import qualified Data.Text as T
 
-{-
 
-case x of { Just a -> x; Nothing -> b}
-
--}
-
-data PPState = ST { source       :: T.Text
-                  , current      :: Int
-                  , targetIndent :: [Int]} deriving Show
+data PPState = ST 
+     { source       :: T.Text  -- ^ The contents that remains unpreprocessed so far
+     , current      :: Int     -- ^ The column number of the last fetched token
+     , targetIndent :: [Int]}  -- ^ A stack of stored columns
+  deriving Show
 
 data Error = IndentationError Int Int String
 instance Show Error where
@@ -48,6 +47,7 @@ type PP a = StateT PPState (Writer T.Text) a
 keywords :: [T.Text]
 keywords = ["where", "of"]
 
+-- | Function that will take a `Text` and preprocess it
 process :: T.Text -> T.Text
 process t =
     let wr = runStateT process_ (ST t 0 [0])

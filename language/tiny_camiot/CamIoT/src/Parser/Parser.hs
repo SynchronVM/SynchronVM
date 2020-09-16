@@ -36,44 +36,47 @@ import Control.Monad.Identity
 import Data.Void
 import Data.Text (Text, unpack, unlines, intercalate)
 
+-- | Custom parser type - synonym for Parsec Void Text a
 type Parser a = Parsec Void Text a
 
 -- interesting points
-  -- * how to make the parser work by the proper precendense
-  -- * left factoring
-  -- * handling keywords
-  -- * parse by tokens, whitespaces are ignored
+  -- - how to make the parser work by the proper precendense
+  -- - left factoring
+  -- - handling keywords
+  -- - parse by tokens, whitespaces are ignored
   --   how does this affect line sensitive parsing, such as datatype declarations?
-  -- * _what_ are closed expressions? (Either single tokens or other
+  -- - _what_ are closed expressions? (Either single tokens or other
   --   stuff that is enclosed in both opening and closing tokens, whatever
   --   they may be)
-  -- * We have to preprocess the file to rid the developer of nasty clutter!
+  -- - We have to preprocess the file to rid the developer of nasty clutter!
 
--- parse programs
+-- | Parser that parses a program
 pProgram :: Parser [Def ()]
 pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation
 
 -- parse types
-pClosed :: Parser (Type ())
-pClosed = choice [ TInt   () <$ pSymbol "Int"
-                 , TBool  () <$ pSymbol "Bool"
-                 , TFloat () <$ pSymbol "Float"
-                 , TVar   () <$> pIdent
+pClosed :: Parser Type
+pClosed = choice [ TInt    <$ pSymbol "Int"
+                 , TBool   <$ pSymbol "Bool"
+                 , TFloat  <$ pSymbol "Float"
+                 , TVar    <$> pIdent
                  , do pChar '('
                       ts <- sepBy pFun (pChar ',') <* pChar ')'
                       case ts of
-                          []  -> pure $ TNil ()
+                          []  -> pure TNil
                           [t] -> pure t
-                          _   -> pure (TTup () ts)
+                          _   -> pure (TTup ts)
                  ]
 
-pApp :: Parser (Type ())
-pApp = choice [TAdt () <$> pUIdent <*> many pClosed, pClosed]
+pApp :: Parser Type
+pApp = choice [ TAdt <$> pUIdent <*> many pClosed
+              , pClosed
+              ]
 
-pFun :: Parser (Type ())
-pFun = foldr1 (TLam ()) <$> sepBy1 pApp (pSymbol "->")
+pFun :: Parser Type
+pFun = foldr1 TLam <$> sepBy1 pApp (pSymbol "->")
 
-pType :: Parser (Type ())
+pType :: Parser Type
 pType = pSpace *> pFun
 
 -- parse expressions
@@ -153,7 +156,7 @@ pExpVerbose = choice [
        branches <- sepBy1 (do
            pat <- pPat True True
            pSymbol "->"
-           PM () pat <$> pExpVerbose) (pChar ';')
+           PM pat <$> pExpVerbose) (pChar ';')
        pChar '}'
        return $ ECase () e branches
   , pExpOr]
@@ -174,11 +177,11 @@ pDataDec = do
     constructors <- sepBy (do
       con <- pUIdent
       pChar ':'
-      ConstDec () con <$> pType  
+      ConstDec con <$> pType  
       ) (pSymbol ";")
     pChar '}'
     pChar ';'
-    return $ DDataDec () tycon variables constructors
+    return $ DDataDec tycon variables constructors
 
   -- parse type signatures
 pTypeSignature :: Parser (Def ())
@@ -187,7 +190,7 @@ pTypeSignature = do
     pChar ':'
     t <- pType
     pChar ';'
-    return $ DTypeSig () name t
+    return $ DTypeSig name t
 
   -- parse function clauses
 pEquation :: Parser (Def ())
@@ -252,13 +255,13 @@ pPat allowConstants allowNAry = pSpace *> pPatAs allowConstants allowNAry
 
 -- parse constants
 
-pConst :: Parser (Const ())
+pConst :: Parser Const
 pConst = choice [
-    try $ CFloat () <$> Lexer.lexeme pSpace Lexer.float
-  , CInt   ()       <$> Lexer.lexeme pSpace Lexer.decimal
-  , CTrue  ()       <$  pSymbol "True"
-  , CFalse ()       <$  pSymbol "False"
-  , CNil   ()       <$  pSymbol "()" 
+    try $ CFloat  <$> Lexer.lexeme pSpace Lexer.float
+  , CInt          <$> Lexer.lexeme pSpace Lexer.decimal
+  , CTrue         <$  pSymbol "True"
+  , CFalse        <$  pSymbol "False"
+  , CNil          <$  pSymbol "()" 
   ]
 
 -- parser utilities

@@ -20,38 +20,46 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
-module Typechecker.AstUtils(
-    getExpvar
-  , getTypvar  
-  , isMoreGeneral
+module Typechecker.AstUtils
+       (
+         -- * Fetch functor values
+         getExpVar
+       , getPatVar
+       , getAddopVar
+       , getMulopVar
+       , getRelopVar
+ 
+         -- * Fetching type information
+       , getPMType
+ 
+         -- * Functions that operate on AST types
+       , functionType
+       , unwrapFunction
+       , countArguments
 
-  , getPatType
-  , getExpType
-  , getPMType
-
-  , usesVar
-
-  , function_type
-  , unwrap_function
-  , count_arguments
-
-  , (*->)
-  , bool
-  , int
-  , float
-) where
+         -- * Aliases for AST types
+       , (*->)
+       , bool
+       , int
+       , float
+       ) where
 
 import Parser.AbsTinyCamiot
-import Typechecker.Substitution
+    ( PatMatch(..),
+      Pat(..),
+      RelOp(..),
+      MulOp(Div, Times),
+      AddOp(Minus, Plus),
+      Exp(..),
+      Type(TFloat, TVar, TAdt, TTup, TLam, TBool, TInt),
+      Def(DEquation),
+      Ident )
+import Typechecker.Substitution ( Substitutable(..) )
 
--- TODO make heavy use of this bad boy.... it would make
--- the inference code easier to read, I believe
-infixr 8 *->
-(*->) :: Type () -> Type () -> Type ()
-t1 *-> t2 = TLam () t1 t2
 
-getExpvar :: Exp a -> a
-getExpvar e = case e of
+-- | Returns the functor value of expressions
+getExpVar :: Exp a -> a
+getExpVar e = case e of
     ETup a _      -> a
     ECase a _ _   -> a
     ELet a _ _ _  -> a
@@ -65,21 +73,13 @@ getExpvar e = case e of
     EAdd a _ _ _  -> a
     EMul a _ _ _  -> a
     ENot a _      -> a
+    EUVar a _     -> a
     EVar a _      -> a
     EConst a _    -> a
 
-getTypvar :: Type a -> a
-getTypvar (TLam a _ _) = a
-getTypvar (TTup a _)   = a
-getTypvar (TNil a)     = a
-getTypvar (TVar a _)   = a
-getTypvar (TAdt a _ _) = a
-getTypvar (TInt a)     = a
-getTypvar (TBool a)    = a
-getTypvar (TFloat a)   = a
-
-getPatvar :: Pat a -> a
-getPatvar p = case p of
+-- | Returns the functor value of patterns
+getPatVar :: Pat a -> a
+getPatVar p = case p of
     PConst a _   -> a
     PVar a _     -> a
     PZAdt a _    -> a
@@ -88,158 +88,147 @@ getPatvar p = case p of
     PNil a       -> a
     PTup a _     -> a
     PLay a _ _   -> a
-    PTyped a _ _ -> a
 
-    -- Returns Just true if the first operand is of a more general type than
--- the type of the second operand.
--- TODO rewrite this to make the behaviour more specified perhaps.
--- Looking back, I am slightly confused myself as to what the returntype actually means.
-isMoreGeneral :: Type () -> Type () -> Maybe Bool
-isMoreGeneral (TLam _ t1 t1s) (TLam _ t2 t2s)     = (||) <$> 
-                                                      (isMoreGeneral t1 t2) <*> 
-                                                      (isMoreGeneral t1s t2s)
-isMoreGeneral (TVar _ _) (TVar _ _)               = Just False
-isMoreGeneral (TVar _ _) _                        = Just True
-isMoreGeneral (TAdt _ con1 t1s) (TAdt _ con2 t2s) =
-    -- there is surely something built in for this
-    let maybes = zipWith isMoreGeneral t1s t2s
-        f (Just x) (Just y) = Just (x || y)
-        f Nothing  _        = Nothing
-        f _        Nothing  = Nothing
-    in foldl f (Just False) maybes
-isMoreGeneral (TTup _ t1s) (TTup _ t2s)           = 
-    let maybes = zipWith isMoreGeneral t1s t2s
-        f (Just x) (Just y) = Just (x || y)
-        f Nothing  _        = Nothing
-        f _        Nothing  = Nothing
-    in foldl f (Just False) maybes
-isMoreGeneral _ _                                 = Nothing
+-- | Returns the functor value of additive operators
+getAddopVar :: AddOp a -> a
+getAddopVar op = case op of
+    Plus a  -> a
+    Minus a -> a
 
-getPatType :: Pat () -> Type ()
-getPatType (PTyped _ _ t) = t
-getPatType _ = error "please don't end up here" -- TODO backtrack and take care of this
+-- | Returns the functor value of multiplicative operators
+getMulopVar :: MulOp a -> a
+getMulopVar op = case op of
+  Times a -> a
+  Div a   -> a
 
-getExpType :: Exp () -> Type ()
-getExpType (ETyped _ _ t) = t
-getExpType _ = error "please don't end up here" -- TODO backtrack and take care of this
+-- | Returns the functor value of relation operators
+getRelopVar :: RelOp a -> a
+getRelopVar op = case op of
+  LTC a -> a
+  LEC a -> a
+  GTC a -> a
+  GEC a -> a
+  EQC a -> a
 
-getPMType :: PatMatch () -> Type ()
-getPMType (PM _ _ (ETyped _ _ t)) = t
+-- | Returns the type of the expression in a case` pattern match clause
+getPMType :: PatMatch Type -> Type
+getPMType (PM _ e) = getExpVar e
 
--- builds a function type from the list of argument types and the result type
-function_type :: [Type ()] -> Type () -> Type ()
-function_type [] res     = res
-function_type (x:xs) res = TLam () x (function_type xs res)
+-- | Builds a function type from the argument types.
+functionType 
+    :: [Type]  -- ^ Argument types 
+    -> Type    -- ^ Result types
+    -> Type
+functionType xs res = foldr TLam res xs
 
--- fetch the final construction of a type
--- e.g unwrap function (a -> b -> Either a b) = Either a b
-unwrap_function :: Type () -> Type ()
-unwrap_function (TLam () _ t) = unwrap_function t
-unwrap_function t             = t
+{-- | If the argument type is a function type, unwrap one argument and perform a
+recursive call. Essentially returns the result of a type.
+-}
+unwrapFunction :: Type -> Type
+unwrapFunction (TLam _ t) = unwrapFunction t
+unwrapFunction t          = t
 
-count_arguments :: Type () -> Int
-count_arguments (TLam () _ t) = 1 + count_arguments t
-count_arguments _             = 0
+{-- | If the argument type is a function type, count the number of arguments
+specified in the type.
+-}
+countArguments :: Type -> Int
+countArguments (TLam _ t) = 1 + countArguments t
+countArguments _          = 0
 
--- synonyms for the built-in types
-bool :: Type ()
-bool = TBool () --TAdt () (UIdent "Bool") []
+-- | Operator alias to construct a function type
+infixr 8 *->
+(*->) :: Type -> Type -> Type
+t1 *-> t2 = TLam t1 t2
 
-int :: Type ()
-int = TInt () --TAdt () (UIdent "Int") []
+-- | Alias for type Bool
+bool :: Type
+bool = TBool --TAdt () (UIdent "Bool") []
 
-float :: Type ()
-float = TFloat () -- TAdt () (UIdent "Float") []
+-- | Alias for type Int
+int :: Type
+int = TInt --TAdt () (UIdent "Int") []
 
--- if _any_ of the expressions in the AST fulfils the predicate, return true
-usesVar :: Ident -> Exp () -> Bool
-usesVar id e = case e of
-    (ETyped a e1 t)   -> usesVar id e1
-    (ETup a texps)    -> any (usesVar id) texps
-    (ECase a e1 br)   -> usesVar id e1 || any (usesVarPatMatch id) br
-    (ELet a p e1 e2)  -> usesVarPat id p || usesVar id e1 || usesVar id e2
-    (ELetR a p e1 e2) -> usesVarPat id p || usesVar id e1 || usesVar id e2
-    (ELam a p e1)     -> usesVarPat id p || usesVar id e1
-    (EIf a e1 e2 e3)  -> usesVar id e1 || usesVar id e2 || usesVar id e3
-    (EApp a e1 e2)    -> usesVar id e1 || usesVar id e2
-    (EOr a e1 e2)     -> usesVar id e1 || usesVar id e2
-    (EAnd a e1 e2)    -> usesVar id e1 || usesVar id e2
-    (ERel a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (EAdd a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (EMul a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (ENot a e1)       -> usesVar id e1
-    (EVar a id')      -> id == id'
-    (EUVar a _)       -> False
-    (EConst a c)      -> False
+-- | Alias for type Float
+float :: Type
+float = TFloat -- TAdt () (UIdent "Float") []
 
-usesVarPat :: Ident -> Pat () -> Bool
-usesVarPat id p = case p of
-    PTyped _ p _     -> usesVarPat id p
-    PConst _ c       -> False
-    PVar _ id'       -> id == id'
-    PZAdt _ _        -> False
-    PNAdt _ _ pats   -> any (usesVarPat id) pats
-    PWild _          -> False
-    PNil _           -> False
-    PTup _ patterns  -> any (usesVarPat id) patterns
-    PLay _ id' pat   -> id == id' || usesVarPat id pat
 
-usesVarPatMatch :: Ident -> PatMatch () -> Bool
-usesVarPatMatch id (PM () pat exp) = usesVarPat id pat || usesVar id exp
 
-{- Substitution instances for backtracking -}
+
+
+
+{- The following instances of the Substitution typeclass are defined so that when
+typechecking has completed and a valid substitution have (hopefully) been found, it
+can be applied to the annotated definitions. During typechecking the program is annotated
+with the fresh type variables that were generated for unification, and after unification
+those type variables can be substituted for the actual type that has been inferred for
+them.
+
+It is not a faithful instance, as we do not implement the free type variables function.
+We would probably have been better off creating a function
+annotate :: Def Type -> Subst -> Def Type
+that would perform the substitution for us.
+-}
+
+
 
 -- these instances are meant to be used when applying the inferred substitution to the
 -- type annotated AST produced while typechecking.
-instance Substitutable (Def ()) where
-  apply s (DEquation a ident pats exp) = DEquation a ident (apply s pats) (apply s exp)
+instance Substitutable a => Substitutable (Def a) where
+  apply s (DEquation t ident pats exp) = DEquation (apply s t) ident (apply s pats) (apply s exp)
   apply _ d = d
 
   ftv d = undefined -- see below
 
-instance Substitutable (Pat ()) where
-  apply s (PTyped a p t)        = PTyped a (apply s p) (apply s t)
-  apply s (PNAdt a con adtpats) = PNAdt a con (map (apply s) adtpats)
-  apply s (PTup a tuppats)      = PTup a (map (apply s) tuppats)
-  apply s (PLay a var pat)      = PLay a var (apply s pat)
+instance Substitutable a => Substitutable (Pat a) where
+  --apply s (PTyped a p t)        = PTyped a (apply s p) (apply s t)
+  apply s (PNAdt a con adtpats) = PNAdt (apply s a) con (map (apply s) adtpats)
+  apply s (PTup a tuppats)      = PTup (apply s a) (map (apply s) tuppats)
+  apply s (PLay a var pat)      = PLay (apply s a) var (apply s pat)
   apply s p                     = p
 
   ftv p = undefined -- don't think we need this.. TODO backtrack here,
                     -- either implement for good measure or think of something else
 
-  ftv p = undefined -- same reasoning as above
-
-instance Substitutable (Exp ()) where
-  apply s (ETyped a e t) = ETyped a (apply s e) (apply s t)
-  apply s (ETup a texps) = ETup a (map (apply s) texps)
-  apply s (ECase a e branches) = ECase a (apply s e) (map (apply s) branches)
-  apply s (ELet a p e1 e2) = ELet a (apply s p) (apply s e1) (apply s e2)
-  apply s (ELetR a p e1 e2) = ELetR a (apply s p) (apply s e1) (apply s e2)
-  apply s (ELam a p e)   = ELam a (apply s p) (apply s e)
-  apply s (EIf a e1 e2 e3)  = EIf a (apply s e1) (apply s e2) (apply s e3)
-  apply s (EApp a e1 e2)   = EApp a (apply s e1) (apply s e2)
-  apply s (EOr a e1 e2)    = EOr a (apply s e1) (apply s e2)
-  apply s (EAnd a e1 e2)   = EAnd a (apply s e1) (apply s e2)
-  apply s (ERel a e1 op e2) = ERel a (apply s e1) (apply s op) (apply s e2)
-  apply s (EAdd a e1 op e2) = EAdd a (apply s e1) (apply s op) (apply s e2)
-  apply s (EMul a e1 op e2) = EMul a (apply s e1) (apply s op) (apply s e2)
-  apply s (ENot a e)     = ENot a (apply s e)
+instance Substitutable a => Substitutable (Exp a) where
+  apply s (ETup a texps) = ETup (apply s a) (map (apply s) texps)
+  apply s (ECase a e branches) = ECase (apply s a) (apply s e) (map (apply s) branches)
+  apply s (ELet a p e1 e2) = ELet (apply s a) (apply s p) (apply s e1) (apply s e2)
+  apply s (ELetR a p e1 e2) = ELetR (apply s a) (apply s p) (apply s e1) (apply s e2)
+  apply s (ELam a p e)   = ELam (apply s a) (apply s p) (apply s e)
+  apply s (EIf a e1 e2 e3)  = EIf (apply s a) (apply s e1) (apply s e2) (apply s e3)
+  apply s (EApp a e1 e2)   = EApp (apply s a) (apply s e1) (apply s e2)
+  apply s (EOr a e1 e2)    = EOr (apply s a) (apply s e1) (apply s e2)
+  apply s (EAnd a e1 e2)   = EAnd (apply s a) (apply s e1) (apply s e2)
+  apply s (ERel a e1 op e2) = ERel (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (EAdd a e1 op e2) = EAdd (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (EMul a e1 op e2) = EMul (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (ENot a e)     = ENot (apply s a) (apply s e)
   apply s e = e
 
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (PatMatch ()) where
-  apply s (PM a p e) = PM a (apply s p) (apply s e)
+instance Substitutable a => Substitutable (PatMatch a) where
+  apply s (PM p e) = PM (apply s p) (apply s e)
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (AddOp ()) where
-  apply s (AddOpTyped a op t) = AddOpTyped a op (apply s t)
+instance Substitutable a => Substitutable (AddOp a) where
+  apply s (Plus a) = Plus (apply s a)
+  apply s (Minus a) = Minus (apply s a)
+
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (MulOp ()) where
-  apply s (MulOpTyped a op t) = MulOpTyped a op (apply s t)
+instance Substitutable a => Substitutable (MulOp a) where
+  apply s (Times a) = Times (apply s a)
+  apply s (Div a) = Div (apply s a)
+
   ftv p = undefined -- same reasoning as above
 
-instance Substitutable (RelOp ()) where
-  apply s (RelOpTyped a op t) = RelOpTyped a op (apply s t)
+instance Substitutable a => Substitutable (RelOp a) where
+  apply s (LTC a) = LTC (apply s a)
+  apply s (LEC a) = LEC (apply s a)
+  apply s (GTC a) = GTC (apply s a)
+  apply s (GEC a) = GEC (apply s a)
+  apply s (EQC a) = EQC (apply s a)
+
   ftv p = undefined -- same reasoning as above

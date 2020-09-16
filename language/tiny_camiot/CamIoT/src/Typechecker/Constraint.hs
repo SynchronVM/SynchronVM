@@ -19,12 +19,17 @@
 -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
-module Typechecker.Constraint(Constraint(..), Test) where
+module Typechecker.Constraint
+       (
+         -- * Constraint types
+         Constraint(..)
+       , Test
+       ) where
 
-import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
-import Typechecker.Substitution
-import Typechecker.TCUtils
+import Parser.AbsTinyCamiot ( Type )
+import Parser.PrintTinyCamiot ( printTree )
+import Typechecker.Substitution ( Substitutable(..) )
+import Typechecker.TCUtils ( TCError )
 
 import qualified Data.Set as Set
 
@@ -33,16 +38,24 @@ import qualified Data.Set as Set
    simply pairs of types. It is up for the unifier to see if there is a
    substitution that will make the two types equal.
 -}
-type Test = Type () -> Type () -> Maybe TCError
-data Constraint = C (Type (), Type (), Maybe Test) | C2 [Constraint]
+type Test = Type -> Type -> Maybe TCError
+
+
+data Constraint 
+    = C (Type, Type, Maybe Test)  -- ^ Two types to unify, and maybe a test on the result
+    {-- | A list of constraints to unify. The intention is that the function that tries
+    to solve the constraints will throw an error if it cant solve it. If this is the case
+    the error should be caught and the next constraint in the list should be tried.
+    -}
+    | C2 [Constraint]
 
 instance Show Constraint where
     show (C (t1, t2, _)) = "Constraint: " ++ printTree t1 ++ ", " ++ printTree t2
-    show (C2 cs) = "Constraint v2: " ++ show cs
+    show (C2 cs)         = "Constraint v2: " ++ show cs
 
 instance Substitutable Constraint where
     apply s (C (t1, t2, test)) = C (apply s t1, apply s t2, test)
-    apply s (C2 cs)         = C2 (map (apply s) cs)
+    apply s (C2 cs)            = C2 (map (apply s) cs)
 
     ftv (C (t1, t2, _)) = Set.union (ftv t1) (ftv t2)
     ftv (C2 cs)         = Set.unions (map ftv cs)
