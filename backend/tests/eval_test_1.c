@@ -32,9 +32,12 @@
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
-  heap_cell_t hc = { .fst = 5 };
-  heap_t hp = { .cells = &hc };
+  heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
+  heap_cell_t hc2 = { .fst = 5 };
+  heap_cell_t heap_array[] = {hc1, hc2};
+  heap_t hp = { .cells = heap_array };
   vmc_t vmc = { .heap = hp };
+  vmc.vm.env.value = 1; // set address at the environment register
   int i = eval_fst(&vmc, NULL);
   (void)i;
   if(vmc.vm.env.value == 5){
@@ -47,14 +50,17 @@ bool eval_fst_test(){
 int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
+  int total = 0;
+
 
   bool t1 = eval_fst_test();
-
   if (t1) {
-    printf("All eval unit tests passed\n");
-    return 0;
+    printf("eval_fst unit test passed\n");
+    total++;
+  } else {
+    printf("eval_fst unit test failed\n");
   }
 
-  printf("Some tests have failed\n");
+  printf("Passed total : %d tests\n", total);
   return 1;
 }
