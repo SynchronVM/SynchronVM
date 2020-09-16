@@ -20,35 +20,32 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
-module Typechecker.Environment (
-    -- TODO now I manually added everything so that it is exported, but when we
-    -- are done we should just expose what we need, I suppose..
-    Scheme(..)
-  , instantiate
-  , generalize
-  , lookupVar
-  , lookupCons
-  , lookupTypeSig
-  
-  , TEnv(..)
-  , emptyEnv
-  , extend
-  , restrict
-  , inEnv
-  , inEnvMany
+module Typechecker.Environment
+       (
+         -- * Type schemes
+         Scheme(..)
+       , instantiate
+       , generalize
 
-  , TC()
-  , TCError(..)
-  , TCState(..)
-  , emptyState
-  , letters
-  , fresh
+         -- * Type checking environment
+       , TEnv(..)
+       , emptyEnv
+       , extend
+       , restrict
+       , inEnv
+       , inEnvMany
+       , lookupVar
 
-  , Subst
-  , nullSubst
-  , compose
-  , Substitutable(..)
-    )where
+         -- * Type checking dynamic environment
+       , TCState(..)
+       , emptyState
+       , lookupCons
+
+       , TC()
+       , TCError(..)
+       , letters
+       , fresh
+       ) where
 
 import Parser.AbsTinyCamiot ( Type(TVar), UIdent, Ident(..) )
 import Parser.PrintTinyCamiot ()
@@ -68,10 +65,7 @@ import Control.Monad.Writer ( replicateM, WriterT )
 import Control.Monad.Except
     ( replicateM, MonadError(throwError), ExceptT )
 
-{- Type schemes and environments -}
-{-*******************************-}
--- Type scheme
--- e.g id :: a -> a has type scheme forall a . a -> a
+-- | Type schemas, e.g forall a . Maybe a.
 data Scheme = Forall [Ident] Type
 
 instance Substitutable Scheme where
@@ -80,47 +74,52 @@ instance Substitutable Scheme where
 
     ftv (Forall vars t) = ftv t `Set.difference` Set.fromList vars
 
--- Typing environment, map identifiers to type schemes
+-- | Type checking environment. Maps identifiers to type schemas.
 newtype TEnv = TEnv (Map.Map Ident Scheme)
 
 instance Substitutable TEnv where
   apply s (TEnv env) =  TEnv $ Map.map (apply s) env
   ftv (TEnv env) = ftv $ Map.elems env
 
+-- | Empty environment
 emptyEnv :: TEnv
 emptyEnv = TEnv Map.empty
 
+-- | Extend the environment with a new identifier and type schema
 extend :: TEnv -> (Ident, Scheme) -> TEnv
 extend (TEnv env) (x, sc) = TEnv $ Map.insert x sc env
 
+-- | Delete an identifier and type schema from the environment.
 restrict :: TEnv -> Ident -> TEnv
 restrict (TEnv env) var = TEnv $ Map.delete var env
 
+{-- | Run the type checking computation after extending the local environment with a new
+identifier and type schema.
+-}
 inEnv :: (Ident, Scheme) -> TC a -> TC a
 inEnv xsc = inEnvMany [xsc]
 
--- Extend the local environment with many variables
+{-- | Run the type checking computation after extending the local environment with many
+new identifier-type schema pairs.
+-}
 inEnvMany :: [(Ident, Scheme)] -> TC a -> TC a
 inEnvMany xs m = do
     let scope e = foldl (\e' (x,sc) -> restrict e' x `extend` (x, sc)) e xs
     local scope m
 
--- Given a type scheme, this function will generate fresh
--- names for the bound type variables, replace them and then
--- return the new 'fresh' type.
+-- | Instantiate a type schema with fresh type variables, yielding a unique type.
 instantiate ::  Scheme -> TC Type
 instantiate (Forall vars t) = do
   vars' <- mapM (const fresh) vars
   let s = Map.fromList $ zip vars vars'
   return $ apply s t
 
--- Given a type such as id : a -> a, return a scheme such as
--- forall a . a -> a
+-- | Generalise a polymorphic type to a type schema.
 generalize :: TEnv -> Type -> Scheme
 generalize env t  = Forall vars t
     where vars = Set.toList $ ftv t `Set.difference` ftv env
 
--- Look up a type scheme from the environment and instantiate it
+-- | Fetch the type of the identifier. If it is a polymorphic type, instantiate it.
 lookupVar :: Ident -> TC Type
 lookupVar x@(Ident name) = do
     (TEnv env) <- ask
@@ -128,10 +127,7 @@ lookupVar x@(Ident name) = do
         Just s  -> instantiate s
         Nothing -> throwError $ UnboundVariable name
 
--- Semantically identical to lookupVar, but it reads from the
--- declared data constructors instead of the declared function
--- signatures. Not sure why this is treated separately, honestly.
--- It does probably not have to be.
+-- | Fetch the type of the constructor. If it is a polymorphic type, instantiate it.
 lookupCons :: UIdent -> TC Type
 lookupCons con = do
     env <- get
@@ -139,37 +135,17 @@ lookupCons con = do
         Just t  -> instantiate t
         Nothing -> throwError $ UnboundConstructor con
 
--- If a type signature exists for the function, fetch and instantiate it.
---lookupTypeSig :: Ident -> TC (Maybe (Type ()))
---lookupTypeSig fun = do
---    (TEnv env) <- ask
---    let tsig = Map.lookup fun env
---    case tsig of
---        Just sig -> Just <$> instantiate sig
---        Nothing  -> return Nothing
+-- | Dynamic state to use while typechecking. TODO move constructors into the reader state
+data TCState = TCState
+    { num            :: Int                    -- ^ Internal state used to generate names
+    , constructors   :: Map.Map UIdent Scheme  -- ^ Map of constructors and type schemas
+    }
 
-lookupTypeSig :: Ident -> TC (Maybe Type)
-lookupTypeSig fun = do
-    (TCState _ _ e) <- get
-    case Map.lookup fun e of
-        Just sig -> Just <$> instantiate sig
-        Nothing  -> return Nothing
-
-{-*******************************-}
-
-{-
-  num: used for generating fresh type variables
-  constructors: when we traverse the AST and parse all data type declarations,
-                they end up in this map.
--}
-data TCState = TCState { 
-    num            :: Int
-  , constructors   :: Map.Map UIdent Scheme
-  , typesignatures :: Map.Map Ident Scheme }
-
+-- | Empty state
 emptyState :: TCState
-emptyState = TCState 0 Map.empty Map.empty
+emptyState = TCState 0 Map.empty
 
+-- | The type checking monad (this should be moved somewhere else)
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
             StateT TCState (
@@ -177,10 +153,11 @@ type TC a = ReaderT TEnv (
             IO))) 
             a
 
-{- type variable generation -}
+-- | Helper function used to generate fresh type variables.
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
 
+-- | Generate a fresh type variable.
 fresh :: TC Type
 fresh = do
   s <- get

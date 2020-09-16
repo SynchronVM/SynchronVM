@@ -19,32 +19,24 @@
 -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
-module Typechecker.Unification(
-    uni
-  , uniMany
-  , uniEither
+module Typechecker.Unification
+       (
+         -- * Create constraints
+         uni
+       , uniMany
+       , uniEither
 
-  , Solve(..)
-  , runSolve
-  , solver
-
-  , occursCheck
-  , unifyMany
-  , unify
-  , bind
-) where
+         -- * Solve constraints
+       , runSolve
+       ) where
 
 import Parser.AbsTinyCamiot ( Type(..), Ident )
 import Parser.PrintTinyCamiot ()
 
-import Typechecker.Environment
-    ( Substitutable(..),
-      Subst,
-      nullSubst,
-      compose,
-      TCError(InfiniteType, UnificationFail),
-      TC )
+import Typechecker.Environment(TCError(InfiniteType, UnificationFail), TC )
 import Typechecker.Constraint ( Constraint(..), Test )
+import Typechecker.Substitution
+    ( compose, nullSubst, Subst, Substitutable(..) )
 
 import Control.Monad.Writer ( MonadWriter(tell) )
 import Control.Monad.Except
@@ -53,29 +45,41 @@ import Data.Foldable ( foldlM )
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- emit a constraint for unification
+-- | Emit two types that should be unified
 uni :: Type -> Type -> Maybe Test -> TC ()
 uni t1 t2 test = tell [C (t1, t2, test)]
 
--- Do you want to unify more than two constraints?
--- I convinced myself that if you can unify a and b, and b and c,
--- then you can unify a and c. This SHOULD work! (please)
+{-- | Unify many types. I've (Robert) convinced myself that if you can unify t1 and t2,
+and you can unify t2 and t3, then you can surely unify t1 and t3.
+-}
 uniMany :: [Type] -> Maybe Test -> TC ()
 uniMany []       _ = return ()
-uniMany [x]      t = uni x x t -- should be OK
+uniMany [x]      t = uni x x t
 uniMany [x,y]    t = uni x y t
 uniMany (x:y:xs) t = uni x y t >> uniMany (y:xs) t
 
+{-- | Presented with a list of pairs of types, `uniEither` will try to unify one pair
+at a time until one of them succeeds. Used when e.g typechecking `(+)`, which has
+the type forall a . a -> a -> a, but must be unified with either Int -> Int -> Int,
+or Float -> Float -> Float.
+-}
 uniEither :: [(Type, Type)] -> TC ()
 uniEither cs = tell [C2 (map (\(t1,t2) -> C (t1,t2,Nothing)) cs)]
 
--- TODO change to Identity from IO when done debugging
+-- TODO change to Identity from IO when done debugging/implementing. IO not actually needed.
 type Solve a = ExceptT TCError IO a
 
+{-- | Given a list of constraints, tries to solve them and returns either an error or a
+result in the form of a `Subst`.
+-}
 runSolve :: [Constraint] -> IO (Either TCError Subst)
 runSolve constraints = runExceptT (solver st)
   where st = (nullSubst, constraints)
 
+{-- | A recursive function that receives the current substitution and the remaining
+constraints as arguments, and then returns the complete substitution after having
+solved all the constraints.
+-}
 solver :: (Subst, [Constraint]) -> Solve Subst
 solver (su, cs) =
     case cs of
@@ -94,18 +98,22 @@ solver (su, cs) =
             let newsu = su1 `compose` su
             solver (newsu, apply su1 cs')
 
+{-- | Given a list of constraints, `tryToUnifyEither` will try to unify them one by one,
+and while they fail the errors are caught and the next constraint is solved instead.
+-}
 tryToUnifyEither :: [Constraint] -> Solve Subst
 tryToUnifyEither []                 = return nullSubst
 tryToUnifyEither [C (t1, t2, _)]    = unify t1 t2
 tryToUnifyEither (C (t1, t2, _):cs) =
     catchError (unify t1 t2) (\e -> tryToUnifyEither cs)
 
--- Does the free variable we are about to substitute for a type,
--- occur in the new type? E.g we can not substitute a for List a, we
--- will never terminate.
+{-- | Does the identifier appear in @a@? If it does we have an infinite constraint.
+E.g we will never terminate if we try to substitute a for List a.
+-}
 occursCheck :: Substitutable a => Ident -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
 
+-- | Unifies the pairwise types in the argument lists.
 unifyMany :: [Type] -> [Type] -> Solve Subst
 unifyMany [] [] = return nullSubst
 unifyMany (t1:ts) (t2:ts') = do
@@ -114,7 +122,8 @@ unifyMany (t1:ts) (t2:ts') = do
     return $ su2 `compose` su1
 unifyMany _ _ = error "" -- throwError with a smarter error
 
-unify ::  Type -> Type -> Solve Subst
+-- | Tries to unify two types. Either returns a substitution or throws an error.
+unify :: Type -> Type -> Solve Subst
 unify (TLam t1 t2) (TLam t1' t2') = do
     s1 <- unify t1 t1'
     s2 <- unify (apply s1 t2) (apply s1 t2')
@@ -123,27 +132,24 @@ unify (TLam t1 t2) (TLam t1' t2') = do
 unify (TTup types1) (TTup types2) = unifyMany types1 types2
 
 unify (TAdt con []) (TAdt con' [])  | con == con' = return nullSubst
-                                        | otherwise   = error "here"
+                                    | otherwise   = error "here" -- backtrack and write a better error
 unify (TAdt con types) (TAdt con' types') | con == con' =
     let doOne subst (t1,t2) = do
             s' <- unify (apply subst t1) (apply subst t2)
             return (s' `compose` subst)
     in foldlM doOne nullSubst (zip types types')
 
--- variables will just be substituted for the other type
 unify (TVar var) t = bind var t
 unify t (TVar var) = bind var t
 
-unify TInt TInt = return nullSubst
-unify TBool TBool = return nullSubst
+unify TInt TInt     = return nullSubst
+unify TBool TBool   = return nullSubst
 unify TFloat TFloat = return nullSubst
 unify TNil TNil     = return nullSubst
+unify t1 t2         = throwError $ UnificationFail t1 t2
 
-unify t1 t2 = throwError $ UnificationFail t1 t2
-
+-- | Returns a substitution where the identifier has been bound to the type.
 bind :: Ident -> Type -> Solve Subst
-bind a t | t == TVar a     = return nullSubst -- trying to substitue a for a, doesn't make sense
+bind a t | t == TVar a     = return nullSubst
          | occursCheck a t = throwError $ InfiniteType a t
-         | otherwise       = do
-             --liftIO $ putStrLn $ "binding " ++ printTree a ++ " to " ++ printTree t
-             return $ Map.singleton a t
+         | otherwise       = return $ Map.singleton a t

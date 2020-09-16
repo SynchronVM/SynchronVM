@@ -20,28 +20,29 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
-module Typechecker.AstUtils(
-    getExpvar
-  , isMoreGeneral
+module Typechecker.AstUtils
+       (
+         -- * Fetch functor values
+         getExpVar
+       , getPatVar
+       , getAddopVar
+       , getMulopVar
+       , getRelopVar
+ 
+         -- * Fetching type information
+       , getPMType
+ 
+         -- * Functions that operate on AST types
+       , functionType
+       , unwrapFunction
+       , countArguments
 
-  , getPatType
-  , getExpType
-  , getPMType
-  , getAddopVar
-  , getMulopVar
-  , getRelopVar
-
-  , usesVar
-
-  , function_type
-  , unwrap_function
-  , count_arguments
-
-  , (*->)
-  , bool
-  , int
-  , float
-) where
+         -- * Aliases for AST types
+       , (*->)
+       , bool
+       , int
+       , float
+       ) where
 
 import Parser.AbsTinyCamiot
     ( PatMatch(..),
@@ -55,14 +56,10 @@ import Parser.AbsTinyCamiot
       Ident )
 import Typechecker.Substitution ( Substitutable(..) )
 
--- TODO make heavy use of this bad boy.... it would make
--- the inference code easier to read, I believe
-infixr 8 *->
-(*->) :: Type -> Type -> Type
-t1 *-> t2 = TLam t1 t2
 
-getExpvar :: Exp a -> a
-getExpvar e = case e of
+-- | Returns the functor value of expressions
+getExpVar :: Exp a -> a
+getExpVar e = case e of
     ETup a _      -> a
     ECase a _ _   -> a
     ELet a _ _ _  -> a
@@ -80,8 +77,9 @@ getExpvar e = case e of
     EVar a _      -> a
     EConst a _    -> a
 
-getPatvar :: Pat a -> a
-getPatvar p = case p of
+-- | Returns the functor value of patterns
+getPatVar :: Pat a -> a
+getPatVar p = case p of
     PConst a _   -> a
     PVar a _     -> a
     PZAdt a _    -> a
@@ -91,16 +89,19 @@ getPatvar p = case p of
     PTup a _     -> a
     PLay a _ _   -> a
 
+-- | Returns the functor value of additive operators
 getAddopVar :: AddOp a -> a
 getAddopVar op = case op of
     Plus a  -> a
     Minus a -> a
 
+-- | Returns the functor value of multiplicative operators
 getMulopVar :: MulOp a -> a
 getMulopVar op = case op of
   Times a -> a
   Div a   -> a
 
+-- | Returns the functor value of relation operators
 getRelopVar :: RelOp a -> a
 getRelopVar op = case op of
   LTC a -> a
@@ -109,104 +110,67 @@ getRelopVar op = case op of
   GEC a -> a
   EQC a -> a
 
-    -- Returns Just true if the first operand is of a more general type than
--- the type of the second operand.
--- TODO rewrite this to make the behaviour more specified perhaps.
--- Looking back, I am slightly confused myself as to what the returntype actually means.
-isMoreGeneral :: Type -> Type -> Maybe Bool
-isMoreGeneral (TLam t1 t1s) (TLam t2 t2s)     = (||) <$> 
-                                                  isMoreGeneral t1 t2 <*> 
-                                                  isMoreGeneral t1s t2s
-isMoreGeneral (TVar _) (TVar _)               = Just False
-isMoreGeneral (TVar _) _                      = Just True
-isMoreGeneral (TAdt con1 t1s) (TAdt con2 t2s) =
-    -- there is surely something built in for this
-    let maybes = zipWith isMoreGeneral t1s t2s
-        f (Just x) (Just y) = Just (x || y)
-        f Nothing  _        = Nothing
-        f _        Nothing  = Nothing
-    in foldl f (Just False) maybes
-isMoreGeneral (TTup t1s) (TTup t2s)           = 
-    let maybes = zipWith isMoreGeneral t1s t2s
-        f (Just x) (Just y) = Just (x || y)
-        f Nothing  _        = Nothing
-        f _        Nothing  = Nothing
-    in foldl f (Just False) maybes
-isMoreGeneral _ _                                 = Nothing
-
-getPatType :: Pat Type -> Type
-getPatType = getPatvar
---getPatType (PTyped _ _ t) = t
---getPatType _ = error "please don't end up here" -- TODO backtrack and take care of this
-
-getExpType :: Exp Type -> Type
-getExpType = getExpvar
---getExpType (ETyped _ _ t) = t
---getExpType _ = error "please don't end up here" -- TODO backtrack and take care of this
-
+-- | Returns the type of the expression in a case` pattern match clause
 getPMType :: PatMatch Type -> Type
-getPMType (PM _ e) = getExpvar e
+getPMType (PM _ e) = getExpVar e
 
--- builds a function type from the list of argument types and the result type
-function_type :: [Type] -> Type -> Type
-function_type [] res     = res
-function_type (x:xs) res = TLam x (function_type xs res)
+-- | Builds a function type from the argument types.
+functionType 
+    :: [Type]  -- ^ Argument types 
+    -> Type    -- ^ Result types
+    -> Type
+functionType xs res = foldr TLam res xs
 
--- fetch the final construction of a type
--- e.g unwrap function (a -> b -> Either a b) = Either a b
-unwrap_function :: Type -> Type
-unwrap_function (TLam _ t) = unwrap_function t
-unwrap_function t             = t
+{-- | If the argument type is a function type, unwrap one argument and perform a
+recursive call. Essentially returns the result of a type.
+-}
+unwrapFunction :: Type -> Type
+unwrapFunction (TLam _ t) = unwrapFunction t
+unwrapFunction t          = t
 
-count_arguments :: Type -> Int
-count_arguments (TLam _ t) = 1 + count_arguments t
-count_arguments _             = 0
+{-- | If the argument type is a function type, count the number of arguments
+specified in the type.
+-}
+countArguments :: Type -> Int
+countArguments (TLam _ t) = 1 + countArguments t
+countArguments _          = 0
 
--- synonyms for the built-in types
+-- | Operator alias to construct a function type
+infixr 8 *->
+(*->) :: Type -> Type -> Type
+t1 *-> t2 = TLam t1 t2
+
+-- | Alias for type Bool
 bool :: Type
 bool = TBool --TAdt () (UIdent "Bool") []
 
+-- | Alias for type Int
 int :: Type
 int = TInt --TAdt () (UIdent "Int") []
 
+-- | Alias for type Float
 float :: Type
 float = TFloat -- TAdt () (UIdent "Float") []
 
--- if _any_ of the expressions in the AST fulfils the predicate, return true
-usesVar :: Ident -> Exp a -> Bool
-usesVar id e = case e of
-    (ETup a texps)    -> any (usesVar id) texps
-    (ECase a e1 br)   -> usesVar id e1 || any (usesVarPatMatch id) br
-    (ELet a p e1 e2)  -> usesVarPat id p || usesVar id e1 || usesVar id e2
-    (ELetR a p e1 e2) -> usesVarPat id p || usesVar id e1 || usesVar id e2
-    (ELam a p e1)     -> usesVarPat id p || usesVar id e1
-    (EIf a e1 e2 e3)  -> usesVar id e1 || usesVar id e2 || usesVar id e3
-    (EApp a e1 e2)    -> usesVar id e1 || usesVar id e2
-    (EOr a e1 e2)     -> usesVar id e1 || usesVar id e2
-    (EAnd a e1 e2)    -> usesVar id e1 || usesVar id e2
-    (ERel a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (EAdd a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (EMul a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (ENot a e1)       -> usesVar id e1
-    (EVar a id')      -> id == id'
-    (EUVar a _)       -> False
-    (EConst a c)      -> False
 
-usesVarPat :: Ident -> Pat a -> Bool
-usesVarPat id p = case p of
-    PConst _ c       -> False
-    PVar _ id'       -> id == id'
-    PZAdt _ _        -> False
-    PNAdt _ _ pats   -> any (usesVarPat id) pats
-    PWild _          -> False
-    PNil _           -> False
-    PTup _ patterns  -> any (usesVarPat id) patterns
-    PLay _ id' pat   -> id == id' || usesVarPat id pat
 
-usesVarPatMatch :: Ident -> PatMatch a -> Bool
-usesVarPatMatch id (PM pat exp) = usesVarPat id pat || usesVar id exp
 
-{- Substitution instances for backtracking -}
+
+
+{- The following instances of the Substitution typeclass are defined so that when
+typechecking has completed and a valid substitution have (hopefully) been found, it
+can be applied to the annotated definitions. During typechecking the program is annotated
+with the fresh type variables that were generated for unification, and after unification
+those type variables can be substituted for the actual type that has been inferred for
+them.
+
+It is not a faithful instance, as we do not implement the free type variables function.
+We would probably have been better off creating a function
+annotate :: Def Type -> Subst -> Def Type
+that would perform the substitution for us.
+-}
+
+
 
 -- these instances are meant to be used when applying the inferred substitution to the
 -- type annotated AST produced while typechecking.
@@ -227,7 +191,6 @@ instance Substitutable a => Substitutable (Pat a) where
                     -- either implement for good measure or think of something else
 
 instance Substitutable a => Substitutable (Exp a) where
-  --apply s (ETyped a e t) = ETyped a (apply s e) (apply s t)
   apply s (ETup a texps) = ETup (apply s a) (map (apply s) texps)
   apply s (ECase a e branches) = ECase (apply s a) (apply s e) (map (apply s) branches)
   apply s (ELet a p e1 e2) = ELet (apply s a) (apply s p) (apply s e1) (apply s e2)
@@ -252,13 +215,13 @@ instance Substitutable a => Substitutable (PatMatch a) where
 instance Substitutable a => Substitutable (AddOp a) where
   apply s (Plus a) = Plus (apply s a)
   apply s (Minus a) = Minus (apply s a)
-  --apply s (AddOpTyped a op t) = AddOpTyped a op (apply s t)
+
   ftv p = undefined -- same reasoning as above
 
 instance Substitutable a => Substitutable (MulOp a) where
   apply s (Times a) = Times (apply s a)
   apply s (Div a) = Div (apply s a)
-  --apply s (MulOpTyped a op t) = MulOpTyped a op (apply s t)
+
   ftv p = undefined -- same reasoning as above
 
 instance Substitutable a => Substitutable (RelOp a) where
@@ -267,5 +230,5 @@ instance Substitutable a => Substitutable (RelOp a) where
   apply s (GTC a) = GTC (apply s a)
   apply s (GEC a) = GEC (apply s a)
   apply s (EQC a) = EQC (apply s a)
-  --apply s (RelOpTyped a op t) = RelOpTyped a op (apply s t)
+
   ftv p = undefined -- same reasoning as above

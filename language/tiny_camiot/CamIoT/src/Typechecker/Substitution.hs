@@ -21,36 +21,36 @@
 -- SOFTWARE.
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
-module Typechecker.Substitution(
-    Subst(..)
-  , Substitutable(..)
-  , nullSubst
-  , compose
-    ) where
+module Typechecker.Substitution
+       (
+         -- * Substitutions
+         Subst(..)
+       , Substitutable(..)
+       , nullSubst
+       , compose
+       ) where
 
 import Parser.AbsTinyCamiot ( Type(..), Ident )
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- A substitution is a map from variables to types
--- e.g we have a context with the type signature id : a -> a
--- and an application id 3, a possible substitution is [a -> Int]
+
+-- | A substitution is a mapping from identifiers to types
 type Subst = Map.Map Ident Type
 
--- empty substitution
+-- | An empty substitution
 nullSubst :: Subst
 nullSubst = Map.empty
 
--- composisng substitutions, building increasingly larger substitutions
+-- | Compose two substitutions
 compose :: Subst -> Subst -> Subst
 s1 `compose` s2 = Map.map (apply s1) s2 `Map.union` s1
 
--- eg : apply [a -> Int] (Maybe a) => Maybe Int
--- eg : ftv (Either a b)           => {a,b}
+
 class Substitutable a where
-    apply :: Subst -> a -> a
-    ftv :: a -> Set.Set Ident
+    apply :: Subst -> a -> a     -- ^ Apply a substitution
+    ftv   :: a -> Set.Set Ident  -- ^ Fetch the free type variables
 
 instance Substitutable Type where
     apply s (TLam t1 t2)     = TLam (apply s t1) (apply s t2)

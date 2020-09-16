@@ -15,20 +15,21 @@ import Control.Monad.Identity
 import Data.Void
 import Data.Text (Text, unpack, unlines, intercalate)
 
+-- | Custom parser type - synonym for Parsec Void Text a
 type Parser a = Parsec Void Text a
 
 -- interesting points
-  -- * how to make the parser work by the proper precendense
-  -- * left factoring
-  -- * handling keywords
-  -- * parse by tokens, whitespaces are ignored
+  -- - how to make the parser work by the proper precendense
+  -- - left factoring
+  -- - handling keywords
+  -- - parse by tokens, whitespaces are ignored
   --   how does this affect line sensitive parsing, such as datatype declarations?
-  -- * _what_ are closed expressions? (Either single tokens or other
+  -- - _what_ are closed expressions? (Either single tokens or other
   --   stuff that is enclosed in both opening and closing tokens, whatever
   --   they may be)
-  -- * We have to preprocess the file to rid the developer of nasty clutter!
+  -- - We have to preprocess the file to rid the developer of nasty clutter!
 
--- parse programs
+-- | Parser that parses a program
 pProgram :: Parser [Def ()]
 pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation
 
@@ -47,7 +48,9 @@ pClosed = choice [ TInt    <$ pSymbol "Int"
                  ]
 
 pApp :: Parser Type
-pApp = choice [TAdt <$> pUIdent <*> many pClosed, pClosed]
+pApp = choice [ TAdt <$> pUIdent <*> many pClosed
+              , pClosed
+              ]
 
 pFun :: Parser Type
 pFun = foldr1 TLam <$> sepBy1 pApp (pSymbol "->")
