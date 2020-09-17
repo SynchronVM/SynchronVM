@@ -37,23 +37,38 @@ value_flags_t heap_snd_flags(heap_t *heap, heap_index i) {
   return (value_flags_t) heap->value_flags[i].snd;
 }
 
-UINT heap_fst(heap_t *heap, heap_index i) {
-  return heap->cells[i].fst;
+/* cam_value_t heap_fst(heap_t *heap, heap_index i) { */
+/*   struct cam_value_t val_f = { heap->cells[i].fst, heap->value_flags[i].fst }; */
+/*   return val_f; */
+/* } */
+
+/* cam_value_t heap_snd(heap_t *heap, heap_index i) { */
+/*   struct cam_value_t val_s = { heap->cells[i].snd, heap->value_flags[i].snd }; */
+/*   return val_s; */
+/* } */
+
+cam_value_t heap_fst(heap_t *heap, heap_index i) {
+  cam_value_t v;
+  v.value = heap->cells[i].fst;
+  v.flags = heap->value_flags[i].fst;
+  return v;
 }
 
-UINT heap_snd(heap_t *heap, heap_index i) {
-  return heap->cells[i].snd;
+cam_value_t heap_snd(heap_t *heap, heap_index i) {
+  cam_value_t v;
+  v.value = heap->cells[i].snd;
+  v.flags = heap->value_flags[i].snd;
+  return v;
 }
 
-void heap_set_fst(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
-  heap->cells[i].fst = value;
-  heap->value_flags[i].fst |= flags;
+void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value) {
+  heap->cells[i].fst = value.value;
+  heap->value_flags[i].fst |= value.flags;
 }
 
-void heap_set_snd(heap_t *heap, heap_index i, UINT value, value_flags_t flags) {
-  heap->cells[i].snd = value;
-  heap->value_flags[i].snd |= flags;
-
+void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value) {
+  heap->cells[i].snd = value.value;
+  heap->value_flags[i].snd |= value.flags;
 }
 
 /* unsigned int heap_num_free(heap_t *heap) { */
@@ -189,9 +204,14 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 	   !get_gc_mark(heap, curr_val)) {
       set_gc_mark(heap, curr_val);
       if (!is_atomic(curr_flags)) {
-	UINT next_val = heap_fst(heap, curr_val);
-	value_flags_t next_flags = heap_fst_flags(heap, curr_val);
-	heap_set_fst(heap, curr_val, prev_val, prev_flags);
+  cam_value_t hf = heap_fst(heap, curr_val);
+	UINT next_val = hf.value;
+	value_flags_t next_flags = hf.flags;
+
+  cam_value_t pv;
+  pv.value = prev_val;
+  pv.flags = prev_flags;
+	heap_set_fst(heap, curr_val, pv);
 
 	prev_val   = curr_val;
 	prev_flags = curr_flags;
@@ -206,10 +226,14 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 	    get_gc_flag(heap, prev_val)) {
       clr_gc_flag(heap, prev_val);
 
-      UINT next_val = heap_snd(heap, prev_val);
-      value_flags_t next_flags = heap_snd_flags(heap, prev_val);
+      cam_value_t hs = heap_snd(heap, prev_val);
+      UINT next_val = hs.value;
+      value_flags_t next_flags = hs.flags;
 
-      heap_set_snd(heap, prev_val, curr_val, curr_flags);
+      cam_value_t cv;
+      cv.value = curr_val;
+      cv.flags = curr_flags;
+      heap_set_snd(heap, prev_val, cv);
 
       curr_val = prev_val;
       curr_flags = prev_flags;
@@ -224,15 +248,23 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 
     } else {
       set_gc_flag(heap, prev_val);
-      UINT next_val = heap_fst(heap, prev_val);
-      value_flags_t next_flags = heap_fst_flags(heap, prev_val);
+      cam_value_t hf = heap_fst(heap, prev_val);
+      UINT next_val = hf.value;
+      value_flags_t next_flags = hf.flags;
 
-      heap_set_fst(heap, prev_val, curr_val, curr_flags);
+      cam_value_t cv;
+      cv.value = curr_val;
+      cv.flags = curr_flags;
+      heap_set_fst(heap, prev_val, cv);
 
-      curr_val = heap_snd(heap, prev_val);
-      curr_flags = heap_snd_flags(heap, prev_val);
+      cam_value_t hs = heap_snd(heap, prev_val);
+      curr_val = hs.value;
+      curr_flags = hs.flags;
 
-      heap_set_snd(heap, prev_val, next_val, next_flags);
+      cam_value_t nv;
+      nv.value = next_val;
+      nv.flags = next_flags;
+      heap_set_snd(heap, prev_val, nv);
     }
   }
 }

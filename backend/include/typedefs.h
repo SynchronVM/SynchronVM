@@ -26,8 +26,15 @@
 #define __TYPEDEFS_H_
 
 #include <stdint.h>
+#include <flags.h>
 
 typedef uint32_t UINT;
 typedef int32_t  INT;
+
+typedef struct {
+  value_flags_t flags;
+  UINT          value;
+} cam_value_t;
+
 
 #endif
