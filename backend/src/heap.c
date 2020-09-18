@@ -201,18 +201,18 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 	   !get_gc_mark(heap, curr_val)) {
       set_gc_mark(heap, curr_val);
       if (!is_atomic(curr_flags)) {
-  cam_value_t hf = heap_fst(heap, curr_val);
-	UINT next_val = hf.value;
-	value_flags_t next_flags = hf.flags;
+        cam_value_t hf = heap_fst(heap, curr_val);
+        UINT next_val = hf.value;
+        value_flags_t next_flags = hf.flags;
 
-  cam_value_t pv = get_cam_val(prev_val, prev_flags);
-	heap_set_fst(heap, curr_val, pv);
+        cam_value_t pv = get_cam_val(prev_val, prev_flags);
+        heap_set_fst(heap, curr_val, pv);
 
-	prev_val   = curr_val;
-	prev_flags = curr_flags;
+        prev_val   = curr_val;
+        prev_flags = curr_flags;
 
-	curr_val   = next_val;
-	curr_flags = next_flags;
+        curr_val   = next_val;
+        curr_flags = next_flags;
       }
     }
 
