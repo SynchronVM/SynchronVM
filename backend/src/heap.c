@@ -46,6 +46,7 @@
 /*   struct cam_value_t val_s = { heap->cells[i].snd, heap->value_flags[i].snd }; */
 /*   return val_s; */
 /* } */
+
 cam_value_t get_cam_val(UINT ui, value_flags_t f){
   cam_value_t cvt = { .value = ui, .flags = f };
   return cvt;

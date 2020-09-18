@@ -40,8 +40,7 @@ bool eval_fst_test(){
   heap_flags_t flag_array[] = {hf1, hf2};
   heap_t hp = { .cells = heap_array , .value_flags = flag_array };
   vmc_t vmc = { .heap = hp };
-  cam_value_t cv;
-  cv.value = 1;
+  cam_value_t cv = { .value = 1 };
   vmc.vm.env = cv; // set address at the environment register
   int i = eval_fst(&vmc, NULL);
   (void)i;
