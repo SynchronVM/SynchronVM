@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -29,13 +29,13 @@
 /* Smaller Utility Functions */
 /*****************************/
 
-value_flags_t heap_fst_flags(heap_t *heap, heap_index i) {
-  return (value_flags_t) heap->value_flags[i].fst;
-}
+/* value_flags_t heap_fst_flags(heap_t *heap, heap_index i) { */
+/*   return (value_flags_t) heap->value_flags[i].fst; */
+/* } */
 
-value_flags_t heap_snd_flags(heap_t *heap, heap_index i) {
-  return (value_flags_t) heap->value_flags[i].snd;
-}
+/* value_flags_t heap_snd_flags(heap_t *heap, heap_index i) { */
+/*   return (value_flags_t) heap->value_flags[i].snd; */
+/* } */
 
 /* cam_value_t heap_fst(heap_t *heap, heap_index i) { */
 /*   struct cam_value_t val_f = { heap->cells[i].fst, heap->value_flags[i].fst }; */
@@ -46,19 +46,16 @@ value_flags_t heap_snd_flags(heap_t *heap, heap_index i) {
 /*   struct cam_value_t val_s = { heap->cells[i].snd, heap->value_flags[i].snd }; */
 /*   return val_s; */
 /* } */
-
+cam_value_t get_cam_val(UINT ui, value_flags_t f){
+  cam_value_t cvt = { .value = ui, .flags = f };
+  return cvt;
+}
 cam_value_t heap_fst(heap_t *heap, heap_index i) {
-  cam_value_t v;
-  v.value = heap->cells[i].fst;
-  v.flags = heap->value_flags[i].fst;
-  return v;
+  return get_cam_val(heap->cells[i].fst, heap->value_flags[i].fst);
 }
 
 cam_value_t heap_snd(heap_t *heap, heap_index i) {
-  cam_value_t v;
-  v.value = heap->cells[i].snd;
-  v.flags = heap->value_flags[i].snd;
-  return v;
+  return get_cam_val(heap->cells[i].snd, heap->value_flags[i].snd);
 }
 
 void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value) {
@@ -208,9 +205,7 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 	UINT next_val = hf.value;
 	value_flags_t next_flags = hf.flags;
 
-  cam_value_t pv;
-  pv.value = prev_val;
-  pv.flags = prev_flags;
+  cam_value_t pv = get_cam_val(prev_val, prev_flags);
 	heap_set_fst(heap, curr_val, pv);
 
 	prev_val   = curr_val;
@@ -230,9 +225,7 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
       UINT next_val = hs.value;
       value_flags_t next_flags = hs.flags;
 
-      cam_value_t cv;
-      cv.value = curr_val;
-      cv.flags = curr_flags;
+      cam_value_t cv = get_cam_val(curr_val, curr_flags);
       heap_set_snd(heap, prev_val, cv);
 
       curr_val = prev_val;
@@ -252,18 +245,14 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
       UINT next_val = hf.value;
       value_flags_t next_flags = hf.flags;
 
-      cam_value_t cv;
-      cv.value = curr_val;
-      cv.flags = curr_flags;
+      cam_value_t cv = get_cam_val(curr_val, curr_flags);
       heap_set_fst(heap, prev_val, cv);
 
       cam_value_t hs = heap_snd(heap, prev_val);
       curr_val = hs.value;
       curr_flags = hs.flags;
 
-      cam_value_t nv;
-      nv.value = next_val;
-      nv.flags = next_flags;
+      cam_value_t nv = get_cam_val(next_val, next_flags);
       heap_set_snd(heap, prev_val, nv);
     }
   }
