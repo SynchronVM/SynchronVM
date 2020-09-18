@@ -25,6 +25,10 @@
 #include <CAM.h>
 #include <VMC.h>
 
+/* Return type of an eval function indicates the number of */
+/* bytes that were read from the bc_rest array. In case of */
+/* error executing a function, it would return -1 */
+
 typedef int (*eval_fun) (vmc_t *vmc, uint8_t *bc_rest);
 
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest);
@@ -99,7 +103,6 @@ eval_fun evaluators[] =
     eval_eq,
     eval_ge,
     eval_le };
-
 
 
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest) {
