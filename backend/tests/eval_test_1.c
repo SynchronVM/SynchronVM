@@ -35,9 +35,13 @@ bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
   heap_cell_t hc2 = { .fst = 5 };
   heap_cell_t heap_array[] = {hc1, hc2};
-  heap_t hp = { .cells = heap_array };
+  heap_flags_t hf1 = { .fst = 0 }; // Unused flag
+  heap_flags_t hf2 = { .fst = 0 }; // Unused flag
+  heap_flags_t flag_array[] = {hf1, hf2};
+  heap_t hp = { .cells = heap_array , .value_flags = flag_array };
   vmc_t vmc = { .heap = hp };
-  vmc.vm.env.value = 1; // set address at the environment register
+  cam_value_t cv = { .value = 1 };
+  vmc.vm.env = cv; // set address at the environment register
   int i = eval_fst(&vmc, NULL);
   (void)i;
   if(vmc.vm.env.value == 5){

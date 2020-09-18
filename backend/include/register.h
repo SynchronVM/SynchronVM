@@ -26,12 +26,7 @@
 #define __REGISTER_H_
 
 #include <typedefs.h>
-#include <flags.h>
 
-typedef struct {
-  value_flags_t flags;
-  UINT          value;
-} cam_register_t;
-
+typedef cam_value_t cam_register_t; // a register can only hold a CAM value
 
 #endif

@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -62,10 +62,10 @@ typedef struct {
 
 extern unsigned int heap_num_free(heap_t *heap);
 
-extern UINT heap_fst(heap_t *heap, heap_index i);
-extern UINT heap_snd(heap_t *heap, heap_index i);
-extern void heap_set_fst(heap_t *heap, heap_index i, UINT value, value_flags_t flags);
-extern void heap_set_snd(heap_t *heap, heap_index i, UINT value, value_flags_t flags);
+extern cam_value_t heap_fst(heap_t *heap, heap_index i);
+extern cam_value_t heap_snd(heap_t *heap, heap_index i);
+extern void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value);
+extern void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value);
 extern void heap_set_flags(heap_t *heap, heap_index i, heap_flags_t flags);
 
 extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
