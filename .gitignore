@@ -16,6 +16,9 @@ spec/plantuml-images
 # Documents
 *.pdf
 
+# Executable
+*.exe
+
 # tiny_camiot specific
 language/tiny_camiot/build/
 language/tiny_camiot/camiotc

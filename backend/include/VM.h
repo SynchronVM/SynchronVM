@@ -31,7 +31,6 @@
 #include <stack.h>
 
 typedef struct {
-  cam_register_t value;
   cam_register_t env;
   UINT       pc;
   cam_stack_t    stack;

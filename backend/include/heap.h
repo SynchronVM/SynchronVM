@@ -35,7 +35,7 @@
 #define  HEAP_NULL                 -1
 
 
-#define  HEAP_GC_MARK_BIT           0x80   
+#define  HEAP_GC_MARK_BIT           0x80
 #define  HEAP_GC_FLAG_BIT           0x40
 
 typedef INT heap_index; /* size of pointers are platform specific
