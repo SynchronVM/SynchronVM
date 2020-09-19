@@ -114,10 +114,13 @@ int eval_fst(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_snd(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  cam_value_t v = heap_snd(&vmc->heap, (INT)e.value);
+  vmc->vm.env = v;
   return 1;
 }
+
 
 int eval_add(vmc_t *vmc, uint8_t *bc_rest) {
   (void)vmc;
