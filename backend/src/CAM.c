@@ -33,7 +33,7 @@ typedef int (*eval_fun) (vmc_t *vmc, uint8_t *bc_rest);
 
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest);
 int eval_snd(vmc_t *vmc, uint8_t *bc_rest);
-int eval_add(vmc_t *vmc, uint8_t *bc_rest);
+int eval_acc(vmc_t *vmc, uint8_t *bc_rest);
 int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
 int eval_push(vmc_t *vmc, uint8_t *bc_rest);
 int eval_swap(vmc_t *vmc, uint8_t *bc_rest);
@@ -70,7 +70,7 @@ int eval_le(vmc_t *vmc, uint8_t *bc_rest);
 eval_fun evaluators[] =
   { eval_fst,
     eval_snd,
-    eval_add,
+    eval_acc,
     eval_rest,
     eval_push,
     eval_swap,
@@ -122,7 +122,7 @@ int eval_snd(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 
-int eval_add(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_acc(vmc_t *vmc, uint8_t *bc_rest) {
   (void)vmc;
   (void)bc_rest;
   return 1;
