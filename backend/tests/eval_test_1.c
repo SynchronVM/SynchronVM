@@ -96,6 +96,15 @@ bool eval_push_test(){
   }
 }
 
+void test_stat(char *s, int *tot, bool t){
+  if (t) {
+    (*tot)++;
+    printf("%s unit test passed\n", s);
+  } else {
+    printf("%s unit test failed\n", s);
+  }
+}
+
 int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
@@ -103,26 +112,11 @@ int main(int argc, char **argv) {
 
 
   bool t1 = eval_fst_test();
-  if (t1) {
-    printf("eval_fst unit test passed\n");
-    total++;
-  } else {
-    printf("eval_fst unit test failed\n");
-  }
+  test_stat("eval_fst", &total, t1);
   bool t2 = eval_snd_test();
-  if (t2) {
-    printf("eval_snd unit test passed\n");
-    total++;
-  } else {
-    printf("eval_snd unit test failed\n");
-  }
+  test_stat("eval_snd", &total, t2);
   bool t3 = eval_push_test();
-  if (t3) {
-    printf("eval_push unit test passed\n");
-    total++;
-  } else {
-    printf("eval_push unit test failed\n");
-  }
+  test_stat("eval_push", &total, t3);
 
   printf("Passed total : %d tests\n", total);
   return 1;
