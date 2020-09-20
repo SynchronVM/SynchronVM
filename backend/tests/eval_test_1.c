@@ -76,7 +76,7 @@ bool eval_snd_test(){
 bool eval_push_test(){
   cam_value_t cv = { .value = 10, .flags = 0 };
   cam_stack_t s = { .size = 0 };
-  uint8_t *m = malloc(16);
+  uint8_t *m = malloc(256);
   int w = stack_init(&s, m, 256);
   VM_t mockvm = { .env = cv, .stack = s };
   vmc_t vmc = { .vm = mockvm };
