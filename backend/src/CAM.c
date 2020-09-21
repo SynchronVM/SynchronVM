@@ -24,6 +24,7 @@
 
 #include <CAM.h>
 #include <VMC.h>
+#include <stdio.h>
 
 /* Return type of an eval function indicates the number of */
 /* bytes that were read from the bc_rest array. In case of */
@@ -137,8 +138,10 @@ int eval_rest(vmc_t *vmc, uint8_t *bc_rest)  {
 int eval_push(vmc_t *vmc, uint8_t *bc_rest) {
   cam_register_t e = vmc->vm.env;
   int i = stack_push(&vmc->vm.stack, e);
-  if(i == 0)
+  if(i == 0){
+    printf("Stack push has failed");
     return -1;
+  }
   (void)bc_rest;
   return 1;
 }
@@ -168,9 +171,28 @@ int eval_clear(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_cons(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
-  return 1;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    printf("Stack pop has failed");
+    return -1;
+  }
+  heap_index hi = heap_allocate(&vmc->heap);
+  if(hi == HEAP_NULL){
+    printf("Heap allocation has failed");
+    return -1;
+  } else {
+    // Assuming we have space for atleast one tuple
+    // Do we check this as well?
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->vm.env = env_pointer;
+    heap_set_fst(&vmc->heap, hi  , hold_reg);
+    heap_set_snd(&vmc->heap, hi++, e);
+    return 1;
+  }
 }
 
 int eval_cur(vmc_t *vmc, uint8_t *bc_rest) {

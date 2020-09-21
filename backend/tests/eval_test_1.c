@@ -32,6 +32,7 @@
 int eval_fst(vmc_t *vmc, uint8_t *bc_rest);
 int eval_snd(vmc_t *vmc, uint8_t *bc_rest);
 int eval_push(vmc_t *vmc, uint8_t *bc_rest);
+int eval_cons(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -79,7 +80,7 @@ bool eval_push_test(){
   uint8_t *m = malloc(256);
   int w = stack_init(&s, m, 256);
   if (w == 0){
-    printf("Error initializing stack");
+    printf("Stack initialization has failed");
     return false;
   }
   VM_t mockvm = { .env = cv, .stack = s };
@@ -93,7 +94,7 @@ bool eval_push_test(){
   }
   int j = stack_pop(&vmc.vm.stack, &dummyreg);
   if (j == 0){
-    printf("Cannot pop from stack");
+    printf("Stack pop has failed");
     return false;
   }
   if(dummyreg.value == 10){
@@ -101,6 +102,53 @@ bool eval_push_test(){
     return true;
   } else {
     free(m);
+    return false;
+  }
+}
+
+bool eval_cons_test(){
+
+  //Value to be held in the environment register
+  cam_value_t v2 = { .value = 10, .flags = 0 };
+
+  //Initializing a mock stack
+  cam_value_t v1 = { .value = 20, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int s_init = stack_init(&s, m, 256);
+  if (s_init == 0){
+    printf("Stack initialization has failed");
+    return false;
+  }
+  int y = stack_push(&s, v1);
+  if (y == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+
+  VM_t mockvm = { .env = v2, .stack = s };
+  vmc_t vmc = { .vm = mockvm, .heap = h};
+  int i = eval_cons(&vmc, NULL);
+  if(i == -1){
+    printf("cons operation has failed\n");
+    return false;
+  }
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  if(fst.value == 20 && snd.value == 10){
+    free(m); free(hm);
+    return true;
+  } else {
+    free(m); free(hm);
     return false;
   }
 }
@@ -126,6 +174,8 @@ int main(int argc, char **argv) {
   test_stat("eval_snd", &total, t2);
   bool t3 = eval_push_test();
   test_stat("eval_push", &total, t3);
+  bool t4 = eval_cons_test();
+  test_stat("eval_cons", &total, t4);
 
   printf("Passed total : %d tests\n", total);
   return 1;
