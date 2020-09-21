@@ -189,8 +189,7 @@ int eval_cons(vmc_t *vmc, uint8_t *bc_rest) {
     cam_value_t env_pointer =
       { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
     vmc->vm.env = env_pointer;
-    heap_set_fst(&vmc->heap, hi, hold_reg);
-    heap_set_snd(&vmc->heap, hi, e);
+    heap_set(&vmc->heap, hi, hold_reg, e);
     return 1;
   }
 }
