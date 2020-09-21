@@ -137,7 +137,8 @@ int eval_rest(vmc_t *vmc, uint8_t *bc_rest)  {
 int eval_push(vmc_t *vmc, uint8_t *bc_rest) {
   cam_register_t e = vmc->vm.env;
   int i = stack_push(&vmc->vm.stack, e);
-  (void)i;
+  if(i == 0)
+    return -1;
   (void)bc_rest;
   return 1;
 }

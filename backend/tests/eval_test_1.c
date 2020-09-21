@@ -78,15 +78,24 @@ bool eval_push_test(){
   cam_stack_t s = { .size = 0 };
   uint8_t *m = malloc(256);
   int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Error initializing stack");
+    return false;
+  }
   VM_t mockvm = { .env = cv, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
   cam_register_t dummyreg = { .value = 0 };
   int i = eval_push(&vmc, NULL);
+  if (i == -1){
+    printf("push operation has failed");
+    return false;
+  }
   int j = stack_pop(&vmc.vm.stack, &dummyreg);
-  (void)i;
-  (void)j;
-  (void)w;
+  if (j == 0){
+    printf("Cannot pop from stack");
+    return false;
+  }
   if(dummyreg.value == 10){
     free(m);
     return true;
