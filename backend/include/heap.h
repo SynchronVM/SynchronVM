@@ -64,6 +64,7 @@ extern unsigned int heap_num_free(heap_t *heap);
 
 extern cam_value_t heap_fst(heap_t *heap, heap_index i);
 extern cam_value_t heap_snd(heap_t *heap, heap_index i);
+extern void heap_set(heap_t *heap, heap_index i, cam_value fst, cam_value snd);
 extern void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value);
 extern void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value);
 extern void heap_set_flags(heap_t *heap, heap_index i, heap_flags_t flags);
