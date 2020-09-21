@@ -21,10 +21,15 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  */
 /* SOFTWARE.									  */
 /**********************************************************************************/
+#ifdef DEBUG
+#include <stdio.h>
+# define DEBUG_PRINT(x) printf x
+#else
+# define DEBUG_PRINT(x) do {} while (0)
+#endif
 
 #include <heap.h>
 #include <platform.h>
-#include <stdio.h>
 
 /*****************************/
 /* Smaller Utility Functions */
@@ -288,13 +293,13 @@ void heap_show(heap_t *heap, int size){
   heap_flags_t curr_flags = heap->value_flags[idx];
 
   for (heap_index i = 0; i < num_cells; i ++) {
-    printf("| (%u,%u) | (%u, %u) | -> ",
-           curr.fst, curr.snd, curr_flags.fst, curr_flags.snd);
+    DEBUG_PRINT(("| (%u,%u) | (%u, %u) | -> ",
+                curr.fst, curr.snd, curr_flags.fst, curr_flags.snd));
     idx++;
     curr = heap->cells[idx];
     curr_flags = heap->value_flags[idx];
 
   }
 
-  printf("HEAP_END\n");
+  DEBUG_PRINT(("HEAP_END\n"));
 }

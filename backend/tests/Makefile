@@ -29,6 +29,9 @@ TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I.
 
 all: $(TEST_EXECS) $(OBJECTS)
 
+debug: CCFLAGS += -DDEBUG
+debug: $(TEST_EXECS) $(OBJECTS)
+
 %.exe: %.c $(OBJECTS)
 	$(CC) $(TEST_INCLUDES) $(CCFLAGS) $(OBJECTS) $< -o $@ 
 

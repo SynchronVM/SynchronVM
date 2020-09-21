@@ -21,10 +21,15 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  */
 /* SOFTWARE.									  */
 /**********************************************************************************/
+#ifdef DEBUG
+#include <stdio.h>
+# define DEBUG_PRINT(x) printf x
+#else
+# define DEBUG_PRINT(x) do {} while (0)
+#endif
 
 #include <CAM.h>
 #include <VMC.h>
-#include <stdio.h>
 
 /* Return type of an eval function indicates the number of */
 /* bytes that were read from the bc_rest array. In case of */
@@ -139,7 +144,7 @@ int eval_push(vmc_t *vmc, uint8_t *bc_rest) {
   cam_register_t e = vmc->vm.env;
   int i = stack_push(&vmc->vm.stack, e);
   if(i == 0){
-    printf("Stack push has failed");
+    DEBUG_PRINT(("Stack push has failed"));
     return -1;
   }
   (void)bc_rest;
@@ -176,12 +181,12 @@ int eval_cons(vmc_t *vmc, uint8_t *bc_rest) {
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
   if(i == 0){
-    printf("Stack pop has failed");
+    DEBUG_PRINT(("Stack pop has failed"));
     return -1;
   }
   heap_index hi = heap_allocate(&vmc->heap);
   if(hi == HEAP_NULL){
-    printf("Heap allocation has failed");
+    DEBUG_PRINT(("Heap allocation has failed"));
     return -1;
   } else {
     // Assuming we have space for atleast one tuple

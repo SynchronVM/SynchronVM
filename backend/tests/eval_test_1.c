@@ -142,6 +142,7 @@ bool eval_cons_test(){
     printf("cons operation has failed\n");
     return false;
   }
+
   /* heap_show(&vmc.heap, 3); */ //Debugging
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
