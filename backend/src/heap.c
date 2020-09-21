@@ -24,6 +24,7 @@
 
 #include <heap.h>
 #include <platform.h>
+#include <stdio.h>
 
 /*****************************/
 /* Smaller Utility Functions */
@@ -264,4 +265,36 @@ void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
       heap_set_snd(heap, prev_val, nv);
     }
   }
+}
+
+/*******************/
+/* Heap Debugging */
+/*******************/
+
+/* Inspecting the structure of the heap is sometimes */
+/* useful for debugging. The second argument specifies */
+/* the number of cells that should be displayed */
+void heap_show(heap_t *heap, int size){
+  int num_cells;
+  if(size > heap->size_cells){
+    num_cells = heap->size_cells;
+  } else if(size < 0){
+    num_cells = 0;
+  } else {
+    num_cells = size;
+  }
+  heap_index idx = 0;
+  heap_cell_t curr = heap->cells[idx];
+  heap_flags_t curr_flags = heap->value_flags[idx];
+
+  for (heap_index i = 0; i < num_cells; i ++) {
+    printf("| (%u,%u) | (%u, %u) | -> ",
+           curr.fst, curr.snd, curr_flags.fst, curr_flags.snd);
+    idx++;
+    curr = heap->cells[idx];
+    curr_flags = heap->value_flags[idx];
+
+  }
+
+  printf("HEAP_END\n");
 }
