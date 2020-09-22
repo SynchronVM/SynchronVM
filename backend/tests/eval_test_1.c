@@ -35,6 +35,7 @@ int eval_push(vmc_t *vmc, uint8_t *bc_rest);
 int eval_cons(vmc_t *vmc, uint8_t *bc_rest);
 int eval_cur(vmc_t *vmc, uint8_t *bc_rest);
 int eval_acc(vmc_t *vmc, uint8_t *bc_rest);
+int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -195,7 +196,7 @@ bool eval_cur_test(){
   }
 }
 
-bool eval_acc_test(){
+bool eval_rest_test(){
 
 
   //Initializing a mock heap
@@ -244,7 +245,7 @@ bool eval_acc_test(){
   /* Step 1 env -> 1 */
   /* Step 2 env -> 2 */
   /* Step 3 env -> 3 done */
-  int i = eval_acc(&vmc, code);
+  int i = eval_rest(&vmc, code);
   if(i != 2){ // read 2 bytes
     printf("cur l operation has failed\n");
     return false;
@@ -283,8 +284,8 @@ int main(int argc, char **argv) {
   test_stat("eval_cons", &total, t4);
   bool t5 = eval_cur_test();
   test_stat("eval_cur", &total, t5);
-  bool t6 = eval_acc_test();
-  test_stat("eval_acc", &total, t6  );
+  bool t6 = eval_rest_test();
+  test_stat("eval_rest", &total, t6);
 
   printf("Passed total : %d tests\n", total);
   return 1;

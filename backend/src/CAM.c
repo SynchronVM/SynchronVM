@@ -129,6 +129,16 @@ int eval_snd(vmc_t *vmc, uint8_t *bc_rest) {
 
 
 int eval_acc(vmc_t *vmc, uint8_t *bc_rest) {
+  /* uint8_t acc_n = bc_rest[0]; */
+  /* for(unsigned int i = 0; i < acc_n; i++){ */
+  /*   cam_register_t e = vmc->vm.env; */
+  /*   cam_value_t v = heap_fst(&vmc->heap, (heap_index)e.value); */
+  /*   vmc->vm.env = v; */
+  /* } */
+  /* return 2; */
+}
+
+int eval_rest(vmc_t *vmc, uint8_t *bc_rest)  {
   uint8_t acc_n = bc_rest[0];
   for(unsigned int i = 0; i < acc_n; i++){
     cam_register_t e = vmc->vm.env;
@@ -136,12 +146,6 @@ int eval_acc(vmc_t *vmc, uint8_t *bc_rest) {
     vmc->vm.env = v;
   }
   return 2;
-}
-
-int eval_rest(vmc_t *vmc, uint8_t *bc_rest)  {
-  (void)vmc;
-  (void)bc_rest;
-  return 1;
 }
 
 int eval_push(vmc_t *vmc, uint8_t *bc_rest) {
