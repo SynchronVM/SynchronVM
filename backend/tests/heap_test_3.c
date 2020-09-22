@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  cam_value_t v;
+
   heap_t *hptr = &vm_containers[VMC_CONTAINER_1].heap;
 
   printf("Heap size bytes: %u\n", hptr->size_bytes);
@@ -68,7 +70,9 @@ int main(int argc, char **argv) {
   printf("\n");
 
   printf("Marking indices[4]\n");
-  heap_mark(hptr, indices[4], VALUE_PTR_BIT);
+  v.value = indices[4];
+  v.flags = VALUE_PTR_BIT;
+  heap_mark(hptr,v);
 
   printf("Resetting sweep position\n");
   hptr->sweep_pos = 0;

@@ -108,8 +108,12 @@ static inline void clr_gc_flag(heap_t *heap, heap_index i) {
   heap->flags[i] &= ~HEAP_GC_FLAG_BIT;
 }
 
-static inline int is_atomic(value_flags_t flags) {
-  return (flags & VALUE_PTR_BIT) == 0;
+static inline int is_atomic(cam_value_t v) {
+  return (v.flags & VALUE_PTR_BIT) == 0;
+}
+
+static inline int is_pointer(cam_value_t v) {
+  return (v.flags & VALUE_PTR_BIT);
 }
 
 static inline int get_gc_mark(heap_t *heap, heap_index i) {
@@ -193,81 +197,58 @@ heap_index heap_allocate(heap_t *heap) {
 // Deutsch-Schorr-Waite pointer reversal marking
 // Todo: lots of testing and tweaking until it works.
 
-void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
-
+//void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
+void heap_mark(heap_t *heap, cam_value_t v) {
   bool done = false;
-
-  UINT curr_val = value;
-  value_flags_t curr_flags = v_flags;
-  UINT prev_val = HEAP_NULL;
-  value_flags_t prev_flags = VALUE_PTR_BIT;
+  cam_value_t curr = v;
+  cam_value_t prev = get_cam_val(HEAP_NULL, VALUE_PTR_BIT);
 
   // Abort if value is not a pointer to a heap structure.
-  if (is_atomic(curr_flags)) return;
+  if (is_atomic(curr)) return;
 
   // curr_val is a pointer onto the heap.
-
   while (!done) {
 
     // Follow left pointers
-    while (curr_flags & VALUE_PTR_BIT &&
-	   (heap_index)curr_val != HEAP_NULL &&
-	   !get_gc_mark(heap, curr_val)) {
-      set_gc_mark(heap, curr_val);
-      if (!is_atomic(curr_flags)) {
-        cam_value_t hf = heap_fst(heap, curr_val);
-        UINT next_val = hf.value;
-        value_flags_t next_flags = hf.flags;
-
-        cam_value_t pv = get_cam_val(prev_val, prev_flags);
-        heap_set_fst(heap, curr_val, pv);
-
-        prev_val   = curr_val;
-        prev_flags = curr_flags;
-
-        curr_val   = next_val;
-        curr_flags = next_flags;
+    while (is_pointer(curr) &&
+	   (heap_index)curr.value != HEAP_NULL &&
+	   !get_gc_mark(heap, curr.value)) {
+      set_gc_mark(heap, curr.value);
+      if (!is_atomic(curr)) {
+	cam_value_t next = heap_fst(heap, curr.value);;
+        cam_value_t pv = prev;
+        heap_set_fst(heap, curr.value, pv);
+        prev = curr;
+        curr = next;
       }
     }
 
-    while  (prev_flags & VALUE_PTR_BIT &&
-	    (heap_index)prev_val != HEAP_NULL &&
-	    get_gc_flag(heap, prev_val)) {
-      clr_gc_flag(heap, prev_val);
+    while  (is_pointer(prev) &&
+	    (heap_index)prev.value != HEAP_NULL &&
+	    get_gc_flag(heap, prev.value)) {
+      clr_gc_flag(heap, prev.value);
 
-      cam_value_t hs = heap_snd(heap, prev_val);
-      UINT next_val = hs.value;
-      value_flags_t next_flags = hs.flags;
+      cam_value_t next = heap_snd(heap, prev.value);
 
-      cam_value_t cv = get_cam_val(curr_val, curr_flags);
-      heap_set_snd(heap, prev_val, cv);
+      heap_set_snd(heap, prev.value, curr);
+      curr = prev;
+      prev = next;
 
-      curr_val = prev_val;
-      curr_flags = prev_flags;
-
-      prev_val = next_val;
-      prev_flags = next_flags;
     }
 
-    if (prev_flags & VALUE_PTR_BIT &&
-	(heap_index)prev_val == HEAP_NULL){
+    if (is_pointer(prev) &&
+	(heap_index)prev.value == HEAP_NULL){
       done = true;
 
     } else {
-      set_gc_flag(heap, prev_val);
-      cam_value_t hf = heap_fst(heap, prev_val);
-      UINT next_val = hf.value;
-      value_flags_t next_flags = hf.flags;
+      set_gc_flag(heap, prev.value);
+      cam_value_t next = heap_fst(heap, prev.value);
+      heap_set_fst(heap, prev.value, curr);
 
-      cam_value_t cv = get_cam_val(curr_val, curr_flags);
-      heap_set_fst(heap, prev_val, cv);
+      cam_value_t hs = heap_snd(heap, prev.value);
+      curr = hs;
 
-      cam_value_t hs = heap_snd(heap, prev_val);
-      curr_val = hs.value;
-      curr_flags = hs.flags;
-
-      cam_value_t nv = get_cam_val(next_val, next_flags);
-      heap_set_snd(heap, prev_val, nv);
+      heap_set_snd(heap, prev.value, next);
     }
   }
 }

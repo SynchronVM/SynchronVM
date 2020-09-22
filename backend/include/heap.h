@@ -73,5 +73,5 @@ extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
 extern void heap_show(heap_t *heap, int size);
 
 extern heap_index heap_allocate(heap_t *heap);
-extern void heap_mark(heap_t *heap, UINT value, value_flags_t v_flags);
+extern void heap_mark(heap_t *heap, cam_value_t v);
 #endif
