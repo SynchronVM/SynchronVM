@@ -163,8 +163,20 @@ int eval_push(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_swap(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  int j = stack_push(&vmc->vm.stack, e);
+  if(j == 0){
+    DEBUG_PRINT(("Stack push has failed"));
+    return -1;
+  }
+  vmc->vm.env = hold_reg;
   return 1;
 }
 
