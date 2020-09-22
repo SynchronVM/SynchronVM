@@ -200,9 +200,21 @@ int eval_cons(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_cur(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
-  (void)bc_rest;
-  return 1;
+  cam_register_t e = vmc->vm.env;
+  uint8_t label = bc_rest[0];
+  cam_value_t cam_label =
+    { .value = (UINT)label, .flags = 0 };
+  heap_index hi = heap_allocate(&vmc->heap);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    return -1;
+  } else {
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->vm.env = env_pointer;
+    heap_set(&vmc->heap, hi, e, cam_label);
+    return 2; // read 2 bytes
+  }
 }
 
 int eval_pack(vmc_t *vmc, uint8_t *bc_rest) {
