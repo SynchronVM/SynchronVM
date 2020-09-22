@@ -36,6 +36,7 @@ int eval_cons(vmc_t *vmc, uint8_t *bc_rest);
 int eval_cur(vmc_t *vmc, uint8_t *bc_rest);
 int eval_acc(vmc_t *vmc, uint8_t *bc_rest);
 int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
+int eval_skip(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -328,6 +329,16 @@ bool eval_rest_test(){
   }
 }
 
+bool eval_skip_test(){
+  int i = eval_skip(NULL, NULL);
+  if(i != 1){
+    printf("skip operation has failed\n");
+    return false;
+  } else {
+    return true;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -357,7 +368,9 @@ int main(int argc, char **argv) {
   test_stat("eval_acc", &total, t6);
   bool t7 = eval_rest_test();
   test_stat("eval_rest", &total, t7);
+  bool t8 = eval_rest_test();
+  test_stat("eval_rest", &total, t8);
 
-  printf("Passed total : %d/%d tests\n", total, 7);
+  printf("Passed total : %d/%d tests\n", total, 8);
   return 1;
 }
