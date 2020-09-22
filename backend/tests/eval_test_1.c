@@ -34,6 +34,7 @@ int eval_snd(vmc_t *vmc, uint8_t *bc_rest);
 int eval_push(vmc_t *vmc, uint8_t *bc_rest);
 int eval_cons(vmc_t *vmc, uint8_t *bc_rest);
 int eval_cur(vmc_t *vmc, uint8_t *bc_rest);
+int eval_acc(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -194,6 +195,69 @@ bool eval_cur_test(){
   }
 }
 
+bool eval_acc_test(){
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+  heap_index hi = heap_allocate(&h);
+  cam_value_t env_pointer =
+    { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+  if(hi == HEAP_NULL){
+    printf("Heap allocation has failed");
+  } else {
+    cam_value_t v1 = { .value = 1, .flags = VALUE_PTR_BIT};
+    heap_set_fst(&h, hi, v1);
+    hi = hi + 1;
+    cam_value_t v2 = { .value = 2, .flags = VALUE_PTR_BIT};
+    heap_set_fst(&h, hi, v2);
+    hi = hi + 1;
+    cam_value_t v3 = { .value = 3, .flags = VALUE_PTR_BIT};
+    heap_set_fst(&h, hi, v3);
+    hi = hi + 1;
+    cam_value_t v_actual = { .value = 40 }; // actual value
+    heap_set_fst(&h, hi, v_actual);
+
+    // Creates the following heap
+    /***************************************************************/
+    /* | (1,0) | (32768, 0) | -> | (2,2) | (32768, 32768) |  ->    */
+    /* | (3,3) | (32768, 32768) | -> | (40,4) | (0, 32768) | ->... */
+    /***************************************************************/
+  }
+
+
+
+
+  VM_t mockvm = { .env = env_pointer };
+  vmc_t vmc = { .vm = mockvm, .heap = h};
+  uint8_t code [] = { 3 };
+
+
+  /* env starts with 0 */
+  /* acc 3 */
+  /* Step 1 env -> 1 */
+  /* Step 2 env -> 2 */
+  /* Step 3 env -> 3 done */
+  int i = eval_acc(&vmc, code);
+  if(i != 2){ // read 2 bytes
+    printf("cur l operation has failed\n");
+    return false;
+  }
+
+  if(vmc.vm.env.value == 3){
+    free(hm);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -219,6 +283,8 @@ int main(int argc, char **argv) {
   test_stat("eval_cons", &total, t4);
   bool t5 = eval_cur_test();
   test_stat("eval_cur", &total, t5);
+  bool t6 = eval_acc_test();
+  test_stat("eval_acc", &total, t6  );
 
   printf("Passed total : %d tests\n", total);
   return 1;
