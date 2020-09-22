@@ -68,18 +68,18 @@ cam_value_t heap_snd(heap_t *heap, heap_index i) {
 void heap_set(heap_t *heap, heap_index i, cam_value_t f, cam_value_t s) {
   heap->cells[i].fst = f.value;
   heap->cells[i].snd = s.value;
-  heap->value_flags[i].fst |= f.flags;
-  heap->value_flags[i].snd |= s.flags;
+  heap->value_flags[i].fst = f.flags;
+  heap->value_flags[i].snd = s.flags;
 }
 
 void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value) {
   heap->cells[i].fst = value.value;
-  heap->value_flags[i].fst |= value.flags;
+  heap->value_flags[i].fst = value.flags;
 }
 
 void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value) {
   heap->cells[i].snd = value.value;
-  heap->value_flags[i].snd |= value.flags;
+  heap->value_flags[i].snd = value.flags;
 }
 
 /* unsigned int heap_num_free(heap_t *heap) { */
