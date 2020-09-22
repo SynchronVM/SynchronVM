@@ -158,9 +158,6 @@ bool eval_cons_test(){
   }
 }
 
-/* TODO: This test should be made such that the */
-/* environment register points to a thunk on the  */
-/* heap and then eval_cur should be evaluated */
 bool eval_cur_test(){
 
   //Value to be held in the environment register
