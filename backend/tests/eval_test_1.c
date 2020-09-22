@@ -33,6 +33,7 @@ int eval_fst(vmc_t *vmc, uint8_t *bc_rest);
 int eval_snd(vmc_t *vmc, uint8_t *bc_rest);
 int eval_push(vmc_t *vmc, uint8_t *bc_rest);
 int eval_cons(vmc_t *vmc, uint8_t *bc_rest);
+int eval_cur(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -155,6 +156,45 @@ bool eval_cons_test(){
   }
 }
 
+/* TODO: This test should be made such that the */
+/* environment register points to a thunk on the  */
+/* heap and then eval_cur should be evaluated */
+bool eval_cur_test(){
+
+  //Value to be held in the environment register
+  cam_value_t v = { .value = 10 };
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+
+  VM_t mockvm = { .env = v };
+  vmc_t vmc = { .vm = mockvm, .heap = h};
+  uint8_t code [] = { 1 };
+  int i = eval_cur(&vmc, code);
+  if(i == -1){
+    printf("cur l operation has failed\n");
+    return false;
+  }
+
+  //heap_show(&vmc.heap, 3);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  if(fst.value == 10 && snd.value == 1){
+    free(hm);
+    return true;
+  } else {
+    free(hm);
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -178,6 +218,8 @@ int main(int argc, char **argv) {
   test_stat("eval_push", &total, t3);
   bool t4 = eval_cons_test();
   test_stat("eval_cons", &total, t4);
+  bool t5 = eval_cur_test();
+  test_stat("eval_cur", &total, t5);
 
   printf("Passed total : %d tests\n", total);
   return 1;
