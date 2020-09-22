@@ -52,7 +52,7 @@ bool eval_fst_test(){
   vmc.vm.env = cv; // set address at the environment register
   int i = eval_fst(&vmc, NULL);
   (void)i;
-  if(vmc.vm.env.value == 5){
+  if(vmc.vm.env.value == hc2.fst){
     return true;
   } else {
     return false;
@@ -72,7 +72,7 @@ bool eval_snd_test(){
   vmc.vm.env = cv; // set address at the environment register
   int i = eval_snd(&vmc, NULL);
   (void)i;
-  if(vmc.vm.env.value == 5){
+  if(vmc.vm.env.value == hc2.snd){
     return true;
   } else {
     return false;
@@ -106,7 +106,7 @@ bool eval_push_test(){
     return false;
   }
   free(m);
-  if(dummyreg.value == 10){
+  if(dummyreg.value == cv.value){
     return true;
   } else {
     return false;
@@ -116,10 +116,10 @@ bool eval_push_test(){
 bool eval_cons_test(){
 
   //Value to be held in the environment register
-  cam_value_t v2 = { .value = 10, .flags = 0 };
+  cam_value_t env_v = { .value = 10, .flags = 0 };
 
   //Initializing a mock stack
-  cam_value_t v1 = { .value = 20, .flags = 0 };
+  cam_value_t st_v = { .value = 20, .flags = 0 };
   cam_stack_t s = { .size = 0 };
   uint8_t *m = malloc(256);
   int s_init = stack_init(&s, m, 256);
@@ -127,7 +127,7 @@ bool eval_cons_test(){
     printf("Stack initialization has failed");
     return false;
   }
-  int y = stack_push(&s, v1);
+  int y = stack_push(&s, st_v);
   if (y == 0){
     printf("Stack push has failed");
     return false;
@@ -142,7 +142,7 @@ bool eval_cons_test(){
     return false;
   }
 
-  VM_t mockvm = { .env = v2, .stack = s };
+  VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm, .heap = h};
   int i = eval_cons(&vmc, NULL);
   if(i == -1){
@@ -154,7 +154,7 @@ bool eval_cons_test(){
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
   free(m); free(hm);
-  if(fst.value == 20 && snd.value == 10){
+  if(fst.value == st_v.value && snd.value == env_v.value){
     return true;
   } else {
     return false;
@@ -189,7 +189,7 @@ bool eval_cur_test(){
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
   free(hm);
-  if(fst.value == 10 && snd.value == 1){
+  if(fst.value == v.value && snd.value == code[0]){
     return true;
   } else {
     return false;
