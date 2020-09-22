@@ -153,11 +153,10 @@ bool eval_cons_test(){
   /* heap_show(&vmc.heap, 3); */ //Debugging
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  free(m); free(hm);
   if(fst.value == 20 && snd.value == 10){
-    free(m); free(hm);
     return true;
   } else {
-    free(m); free(hm);
     return false;
   }
 }
@@ -189,11 +188,10 @@ bool eval_cur_test(){
   //heap_show(&vmc.heap, 3);
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  free(hm);
   if(fst.value == 10 && snd.value == 1){
-    free(hm);
     return true;
   } else {
-    free(hm);
     return false;
   }
 }
@@ -256,8 +254,8 @@ bool eval_acc_test(){
     return false;
   }
 
+  free(hm);
   if(vmc.vm.env.value == 40){
-    free(hm);
     return true;
   } else {
     return false;
@@ -322,8 +320,8 @@ bool eval_rest_test(){
     return false;
   }
 
+  free(hm);
   if(vmc.vm.env.value == 3){
-    free(hm);
     return true;
   } else {
     return false;
