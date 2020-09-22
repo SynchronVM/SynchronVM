@@ -193,8 +193,9 @@ int eval_loadb(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_clear(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+  vmc->vm.env = empty_tuple;
   return 1;
 }
 

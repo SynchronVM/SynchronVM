@@ -38,6 +38,7 @@ int eval_acc(vmc_t *vmc, uint8_t *bc_rest);
 int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
 int eval_skip(vmc_t *vmc, uint8_t *bc_rest);
 int eval_swap(vmc_t *vmc, uint8_t *bc_rest);
+int eval_clear(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -380,6 +381,24 @@ bool eval_swap_test(){
   }
 }
 
+bool eval_clear_test(){
+  cam_value_t env_v = { .value = 20, .flags = 0 };
+
+  VM_t mockvm = { .env = env_v };
+  vmc_t vmc = { .vm = mockvm };
+
+  int i = eval_clear(NULL, NULL);
+  if(i != 1){
+    printf("clear operation has failed\n");
+    return false;
+  }
+  if(vmc.vm.env.value == 0 && vmc.vm.env.flags == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -413,7 +432,9 @@ int main(int argc, char **argv) {
   test_stat("eval_skip", &total, t8);
   bool t9 = eval_swap_test();
   test_stat("eval_swap", &total, t9);
+  bool t10 = eval_swap_test();
+  test_stat("eval_swap", &total, t10);
 
-  printf("Passed total : %d/%d tests\n", total, 9);
+  printf("Passed total : %d/%d tests\n", total, 10);
   return 1;
 }
