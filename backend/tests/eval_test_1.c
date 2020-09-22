@@ -205,6 +205,7 @@ bool eval_acc_test(){
   int h_init = heap_init(&h, hm, 1024);
   if (h_init == 0){
     printf("Heap initialization has failed");
+    free(hm);
     return false;
   }
   heap_index hi = heap_allocate(&h);
@@ -249,6 +250,7 @@ bool eval_acc_test(){
   int i = eval_acc(&vmc, code);
   if(i != 2){ // read 2 bytes
     printf("cur l operation has failed\n");
+    free(hm);
     return false;
   }
 
@@ -270,6 +272,7 @@ bool eval_rest_test(){
   int h_init = heap_init(&h, hm, 1024);
   if (h_init == 0){
     printf("Heap initialization has failed");
+    free(hm);
     return false;
   }
   heap_index hi = heap_allocate(&h);
@@ -313,6 +316,7 @@ bool eval_rest_test(){
   int i = eval_rest(&vmc, code);
   if(i != 2){ // read 2 bytes
     printf("cur l operation has failed\n");
+    free(hm);
     return false;
   }
 
