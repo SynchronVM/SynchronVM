@@ -82,6 +82,7 @@ bool eval_push_test(){
   int w = stack_init(&s, m, 256);
   if (w == 0){
     printf("Stack initialization has failed");
+    free(m);
     return false;
   }
   VM_t mockvm = { .env = cv, .stack = s };
@@ -91,18 +92,19 @@ bool eval_push_test(){
   int i = eval_push(&vmc, NULL);
   if (i == -1){
     printf("push operation has failed");
+    free(m);
     return false;
   }
   int j = stack_pop(&vmc.vm.stack, &dummyreg);
   if (j == 0){
     printf("Stack pop has failed");
+    free(m);
     return false;
   }
+  free(m);
   if(dummyreg.value == 10){
-    free(m);
     return true;
   } else {
-    free(m);
     return false;
   }
 }

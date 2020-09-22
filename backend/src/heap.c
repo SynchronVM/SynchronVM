@@ -82,16 +82,6 @@ void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value) {
   heap->value_flags[i].snd = value.flags;
 }
 
-/* unsigned int heap_num_free(heap_t *heap) { */
-/*   heap_index curr = heap->free_list; */
-/*   unsigned int n = 0; */
-/*   while (curr != HEAP_NULL) { */
-/*     curr = heap_snd(heap, curr); */
-/*     n ++; */
-/*   } */
-/*   return n; */
-/* } */
-
 static inline void set_gc_mark(heap_t *heap, heap_index i) {
   heap->flags[i] |= HEAP_GC_MARK_BIT;
 }
@@ -208,7 +198,6 @@ void heap_mark(heap_t *heap, cam_value_t v) {
 
   // curr_val is a pointer onto the heap.
   while (!done) {
-
     // Follow left pointers
     while (is_pointer(curr) &&
 	   (heap_index)curr.value != HEAP_NULL &&
@@ -222,32 +211,25 @@ void heap_mark(heap_t *heap, cam_value_t v) {
         curr = next;
       }
     }
-
     while  (is_pointer(prev) &&
 	    (heap_index)prev.value != HEAP_NULL &&
 	    get_gc_flag(heap, prev.value)) {
       clr_gc_flag(heap, prev.value);
-
       cam_value_t next = heap_snd(heap, prev.value);
-
       heap_set_snd(heap, prev.value, curr);
       curr = prev;
       prev = next;
 
     }
-
     if (is_pointer(prev) &&
 	(heap_index)prev.value == HEAP_NULL){
       done = true;
-
     } else {
       set_gc_flag(heap, prev.value);
       cam_value_t next = heap_fst(heap, prev.value);
       heap_set_fst(heap, prev.value, curr);
-
       cam_value_t hs = heap_snd(heap, prev.value);
       curr = hs;
-
       heap_set_snd(heap, prev.value, next);
     }
   }
