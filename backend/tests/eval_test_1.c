@@ -196,6 +196,71 @@ bool eval_cur_test(){
   }
 }
 
+bool eval_acc_test(){
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+  heap_index hi = heap_allocate(&h);
+  cam_value_t env_pointer =
+    { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+  if(hi == HEAP_NULL){
+    printf("Heap allocation has failed");
+  } else {
+    cam_value_t v1 = { .value = 1, .flags = VALUE_PTR_BIT};
+    heap_set_fst(&h, hi, v1);
+    hi = hi + 1;
+    cam_value_t v2 = { .value = 2, .flags = VALUE_PTR_BIT};
+    heap_set_fst(&h, hi, v2);
+    hi = hi + 1;
+    cam_value_t v3 = { .value = 3, .flags = VALUE_PTR_BIT};
+    heap_set_fst(&h, hi, v3);
+    hi = hi + 1;
+    cam_value_t v_actual = { .value = 40 }; // actual value
+    heap_set_snd(&h, hi, v_actual);
+
+    // Creates the following heap
+    /***************************************************************/
+    /* | (1,0) | (32768, 0) | -> | (2,2) | (32768, 32768) |  ->    */
+    /* | (3,3) | (32768, 32768) | -> | (0,40) | (0, 0) | ->... */
+    /***************************************************************/
+  }
+
+
+
+  /* heap_show(&h, 5); */
+  VM_t mockvm = { .env = env_pointer };
+  vmc_t vmc = { .vm = mockvm, .heap = h};
+  uint8_t code [] = { 3 };
+
+
+  /* env starts with 0 */
+  /* acc 3 */
+  /* Step 1 env -> 1 */
+  /* Step 2 env -> 2 */
+  /* Step 3 env -> 3 */
+  /* Step 4 env -> 40 done */
+  int i = eval_acc(&vmc, code);
+  if(i != 2){ // read 2 bytes
+    printf("cur l operation has failed\n");
+    return false;
+  }
+
+  if(vmc.vm.env.value == 40){
+    free(hm);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 bool eval_rest_test(){
 
 
@@ -234,14 +299,14 @@ bool eval_rest_test(){
 
 
 
-
+  /* heap_show(&h, 5); */
   VM_t mockvm = { .env = env_pointer };
   vmc_t vmc = { .vm = mockvm, .heap = h};
   uint8_t code [] = { 3 };
 
 
   /* env starts with 0 */
-  /* acc 3 */
+  /* rest 3 */
   /* Step 1 env -> 1 */
   /* Step 2 env -> 2 */
   /* Step 3 env -> 3 done */
@@ -284,9 +349,11 @@ int main(int argc, char **argv) {
   test_stat("eval_cons", &total, t4);
   bool t5 = eval_cur_test();
   test_stat("eval_cur", &total, t5);
-  bool t6 = eval_rest_test();
-  test_stat("eval_rest", &total, t6);
+  bool t6 = eval_acc_test();
+  test_stat("eval_acc", &total, t6);
+  bool t7 = eval_rest_test();
+  test_stat("eval_rest", &total, t7);
 
-  printf("Passed total : %d tests\n", total);
+  printf("Passed total : %d/%d tests\n", total, 7);
   return 1;
 }
