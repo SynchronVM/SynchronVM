@@ -388,7 +388,7 @@ bool eval_clear_test(){
   VM_t mockvm = { .env = env_v };
   vmc_t vmc = { .vm = mockvm };
 
-  int i = eval_clear(NULL, NULL);
+  int i = eval_clear(&vmc, NULL);
   if(i != 1){
     printf("clear operation has failed\n");
     return false;
@@ -467,8 +467,8 @@ int main(int argc, char **argv) {
   test_stat("eval_skip", &total, t8);
   bool t9 = eval_swap_test();
   test_stat("eval_swap", &total, t9);
-  bool t10 = eval_swap_test();
-  test_stat("eval_swap", &total, t10);
+  bool t10 = eval_clear_test();
+  test_stat("eval_clear", &total, t10);
   bool t11 = eval_addi_test();
   test_stat("eval_addi", &total, t11);
 
