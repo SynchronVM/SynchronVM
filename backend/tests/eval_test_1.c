@@ -39,6 +39,7 @@ int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
 int eval_skip(vmc_t *vmc, uint8_t *bc_rest);
 int eval_swap(vmc_t *vmc, uint8_t *bc_rest);
 int eval_clear(vmc_t *vmc, uint8_t *bc_rest);
+int eval_addi(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -353,7 +354,7 @@ bool eval_swap_test(){
   int s_p = stack_push(&s, st_v);
   if(s_p == 0){
     printf("Stack push has failed");
-    return -1;
+    return false;
   }
 
   VM_t mockvm = { .env = env_v, .stack = s };
@@ -399,6 +400,40 @@ bool eval_clear_test(){
   }
 }
 
+bool eval_addi_test(){
+  cam_value_t env_v = { .value = 15, .flags = 0 };
+  cam_value_t st_v  = { .value = 10, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  int i = eval_addi(&vmc, NULL);
+  if (i == -1){
+    printf("push operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(vmc.vm.env.value == env_v.value + st_v.value){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -434,7 +469,9 @@ int main(int argc, char **argv) {
   test_stat("eval_swap", &total, t9);
   bool t10 = eval_swap_test();
   test_stat("eval_swap", &total, t10);
+  bool t11 = eval_addi_test();
+  test_stat("eval_addi", &total, t11);
 
-  printf("Passed total : %d/%d tests\n", total, 10);
+  printf("Passed total : %d/%d tests\n", total, 11);
   return 1;
 }
