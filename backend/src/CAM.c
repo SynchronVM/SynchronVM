@@ -350,8 +350,19 @@ int eval_muli(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_mini(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value - e.value };
+  vmc->vm.env = final_value;
+  return 1;
+
   return 1;
 }
 
