@@ -59,6 +59,7 @@ data Exp = Var Var  -- variable
 data Sys = Sys2 BinOp Exp Exp -- BinOp
          | Sys1 UnaryOp Exp     -- UnaryOp
          | LInt Int32   -- Int s(0) in cam
+         | LFloat Float -- Float s(0) in cam
          | LBool Bool   -- Bool s(0) in cam
          deriving (Ord, Show, Eq)
 
@@ -193,6 +194,7 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
 codegen :: Exp -> Env -> Codegen CAM
 codegen (Var var) env = pure $! lookup var env 0
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
+codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
 codegen (Sys (Sys1 uop e)) env = do
   i1 <- codegen e env

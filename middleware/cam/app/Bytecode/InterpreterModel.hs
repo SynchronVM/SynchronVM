@@ -63,6 +63,7 @@ newtype Evaluate a =
 
 -- Val is basically Weak Head Normal Form
 data Val = VInt  Int32   -- constants s(0)
+         | VFloat Float  -- constants s(0)
          | VBool Bool    -- constants s(0)
          | VEmpty        -- empty tuple
          | VPair Val Val -- Pair
@@ -73,9 +74,10 @@ data Val = VInt  Int32   -- constants s(0)
 
 -- using Hinze's notation
 instance Show Val where
-  show (VInt i)  = show i
-  show (VBool b) = show b
-  show  VEmpty   = "()"
+  show (VInt i)   = show i
+  show (VFloat f) = show f
+  show (VBool b)  = show b
+  show  VEmpty    = "()"
   show (VPair v1 v2) =
     "(" <> show v1 <> ", " <> show v2 <> ")"
   show (VCon t v) =
@@ -132,6 +134,8 @@ eval = do
       do { incPC; swap; eval }
     QUOTE (LInt i)  ->
       do { incPC; loadi i; eval }
+    QUOTE (LFloat f)  ->
+      do { incPC; loadf f; eval }
     QUOTE (LBool b) ->
       do { incPC; loadb b; eval }
     CLEAR ->
@@ -267,6 +271,9 @@ swap = do
 loadi :: Int32 -> Evaluate ()
 loadi i = S.modify $ \s -> s { environment = VInt i }
 
+loadf :: Float -> Evaluate ()
+loadf f = S.modify $ \s -> s { environment = VFloat f }
+
 loadb :: Bool -> Evaluate ()
 loadb b = S.modify $ \s -> s { environment = VBool b }
 
@@ -314,21 +321,21 @@ binaryop bop = do
                          , stack = t
                          }
     PlusF -> do
-      let (VInt i1) = e -- XXX: Partial
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VInt (i2 + i1)
+      let (VFloat f1) = e -- XXX: Partial
+      let (VFloat f2) = h
+      S.modify $ \s -> s { environment = VFloat (f2 + f1)
                          , stack = t
                          }
     MultiplyF -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VInt (i2 * i1)
+      let (VFloat f1) = e
+      let (VFloat f2) = h
+      S.modify $ \s -> s { environment = VFloat (f2 * f1)
                          , stack = t
                          }
     MinusF -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VInt (i2 - i1)
+      let (VFloat f1) = e
+      let (VFloat f2) = h
+      S.modify $ \s -> s { environment = VFloat (f2 - f1)
                          , stack = t
                          }
     BGT -> do
