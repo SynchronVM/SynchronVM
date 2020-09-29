@@ -30,6 +30,7 @@
 
 #include <CAM.h>
 #include <VMC.h>
+#include <string.h>
 
 /* Return type of an eval function indicates the number of */
 /* bytes that were read from the bc_rest array. In case of */
@@ -368,13 +369,26 @@ int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
     { .flags = 0, .value = hold_reg.value - e.value };
   vmc->vm.env = final_value;
   return 1;
-
-  return 1;
 }
 
 int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  INT temp1;
+  INT temp2;
+  INT temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 + temp2;
+  memcpy(&final_value.value, &temp3, sizeof(INT));
+  vmc->vm.env = final_value;
   return 1;
 }
 
