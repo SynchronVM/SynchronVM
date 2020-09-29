@@ -457,14 +457,44 @@ int eval_addf(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 int eval_mulf(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 * temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
   return 1;
 }
 
 int eval_minf(vmc_t *vmc, uint8_t *bc_rest) {
-  (void)vmc;
   (void)bc_rest;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 - temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
   return 1;
 }
 

@@ -48,6 +48,8 @@ int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_addf(vmc_t *vmc, uint8_t *bc_rest);
+int eval_mulf(vmc_t *vmc, uint8_t *bc_rest);
+int eval_minf(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -664,6 +666,84 @@ bool eval_addf_test(){
   }
 }
 
+bool eval_mulf_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  int i = eval_mulf(&vmc, NULL);
+  if (i == -1){
+    printf("push operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val * e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_minf_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  int i = eval_minf(&vmc, NULL);
+  if (i == -1){
+    printf("push operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val - e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -714,7 +794,11 @@ int main(int argc, char **argv) {
   test_stat("eval_min_signedi", &total, t16);
   bool t17 = eval_addf_test();
   test_stat("eval_addf", &total, t17);
+  bool t18 = eval_mulf_test();
+  test_stat("eval_mulf", &total, t18);
+  bool t19 = eval_minf_test();
+  test_stat("eval_minf", &total, t19);
 
-  printf("Passed total : %d/%d tests\n", total, 17);
+  printf("Passed total : %d/%d tests\n", total, 19);
   return 1;
 }
