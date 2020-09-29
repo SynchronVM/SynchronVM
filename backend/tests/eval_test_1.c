@@ -45,6 +45,8 @@ int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -431,7 +433,7 @@ bool eval_add_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value == env_v.value + st_v.value){
+  if(vmc.vm.env.value ==  st_v.value + env_v.value){
     return true;
   } else {
     return false;
@@ -464,7 +466,7 @@ bool eval_mul_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value == env_v.value * st_v.value){
+  if(vmc.vm.env.value ==  st_v.value * env_v.value){
     return true;
   } else {
     return false;
@@ -537,7 +539,85 @@ bool eval_add_signedi_test(){
   free(m);
   INT result;
   memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
-  if(result == e_val + s_val){
+  if(result == s_val + e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_mul_signedi_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  INT e_val = -15;
+  INT s_val = -10;
+  memcpy(&env_v.value, &e_val, sizeof(INT));
+  memcpy(&st_v.value, &s_val, sizeof(INT));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  int i = eval_mul_signedi(&vmc, NULL);
+  if (i == -1){
+    printf("push operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  INT result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val * e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_min_signedi_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  INT e_val = -15;
+  INT s_val = -10;
+  memcpy(&env_v.value, &e_val, sizeof(INT));
+  memcpy(&st_v.value, &s_val, sizeof(INT));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  int i = eval_min_signedi(&vmc, NULL);
+  if (i == -1){
+    printf("push operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  INT result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val - e_val){
     return true;
   } else {
     return false;
@@ -588,7 +668,11 @@ int main(int argc, char **argv) {
   test_stat("eval_min_unsignedi", &total, t13);
   bool t14 = eval_add_signedi_test();
   test_stat("eval_add_signedi", &total, t14);
+  bool t15 = eval_mul_signedi_test();
+  test_stat("eval_mul_signedi", &total, t15);
+  bool t16 = eval_min_signedi_test();
+  test_stat("eval_min_signedi", &total, t16);
 
-  printf("Passed total : %d/%d tests\n", total, 14);
+  printf("Passed total : %d/%d tests\n", total, 16);
   return 1;
 }
