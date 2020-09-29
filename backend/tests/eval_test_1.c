@@ -39,9 +39,9 @@ int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
 int eval_skip(vmc_t *vmc, uint8_t *bc_rest);
 int eval_swap(vmc_t *vmc, uint8_t *bc_rest);
 int eval_clear(vmc_t *vmc, uint8_t *bc_rest);
-int eval_addi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_muli(vmc_t *vmc, uint8_t *bc_rest);
-int eval_mini(vmc_t *vmc, uint8_t *bc_rest);
+int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -402,7 +402,7 @@ bool eval_clear_test(){
   }
 }
 
-bool eval_addi_test(){
+bool eval_add_unsignedi_test(){
   cam_value_t env_v = { .value = 15, .flags = 0 };
   cam_value_t st_v  = { .value = 10, .flags = 0 };
   cam_stack_t s = { .size = 0 };
@@ -421,7 +421,7 @@ bool eval_addi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  int i = eval_addi(&vmc, NULL);
+  int i = eval_add_unsignedi(&vmc, NULL);
   if (i == -1){
     printf("push operation has failed");
     free(m);
@@ -435,7 +435,7 @@ bool eval_addi_test(){
   }
 }
 
-bool eval_muli_test(){
+bool eval_mul_unsignedi_test(){
   cam_value_t env_v = { .value = 15, .flags = 0 };
   cam_value_t st_v  = { .value = 10, .flags = 0 };
   cam_stack_t s = { .size = 0 };
@@ -454,7 +454,7 @@ bool eval_muli_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  int i = eval_muli(&vmc, NULL);
+  int i = eval_mul_unsignedi(&vmc, NULL);
   if (i == -1){
     printf("push operation has failed");
     free(m);
@@ -468,7 +468,7 @@ bool eval_muli_test(){
   }
 }
 
-bool eval_mini_test(){
+bool eval_min_unsignedi_test(){
   cam_value_t env_v = { .value = 15, .flags = 0 };
   cam_value_t st_v  = { .value = 10, .flags = 0 };
   cam_stack_t s = { .size = 0 };
@@ -487,7 +487,7 @@ bool eval_mini_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  int i = eval_mini(&vmc, NULL);
+  int i = eval_min_unsignedi(&vmc, NULL);
   if (i == -1){
     printf("push operation has failed");
     free(m);
@@ -537,12 +537,12 @@ int main(int argc, char **argv) {
   test_stat("eval_swap", &total, t9);
   bool t10 = eval_clear_test();
   test_stat("eval_clear", &total, t10);
-  bool t11 = eval_addi_test();
-  test_stat("eval_addi", &total, t11);
-  bool t12 = eval_muli_test();
-  test_stat("eval_muli", &total, t12);
-  bool t13 = eval_mini_test();
-  test_stat("eval_mini", &total, t13);
+  bool t11 = eval_add_unsignedi_test();
+  test_stat("eval_add_unsignedi", &total, t11);
+  bool t12 = eval_mul_unsignedi_test();
+  test_stat("eval_mul_unsignedi", &total, t12);
+  bool t13 = eval_min_unsignedi_test();
+  test_stat("eval_min_unsignedi", &total, t13);
 
   printf("Passed total : %d/%d tests\n", total, 13);
   return 1;

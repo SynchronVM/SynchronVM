@@ -61,9 +61,12 @@ int eval_abs(vmc_t *vmc, uint8_t *bc_rest);
 int eval_neg(vmc_t *vmc, uint8_t *bc_rest);
 int eval_not(vmc_t *vmc, uint8_t *bc_rest);
 int eval_dec(vmc_t *vmc, uint8_t *bc_rest);
-int eval_addi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_muli(vmc_t *vmc, uint8_t *bc_rest);
-int eval_mini(vmc_t *vmc, uint8_t *bc_rest);
+int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest);
+int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest);
 int eval_addf(vmc_t *vmc, uint8_t *bc_rest);
 int eval_mulf(vmc_t *vmc, uint8_t *bc_rest);
 int eval_minf(vmc_t *vmc, uint8_t *bc_rest);
@@ -98,9 +101,12 @@ eval_fun evaluators[] =
     eval_neg,
     eval_not,
     eval_dec,
-    eval_addi,
-    eval_muli,
-    eval_mini,
+    eval_add_unsignedi,
+    eval_mul_unsignedi,
+    eval_min_unsignedi,
+    eval_add_signedi,
+    eval_mul_signedi,
+    eval_min_signedi,
     eval_addf,
     eval_mulf,
     eval_minf,
@@ -319,7 +325,7 @@ int eval_dec(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_addi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
   (void)bc_rest;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -334,7 +340,7 @@ int eval_addi(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_muli(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
   (void)bc_rest;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -349,7 +355,7 @@ int eval_muli(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_mini(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
   (void)bc_rest;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -365,6 +371,25 @@ int eval_mini(vmc_t *vmc, uint8_t *bc_rest) {
 
   return 1;
 }
+
+int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest) {
+  (void)vmc;
+  (void)bc_rest;
+  return 1;
+}
+
+int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest) {
+  (void)vmc;
+  (void)bc_rest;
+  return 1;
+}
+
+int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest) {
+  (void)vmc;
+  (void)bc_rest;
+  return 1;
+}
+
 
 int eval_addf(vmc_t *vmc, uint8_t *bc_rest) {
   (void)vmc;
