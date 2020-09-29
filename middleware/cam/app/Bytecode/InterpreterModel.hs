@@ -368,6 +368,10 @@ binaryop bop = do
           S.modify $ \s -> s { environment = VBool (i2 == i1)
                              , stack = t
                              }
+        (VFloat f1, VFloat f2) ->
+          S.modify $ \s -> s { environment = VBool (f2 == f1)
+                             , stack = t
+                             }
         (VBool b1, VBool b2) ->
           S.modify $ \s -> s { environment = VBool (b2 == b1)
                              , stack = t
