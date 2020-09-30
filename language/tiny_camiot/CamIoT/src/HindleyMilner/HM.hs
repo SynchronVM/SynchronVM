@@ -20,6 +20,54 @@ import qualified Data.Set as Set
 import Data.Foldable (foldlM)
 
 
+
+class Unifyy a where
+    type Proof a
+    trivialy :: Proof a
+    unifyy   :: a -> a -> Maybe (Proof a)
+    refiney  :: Proof a -> a -> a
+    composey :: Proof a -> Proof a -> Proof a
+
+instance Unifyy a => Unifyy [a] where
+    type Proof [a] = Proof a
+    trivialy = trivialy @a
+    
+    unifyy [] []         = return $ trivialy @a
+    unifyy (a:as) (b:bs) = do
+        su1 <- unifyy @a a b
+        su2 <- unifyy (refiney su1 as) (refiney su1 bs)
+        return $ composey @a su2 su1
+    unifyy _ _ = Nothing
+
+    refiney p = map (refiney p)
+
+    composey = composey @a
+
+unifyOneOfy :: forall a b. Unifyy a => [(a,a)] -> Maybe (Proof a)
+unifyOneOfy []           = return $ trivialy @a
+unifyOneOfy [(c1,c2)]    = unifyy c1 c2
+unifyOneOfy ((c1,c2):cs) = case unifyy @a  c1 c2 of
+    Just s  -> return s
+    Nothing -> unifyOneOfy cs
+
+{-- | If you have collected a list of constraints, try to solve them one by one and return
+a proof if unification succeeded.
+-}
+runUnifyy :: forall a. Unifyy a => [(a,a)] -> Maybe (Proof a)
+runUnifyy a = runUnifyy' (a, trivialy @a)
+  where
+      {-- | Tries to unify a list of constraints. If successful, the proof will be
+      combined with the 'current' proof su, and the following constraints will be
+      refined before they are recursively unified themselves.
+      -}
+      runUnifyy' :: forall a. Unifyy a => ([(a,a)], Proof a) -> Maybe (Proof a)
+      runUnifyy' (cs, su) = case cs of
+          []            -> return su
+          ((a1,a2):cs') -> do
+              su1 <- unifyy @a a1 a2
+              let cs'' = map (\(x,y) -> (refiney su1 x, refiney su1 y)) cs'
+              runUnifyy' (cs'', composey @a  su1 su)
+
 {-- | An instance Unify a proof gives a way of unifying elements of type
 a where the proof of a successful unification is of type proof.
 -}
