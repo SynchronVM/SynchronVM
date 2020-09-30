@@ -36,46 +36,52 @@
 /* bytes that were read from the bc_rest array. In case of */
 /* error executing a function, it would return -1 */
 
-typedef int (*eval_fun) (vmc_t *vmc, uint8_t *bc_rest);
+/* Non control flow instructions return a pc_idx of -1 whereas */
+/* control flow instructions return the desired index of the global */
+/* byte array where the instruction is located. When making a jump */
+/* pc_idx is cast to a UINT and stored on the stack */
 
-int eval_fst(vmc_t *vmc, uint8_t *bc_rest);
-int eval_snd(vmc_t *vmc, uint8_t *bc_rest);
-int eval_acc(vmc_t *vmc, uint8_t *bc_rest);
-int eval_rest(vmc_t *vmc, uint8_t *bc_rest);
-int eval_push(vmc_t *vmc, uint8_t *bc_rest);
-int eval_swap(vmc_t *vmc, uint8_t *bc_rest);
-int eval_loadi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_loadb(vmc_t *vmc, uint8_t *bc_rest);
-int eval_clear(vmc_t *vmc, uint8_t *bc_rest);
-int eval_cons(vmc_t *vmc, uint8_t *bc_rest);
-int eval_cur(vmc_t *vmc, uint8_t *bc_rest);
-int eval_pack(vmc_t *vmc, uint8_t *bc_rest);
-int eval_skip(vmc_t *vmc, uint8_t *bc_rest);
-int eval_stop(vmc_t *vmc, uint8_t *bc_rest);
-int eval_app(vmc_t *vmc, uint8_t *bc_rest);
-int eval_return(vmc_t *vmc, uint8_t *bc_rest);
-int eval_call(vmc_t *vmc, uint8_t *bc_rest);
-int eval_goto(vmc_t *vmc, uint8_t *bc_rest);
-int eval_gotofalse(vmc_t *vmc, uint8_t *bc_rest);
-int eval_switch(vmc_t *vmc, uint8_t *bc_rest);
-int eval_abs(vmc_t *vmc, uint8_t *bc_rest);
-int eval_neg(vmc_t *vmc, uint8_t *bc_rest);
-int eval_not(vmc_t *vmc, uint8_t *bc_rest);
-int eval_dec(vmc_t *vmc, uint8_t *bc_rest);
-int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest);
-int eval_addf(vmc_t *vmc, uint8_t *bc_rest);
-int eval_mulf(vmc_t *vmc, uint8_t *bc_rest);
-int eval_minf(vmc_t *vmc, uint8_t *bc_rest);
-int eval_gt(vmc_t *vmc, uint8_t *bc_rest);
-int eval_lt(vmc_t *vmc, uint8_t *bc_rest);
-int eval_eq(vmc_t *vmc, uint8_t *bc_rest);
-int eval_ge(vmc_t *vmc, uint8_t *bc_rest);
-int eval_le(vmc_t *vmc, uint8_t *bc_rest);
+
+typedef int (*eval_fun) (vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+
+int eval_fst(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_snd(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_acc(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_rest(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_push(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_swap(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_loadi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_loadb(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_clear(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_cons(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_cur(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_pack(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_skip(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_stop(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_app(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_return(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_call(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_goto(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_gotofalse(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_switch(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_abs(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_neg(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_not(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_dec(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_addf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_mulf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_minf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_gt(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_lt(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_eq(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_ge(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+int eval_le(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
 
 eval_fun evaluators[] =
   { eval_fst,
@@ -118,16 +124,18 @@ eval_fun evaluators[] =
     eval_le };
 
 
-int eval_fst(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_fst(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_value_t v = heap_fst(&vmc->heap, (heap_index)e.value);
   vmc->vm.env = v;
   return 1;
 }
 
-int eval_snd(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_snd(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_value_t v = heap_snd(&vmc->heap, (heap_index)e.value);
   vmc->vm.env = v;
@@ -135,7 +143,8 @@ int eval_snd(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 
-int eval_acc(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_acc(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
+  *pc_idx = -1;
   uint8_t acc_n = bc_rest[0];
   for(unsigned int i = 0; i < acc_n; i++){
     cam_register_t e = vmc->vm.env;
@@ -144,11 +153,11 @@ int eval_acc(vmc_t *vmc, uint8_t *bc_rest) {
   }
   cam_value_t v = heap_snd(&vmc->heap, (heap_index)vmc->vm.env.value);
   vmc->vm.env = v;
-
   return 2;
 }
 
-int eval_rest(vmc_t *vmc, uint8_t *bc_rest)  {
+int eval_rest(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx)  {
+  *pc_idx = -1;
   uint8_t acc_n = bc_rest[0];
   for(unsigned int i = 0; i < acc_n; i++){
     cam_register_t e = vmc->vm.env;
@@ -158,19 +167,21 @@ int eval_rest(vmc_t *vmc, uint8_t *bc_rest)  {
   return 2;
 }
 
-int eval_push(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_push(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
+  (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   int i = stack_push(&vmc->vm.stack, e);
   if(i == 0){
     DEBUG_PRINT(("Stack push has failed"));
     return -1;
   }
-  (void)bc_rest;
   return 1;
 }
 
-int eval_swap(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_swap(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -187,27 +198,31 @@ int eval_swap(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_loadi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_loadi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_loadb(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_loadb(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_clear(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_clear(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_value_t empty_tuple = { .value = 0, .flags = 0 };
   vmc->vm.env = empty_tuple;
   return 1;
 }
 
-int eval_cons(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_cons(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -230,7 +245,8 @@ int eval_cons(vmc_t *vmc, uint8_t *bc_rest) {
   }
 }
 
-int eval_cur(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_cur(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   uint8_t label = bc_rest[0];
   cam_value_t cam_label =
@@ -248,86 +264,100 @@ int eval_cur(vmc_t *vmc, uint8_t *bc_rest) {
   }
 }
 
-int eval_pack(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_pack(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_skip(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_skip(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  *pc_idx = -1;
   return 1;
 }
 
-int eval_stop(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_stop(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_app(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_app(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_return(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_return(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_call(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_call(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_goto(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_goto(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_gotofalse(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_gotofalse(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_switch(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_switch(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_abs(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_abs(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_neg(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_neg(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_not(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_not(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_dec(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_dec(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -341,8 +371,9 @@ int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -356,8 +387,9 @@ int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -371,8 +403,9 @@ int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -392,8 +425,9 @@ int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -413,8 +447,9 @@ int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -435,8 +470,9 @@ int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest) {
 }
 
 
-int eval_addf(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_addf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -456,8 +492,9 @@ int eval_addf(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_mulf(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_mulf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -477,8 +514,9 @@ int eval_mulf(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_minf(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_minf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)bc_rest;
+  *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -498,32 +536,37 @@ int eval_minf(vmc_t *vmc, uint8_t *bc_rest) {
   return 1;
 }
 
-int eval_gt(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_gt(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_lt(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_lt(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_eq(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_eq(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_ge(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_ge(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
 
-int eval_le(vmc_t *vmc, uint8_t *bc_rest) {
+int eval_le(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   (void)vmc;
   (void)bc_rest;
+  (void)pc_idx;
   return 1;
 }
