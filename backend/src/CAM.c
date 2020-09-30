@@ -248,7 +248,7 @@ int eval_cons(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
 int eval_cur(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
   *pc_idx = -1;
   cam_register_t e = vmc->vm.env;
-  uint8_t label = bc_rest[0];
+  uint16_t label = (bc_rest[0] << 8) | bc_rest[1]; // merge 2 bytes
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
   heap_index hi = heap_allocate(&vmc->heap);
@@ -260,7 +260,7 @@ int eval_cur(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx) {
       { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
     vmc->vm.env = env_pointer;
     heap_set(&vmc->heap, hi, e, cam_label);
-    return 2; // read 2 bytes
+    return 3; // read 3 bytes
   }
 }
 

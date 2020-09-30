@@ -194,7 +194,7 @@ bool eval_cur_test(){
 
   VM_t mockvm = { .env = v };
   vmc_t vmc = { .vm = mockvm, .heap = h};
-  uint8_t code [] = { 1 };
+  uint8_t code [] = { 0, 1 };
   INT dummypc;
   int i = eval_cur(&vmc, code, &dummypc);
   if(i == -1){
@@ -206,7 +206,8 @@ bool eval_cur_test(){
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
   free(hm);
-  if(fst.value == v.value && snd.value == code[0]){
+  uint16_t merged_label = (code[0] << 8) | code[1];
+  if(fst.value == v.value && snd.value == merged_label){
     return true;
   } else {
     return false;
