@@ -371,16 +371,16 @@ an array of integers stored in the constants memory.
 | LOADB <\textcolor{blue}b>                                                                                                 | 0x07  | 1         | 2                                   |
 | CLEAR                                                                                                                     | 0x08  | 0         | 1                                   |
 | CONS                                                                                                                      | 0x09  | 0         | 1                                   |
-| CUR <\textcolor{blue}l>                                                                                                   | 0x0A  | 1         | 2                                   |
+| CUR <\textcolor{blue}l>                                                                                                   | 0x0A  | 1         | 3                                   |
 | PACK <\textcolor{blue}t>                                                                                                  | 0x0B  | 1         | 3                                   |
 | SKIP                                                                                                                      | 0x0C  | 0         | 1                                   |
 | STOP                                                                                                                      | 0x0D  | 0         | 1                                   |
 | APP                                                                                                                       | 0x0E  | 0         | 1                                   |
 | RETURN                                                                                                                    | 0x0F  | 0         | 1                                   |
-| CALL <\textcolor{blue}l>                                                                                                  | 0x10  | 1         | 2                                   |
-| GOTO <\textcolor{blue}l>                                                                                                  | ox11  | 1         | 2                                   |
-| GOTOFALSE <\textcolor{blue}l>                                                                                             | 0x12  | 1         | 2                                   |
-| SWITCH <\textcolor{blue}n> <\textcolor{blue}t~1~> <\textcolor{blue}l~1~> .. <\textcolor{blue}t~n~> <\textcolor{blue}l~n~>  | 0x13  | 1 + 2n    | 2 + 3n (max n = 256)                |
+| CALL <\textcolor{blue}l>                                                                                                  | 0x10  | 1         | 3                                   |
+| GOTO <\textcolor{blue}l>                                                                                                  | ox11  | 1         | 3                                   |
+| GOTOFALSE <\textcolor{blue}l>                                                                                             | 0x12  | 1         | 3                                   |
+| SWITCH <\textcolor{blue}n> <\textcolor{blue}t~1~> <\textcolor{blue}l~1~> .. <\textcolor{blue}t~n~> <\textcolor{blue}l~n~>  | 0x13  | 1 + 2n    | 2 + 4n (max n = 256)                |
 | ABS                                                                                                                       | 0x14  | 0         | 1                                   |
 | NEG                                                                                                                       | 0x15  | 0         | 1                                   |
 | NOT                                                                                                                       | 0x16  | 0         | 1                                   |
@@ -399,7 +399,7 @@ an array of integers stored in the constants memory.
 |                                                                                                                           |       |           |                                     |
 
 - <\textcolor{blue}n> - Positive ints - 1 byte long
-- <\textcolor{blue}l> - Positive ints for label numbers - 1 byte long
+- <\textcolor{blue}l> - Positive ints for label numbers - 2 bytes long
 - <\textcolor{blue}b> - Boolean 1 byte long; 7 bits wasted
 - <\textcolor{blue}t> - Tag for a constructor - 2 bytes long
 - <\textcolor{blue}i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long

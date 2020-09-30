@@ -84,20 +84,20 @@ LOADI <i>                      0x06FFFF                    3              Assume
 LOADB <b>                      0x07FF                      2              7 bits wasted as Boolean can be represented by 1 bit
 CLEAR                          0x08                        1
 CONS                           0x09                        1
-CUR   <l>                      0x0AFF                      2              Assumes a max of 256 labels; we should use 3 or 4 bytes instead
+CUR   <l>                      0x0AFFFF                    3              Assumes a max of 65536 labels; max 64KB
 PACK  <t>                      0x0BFFFF                    3              1 byte opcode; 2 bytes for tag encoded in hex, for ML/Haskell
                                                                           like langs with a lot of constructors, consider 3 or 4 bytes
 SKIP                           0x0C                        1
 STOP                           0x0D                        1
 APP                            0x0E                        1
 RETURN                         0x0F                        1
-CALL <l>                       0x10FF                      2
-GOTO <l>                       0x11FF                      2
-GOTOFALSE <l>                  0x12FF                      2
+CALL <l>                       0x10FFFF                    3
+GOTO <l>                       0x11FFFF                    3
+GOTOFALSE <l>                  0x12FFFF                    3
 
 
-SWITCH <n> <t> <l> ..          0x13FF...                   1 + 1 + 768    The size can have a max value of 256, 2 indices (tag (2 bytes), label(1 bytes))
-        ^   ^   ^                                                         hence 3 * 256 = 768; 1 byte for size; 1 for opcode. Note this is max possible size
+SWITCH <n> <t> <l> ..          0x13FF...                   1 + 1 + 1024   The size can have a max value of 256, 2 indices (tag (2 bytes), label(2 bytes))
+        ^   ^   ^                                                         hence 4 * 256 = 1024; 1 byte for size; 1 for opcode. Note this is max possible size
       size  | label index
          tag for
        constructors
@@ -121,7 +121,7 @@ LE                             0x22                        1
 
 
 * <n> - Positive ints - 1 byte long
-  <l> - Positive ints for label numbers - 1 byte long
+  <l> - Positive ints for label numbers - 2 bytes long
   <b> - Boolean 1 byte long; 7 bits wasted
   <t> - Tag for a constructor - 2 bytes long
   <i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long
