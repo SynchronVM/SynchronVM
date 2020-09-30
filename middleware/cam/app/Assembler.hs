@@ -255,11 +255,11 @@ assemble (i : is) =
       genLabel word label = do
         st <- gets symbolTable
         rs <- assemble is
-        pure $! word : byte (st ~> label) : rs
+        pure $! word : serializeToBytes (byte2 (st ~> label)) ++ rs
       genTagLabel tag label = do
        word8X2 <- modifyStringPool tag
        st <- gets symbolTable
-       pure $! word8X2 <~: byte (st ~> label)
+       pure $! word8X2 ++ serializeToBytes (byte2 (st ~> label))
 
 serializeToBytes :: (Binary a) => a -> [Word8]
 serializeToBytes a = B.unpack $ encode a
