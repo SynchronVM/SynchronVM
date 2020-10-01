@@ -31,25 +31,25 @@
 #include <string.h>
 
 
-int eval_fst(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_snd(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_push(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_cons(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_cur(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_acc(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_rest(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_skip(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_swap(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_clear(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_add_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_mul_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_min_unsignedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_add_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_mul_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_min_signedi(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_addf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_mulf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
-int eval_minf(vmc_t *vmc, uint8_t *bc_rest, INT *pc_idx);
+void eval_fst(vmc_t *vmc, INT *pc_idx);
+void eval_snd(vmc_t *vmc, INT *pc_idx);
+void eval_push(vmc_t *vmc, INT *pc_idx);
+void eval_cons(vmc_t *vmc, INT *pc_idx);
+void eval_cur(vmc_t *vmc, INT *pc_idx);
+void eval_acc(vmc_t *vmc, INT *pc_idx);
+void eval_rest(vmc_t *vmc, INT *pc_idx);
+void eval_skip(vmc_t *vmc, INT *pc_idx);
+void eval_swap(vmc_t *vmc, INT *pc_idx);
+void eval_clear(vmc_t *vmc, INT *pc_idx);
+void eval_add_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_mul_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_min_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_add_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_mul_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_min_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_addf(vmc_t *vmc, INT *pc_idx);
+void eval_mulf(vmc_t *vmc, INT *pc_idx);
+void eval_minf(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -62,9 +62,8 @@ bool eval_fst_test(){
   vmc_t vmc = { .heap = hp };
   cam_value_t cv = { .value = 1 };
   vmc.vm.env = cv; // set address at the environment register
-  INT dummypc;
-  int i = eval_fst(&vmc, NULL, &dummypc);
-  (void)i;
+  INT pc_idx = 0;
+  eval_fst(&vmc, &pc_idx);
   if(vmc.vm.env.value == hc2.fst){
     return true;
   } else {
@@ -83,9 +82,8 @@ bool eval_snd_test(){
   vmc_t vmc = { .heap = hp };
   cam_value_t cv = { .value = 1 };
   vmc.vm.env = cv; // set address at the environment register
-  INT dummypc;
-  int i = eval_snd(&vmc, NULL, &dummypc);
-  (void)i;
+  INT pc_idx = 0;
+  eval_snd(&vmc, &pc_idx);
   if(vmc.vm.env.value == hc2.snd){
     return true;
   } else {
@@ -107,9 +105,9 @@ bool eval_push_test(){
   vmc_t vmc = { .vm = mockvm };
 
   cam_register_t dummyreg = { .value = 0 };
-  INT dummypc;
-  int i = eval_push(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_push(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -159,9 +157,9 @@ bool eval_cons_test(){
 
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm, .heap = h};
-  INT dummypc;
-  int i = eval_cons(&vmc, NULL, &dummypc);
-  if(i == -1){
+  INT pc_idx = 0;
+  eval_cons(&vmc, &pc_idx);
+  if(pc_idx == -1){
     printf("cons operation has failed\n");
     return false;
   }
@@ -193,11 +191,11 @@ bool eval_cur_test(){
   }
 
   VM_t mockvm = { .env = v };
-  vmc_t vmc = { .vm = mockvm, .heap = h};
-  uint8_t code [] = { 0, 1 };
-  INT dummypc;
-  int i = eval_cur(&vmc, code, &dummypc);
-  if(i == -1){
+  uint8_t code [] = { 10, 0, 1, 3}; // {opcode, label_byte_1, label_byte_2, next opcode}
+  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  INT pc_idx = 0;
+  eval_cur(&vmc, &pc_idx);
+  if(pc_idx == -1){
     printf("cur l operation has failed\n");
     return false;
   }
@@ -206,7 +204,7 @@ bool eval_cur_test(){
   cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
   cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
   free(hm);
-  uint16_t merged_label = (code[0] << 8) | code[1];
+  uint16_t merged_label = (code[1] << 8) | code[2];
   if(fst.value == v.value && snd.value == merged_label){
     return true;
   } else {
@@ -215,7 +213,6 @@ bool eval_cur_test(){
 }
 
 bool eval_acc_test(){
-
 
   //Initializing a mock heap
   heap_t h = { .size_bytes = 0 };
@@ -255,8 +252,8 @@ bool eval_acc_test(){
 
   /* heap_show(&h, 5); */
   VM_t mockvm = { .env = env_pointer };
-  vmc_t vmc = { .vm = mockvm, .heap = h};
-  uint8_t code [] = { 3 };
+  uint8_t code [] = { 2, 3, 4 }; // {opcode, n, next_opcode}
+  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
 
 
   /* env starts with 0 */
@@ -265,9 +262,9 @@ bool eval_acc_test(){
   /* Step 2 env -> 2 */
   /* Step 3 env -> 3 */
   /* Step 4 env -> 40 done */
-  INT dummypc;
-  int i = eval_acc(&vmc, code, &dummypc);
-  if(i != 2){ // read 2 bytes
+  INT pc_idx = 0;
+  eval_acc(&vmc, &pc_idx);
+  if(pc_idx != 2){ // read 2 bytes
     printf("cur l operation has failed\n");
     free(hm);
     return false;
@@ -283,7 +280,6 @@ bool eval_acc_test(){
 
 
 bool eval_rest_test(){
-
 
   //Initializing a mock heap
   heap_t h = { .size_bytes = 0 };
@@ -323,8 +319,8 @@ bool eval_rest_test(){
 
   /* heap_show(&h, 5); */
   VM_t mockvm = { .env = env_pointer };
-  vmc_t vmc = { .vm = mockvm, .heap = h};
-  uint8_t code [] = { 3 };
+  uint8_t code [] = { 3, 3, 4 }; //{opcode, n, next_opcode}
+  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
 
 
   /* env starts with 0 */
@@ -332,9 +328,9 @@ bool eval_rest_test(){
   /* Step 1 env -> 1 */
   /* Step 2 env -> 2 */
   /* Step 3 env -> 3 done */
-  INT dummypc;
-  int i = eval_rest(&vmc, code, &dummypc);
-  if(i != 2){ // read 2 bytes
+  INT pc_idx = 0;
+  eval_rest(&vmc, &pc_idx);
+  if(pc_idx != 2){ // read 2 bytes
     printf("cur l operation has failed\n");
     free(hm);
     return false;
@@ -349,9 +345,9 @@ bool eval_rest_test(){
 }
 
 bool eval_skip_test(){
-  INT dummypc;
-  int i = eval_skip(NULL, NULL, &dummypc);
-  if(i != 1){
+  INT pc_idx = 0;
+  eval_skip(NULL, &pc_idx);
+  if(pc_idx != 1){
     printf("skip operation has failed\n");
     return false;
   } else {
@@ -380,9 +376,9 @@ bool eval_swap_test(){
   vmc_t vmc = { .vm = mockvm };
 
   cam_register_t dummyreg = { .value = 0 };
-  INT dummypc;
-  int i = eval_swap(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_swap(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -408,9 +404,9 @@ bool eval_clear_test(){
   VM_t mockvm = { .env = env_v };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_clear(&vmc, NULL, &dummypc);
-  if(i != 1){
+  INT pc_idx = 0;
+  eval_clear(&vmc, &pc_idx);
+  if(pc_idx != 1){
     printf("clear operation has failed\n");
     return false;
   }
@@ -440,9 +436,9 @@ bool eval_add_unsignedi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_add_unsignedi(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_add_unsignedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -474,9 +470,9 @@ bool eval_mul_unsignedi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_mul_unsignedi(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_mul_unsignedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -508,9 +504,9 @@ bool eval_min_unsignedi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_min_unsignedi(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_min_unsignedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -547,9 +543,9 @@ bool eval_add_signedi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_add_signedi(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_add_signedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -587,9 +583,9 @@ bool eval_mul_signedi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_mul_signedi(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_mul_signedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -627,9 +623,9 @@ bool eval_min_signedi_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_min_signedi(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_min_signedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -667,9 +663,9 @@ bool eval_addf_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_addf(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_addf(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -707,9 +703,9 @@ bool eval_mulf_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_mulf(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_mulf(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
@@ -747,9 +743,9 @@ bool eval_minf_test(){
   VM_t mockvm = { .env = env_v, .stack = s };
   vmc_t vmc = { .vm = mockvm };
 
-  INT dummypc;
-  int i = eval_minf(&vmc, NULL, &dummypc);
-  if (i == -1){
+  INT pc_idx = 0;
+  eval_minf(&vmc, &pc_idx);
+  if (pc_idx == -1){
     printf("push operation has failed");
     free(m);
     return false;
