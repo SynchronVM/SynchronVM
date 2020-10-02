@@ -204,6 +204,7 @@ assemble (i : is) =
     REST n -> gen2 rest (byte n)
     PUSH -> gen1 push
     SWAP -> gen1 swap
+    -- TODO: Unhandled Float
     QUOTE (LInt i32) -> do
       word8X2 <- modifyIntPool i32 -- index of int pool (16 bits)
       rs    <- assemble is
@@ -283,14 +284,15 @@ buildST :: CAM -> SymbolTable
 buildST cam = filteredEntries
   where
     instrsLabs = genInstrs cam dummyLabel
-    indexedinstrsLabs = zip instrsLabs [0..]
-    entries = map (\((_,l),idx) -> (l,idx)) indexedinstrsLabs
+    indexedinstrsLabs = bytecounter 0 instrsLabs
+    entries = map (\(_,l,idx) -> (l,idx)) indexedinstrsLabs
     filteredEntries = filter (\(l,_) -> l /= dummyLabel) entries
 
 instructions :: CAM -> [Instruction]
 instructions (Ins i) = [i]
 instructions (Seq c1 c2) = instructions c1 ++ instructions c2
 instructions (Lab _ c)   = instructions c
+
 
 -- CAM is a linear sequence so when we encounter
 -- Label l (Seq i1 i2).. the label `l` is for i1
@@ -302,6 +304,28 @@ genInstrs (Ins i) l = [(i, l)]
 genInstrs (Seq c1 c2) l = genInstrs c1 l ++ genInstrs c2 dummyLabel
 genInstrs (Lab l c) _   = genInstrs c l
 
+-- used for indexing labels which counts every byte
+bytecounter :: Int -> [(Instruction, Label)] -> [(Instruction, Label, Int)]
+bytecounter _ []  = []
+bytecounter i ((inst, label) : xs) =
+  case inst of
+    -- 2 bytes long --
+    ACC _  -> (inst, label, i) : bytecounter (i + 2) xs
+    REST _ -> (inst, label, i) : bytecounter (i + 2) xs
+    QUOTE (LBool _) -> (inst, label, i) : bytecounter (i + 2) xs
+    -- 3 bytes long --
+    -- TODO: Not handled Float
+    QUOTE (LInt _)  -> (inst, label, i) : bytecounter (i + 3) xs
+    CUR _           -> (inst, label, i) : bytecounter (i + 3) xs
+    PACK _          -> (inst, label, i) : bytecounter (i + 3) xs
+    CALL _          -> (inst, label, i) : bytecounter (i + 3) xs
+    GOTO _          -> (inst, label, i) : bytecounter (i + 3) xs
+    GOTOFALSE _     -> (inst, label, i) : bytecounter (i + 3) xs
+    -- max 1026 bytes long --
+    SWITCH tls      ->
+      (inst, label, i) : bytecounter (i + 2 + 4 * length tls) xs
+    -- all others one byte long --
+    _ -> (inst, label, i) : bytecounter (i + 1) xs
 
 first, second :: Word8
 first  = 0
