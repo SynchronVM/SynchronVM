@@ -119,6 +119,13 @@ eval_fun evaluators[] =
     eval_ge,
     eval_le };
 
+uint16_t get_label(vmc_t *vmc, INT *pc_idx){
+  INT lab_idx1 = (*pc_idx) + 1;
+  INT lab_idx2 = (*pc_idx) + 2;
+  uint16_t label =
+    (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
+  return label;
+}
 
 void eval_fst(vmc_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
@@ -232,10 +239,7 @@ void eval_cons(vmc_t *vmc, INT *pc_idx) {
 
 void eval_cur(vmc_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->vm.env;
-  INT lab_idx1 = (*pc_idx) + 1;
-  INT lab_idx2 = (*pc_idx) + 2;
-  uint16_t label =
-    (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
+  uint16_t label = get_label(vmc, pc_idx);
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
   heap_index hi = heap_allocate(&vmc->heap);
