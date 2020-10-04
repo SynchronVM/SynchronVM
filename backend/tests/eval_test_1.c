@@ -771,7 +771,7 @@ bool eval_call_test(){
     free(m);
     return false;
   }
-  uint8_t code [] = { 24, 16, 0, 0 }; //{addi, call, x00, x00}
+  uint8_t code [] = { 24, 16, 0, 0, 20 }; //{addi, call, x00, x00, absinst}
   VM_t mockvm = { .stack = s };
   vmc_t vmc = { .vm = mockvm, .code_memory = code};
 
@@ -790,7 +790,7 @@ bool eval_call_test(){
     return false;
   }
   free(m);
-  if(pc_idx == 0 && dummyreg.value == 1){
+  if(pc_idx == 0 && dummyreg.value == 4){
     return true;
   } else {
     return false;

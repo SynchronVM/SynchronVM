@@ -32,11 +32,18 @@
 #include <VMC.h>
 #include <string.h>
 
-/* Each eval function is called with the vmc state and the */
-/* current index of the program counter (pointed at the opcode). */
-/* The eval function internally increments the pc_idx. The */
-/* caller simply checks if pc_idx ever returns a negative value, */
-/* which contains semantic error info. */
+/* Each eval function is called with the vmc state and the
+ * current index of the program counter (pointed at the opcode).
+ * The eval function internally increments the pc_idx. The
+ * caller simply checks if pc_idx ever returns a negative value,
+ * which contains semantic error info.
+ */
+
+/*Jump convention:
+ * When making a jump, calculate the jump address + arguments
+ * and store that on the stack. A return simply pops off that
+ * address which is the address of the next opcode and jumps
+ */
 
 typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
 
@@ -283,7 +290,7 @@ void eval_return(vmc_t *vmc, INT *pc_idx) {
 
 void eval_call(vmc_t *vmc, INT *pc_idx) {
   uint16_t label = get_label(vmc, pc_idx);
-  INT jump_address = *pc_idx;
+  INT jump_address = (*pc_idx) + 3; // see Jump convention at the top
   cam_value_t j_add = { .value = (UINT)jump_address };
   int i = stack_push(&vmc->vm.stack, j_add);
   if(i == 0){
