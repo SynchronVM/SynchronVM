@@ -197,6 +197,11 @@ example14 =
   ]
   (App (Var "even") (Sys $ LInt 53))
 
+{-
+((\x -> x) 3)
+-}
+
+example15 = App (Lam (PatVar "x") (Var "x")) (Sys $ LInt 3)
 
 run :: Exp -> Val
 run = evaluate . interpret

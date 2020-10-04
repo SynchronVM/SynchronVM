@@ -53,6 +53,7 @@ void eval_minf(vmc_t *vmc, INT *pc_idx);
 void eval_call(vmc_t *vmc, INT *pc_idx);
 void eval_goto(vmc_t *vmc, INT *pc_idx);
 void eval_return(vmc_t *vmc, INT *pc_idx);
+void eval_app(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -852,6 +853,103 @@ bool eval_return_test(){
   }
 }
 
+bool eval_app_test(){
+
+  //Initializing a mock stack
+  cam_value_t st_v = { .value = 3, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    free(hm);
+    return false;
+  }
+  heap_index hi = heap_allocate(&h);
+  if(hi == HEAP_NULL){
+    printf("Heap allocation has failed");
+    free(hm);
+    return false;
+  }
+  cam_value_t vempty  = { .value = 0, .flags = 0};
+  cam_value_t v_label = { .value = 2, .flags = 0};
+  heap_set_fst(&h, hi, vempty);
+  heap_set_snd(&h, hi, v_label);
+  cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+
+
+  uint8_t code [] = { 14, 13, 2, 0 }; //{app, stop, acc, x00 }
+  VM_t mockvm = { .stack = s, .env = env_pointer };
+  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  INT pc_idx = 0;
+
+  // Mock Machine state before eval_app
+  /*****************************************/
+  /*  env   =  (Ptr 0)                     */
+  /*  stack =  3 -> Empty                  */
+  /*  heap  =  | (VEmpty, 2) | -> HEAP_END */
+  /*  code  =  app, stop, acc, x00         */
+  /*           ^                           */
+  /*           |                           */
+  /*        PC = 0                         */
+  /*****************************************/
+
+  eval_app(&vmc, &pc_idx);
+
+  // Machine state post eval_app
+  /**********************************************************/
+  /*  env   =  (Ptr 1)                                      */
+  /*  stack =  (JAdd 1) -> Empty                            */
+  /*  heap  =  | (VEmpty, 2) | -> |(VEmpty, 3)| -> HEAP_END */
+  /*  code  =  app, stop, acc, x00                          */
+  /*                      ^                                 */
+  /*                      |                                 */
+  /*                   PC = 2                               */
+  /**********************************************************/
+
+  if (pc_idx == -1){
+    printf("app operation has failed");
+    free(m); free(hm);
+    return false;
+  }
+  cam_register_t dummyreg = { .value = 0 };
+  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  if (j == 0){
+    printf("Stack pop has failed");
+    free(m); free(hm);
+    return false;
+  }
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+
+  free(m);
+  free(hm);
+  if(pc_idx == (INT)v_label.value &&  // Test PC
+     (INT)dummyreg.value == 1 && // initial pc_idx + 1; Test stack top
+     fst.value == vempty.value && snd.value == st_v.value){ // Test heap
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -912,7 +1010,9 @@ int main(int argc, char **argv) {
   test_stat("eval_goto", &total, t21);
   bool t22 = eval_return_test();
   test_stat("eval_return", &total, t22);
+  bool t23 = eval_app_test();
+  test_stat("eval_app", &total, t23);
 
-  printf("Passed total : %d/%d tests\n", total, 22);
+  printf("Passed total : %d/%d tests\n", total, 23);
   return 1;
 }

@@ -174,7 +174,6 @@ void eval_rest(vmc_t *vmc, INT *pc_idx)  {
 }
 
 void eval_push(vmc_t *vmc, INT *pc_idx) {
-  (*pc_idx)++;
   cam_register_t e = vmc->vm.env;
   int i = stack_push(&vmc->vm.stack, e);
   if(i == 0){
@@ -182,10 +181,10 @@ void eval_push(vmc_t *vmc, INT *pc_idx) {
     *pc_idx = -1;
     return;
   }
+  (*pc_idx)++;
 }
 
 void eval_swap(vmc_t *vmc, INT *pc_idx) {
-  (*pc_idx)++;
   cam_register_t e = vmc->vm.env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->vm.stack, &hold_reg);
@@ -201,6 +200,7 @@ void eval_swap(vmc_t *vmc, INT *pc_idx) {
     return;
   }
   vmc->vm.env = hold_reg;
+  (*pc_idx)++;
 }
 
 void eval_loadi(vmc_t *vmc, INT *pc_idx) {
@@ -279,8 +279,41 @@ void eval_stop(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_app(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  heap_index closure_address = e.value; // TODO: should we do a pointer check here?
+  cam_value_t val = heap_fst(&vmc->heap, closure_address);
+  cam_value_t label = heap_snd(&vmc->heap, closure_address);
+  heap_index hi = heap_allocate(&vmc->heap);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  heap_set(&vmc->heap, hi, val, hold_reg);
+  cam_value_t new_env_pointer =
+    { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+  vmc->vm.env = new_env_pointer;
+
+
+  //jump to label
+  INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
+  cam_value_t j_add = { .value = (UINT)jump_address };
+  int j = stack_push(&vmc->vm.stack, j_add);
+  if(j == 0){
+    DEBUG_PRINT(("Stack push has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  *pc_idx = (INT)label.value;
+
 }
 
 void eval_return(vmc_t *vmc, INT *pc_idx) {
