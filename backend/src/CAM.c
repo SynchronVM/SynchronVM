@@ -282,8 +282,16 @@ void eval_return(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_call(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  uint16_t label = get_label(vmc, pc_idx);
+  INT jump_address = *pc_idx;
+  cam_value_t j_add = { .value = (UINT)jump_address };
+  int i = stack_push(&vmc->vm.stack, j_add);
+  if(i == 0){
+    DEBUG_PRINT(("Stack push has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  *pc_idx = (INT)label;
 }
 
 void eval_goto(vmc_t *vmc, INT *pc_idx) {

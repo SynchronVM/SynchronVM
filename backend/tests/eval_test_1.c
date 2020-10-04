@@ -50,6 +50,7 @@ void eval_min_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_addf(vmc_t *vmc, INT *pc_idx);
 void eval_mulf(vmc_t *vmc, INT *pc_idx);
 void eval_minf(vmc_t *vmc, INT *pc_idx);
+void eval_call(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -760,6 +761,42 @@ bool eval_minf_test(){
   }
 }
 
+bool eval_call_test(){
+
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  uint8_t code [] = { 24, 16, 0, 0 }; //{addi, call, x00, x00}
+  VM_t mockvm = { .stack = s };
+  vmc_t vmc = { .vm = mockvm, .code_memory = code};
+
+  INT pc_idx = 1;
+  eval_call(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("push operation has failed");
+    free(m);
+    return false;
+  }
+  cam_register_t dummyreg = { .value = 0 };
+  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  if (j == 0){
+    printf("Stack pop has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(pc_idx == 0 && dummyreg.value == 1){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -814,7 +851,9 @@ int main(int argc, char **argv) {
   test_stat("eval_mulf", &total, t18);
   bool t19 = eval_minf_test();
   test_stat("eval_minf", &total, t19);
+  bool t20 = eval_call_test();
+  test_stat("eval_call", &total, t20);
 
-  printf("Passed total : %d/%d tests\n", total, 19);
+  printf("Passed total : %d/%d tests\n", total, 20);
   return 1;
 }
