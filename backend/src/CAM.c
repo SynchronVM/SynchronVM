@@ -284,8 +284,14 @@ void eval_app(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_return(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  *pc_idx = hold_reg.value;
 }
 
 void eval_call(vmc_t *vmc, INT *pc_idx) {

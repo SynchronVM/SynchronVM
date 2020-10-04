@@ -51,6 +51,7 @@ void eval_addf(vmc_t *vmc, INT *pc_idx);
 void eval_mulf(vmc_t *vmc, INT *pc_idx);
 void eval_minf(vmc_t *vmc, INT *pc_idx);
 void eval_call(vmc_t *vmc, INT *pc_idx);
+void eval_return(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -778,7 +779,7 @@ bool eval_call_test(){
   INT pc_idx = 1;
   eval_call(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("call operation has failed");
     free(m);
     return false;
   }
@@ -791,6 +792,41 @@ bool eval_call_test(){
   }
   free(m);
   if(pc_idx == 0 && dummyreg.value == 4){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_return_test(){
+
+  //Initializing a mock stack
+  cam_value_t st_v = { .value = 20, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_return(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("return operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(pc_idx == 20){
     return true;
   } else {
     return false;
@@ -853,7 +889,9 @@ int main(int argc, char **argv) {
   test_stat("eval_minf", &total, t19);
   bool t20 = eval_call_test();
   test_stat("eval_call", &total, t20);
+  bool t21 = eval_return_test();
+  test_stat("eval_return", &total, t21);
 
-  printf("Passed total : %d/%d tests\n", total, 20);
+  printf("Passed total : %d/%d tests\n", total, 21);
   return 1;
 }
