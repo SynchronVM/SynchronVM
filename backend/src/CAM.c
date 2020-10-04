@@ -308,8 +308,9 @@ void eval_call(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_goto(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  uint16_t label = get_label(vmc, pc_idx);
+  // GOTO doesn't store jump address on stack
+  *pc_idx = (INT)label;
 }
 
 void eval_gotofalse(vmc_t *vmc, INT *pc_idx) {

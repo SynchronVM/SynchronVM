@@ -51,6 +51,7 @@ void eval_addf(vmc_t *vmc, INT *pc_idx);
 void eval_mulf(vmc_t *vmc, INT *pc_idx);
 void eval_minf(vmc_t *vmc, INT *pc_idx);
 void eval_call(vmc_t *vmc, INT *pc_idx);
+void eval_goto(vmc_t *vmc, INT *pc_idx);
 void eval_return(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
@@ -798,6 +799,24 @@ bool eval_call_test(){
   }
 }
 
+bool eval_goto_test(){
+
+  uint8_t code [] = { 17, 0, 5 }; //{goto, x00, x05}
+  vmc_t vmc = { .code_memory = code };
+
+  INT pc_idx = 0;
+  eval_goto(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("goto operation has failed");
+    return false;
+  }
+  if(pc_idx == 5){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool eval_return_test(){
 
   //Initializing a mock stack
@@ -889,9 +908,11 @@ int main(int argc, char **argv) {
   test_stat("eval_minf", &total, t19);
   bool t20 = eval_call_test();
   test_stat("eval_call", &total, t20);
-  bool t21 = eval_return_test();
-  test_stat("eval_return", &total, t21);
+  bool t21 = eval_goto_test();
+  test_stat("eval_goto", &total, t21);
+  bool t22 = eval_return_test();
+  test_stat("eval_return", &total, t22);
 
-  printf("Passed total : %d/%d tests\n", total, 21);
+  printf("Passed total : %d/%d tests\n", total, 22);
   return 1;
 }
