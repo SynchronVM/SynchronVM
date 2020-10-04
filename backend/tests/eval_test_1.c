@@ -267,7 +267,7 @@ bool eval_acc_test(){
   INT pc_idx = 0;
   eval_acc(&vmc, &pc_idx);
   if(pc_idx != 2){ // read 2 bytes
-    printf("cur l operation has failed\n");
+    printf("acc n operation has failed\n");
     free(hm);
     return false;
   }
@@ -333,7 +333,7 @@ bool eval_rest_test(){
   INT pc_idx = 0;
   eval_rest(&vmc, &pc_idx);
   if(pc_idx != 2){ // read 2 bytes
-    printf("cur l operation has failed\n");
+    printf("rest n operation has failed\n");
     free(hm);
     return false;
   }
@@ -381,7 +381,7 @@ bool eval_swap_test(){
   INT pc_idx = 0;
   eval_swap(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("swap operation has failed");
     free(m);
     return false;
   }
@@ -441,7 +441,7 @@ bool eval_add_unsignedi_test(){
   INT pc_idx = 0;
   eval_add_unsignedi(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("add_unsigned_i operation has failed");
     free(m);
     return false;
   }
@@ -475,7 +475,7 @@ bool eval_mul_unsignedi_test(){
   INT pc_idx = 0;
   eval_mul_unsignedi(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("mul_unsigned_i operation has failed");
     free(m);
     return false;
   }
@@ -509,7 +509,7 @@ bool eval_min_unsignedi_test(){
   INT pc_idx = 0;
   eval_min_unsignedi(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("min_unsigned_i operation has failed");
     free(m);
     return false;
   }
@@ -548,7 +548,7 @@ bool eval_add_signedi_test(){
   INT pc_idx = 0;
   eval_add_signedi(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("add_signed_i operation has failed");
     free(m);
     return false;
   }
@@ -588,7 +588,7 @@ bool eval_mul_signedi_test(){
   INT pc_idx = 0;
   eval_mul_signedi(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("mul_signed_i operation has failed");
     free(m);
     return false;
   }
@@ -628,7 +628,7 @@ bool eval_min_signedi_test(){
   INT pc_idx = 0;
   eval_min_signedi(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("min_signed_i operation has failed");
     free(m);
     return false;
   }
@@ -668,7 +668,7 @@ bool eval_addf_test(){
   INT pc_idx = 0;
   eval_addf(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("addf operation has failed");
     free(m);
     return false;
   }
@@ -708,7 +708,7 @@ bool eval_mulf_test(){
   INT pc_idx = 0;
   eval_mulf(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("mulf operation has failed");
     free(m);
     return false;
   }
@@ -748,7 +748,7 @@ bool eval_minf_test(){
   INT pc_idx = 0;
   eval_minf(&vmc, &pc_idx);
   if (pc_idx == -1){
-    printf("push operation has failed");
+    printf("minf operation has failed");
     free(m);
     return false;
   }
