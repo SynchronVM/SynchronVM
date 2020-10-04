@@ -54,6 +54,7 @@ void eval_call(vmc_t *vmc, INT *pc_idx);
 void eval_goto(vmc_t *vmc, INT *pc_idx);
 void eval_return(vmc_t *vmc, INT *pc_idx);
 void eval_app(vmc_t *vmc, INT *pc_idx);
+void eval_gotofalse(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -142,11 +143,13 @@ bool eval_cons_test(){
   int s_init = stack_init(&s, m, 256);
   if (s_init == 0){
     printf("Stack initialization has failed");
+    free(m);
     return false;
   }
   int y = stack_push(&s, st_v);
   if (y == 0){
     printf("Stack push has failed");
+    free(m);
     return false;
   }
 
@@ -950,6 +953,76 @@ bool eval_app_test(){
   }
 }
 
+bool eval_gotofalse_t_test(){
+  cam_value_t env_v = { .value = 1, .flags = 0 }; // TRUE
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  cam_value_t st_v = { .value = 20, .flags = 0 };
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    free(m);
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc   = { .vm = mockvm };
+  INT pc_idx = 0;
+  eval_gotofalse(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("gotofalse operation has failed\n");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(vmc.vm.env.value == st_v.value &&
+     pc_idx == 3){
+    return true;
+  } else {
+    return false;
+  }
+}
+bool eval_gotofalse_f_test(){
+  cam_value_t env_v = { .value = 0, .flags = 0 }; // FALSE
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  cam_value_t st_v = { .value = 20, .flags = 0 };
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    free(m);
+    return false;
+  }
+  uint8_t code [] = { 18, 0, 5 }; //{gotofalse, x00, x05 }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc   = { .vm = mockvm, .code_memory = code };
+  INT pc_idx = 0;
+  eval_gotofalse(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("gotofalse operation has failed\n");
+    free(m);
+    return false;
+  }
+  free(m);
+  uint16_t merged_label = (code[1] << 8) | code[2];
+  if(vmc.vm.env.value == st_v.value &&
+     pc_idx == (INT)merged_label){
+    return true;
+  } else {
+    return false;
+  }
+}
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -1012,7 +1085,11 @@ int main(int argc, char **argv) {
   test_stat("eval_return", &total, t22);
   bool t23 = eval_app_test();
   test_stat("eval_app", &total, t23);
+  bool t24 = eval_gotofalse_t_test();
+  test_stat("eval_gotofalse_t", &total, t24);
+  bool t25 = eval_gotofalse_f_test();
+  test_stat("eval_gotofalse_f", &total, t25);
 
-  printf("Passed total : %d/%d tests\n", total, 23);
+  printf("Passed total : %d/%d tests\n", total, 25);
   return 1;
 }

@@ -347,8 +347,20 @@ void eval_goto(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_gotofalse(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  vmc->vm.env = hold_reg;
+  if ((e.value & 1) == 0){ // NOT SET; FALSE
+    eval_goto(vmc, pc_idx);
+  } else { // TRUE
+    *pc_idx = (*pc_idx) + 3;
+  }
 }
 
 void eval_switch(vmc_t *vmc, INT *pc_idx) {
