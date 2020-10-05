@@ -1032,7 +1032,7 @@ bool eval_loadi_test(){
   INT pc_idx = 11;
   eval_loadi(&vmc, &pc_idx);
   // No Failure cases
-  if((INT)vmc.vm.env.value == -20){
+  if((INT)vmc.vm.env.value == -20 && pc_idx == 14){ // old pc_idx + 3
     return true;
   } else {
     printf("abhi %d\n", (INT)vmc.vm.env.value);
