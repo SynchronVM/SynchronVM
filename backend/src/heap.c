@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar  				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -242,6 +242,7 @@ void heap_mark(heap_t *heap, cam_value_t v) {
 /* Inspecting the structure of the heap is sometimes */
 /* useful for debugging. The second argument specifies */
 /* the number of cells that should be displayed */
+#ifdef DEBUG
 void heap_show(heap_t *heap, int size){
   int num_cells;
   if(size > heap->size_cells){
@@ -266,3 +267,4 @@ void heap_show(heap_t *heap, int size){
 
   DEBUG_PRINT(("HEAP_END\n"));
 }
+#endif

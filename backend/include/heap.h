@@ -70,7 +70,10 @@ extern void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value);
 extern void heap_set_flags(heap_t *heap, heap_index i, heap_flags_t flags);
 
 extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
+
+#ifdef DEBUG
 extern void heap_show(heap_t *heap, int size);
+#endif
 
 extern heap_index heap_allocate(heap_t *heap);
 extern void heap_mark(heap_t *heap, cam_value_t v);
