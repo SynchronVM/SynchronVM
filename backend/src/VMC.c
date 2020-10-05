@@ -23,7 +23,7 @@
 /**********************************************************************************/
 
 #include <VMC.h>
-
+#include <heap.h>
 
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
@@ -84,4 +84,65 @@ int vmc_init(void) {
   #endif
 
   return r;
+}
+
+
+int vmc_run(vmc_t *container) {
+
+  for (int i = 0; i < VMC_MAX_CONTEXTS; i++) {
+    container->context_used[i] = false;
+  }
+
+  UINT pc = 0;
+  /* Check valid code */
+  uint32_t magic = 0;
+  magic |= container->code_memory[pc++] << 24; /* not sure this shifting works out */ 
+  magic |= container->code_memory[pc++] << 16;
+  magic |= container->code_memory[pc++] << 8;
+  magic |= container->code_memory[pc++];
+
+  if (magic != 0xFEEDCAFE) return 0;
+
+  /* uint8_t version = container->code_memory[pc++]; */
+  pc++;
+  
+  uint16_t pool_size_ints;
+  pool_size_ints = container->code_memory[pc++] << 8;
+  pool_size_ints |= container->code_memory[pc++];
+
+  pc += (pool_size_ints * 4);
+
+  uint16_t pool_size_strings;
+  pool_size_strings = container->code_memory[pc++] << 8;
+  pool_size_strings |= container->code_memory[pc++];
+
+  pc += pool_size_strings;
+
+  uint16_t pool_size_native;
+  pool_size_native = container->code_memory[pc++] << 8;
+  pool_size_native |= container->code_memory[pc++];
+
+  pc += (pool_size_native * 4);
+
+  uint32_t code_size;
+  code_size = container->code_memory[pc++] << 24;
+  code_size |= container->code_memory[pc++] << 16;
+  code_size |= container->code_memory[pc++] << 8;
+  code_size |= container->code_memory[pc++];
+  
+  /* Now pc should be the index of the first instruction. */
+  /* set up a context */
+
+  container->context_used[0] = true;
+  container->context[0].env = get_cam_val(0,0);
+  container->context[0].pc  = pc;
+  /*container->context[0].stack = */  /* how to create an initial stack*/
+  container->context[0].code = container->code_memory; /* discards const, look into*/
+  
+  /* TODO: start executing instructions */ 
+ 
+
+
+  /* end */
+  return 1;
 }

@@ -36,12 +36,16 @@
 #define VMC_CONTAINER_1 0
 #define VMC_CONTAINER_2 1
 
+#define VMC_MAX_CONTEXTS 16
+
 typedef struct {
   heap_t        heap;
   uint8_t       *stack_memory;
   uint8_t       *arrays_memory;
   const uint8_t *code_memory;
   VM_t          vm;
+  VM_t          context[VMC_MAX_CONTEXTS];      /* Will likely change */
+  bool          context_used[VMC_MAX_CONTEXTS];
 } vmc_t;
 
 extern vmc_t vm_containers[]; /* For testing, remove this later */
@@ -51,5 +55,8 @@ extern vmc_t vm_containers[]; /* For testing, remove this later */
 /**********************/
 
 extern int vmc_init(void);
+
+// These need to run within some lower level thread abstractions
+extern int vmc_run(vmc_t *container);
 
 #endif

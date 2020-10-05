@@ -60,6 +60,8 @@ typedef struct {
 } heap_t;
 
 
+extern cam_value_t get_cam_val(UINT ui, value_flags_t f); /* maybe put elsewhere */
+
 extern unsigned int heap_num_free(heap_t *heap);
 
 extern cam_value_t heap_fst(heap_t *heap, heap_index i);
