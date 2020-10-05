@@ -124,7 +124,8 @@ LE                             0x22                        1
   <l> - Positive ints for label numbers - 2 bytes long
   <b> - Boolean 1 byte long; 7 bits wasted
   <t> - Tag for a constructor - 2 bytes long
-  <i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long
+  <i> - index from int pool - max_index_size = 65536. The int itself can be upto 4 bytes long;
+        relative index; 0 - the starting index starts from the first value of int pool
 
 ** FIXME: Currently we use the string pool for tags and not some fixed size 2 bytes tag
 
