@@ -56,6 +56,7 @@ void eval_return(vmc_t *vmc, INT *pc_idx);
 void eval_app(vmc_t *vmc, INT *pc_idx);
 void eval_gotofalse(vmc_t *vmc, INT *pc_idx);
 void eval_loadi(vmc_t *vmc, INT *pc_idx);
+void eval_loadb(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1035,7 +1036,19 @@ bool eval_loadi_test(){
   if((INT)vmc.vm.env.value == -20 && pc_idx == 14){ // old pc_idx + 3
     return true;
   } else {
-    printf("abhi %d\n", (INT)vmc.vm.env.value);
+    return false;
+  }
+}
+
+bool eval_loadb_test(){
+  uint8_t code [] = { 7, 1 }; // {loadb, x01 } TRUE
+  vmc_t vmc   = { .code_memory = code };
+  INT pc_idx = 0;
+  eval_loadb(&vmc, &pc_idx);
+  // No Failure cases
+  if(vmc.vm.env.value == 1 && pc_idx == 2){ // old pc_idx + 2
+    return true;
+  } else {
     return false;
   }
 }
@@ -1107,7 +1120,9 @@ int main(int argc, char **argv) {
   test_stat("eval_gotofalse_f", &total, t25);
   bool t26 = eval_loadi_test();
   test_stat("eval_loadi", &total, t26);
+  bool t27 = eval_loadb_test();
+  test_stat("eval_loadb", &total, t27);
 
-  printf("Passed total : %d/%d tests\n", total, 26);
+  printf("Passed total : %d/%d tests\n", total, 27);
   return 1;
 }

@@ -221,8 +221,11 @@ void eval_loadi(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_loadb(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  INT bool_idx = (*pc_idx) + 1;
+  uint8_t bool_val = vmc->code_memory[bool_idx];
+  cam_value_t v = { .value = (UINT)bool_val, .flags = 0};
+  vmc->vm.env = v;
+  *pc_idx = (*pc_idx) + 2;
 }
 
 void eval_clear(vmc_t *vmc, INT *pc_idx) {
