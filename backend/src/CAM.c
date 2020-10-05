@@ -204,8 +204,20 @@ void eval_swap(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_loadi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  INT int_idx1 = (*pc_idx) + 1;
+  INT int_idx2 = (*pc_idx) + 2;
+  uint16_t int_idx =
+    (vmc->code_memory[int_idx1] << 8) | vmc->code_memory[int_idx2]; // merge 2 bytes
+  INT int_pool_offset = 7; //TODO: Should we verify the int pool size here?
+  INT i_idx = int_pool_offset + int_idx;
+  uint8_t byte0 = vmc->code_memory[i_idx];
+  uint8_t byte1 = vmc->code_memory[i_idx + 1];
+  uint8_t byte2 = vmc->code_memory[i_idx + 2];
+  uint8_t byte3 = vmc->code_memory[i_idx + 3];
+  INT i = (byte0 << 24) | (byte1 << 16) | (byte2 << 8) | byte3;
+  cam_value_t v = { .value = (UINT)i, .flags = 0};
+  vmc->vm.env = v;
+  *pc_idx = (*pc_idx) + 3;
 }
 
 void eval_loadb(vmc_t *vmc, INT *pc_idx) {

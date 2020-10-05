@@ -55,6 +55,7 @@ void eval_goto(vmc_t *vmc, INT *pc_idx);
 void eval_return(vmc_t *vmc, INT *pc_idx);
 void eval_app(vmc_t *vmc, INT *pc_idx);
 void eval_gotofalse(vmc_t *vmc, INT *pc_idx);
+void eval_loadi(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1024,6 +1025,21 @@ bool eval_gotofalse_f_test(){
   }
 }
 
+bool eval_loadi_test(){
+  uint8_t code [] = { 254, 237, 202, 254, 255, 0, 1, // magic code, pool size
+                      255, 255, 255, 236, 6, 0, 0 }; // {-20, loadi, x00, x00}
+  vmc_t vmc   = { .code_memory = code };
+  INT pc_idx = 11;
+  eval_loadi(&vmc, &pc_idx);
+  // No Failure cases
+  if((INT)vmc.vm.env.value == -20){
+    return true;
+  } else {
+    printf("abhi %d\n", (INT)vmc.vm.env.value);
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -1089,7 +1105,9 @@ int main(int argc, char **argv) {
   test_stat("eval_gotofalse_t", &total, t24);
   bool t25 = eval_gotofalse_f_test();
   test_stat("eval_gotofalse_f", &total, t25);
+  bool t26 = eval_loadi_test();
+  test_stat("eval_loadi", &total, t26);
 
-  printf("Passed total : %d/%d tests\n", total, 25);
+  printf("Passed total : %d/%d tests\n", total, 26);
   return 1;
 }
