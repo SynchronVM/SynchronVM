@@ -414,8 +414,14 @@ void eval_not(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_dec(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  cam_register_t e = vmc->vm.env;
+  UINT i = e.value;
+  INT j = i - 1; // XXX: casting might cause issues for uint when outside int range
+                 // dec should work with signed ints
+  cam_value_t v = { .value = (UINT)j, .flags = 0};
+  vmc->vm.env = v;
+  (*pc_idx)++;
+
 }
 
 void eval_add_unsignedi(vmc_t *vmc, INT *pc_idx) {

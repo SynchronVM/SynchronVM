@@ -60,6 +60,7 @@ void eval_loadb(vmc_t *vmc, INT *pc_idx);
 void eval_abs(vmc_t *vmc, INT *pc_idx);
 void eval_neg(vmc_t *vmc, INT *pc_idx);
 void eval_not(vmc_t *vmc, INT *pc_idx);
+void eval_dec(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1110,6 +1111,22 @@ bool eval_not_test(){
   }
 }
 
+bool eval_dec_test(){
+
+  cam_value_t cv = { .value = (UINT)-5, .flags = 0 };
+  VM_t mockvm = { .env = cv };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_dec(&vmc, &pc_idx);
+  // No Failure cases; possible underflow
+  if((INT)vmc.vm.env.value == -6 && pc_idx == 1){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -1185,7 +1202,9 @@ int main(int argc, char **argv) {
   test_stat("eval_neg", &total, t29);
   bool t30 = eval_not_test();
   test_stat("eval_not", &total, t30);
+  bool t31 = eval_dec_test();
+  test_stat("eval_dec", &total, t31);
 
-  printf("Passed total : %d/%d tests\n", total, 30);
+  printf("Passed total : %d/%d tests\n", total, 31);
   return 1;
 }
