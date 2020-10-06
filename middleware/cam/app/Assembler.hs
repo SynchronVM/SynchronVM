@@ -29,6 +29,7 @@ module Assembler ( translate
 import CAM hiding (initState)
 import Control.Monad.State.Strict hiding (put)
 import Data.Binary
+import Data.Bits
 import Data.Int (Int32)
 import Data.Word
 import GHC.Generics
@@ -130,6 +131,8 @@ LE                             0x22                        1
 ** FIXME: Currently we use the string pool for tags and not some fixed size 2 bytes tag
 
 -}
+-- NOTE: Whenever adding an instruction which uses labels remember to rectifyLabelOffset
+-- NOTE: Modify originalBytecodeOffset if adding any new pools etc
 
 genbytecode :: CAM -> IO ()
 genbytecode = writeAssembly . translate
@@ -172,18 +175,32 @@ newtype Assembler a =
 initState :: SymbolTable -> AssemblerState
 initState st = AssemblerState [] [] [] st
 
+originalBytecodeOffset
+  = 4 -- magic number
+  + 1 -- version number
+  + 2 -- int pool count
+  + 0 -- starts with nothing in int pool
+  + 2 -- string pool size
+  + 0 -- starts with nothing in string pool
+  + 2 -- native pool count
+  + 0 -- starts with nothing in native pool
+  + 4 -- bytecode instructions size
+
 translate :: CAM -> [Word8]
 translate cam =
   let (AssemblerState ipool spool npool _) = pools
-      ipoolSize = serializeToBytes $ byte2 $ length ipool
-      spoolSize = serializeToBytes $ byte2 $ sum $ map length spool
-      npoolSize = serializeToBytes $ byte2 $ length npool
-      bytelistSize = serializeToBytes $ byte4 $ length bytelist
+      ipoolSize = length ipool
+      spoolSize = sum $ map length spool
+      npoolSize = length npool
+      bytelistSize = length bytelist
    in magic ++ version ++
-      ipoolSize ++ join ipool ++
-      spoolSize ++ join spool ++
-      npoolSize ++ join npool ++
-      bytelistSize ++ bytelist
+      serializeToBytes (byte2 ipoolSize) ++ join ipool ++
+      serializeToBytes (byte2 spoolSize) ++ join spool ++
+      serializeToBytes (byte2 npoolSize) ++ join npool ++
+      serializeToBytes (byte4 bytelistSize) ++
+      rectifyLabelOffset ((ipoolSize * 4) + -- each int is 4 bytes
+                          spoolSize +
+                          npoolSize) bytelist
   where
     (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
     i   = instructions cam
@@ -281,11 +298,78 @@ modifyStringPool s = do
   pure $! serializeToBytes $ byte2 (sum $ map length spool)
 
 
+type NumBytes = Int
+-- rectifies the offset of the labels after int pool,
+-- string pool and native pool is built
+rectifyLabelOffset :: NumBytes -> [Word8] -> [Word8]
+rectifyLabelOffset _ [] = []
+rectifyLabelOffset offset (w : ws) =
+  case w of
+    -- 2bytes long
+    2 -> let (n :ns)  = ws -- ACC
+          in  w : n : rectifyLabelOffset offset ns
+    3 -> let (n : ns) = ws -- REST
+          in  w : n : rectifyLabelOffset offset ns
+    7 -> let (n : ns) = ws -- LOADB
+          in  w : n : rectifyLabelOffset offset ns
+
+    -- 3bytes long
+    6  -> let (b1 : b2 : bs) = ws -- LOADI
+           in   w : b1 : b2 : rectifyLabelOffset offset bs
+    11 -> let (b1 : b2 : bs) = ws -- PACK
+           in   w : b1 : b2 : rectifyLabelOffset offset bs
+
+    ---- OFFSETTING HAPPENS IN THE FOLLOWING 5 INSTRUCTIONS ---
+    10 -> let (b1 : b2 : bs) = ws -- CUR
+              label   = word8X2ToInt (b1,b2)
+              word8X2 = serializeToBytes $ byte2 (label + offset)
+           in  w : word8X2 ++ rectifyLabelOffset offset bs
+
+    16 -> let (b1 : b2 : bs) = ws -- CALL
+              label   = word8X2ToInt (b1,b2)
+              word8X2 = serializeToBytes $ byte2 (label + offset)
+           in  w : word8X2 ++ rectifyLabelOffset offset bs
+
+    17 -> let (b1 : b2 : bs) = ws -- GOTO
+              label   = word8X2ToInt (b1,b2)
+              word8X2 = serializeToBytes $ byte2 (label + offset)
+           in  w : word8X2 ++ rectifyLabelOffset offset bs
+
+    18 -> let (b1 : b2 : bs) = ws -- GOTOFALSE
+              label   = word8X2ToInt (b1,b2)
+              word8X2 = serializeToBytes $ byte2 (label + offset)
+           in  w : word8X2 ++ rectifyLabelOffset offset bs
+
+    19 -> let (size : bs) = ws -- SWITCH
+              sizeInt = fromIntegral size :: Int
+           in if sizeInt == 0
+              then w : size : rectifyLabelOffset offset bs
+              else w : size : fixSwitchOffsets sizeInt offset bs
+
+    -- 1 byte long
+    _ -> w : rectifyLabelOffset offset ws
+
+fixSwitchOffsets :: Int -> NumBytes -> [Word8] -> [Word8]
+fixSwitchOffsets 0 offset bs = rectifyLabelOffset offset bs
+fixSwitchOffsets n offset (t1 : t2 : l1 : l2 : bs)
+  = t1 : t2 : word8X2 ++ fixSwitchOffsets (n - 1) offset bs
+  where
+    label   = word8X2ToInt (l1,l2)
+    word8X2 = serializeToBytes $ byte2 (label + offset)
+fixSwitchOffsets _ _ _ =
+  error "Impossible to reach pattern according to the switch bytecode specification"
+
+word8X2ToInt :: (Word8, Word8) -> Int
+word8X2ToInt (b1,b2) = (shift i1 8) .|. i2
+  where
+    i1 = fromIntegral b1 :: Int
+    i2 = fromIntegral b2 :: Int
+
 buildST :: CAM -> SymbolTable
 buildST cam = filteredEntries
   where
     instrsLabs = genInstrs cam dummyLabel
-    indexedinstrsLabs = bytecounter 0 instrsLabs
+    indexedinstrsLabs = bytecounter originalBytecodeOffset instrsLabs
     entries = map (\(_,l,idx) -> (l,idx)) indexedinstrsLabs
     filteredEntries = filter (\(l,_) -> l /= dummyLabel) entries
 
