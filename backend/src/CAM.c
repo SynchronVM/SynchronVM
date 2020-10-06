@@ -385,8 +385,6 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_abs(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
   cam_register_t e = vmc->vm.env;
   INT signed_i = (INT)e.value;
   INT abs_i = abs(signed_i);
