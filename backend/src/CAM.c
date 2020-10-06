@@ -30,6 +30,7 @@
 
 #include <CAM.h>
 #include <VMC.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Each eval function is called with the vmc state and the
@@ -386,6 +387,12 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
 void eval_abs(vmc_t *vmc, INT *pc_idx) {
   (void)vmc;
   (void)pc_idx;
+  cam_register_t e = vmc->vm.env;
+  INT signed_i = (INT)e.value;
+  INT abs_i = abs(signed_i);
+  cam_value_t v = { .value = (UINT)abs_i, .flags = 0};
+  vmc->vm.env = v;
+  (*pc_idx)++;
 }
 
 void eval_neg(vmc_t *vmc, INT *pc_idx) {

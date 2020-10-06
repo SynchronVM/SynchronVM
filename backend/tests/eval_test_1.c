@@ -57,6 +57,7 @@ void eval_app(vmc_t *vmc, INT *pc_idx);
 void eval_gotofalse(vmc_t *vmc, INT *pc_idx);
 void eval_loadi(vmc_t *vmc, INT *pc_idx);
 void eval_loadb(vmc_t *vmc, INT *pc_idx);
+void eval_abs(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1053,6 +1054,22 @@ bool eval_loadb_test(){
   }
 }
 
+bool eval_abs_test(){
+
+  cam_value_t cv = { .value = -10, .flags = 0 };
+  VM_t mockvm = { .env = cv };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_abs(&vmc, &pc_idx);
+  // No Failure cases
+  if((INT)vmc.vm.env.value == 10 && pc_idx == 1){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -1122,7 +1139,9 @@ int main(int argc, char **argv) {
   test_stat("eval_loadi", &total, t26);
   bool t27 = eval_loadb_test();
   test_stat("eval_loadb", &total, t27);
+  bool t28 = eval_abs_test();
+  test_stat("eval_abs", &total, t28);
 
-  printf("Passed total : %d/%d tests\n", total, 27);
+  printf("Passed total : %d/%d tests\n", total, 28);
   return 1;
 }
