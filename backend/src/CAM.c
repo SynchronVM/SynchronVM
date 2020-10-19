@@ -81,11 +81,22 @@ void eval_min_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_addf(vmc_t *vmc, INT *pc_idx);
 void eval_mulf(vmc_t *vmc, INT *pc_idx);
 void eval_minf(vmc_t *vmc, INT *pc_idx);
-void eval_gt(vmc_t *vmc, INT *pc_idx);
-void eval_lt(vmc_t *vmc, INT *pc_idx);
-void eval_eq(vmc_t *vmc, INT *pc_idx);
-void eval_ge(vmc_t *vmc, INT *pc_idx);
-void eval_le(vmc_t *vmc, INT *pc_idx);
+void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_gt_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_lt_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_ge_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_le_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_gtf(vmc_t *vmc, INT *pc_idx);
+void eval_ltf(vmc_t *vmc, INT *pc_idx);
+void eval_gef(vmc_t *vmc, INT *pc_idx);
+void eval_lef(vmc_t *vmc, INT *pc_idx);
+void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_eq_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_eqf(vmc_t *vmc, INT *pc_idx);
+void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
 
 eval_fun evaluators[] =
   { eval_fst,
@@ -121,11 +132,22 @@ eval_fun evaluators[] =
     eval_addf,
     eval_mulf,
     eval_minf,
-    eval_gt,
-    eval_lt,
-    eval_eq,
-    eval_ge,
-    eval_le };
+    eval_gt_unsignedi,
+    eval_lt_unsignedi,
+    eval_ge_unsignedi,
+    eval_le_unsignedi,
+    eval_gt_signedi,
+    eval_lt_signedi,
+    eval_ge_signedi,
+    eval_le_signedi,
+    eval_gtf,
+    eval_ltf,
+    eval_gef,
+    eval_lef,
+    eval_eq_unsignedi,
+    eval_eq_signedi,
+    eval_eqf,
+    eval_eq_bool };
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
@@ -596,27 +618,85 @@ void eval_minf(vmc_t *vmc, INT *pc_idx) {
   vmc->vm.env = final_value;
 }
 
-void eval_gt(vmc_t *vmc, INT *pc_idx) {
+void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx) {
   (void)vmc;
   (void)pc_idx;
 }
 
-void eval_lt(vmc_t *vmc, INT *pc_idx) {
+void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx) {
   (void)vmc;
   (void)pc_idx;
 }
 
-void eval_eq(vmc_t *vmc, INT *pc_idx) {
+void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx) {
   (void)vmc;
   (void)pc_idx;
 }
 
-void eval_ge(vmc_t *vmc, INT *pc_idx) {
+void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx) {
   (void)vmc;
   (void)pc_idx;
 }
 
-void eval_le(vmc_t *vmc, INT *pc_idx) {
+void eval_gt_signedi(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_lt_signedi(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_ge_signedi(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_le_signedi(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_gtf(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_ltf(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_gef(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_lef(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+
+// Equality on base types
+
+void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_eq_signedi(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_eqf(vmc_t *vmc, INT *pc_idx) {
+  (void)vmc;
+  (void)pc_idx;
+}
+
+void eval_eq_bool(vmc_t *vmc, INT *pc_idx) {
   (void)vmc;
   (void)pc_idx;
 }
