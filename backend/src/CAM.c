@@ -619,84 +619,306 @@ void eval_minf(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 };
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value > e.value };
+  vmc->vm.env = final_value;
 }
 
 void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 };
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value < e.value };
+  vmc->vm.env = final_value;
 }
 
 void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 };
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value >= e.value };
+  vmc->vm.env = final_value;
 }
 
 void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 };
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value <= e.value };
+  vmc->vm.env = final_value;
 }
 
 void eval_gt_signedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  INT temp1;
+  INT temp2;
+  INT temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 > temp2;
+  memcpy(&final_value.value, &temp3, sizeof(INT));
+  vmc->vm.env = final_value;
 }
 
 void eval_lt_signedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  INT temp1;
+  INT temp2;
+  INT temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 < temp2;
+  memcpy(&final_value.value, &temp3, sizeof(INT));
+  vmc->vm.env = final_value;
 }
 
 void eval_ge_signedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  INT temp1;
+  INT temp2;
+  INT temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 >= temp2;
+  memcpy(&final_value.value, &temp3, sizeof(INT));
+  vmc->vm.env = final_value;
 }
 
 void eval_le_signedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  INT temp1;
+  INT temp2;
+  INT temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 <= temp2;
+  memcpy(&final_value.value, &temp3, sizeof(INT));
+  vmc->vm.env = final_value;
+
 }
 
 void eval_gtf(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 > temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
 }
 
 void eval_ltf(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 < temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
 }
 
 void eval_gef(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 >= temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
 }
 
 void eval_lef(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 <= temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
 }
 
 
 // Equality on base types
 
 void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value == e.value };
+  vmc->vm.env = final_value;
 }
 
 void eval_eq_signedi(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  INT temp1;
+  INT temp2;
+  INT temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 == temp2;
+  memcpy(&final_value.value, &temp3, sizeof(INT));
+  vmc->vm.env = final_value;
 }
 
 void eval_eqf(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  float temp1;
+  float temp2;
+  float temp3;
+  cam_register_t final_value = { .flags = 0, .value = 0 };
+  memcpy(&temp1, &hold_reg.value, sizeof(UINT));
+  memcpy(&temp2, &e.value, sizeof(UINT));
+  temp3 = temp1 == temp2;
+  memcpy(&final_value.value, &temp3, sizeof(float));
+  vmc->vm.env = final_value;
+
 }
 
 void eval_eq_bool(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  (*pc_idx)++;
+  cam_register_t e = vmc->vm.env; // bool represented using uint
+  cam_register_t hold_reg = { .flags = 0, .value = 0 };
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_register_t final_value =
+    { .flags = 0, .value = hold_reg.value == e.value };
+  vmc->vm.env = final_value;
 }
