@@ -69,6 +69,10 @@ void eval_gt_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_lt_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_ge_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_le_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_gtf(vmc_t *vmc, INT *pc_idx);
+void eval_ltf(vmc_t *vmc, INT *pc_idx);
+void eval_gef(vmc_t *vmc, INT *pc_idx);
+void eval_lef(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1431,6 +1435,166 @@ bool eval_le_signedi_test(){
   }
 }
 
+bool eval_gtf_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_gtf(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("gtf operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val > e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_ltf_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_ltf(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("ltf operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val < e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_gef_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_gef(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("gef operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val >= e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_lef_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_lef(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("lef operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == s_val <= e_val){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -1525,7 +1689,15 @@ int main(int argc, char **argv) {
   test_stat("eval_ge_signedi", &total, t38);
   bool t39 = eval_le_signedi_test();
   test_stat("eval_lt_signedi", &total, t39);
+  bool t40 = eval_gtf_test();
+  test_stat("eval_gtf", &total, t40);
+  bool t41 = eval_ltf_test();
+  test_stat("eval_ltf", &total, t41);
+  bool t42 = eval_gef_test();
+  test_stat("eval_gef", &total, t42);
+  bool t43 = eval_lef_test();
+  test_stat("eval_lef", &total, t43);
 
-  printf("Passed total : %d/%d tests\n", total, 39);
+  printf("Passed total : %d/%d tests\n", total, 43);
   return 1;
 }
