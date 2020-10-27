@@ -145,7 +145,11 @@ writeAssembly bytes = do
 
 type Index = Int
 
+type TagIdx = Word16
+
 type SymbolTable = [(Label, Index)]
+
+type TagTable    = [(Tag, TagIdx)] -- See NOTE 1 to understand tag table
 
 -- The standard Binary instance for String
 -- prefixes the length of the String, this
@@ -163,6 +167,8 @@ data AssemblerState =
   , strpool :: [[Word8]]
   , nativepool  :: [[Word8]]
   , symbolTable :: SymbolTable
+  , tagTable    :: TagTable
+  , tagIdx      :: TagIdx
   }
 
 
@@ -173,7 +179,7 @@ newtype Assembler a =
   deriving (Functor, Applicative, Monad, MonadState AssemblerState)
 
 initState :: SymbolTable -> AssemblerState
-initState st = AssemblerState [] [] [] st
+initState st = AssemblerState [] [] [] st [] 0
 
 originalBytecodeOffset
   = 4 -- magic number
@@ -188,7 +194,7 @@ originalBytecodeOffset
 
 translate :: CAM -> [Word8]
 translate cam =
-  let (AssemblerState ipool spool npool _) = pools
+  let (AssemblerState ipool spool npool _ _ _) = pools
       ipoolSize = length ipool
       spoolSize = sum $ map length spool
       npoolSize = length npool
@@ -225,7 +231,7 @@ assemble (i : is) =
     -- TODO: Unhandled Float
     QUOTE (LInt i32) -> do
       word8X2 <- modifyIntPool i32 -- index of int pool (16 bits)
-      rs    <- assemble is
+      rs      <- assemble is
       pure $! loadi : word8X2 ++ rs
     QUOTE (LBool b) ->
       gen2 loadb (bool b)
@@ -233,8 +239,8 @@ assemble (i : is) =
     CONS  -> gen1 cons
     CUR l -> genLabel cur l
     PACK t -> do
-      word8X2 <- modifyStringPool t -- index of string pool (16 bits)
-      rs    <- assemble is
+      word8X2 <- getTagIdBytes t
+      rs      <- assemble is
       pure $! pack : word8X2 ++ rs
     SKIP -> gen1 skip
     STOP -> gen1 stop
@@ -276,7 +282,7 @@ assemble (i : is) =
         rs <- assemble is
         pure $! word : serializeToBytes (byte2 (st ~> label)) ++ rs
       genTagLabel tag label = do
-       word8X2 <- modifyStringPool tag
+       word8X2 <- getTagIdBytes tag
        st <- gets symbolTable
        pure $! word8X2 ++ serializeToBytes (byte2 (st ~> label))
 
@@ -297,6 +303,18 @@ modifyStringPool s = do
   modify $ \s -> s { strpool = spool <~: word8Xn }
   pure $! serializeToBytes $ byte2 (sum $ map length spool)
 
+getTagIdBytes :: Tag -> Assembler [Word8]
+getTagIdBytes tag = do
+  tt <- gets tagTable
+  tagId <- case tt `getIdx` tag of
+             Nothing -> do
+               tid <- gets tagIdx
+               modify $ \s -> s { tagIdx = tid + 1 }
+               modify $ \s -> s { tagTable = (tag,tid) `putIdx` tt }
+               pure tid
+             Just tid -> pure tid
+  let word8X2 = serializeToBytes tagId
+  pure word8X2
 
 type NumBytes = Int
 -- rectifies the offset of the labels after int pool,
@@ -512,6 +530,15 @@ putST st l idx = (l,idx) : st
 (<~:) :: [a] -> a -> [a]
 (<~:) xs x = xs ++ [x]
 
+getIdx :: TagTable -> Tag -> Maybe TagIdx
+getIdx [] _ = Nothing
+getIdx ((tag,idx):tt) t
+  | t == tag = Just idx
+  | otherwise  = tt `getIdx` t
+
+putIdx :: (Tag, TagIdx) -> TagTable -> TagTable
+putIdx = (:)
+
 
 emptyST :: SymbolTable
 emptyST = []
@@ -524,3 +551,32 @@ filepath = do
   case fpath of
     Just f -> pure $! f <> "/file.sense"
     Nothing -> error "Cannot detect project root"
+
+-- NOTE 1
+{-
+
+A tag is encountered under two circumstances
+
+1. In a constructor with PACK
+
+When we get something like PACK "Nothing"
+
+It takes the tag "Nothing" and searches the in memory
+tag table to see if it is present. If it is present
+it will be mapped to some Word16 value. Simply
+transform the Word16 value to [Word8] and the assembler
+can simply write that value.
+
+If the value "Nothing" isn't in the in memory tag
+table then use the "tagIdx" state variable and return
+that value as the Word16 TagIdx. Before returning make
+sure you add this value and tag pair to the tag table
+and increment the "tagIdx" state variable
+
+2. In a case expression using SWITCH when pattern matching.
+
+Either you have seen this tag before or it is new. If new
+add it to TagTable or else get the TagIdx from the TagTable
+and return that index. The "getTagIdBytes"" does exactly that.
+
+-}
