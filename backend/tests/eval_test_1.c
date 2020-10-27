@@ -73,6 +73,10 @@ void eval_gtf(vmc_t *vmc, INT *pc_idx);
 void eval_ltf(vmc_t *vmc, INT *pc_idx);
 void eval_gef(vmc_t *vmc, INT *pc_idx);
 void eval_lef(vmc_t *vmc, INT *pc_idx);
+void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_eq_signedi(vmc_t *vmc, INT *pc_idx);
+void eval_eqf(vmc_t *vmc, INT *pc_idx);
+void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1595,6 +1599,155 @@ bool eval_lef_test(){
   }
 }
 
+bool eval_eq_unsignedi_test(){
+  cam_value_t env_v = { .value = 15, .flags = 0 };
+  cam_value_t st_v  = { .value = 10, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_eq_unsignedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("eq_unsigned_i operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(vmc.vm.env.value ==  (st_v.value == env_v.value)){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_eq_signedi_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  INT e_val = -15;
+  INT s_val = -10;
+  memcpy(&env_v.value, &e_val, sizeof(INT));
+  memcpy(&st_v.value, &s_val, sizeof(INT));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_eq_signedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("eq_signed_i operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  INT result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == (s_val == e_val)){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_eqf_test(){
+  cam_value_t env_v = { .flags = 0 };
+  cam_value_t st_v  = { .flags = 0 };
+  float e_val = 4.389;
+  float s_val = 2.456;
+  memcpy(&env_v.value, &e_val, sizeof(float));
+  memcpy(&st_v.value, &s_val, sizeof(float));
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_eqf(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("eqf operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  float result;
+  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  if(result == (s_val == e_val)){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_eq_bool_test(){
+  cam_value_t env_v = { .value = 1, .flags = 0 }; // true
+  cam_value_t st_v  = { .value = 1, .flags = 0 }; // true
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_eq_bool(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("eq_bool operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(vmc.vm.env.value ==  (st_v.value == env_v.value)){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -1697,7 +1850,15 @@ int main(int argc, char **argv) {
   test_stat("eval_gef", &total, t42);
   bool t43 = eval_lef_test();
   test_stat("eval_lef", &total, t43);
+  bool t44 = eval_eq_unsignedi_test();
+  test_stat("eval_eq_unsignedi", &total, t44);
+  bool t45 = eval_eq_signedi_test();
+  test_stat("eval_eq_signedi", &total, t45);
+  bool t46 = eval_eqf_test();
+  test_stat("eval_eqf", &total, t46);
+  bool t47 = eval_eq_bool_test();
+  test_stat("eval_eq_bool", &total, t47);
 
-  printf("Passed total : %d/%d tests\n", total, 43);
+  printf("Passed total : %d/%d tests\n", total, 47);
   return 1;
 }
