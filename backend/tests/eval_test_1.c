@@ -61,6 +61,7 @@ void eval_abs(vmc_t *vmc, INT *pc_idx);
 void eval_neg(vmc_t *vmc, INT *pc_idx);
 void eval_not(vmc_t *vmc, INT *pc_idx);
 void eval_dec(vmc_t *vmc, INT *pc_idx);
+void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1127,6 +1128,41 @@ bool eval_dec_test(){
   }
 }
 
+bool eval_gt_unsignedi_test(){
+  cam_value_t env_v = { .value = 15, .flags = 0 };
+  cam_value_t st_v  = { .value = 10, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int s_p = stack_push(&s, st_v);
+  if(s_p == 0){
+    printf("Stack push has failed");
+    return false;
+  }
+  VM_t mockvm = { .env = env_v, .stack = s };
+  vmc_t vmc = { .vm = mockvm };
+
+  INT pc_idx = 0;
+  eval_gt_unsignedi(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("gt_unsigned_i operation has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(vmc.vm.env.value ==  st_v.value > env_v.value){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -1204,7 +1240,9 @@ int main(int argc, char **argv) {
   test_stat("eval_not", &total, t30);
   bool t31 = eval_dec_test();
   test_stat("eval_dec", &total, t31);
+  bool t32 = eval_gt_unsignedi_test();
+  test_stat("eval_gt_unsignedi", &total, t32);
 
-  printf("Passed total : %d/%d tests\n", total, 31);
+  printf("Passed total : %d/%d tests\n", total, 32);
   return 1;
 }
