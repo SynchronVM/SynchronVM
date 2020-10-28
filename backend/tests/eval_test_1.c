@@ -77,6 +77,7 @@ void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_eq_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_eqf(vmc_t *vmc, INT *pc_idx);
 void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
+void eval_pack(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -1747,6 +1748,43 @@ bool eval_eq_bool_test(){
   }
 }
 
+bool eval_pack_test(){
+
+  //Value to be held in the environment register
+  cam_value_t v = { .value = 10 };
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+
+  VM_t mockvm = { .env = v };
+  uint8_t code [] = { 11, 0, 1, 3}; // {opcode, label_byte_1, label_byte_2, next opcode}
+  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  INT pc_idx = 0;
+  eval_pack(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("pack t operation has failed\n");
+    return false;
+  }
+
+  //heap_show(&vmc.heap, 3);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  free(hm);
+  uint16_t merged_tag = (code[1] << 8) | code[2];
+  if(fst.value == merged_tag && snd.value == v.value){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 
 void test_stat(char *s, int *tot, bool t){
@@ -1858,7 +1896,9 @@ int main(int argc, char **argv) {
   test_stat("eval_eqf", &total, t46);
   bool t47 = eval_eq_bool_test();
   test_stat("eval_eq_bool", &total, t47);
+  bool t48 = eval_pack_test();
+  test_stat("eval_pack", &total, t48);
 
-  printf("Passed total : %d/%d tests\n", total, 47);
+  printf("Passed total : %d/%d tests\n", total, 48);
   return 1;
 }

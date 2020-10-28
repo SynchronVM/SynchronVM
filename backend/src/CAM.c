@@ -157,6 +157,14 @@ uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   return label;
 }
 
+uint16_t get_tag(vmc_t *vmc, INT *pc_idx){
+  INT tag_idx1 = (*pc_idx) + 1;
+  INT tag_idx2 = (*pc_idx) + 2;
+  uint16_t tag =
+    (vmc->code_memory[tag_idx1] << 8) | vmc->code_memory[tag_idx2]; // merge 2 bytes
+  return tag;
+}
+
 void eval_fst(vmc_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->vm.env;
@@ -302,8 +310,22 @@ void eval_cur(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_pack(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  cam_register_t e = vmc->vm.env;
+  uint16_t tag = get_tag(vmc, pc_idx);
+  cam_value_t cam_tag =
+    { .value = (UINT)tag, .flags = 0 };
+  heap_index hi = heap_allocate(&vmc->heap);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  } else {
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->vm.env = env_pointer;
+    heap_set(&vmc->heap, hi, cam_tag, e);
+    *pc_idx = (*pc_idx) + 3;
+  }
 }
 
 void eval_skip(vmc_t *vmc, INT *pc_idx) {
