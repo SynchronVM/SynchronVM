@@ -424,8 +424,71 @@ void eval_gotofalse(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_switch(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
-  (void)pc_idx;
+  cam_register_t e = vmc->vm.env;
+  cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
+  int i = stack_pop(&vmc->vm.stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  heap_index closure_address = e.value; // TODO: should we do a pointer check here?
+  cam_value_t tag_heap = heap_fst(&vmc->heap, closure_address);
+  cam_value_t val = heap_snd(&vmc->heap, closure_address);
+  INT switch_size_idx = (*pc_idx) + 1;
+  uint8_t switch_size = vmc->code_memory[switch_size_idx];
+
+  int label_to_jump = -1;
+  for(uint8_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
+    INT tag_idx1 = i;
+    INT tag_idx2 = i + 1;
+    uint16_t tag =
+      (vmc->code_memory[tag_idx1] << 8) | vmc->code_memory[tag_idx2]; // merge 2 bytes
+
+    INT lab_idx1 = i + 2;
+    INT lab_idx2 = i + 3;
+    uint16_t label =
+      (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
+
+
+    if(tag_heap.value == (UINT)tag){
+      label_to_jump = label;
+      break;
+    }
+  }
+  if(label_to_jump == -1){
+    DEBUG_PRINT(("Tag %u not found while switching", tag_heap.value));
+    *pc_idx = -1;
+    return;
+  }
+
+  heap_index hi = heap_allocate(&vmc->heap);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  cam_value_t env_pointer =
+    { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+  vmc->vm.env = env_pointer;
+  heap_set(&vmc->heap, hi, hold_reg, val);
+
+
+  //jump to label
+  INT shift_pc_by =
+    1 + //switch op_code
+    1 + // size parameter 1 byte
+    (4 * switch_size); // 4 bytes (2 for label and 2 for tag)
+
+  INT jump_address = (*pc_idx) + shift_pc_by; // see Jump convention at the top
+  cam_value_t j_add = { .value = (UINT)jump_address };
+  int j = stack_push(&vmc->vm.stack, j_add);
+  if(j == 0){
+    DEBUG_PRINT(("Stack push has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  *pc_idx = (INT)label_to_jump;
 }
 
 void eval_abs(vmc_t *vmc, INT *pc_idx) {
