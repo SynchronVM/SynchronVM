@@ -46,8 +46,6 @@
  * address which is the address of the next opcode and jumps
  */
 
-typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
-
 void eval_fst(vmc_t *vmc, INT *pc_idx);
 void eval_snd(vmc_t *vmc, INT *pc_idx);
 void eval_acc(vmc_t *vmc, INT *pc_idx);
@@ -123,29 +121,29 @@ eval_fun evaluators[] =
     eval_neg,
     eval_not,
     eval_dec,
-    eval_add_unsignedi,
-    eval_mul_unsignedi,
-    eval_min_unsignedi,
     eval_add_signedi,
     eval_mul_signedi,
     eval_min_signedi,
     eval_addf,
     eval_mulf,
     eval_minf,
+    eval_gt_signedi,
+    eval_lt_signedi,
+    eval_eq_signedi,
+    eval_ge_signedi,
+    eval_le_signedi,
+    eval_add_unsignedi,
+    eval_mul_unsignedi,
+    eval_min_unsignedi,
     eval_gt_unsignedi,
     eval_lt_unsignedi,
     eval_ge_unsignedi,
     eval_le_unsignedi,
-    eval_gt_signedi,
-    eval_lt_signedi,
-    eval_ge_signedi,
-    eval_le_signedi,
     eval_gtf,
     eval_ltf,
     eval_gef,
     eval_lef,
     eval_eq_unsignedi,
-    eval_eq_signedi,
     eval_eqf,
     eval_eq_bool };
 

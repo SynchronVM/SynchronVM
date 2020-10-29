@@ -24,7 +24,7 @@
 
 #include <VMC.h>
 #include <heap.h>
-
+#include <CAM.h>
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
 #if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 2
@@ -64,7 +64,7 @@ int vmc_init(void) {
 
   int r = 0;
   int rl = 0;
-  
+
   #if VMC_NUM_CONTAINERS >= 1
   rl = heap_init(&vm_containers[VMC_CONTAINER_1].heap, vmc_container_1_heap, VMC_CONTAINER_1_HEAP_SIZE_BYTES);
   if (!rl) return 0;
@@ -96,7 +96,7 @@ int vmc_run(vmc_t *container) {
   UINT pc = 0;
   /* Check valid code */
   uint32_t magic = 0;
-  magic |= container->code_memory[pc++] << 24; /* not sure this shifting works out */ 
+  magic |= container->code_memory[pc++] << 24; /* not sure this shifting works out */
   magic |= container->code_memory[pc++] << 16;
   magic |= container->code_memory[pc++] << 8;
   magic |= container->code_memory[pc++];
@@ -105,7 +105,7 @@ int vmc_run(vmc_t *container) {
 
   /* uint8_t version = container->code_memory[pc++]; */
   pc++;
-  
+
   uint16_t pool_size_ints;
   pool_size_ints = container->code_memory[pc++] << 8;
   pool_size_ints |= container->code_memory[pc++];
@@ -129,18 +129,20 @@ int vmc_run(vmc_t *container) {
   code_size |= container->code_memory[pc++] << 16;
   code_size |= container->code_memory[pc++] << 8;
   code_size |= container->code_memory[pc++];
-  
+
   /* Now pc should be the index of the first instruction. */
   /* set up a context */
 
+  cam_value_t v_empty = get_cam_val(0,0);
   container->context_used[0] = true;
-  container->context[0].env = get_cam_val(0,0);
+  container->context[0].env = v_empty;
   container->context[0].pc  = pc;
   /*container->context[0].stack = */  /* how to create an initial stack*/
   container->context[0].code = container->code_memory; /* discards const, look into*/
-  
-  /* TODO: start executing instructions */ 
- 
+
+  /* TODO: start executing instructions */
+  // pc
+
 
 
   /* end */

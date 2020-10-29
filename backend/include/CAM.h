@@ -26,5 +26,11 @@
 #define __CAM_H_
 
 #include <stdint.h>
+#include <typedefs.h>
+#include <VMC.h>
+
+typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
+
+extern eval_fun evaluators[49]; // 49 instructions
 
 #endif
