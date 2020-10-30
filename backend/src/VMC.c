@@ -143,13 +143,15 @@ int vmc_run(vmc_t *container) {
   cam_value_t v_empty = get_cam_val(0,0);
   container->context.env = v_empty;
   container->context.pc  = pc;
-  /* cam_value_t st_v = { .value = 3, .flags = 0 }; */
+
   cam_stack_t s = { .size = 0 };
   int w = stack_init(&s, container->stack_memory, 256);
   if (w == 0){
     DEBUG_PRINT(printf("Stack initialization has failed"));
     return -1; // indicates error
   }
+
+  container->context.stack = s;
 
   /* Start executing instructions now */
   uint8_t current_inst = container->code_memory[pc];
