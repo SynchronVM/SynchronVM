@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -21,6 +21,13 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  */
 /* SOFTWARE.									  */
 /**********************************************************************************/
+#ifdef DEBUG
+#include <stdio.h>
+# define DEBUG_PRINT(x) printf x
+#else
+# define DEBUG_PRINT(x) do {} while (0)
+#endif
+
 
 #include <VMC.h>
 #include <heap.h>
@@ -93,7 +100,7 @@ int vmc_run(vmc_t *container) {
     container->context_used[i] = false;
   }
 
-  UINT pc = 0;
+  INT pc = 0;
   /* Check valid code */
   uint32_t magic = 0;
   magic |= container->code_memory[pc++] << 24; /* not sure this shifting works out */
@@ -136,10 +143,25 @@ int vmc_run(vmc_t *container) {
   cam_value_t v_empty = get_cam_val(0,0);
   container->context.env = v_empty;
   container->context.pc  = pc;
-
+  /* cam_value_t st_v = { .value = 3, .flags = 0 }; */
+  cam_stack_t s = { .size = 0 };
+  int w = stack_init(&s, container->stack_memory, 256);
+  if (w == 0){
+    DEBUG_PRINT(printf("Stack initialization has failed"));
+    return -1; // indicates error
+  }
 
   /* Start executing instructions now */
-
+  uint8_t current_inst = container->code_memory[pc];
+  while(current_inst != 13){ // stop instruction
+    (*evaluators[current_inst])(container, &pc);
+    if(pc == -1){
+      DEBUG_PRINT(printf("Instruction %u failed",current_inst));
+      return -1; // error
+    }
+    current_inst = container->code_memory[pc];
+  }
+  /* Encountered STOP now */
 
   /* end */
   return 1;
