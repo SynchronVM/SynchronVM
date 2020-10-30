@@ -134,6 +134,28 @@ LE                             0x22                        1
 -- NOTE: Whenever adding an instruction which uses labels remember to rectifyLabelOffset
 -- NOTE: Modify originalBytecodeOffset if adding any new pools etc
 
+{- NOTE: INSTRUCTIONS TO BE ADDED
+
+ADDUI - 35
+MULUI - 36
+MINUI - 37
+GTUI  - 38
+LTUI  - 39
+EQUI  - 40
+GEUI  - 41
+LEUI  - 42
+GTF   - 43
+LTF   - 44
+EQF   - 45
+GEF   - 46
+LEF   - 47
+EQB   - 48
+
+-}
+
+
+
+
 genbytecode :: CAM -> IO ()
 genbytecode = writeAssembly . translate
 

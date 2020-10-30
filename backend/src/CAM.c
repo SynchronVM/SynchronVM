@@ -137,14 +137,14 @@ eval_fun evaluators[] =
     eval_min_unsignedi,
     eval_gt_unsignedi,
     eval_lt_unsignedi,
+    eval_eq_unsignedi,
     eval_ge_unsignedi,
     eval_le_unsignedi,
     eval_gtf,
     eval_ltf,
+    eval_eqf,
     eval_gef,
     eval_lef,
-    eval_eq_unsignedi,
-    eval_eqf,
     eval_eq_bool };
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){

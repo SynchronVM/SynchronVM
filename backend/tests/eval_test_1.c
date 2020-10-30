@@ -35,14 +35,14 @@ void eval_mul_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_min_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx);
+void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_gtf(vmc_t *vmc, INT *pc_idx);
 void eval_ltf(vmc_t *vmc, INT *pc_idx);
+void eval_eqf(vmc_t *vmc, INT *pc_idx);
 void eval_gef(vmc_t *vmc, INT *pc_idx);
 void eval_lef(vmc_t *vmc, INT *pc_idx);
-void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_eqf(vmc_t *vmc, INT *pc_idx);
 void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
