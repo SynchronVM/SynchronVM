@@ -138,7 +138,6 @@ int vmc_run(vmc_t *container) {
   container->context[0].env = v_empty;
   container->context[0].pc  = pc;
   /*container->context[0].stack = */  /* how to create an initial stack*/
-  container->context[0].code = container->code_memory; /* discards const, look into*/
 
   /* TODO: start executing instructions */
   // pc
