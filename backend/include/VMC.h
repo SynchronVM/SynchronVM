@@ -43,7 +43,7 @@ typedef struct {
   uint8_t       *stack_memory;
   uint8_t       *arrays_memory;
   const uint8_t *code_memory;
-  Context_t     context;
+  Context_t     context;      /* represents the parent context for now */
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
 } vmc_t;

@@ -131,17 +131,14 @@ int vmc_run(vmc_t *container) {
   code_size |= container->code_memory[pc++];
 
   /* Now pc should be the index of the first instruction. */
-  /* set up a context */
-
+  /* set up the parent context */
+  /* Running all computations in parent context for now */
   cam_value_t v_empty = get_cam_val(0,0);
-  container->context_used[0] = true;
-  container->contexts[0].env = v_empty;
-  container->contexts[0].pc  = pc;
-  /*container->context[0].stack = */  /* how to create an initial stack*/
+  container->context.env = v_empty;
+  container->context.pc  = pc;
 
-  /* TODO: start executing instructions */
-  // pc
 
+  /* Start executing instructions now */
 
 
   /* end */

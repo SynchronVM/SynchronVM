@@ -493,3 +493,20 @@ connected to more than one VM Container.
   3 way voting etc?
 
 
+
+# Concurrency
+
+Here we are talking about concurrency within a single VM container.
+Each container is made up of a statically fixed number of contexts.
+Each context has its own stack and an environment register. There is common
+heap owned by the container. When starting a new context, there are 2 options
+for allocating the stack memory -
+
+- It might be allocated from the heap owned by the container. 
+- If it is possible to statically estimate the number of threads then that much
+stack memory(for each thread) can be statically allocated on a separate area as
+well.
+
+The parent context can use the stack memory of the container to initialize the stack.
+
+We can impose some kind of channel abstraction for communication between the threads.
