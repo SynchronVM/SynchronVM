@@ -30,20 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-void eval_add_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_mul_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_min_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx);
-void eval_gtf(vmc_t *vmc, INT *pc_idx);
-void eval_ltf(vmc_t *vmc, INT *pc_idx);
-void eval_eqf(vmc_t *vmc, INT *pc_idx);
-void eval_gef(vmc_t *vmc, INT *pc_idx);
-void eval_lef(vmc_t *vmc, INT *pc_idx);
-void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
 
 bool eval_fst_test(){
   heap_cell_t hc1 = { .fst = 0 }; // DUMMY CELL not used
@@ -433,7 +419,7 @@ bool eval_add_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_add_unsignedi(&vmc, &pc_idx);
+  (*evaluators[35])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("add_unsigned_i operation has failed");
     free(m);
@@ -467,7 +453,7 @@ bool eval_mul_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_mul_unsignedi(&vmc, &pc_idx);
+  (*evaluators[36])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("mul_unsigned_i operation has failed");
     free(m);
@@ -501,7 +487,7 @@ bool eval_min_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_min_unsignedi(&vmc, &pc_idx);
+  (*evaluators[37])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("min_unsigned_i operation has failed");
     free(m);
@@ -1131,7 +1117,7 @@ bool eval_gt_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_gt_unsignedi(&vmc, &pc_idx);
+  (*evaluators[38])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("gt_unsigned_i operation has failed");
     free(m);
@@ -1165,7 +1151,7 @@ bool eval_lt_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_lt_unsignedi(&vmc, &pc_idx);
+  (*evaluators[39])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("lt_unsigned_i operation has failed");
     free(m);
@@ -1199,7 +1185,7 @@ bool eval_ge_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_ge_unsignedi(&vmc, &pc_idx);
+  (*evaluators[41])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("ge_unsigned_i operation has failed");
     free(m);
@@ -1233,7 +1219,7 @@ bool eval_le_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_le_unsignedi(&vmc, &pc_idx);
+  (*evaluators[42])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("le_unsigned_i operation has failed");
     free(m);
@@ -1431,7 +1417,7 @@ bool eval_gtf_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_gtf(&vmc, &pc_idx);
+  (*evaluators[43])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("gtf operation has failed");
     free(m);
@@ -1471,7 +1457,7 @@ bool eval_ltf_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_ltf(&vmc, &pc_idx);
+  (*evaluators[44])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("ltf operation has failed");
     free(m);
@@ -1511,7 +1497,7 @@ bool eval_gef_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_gef(&vmc, &pc_idx);
+  (*evaluators[46])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("gef operation has failed");
     free(m);
@@ -1551,7 +1537,7 @@ bool eval_lef_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_lef(&vmc, &pc_idx);
+  (*evaluators[47])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("lef operation has failed");
     free(m);
@@ -1587,7 +1573,7 @@ bool eval_eq_unsignedi_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_eq_unsignedi(&vmc, &pc_idx);
+  (*evaluators[40])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("eq_unsigned_i operation has failed");
     free(m);
@@ -1665,7 +1651,7 @@ bool eval_eqf_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_eqf(&vmc, &pc_idx);
+  (*evaluators[45])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("eqf operation has failed");
     free(m);
@@ -1701,7 +1687,7 @@ bool eval_eq_bool_test(){
   vmc_t vmc = { .vm = mockvm };
 
   INT pc_idx = 0;
-  eval_eq_bool(&vmc, &pc_idx);
+  (*evaluators[48])(&vmc, &pc_idx);
   if (pc_idx == -1){
     printf("eq_bool operation has failed");
     free(m);
