@@ -22,8 +22,8 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __VM_H_
-#define __VM_H_
+#ifndef __CONTEXT_H_
+#define __CONTEXT_H_
 
 #include <vm-conf.h>
 #include <typedefs.h>
@@ -34,8 +34,8 @@ typedef struct {
   cam_register_t env;
   UINT       pc;
   cam_stack_t    stack;
-} VM_t;
+} Context_t;
 
-extern int vm_init(uint8_t *code);
+extern int context_init(uint8_t *code);
 
 #endif

@@ -29,7 +29,7 @@
 #include <typedefs.h>
 #include <register.h>
 #include <heap.h>
-#include <VM.h>
+#include <Context.h>
 
 #include <stdint.h>
 
@@ -43,8 +43,8 @@ typedef struct {
   uint8_t       *stack_memory;
   uint8_t       *arrays_memory;
   const uint8_t *code_memory;
-  VM_t          vm;
-  VM_t          context[VMC_MAX_CONTEXTS];      /* Will likely change */
+  Context_t     context;
+  Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
 } vmc_t;
 

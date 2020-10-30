@@ -135,8 +135,8 @@ int vmc_run(vmc_t *container) {
 
   cam_value_t v_empty = get_cam_val(0,0);
   container->context_used[0] = true;
-  container->context[0].env = v_empty;
-  container->context[0].pc  = pc;
+  container->contexts[0].env = v_empty;
+  container->contexts[0].pc  = pc;
   /*container->context[0].stack = */  /* how to create an initial stack*/
 
   /* TODO: start executing instructions */

@@ -41,10 +41,10 @@ bool eval_fst_test(){
   heap_t hp = { .cells = heap_array , .value_flags = flag_array };
   vmc_t vmc = { .heap = hp };
   cam_value_t cv = { .value = 1 };
-  vmc.vm.env = cv; // set address at the environment register
+  vmc.context.env = cv; // set address at the environment register
   INT pc_idx = 0;
   (*evaluators[0])(&vmc, &pc_idx);
-  if(vmc.vm.env.value == hc2.fst){
+  if(vmc.context.env.value == hc2.fst){
     return true;
   } else {
     return false;
@@ -61,10 +61,10 @@ bool eval_snd_test(){
   heap_t hp = { .cells = heap_array , .value_flags = flag_array };
   vmc_t vmc = { .heap = hp };
   cam_value_t cv = { .value = 1 };
-  vmc.vm.env = cv; // set address at the environment register
+  vmc.context.env = cv; // set address at the environment register
   INT pc_idx = 0;
   (*evaluators[1])(&vmc, &pc_idx);
-  if(vmc.vm.env.value == hc2.snd){
+  if(vmc.context.env.value == hc2.snd){
     return true;
   } else {
     return false;
@@ -81,8 +81,8 @@ bool eval_push_test(){
     free(m);
     return false;
   }
-  VM_t mockvm = { .env = cv, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = cv, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   cam_register_t dummyreg = { .value = 0 };
   INT pc_idx = 0;
@@ -92,7 +92,7 @@ bool eval_push_test(){
     free(m);
     return false;
   }
-  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  int j = stack_pop(&vmc.context.stack, &dummyreg);
   if (j == 0){
     printf("Stack pop has failed");
     free(m);
@@ -137,8 +137,8 @@ bool eval_cons_test(){
     return false;
   }
 
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm, .heap = h};
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context, .heap = h};
   INT pc_idx = 0;
   (*evaluators[9])(&vmc, &pc_idx);
   if(pc_idx == -1){
@@ -147,8 +147,8 @@ bool eval_cons_test(){
   }
 
   /* heap_show(&vmc.heap, 3); */ //Debugging
-  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
-  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.context.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.context.env.value);
   free(m); free(hm);
   if(fst.value == st_v.value && snd.value == env_v.value){
     return true;
@@ -172,9 +172,9 @@ bool eval_cur_test(){
     return false;
   }
 
-  VM_t mockvm = { .env = v };
+  Context_t mock_context = { .env = v };
   uint8_t code [] = { 10, 0, 1, 3}; // {opcode, label_byte_1, label_byte_2, next opcode}
-  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  vmc_t vmc = { .context = mock_context, .heap = h, .code_memory = code};
   INT pc_idx = 0;
   (*evaluators[10])(&vmc, &pc_idx);
   if(pc_idx == -1){
@@ -183,8 +183,8 @@ bool eval_cur_test(){
   }
 
   //heap_show(&vmc.heap, 3);
-  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
-  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.context.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.context.env.value);
   free(hm);
   uint16_t merged_label = (code[1] << 8) | code[2];
   if(fst.value == v.value && snd.value == merged_label){
@@ -233,9 +233,9 @@ bool eval_acc_test(){
 
 
   /* heap_show(&h, 5); */
-  VM_t mockvm = { .env = env_pointer };
+  Context_t mock_context = { .env = env_pointer };
   uint8_t code [] = { 2, 3, 4 }; // {opcode, n, next_opcode}
-  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  vmc_t vmc = { .context = mock_context, .heap = h, .code_memory = code};
 
 
   /* env starts with 0 */
@@ -253,7 +253,7 @@ bool eval_acc_test(){
   }
 
   free(hm);
-  if(vmc.vm.env.value == 40){
+  if(vmc.context.env.value == 40){
     return true;
   } else {
     return false;
@@ -300,9 +300,9 @@ bool eval_rest_test(){
 
 
   /* heap_show(&h, 5); */
-  VM_t mockvm = { .env = env_pointer };
+  Context_t mock_context = { .env = env_pointer };
   uint8_t code [] = { 3, 3, 4 }; //{opcode, n, next_opcode}
-  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  vmc_t vmc = { .context = mock_context, .heap = h, .code_memory = code};
 
 
   /* env starts with 0 */
@@ -319,7 +319,7 @@ bool eval_rest_test(){
   }
 
   free(hm);
-  if(vmc.vm.env.value == 3){
+  if(vmc.context.env.value == 3){
     return true;
   } else {
     return false;
@@ -354,8 +354,8 @@ bool eval_swap_test(){
     return false;
   }
 
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   cam_register_t dummyreg = { .value = 0 };
   INT pc_idx = 0;
@@ -365,7 +365,7 @@ bool eval_swap_test(){
     free(m);
     return false;
   }
-  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  int j = stack_pop(&vmc.context.stack, &dummyreg);
   if (j == 0){
     printf("Stack pop has failed");
     free(m);
@@ -373,7 +373,7 @@ bool eval_swap_test(){
   }
   free(m);
   if(dummyreg.value == env_v.value &&
-     vmc.vm.env.value == st_v.value){
+     vmc.context.env.value == st_v.value){
     return true;
   } else {
     return false;
@@ -383,8 +383,8 @@ bool eval_swap_test(){
 bool eval_clear_test(){
   cam_value_t env_v = { .value = 20, .flags = 0 };
 
-  VM_t mockvm = { .env = env_v };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[8])(&vmc, &pc_idx);
@@ -392,7 +392,7 @@ bool eval_clear_test(){
     printf("clear operation has failed\n");
     return false;
   }
-  if(vmc.vm.env.value == 0 && vmc.vm.env.flags == 0) {
+  if(vmc.context.env.value == 0 && vmc.context.env.flags == 0) {
     return true;
   } else {
     return false;
@@ -415,8 +415,8 @@ bool eval_add_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[35])(&vmc, &pc_idx);
@@ -426,7 +426,7 @@ bool eval_add_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  st_v.value + env_v.value){
+  if(vmc.context.env.value ==  st_v.value + env_v.value){
     return true;
   } else {
     return false;
@@ -449,8 +449,8 @@ bool eval_mul_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[36])(&vmc, &pc_idx);
@@ -460,7 +460,7 @@ bool eval_mul_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  st_v.value * env_v.value){
+  if(vmc.context.env.value ==  st_v.value * env_v.value){
     return true;
   } else {
     return false;
@@ -483,8 +483,8 @@ bool eval_min_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[37])(&vmc, &pc_idx);
@@ -494,7 +494,7 @@ bool eval_min_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value == st_v.value - env_v.value){
+  if(vmc.context.env.value == st_v.value - env_v.value){
     return true;
   } else {
     return false;
@@ -522,8 +522,8 @@ bool eval_add_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[24])(&vmc, &pc_idx);
@@ -534,7 +534,7 @@ bool eval_add_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val + e_val){
     return true;
   } else {
@@ -562,8 +562,8 @@ bool eval_mul_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[25])(&vmc, &pc_idx);
@@ -574,7 +574,7 @@ bool eval_mul_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val * e_val){
     return true;
   } else {
@@ -602,8 +602,8 @@ bool eval_min_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[26])(&vmc, &pc_idx);
@@ -614,7 +614,7 @@ bool eval_min_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val - e_val){
     return true;
   } else {
@@ -642,8 +642,8 @@ bool eval_addf_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[27])(&vmc, &pc_idx);
@@ -654,7 +654,7 @@ bool eval_addf_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val + e_val){
     return true;
   } else {
@@ -682,8 +682,8 @@ bool eval_mulf_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[28])(&vmc, &pc_idx);
@@ -694,7 +694,7 @@ bool eval_mulf_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val * e_val){
     return true;
   } else {
@@ -722,8 +722,8 @@ bool eval_minf_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[29])(&vmc, &pc_idx);
@@ -734,7 +734,7 @@ bool eval_minf_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val - e_val){
     return true;
   } else {
@@ -753,8 +753,8 @@ bool eval_call_test(){
     return false;
   }
   uint8_t code [] = { 24, 16, 0, 0, 20 }; //{addi, call, x00, x00, absinst}
-  VM_t mockvm = { .stack = s };
-  vmc_t vmc = { .vm = mockvm, .code_memory = code};
+  Context_t mock_context = { .stack = s };
+  vmc_t vmc = { .context = mock_context, .code_memory = code};
 
   INT pc_idx = 1;
   (*evaluators[16])(&vmc, &pc_idx);
@@ -764,7 +764,7 @@ bool eval_call_test(){
     return false;
   }
   cam_register_t dummyreg = { .value = 0 };
-  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  int j = stack_pop(&vmc.context.stack, &dummyreg);
   if (j == 0){
     printf("Stack pop has failed");
     free(m);
@@ -813,8 +813,8 @@ bool eval_return_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[15])(&vmc, &pc_idx);
@@ -875,8 +875,8 @@ bool eval_app_test(){
 
 
   uint8_t code [] = { 14, 13, 2, 0 }; //{app, stop, acc, x00 }
-  VM_t mockvm = { .stack = s, .env = env_pointer };
-  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  Context_t mock_context = { .stack = s, .env = env_pointer };
+  vmc_t vmc = { .context = mock_context, .heap = h, .code_memory = code};
   INT pc_idx = 0;
 
   // Mock Machine state before eval_app
@@ -909,14 +909,14 @@ bool eval_app_test(){
     return false;
   }
   cam_register_t dummyreg = { .value = 0 };
-  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  int j = stack_pop(&vmc.context.stack, &dummyreg);
   if (j == 0){
     printf("Stack pop has failed");
     free(m); free(hm);
     return false;
   }
-  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
-  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.context.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.context.env.value);
 
   free(m);
   free(hm);
@@ -946,8 +946,8 @@ bool eval_gotofalse_t_test(){
     free(m);
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc   = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc   = { .context = mock_context };
   INT pc_idx = 0;
   (*evaluators[18])(&vmc, &pc_idx);
   if(pc_idx == -1){
@@ -956,7 +956,7 @@ bool eval_gotofalse_t_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value == st_v.value &&
+  if(vmc.context.env.value == st_v.value &&
      pc_idx == 3){
     return true;
   } else {
@@ -981,8 +981,8 @@ bool eval_gotofalse_f_test(){
     return false;
   }
   uint8_t code [] = { 18, 0, 5 }; //{gotofalse, x00, x05 }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc   = { .vm = mockvm, .code_memory = code };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc   = { .context = mock_context, .code_memory = code };
   INT pc_idx = 0;
   (*evaluators[18])(&vmc, &pc_idx);
   if(pc_idx == -1){
@@ -992,7 +992,7 @@ bool eval_gotofalse_f_test(){
   }
   free(m);
   uint16_t merged_label = (code[1] << 8) | code[2];
-  if(vmc.vm.env.value == st_v.value &&
+  if(vmc.context.env.value == st_v.value &&
      pc_idx == (INT)merged_label){
     return true;
   } else {
@@ -1007,7 +1007,7 @@ bool eval_loadi_test(){
   INT pc_idx = 11;
   (*evaluators[6])(&vmc, &pc_idx);
   // No Failure cases
-  if((INT)vmc.vm.env.value == -20 && pc_idx == 14){ // old pc_idx + 3
+  if((INT)vmc.context.env.value == -20 && pc_idx == 14){ // old pc_idx + 3
     return true;
   } else {
     return false;
@@ -1020,7 +1020,7 @@ bool eval_loadb_test(){
   INT pc_idx = 0;
   (*evaluators[7])(&vmc, &pc_idx);
   // No Failure cases
-  if(vmc.vm.env.value == 1 && pc_idx == 2){ // old pc_idx + 2
+  if(vmc.context.env.value == 1 && pc_idx == 2){ // old pc_idx + 2
     return true;
   } else {
     return false;
@@ -1030,13 +1030,13 @@ bool eval_loadb_test(){
 bool eval_abs_test(){
 
   cam_value_t cv = { .value = -10, .flags = 0 };
-  VM_t mockvm = { .env = cv };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = cv };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[20])(&vmc, &pc_idx);
   // No Failure cases
-  if((INT)vmc.vm.env.value == 10 && pc_idx == 1){
+  if((INT)vmc.context.env.value == 10 && pc_idx == 1){
     return true;
   } else {
     return false;
@@ -1046,13 +1046,13 @@ bool eval_abs_test(){
 bool eval_neg_test(){
 
   cam_value_t cv = { .value = 10, .flags = 0 };
-  VM_t mockvm = { .env = cv };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = cv };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[21])(&vmc, &pc_idx);
   // No Failure cases; possible underflow
-  if((INT)vmc.vm.env.value == -10 && pc_idx == 1){
+  if((INT)vmc.context.env.value == -10 && pc_idx == 1){
     return true;
   } else {
     return false;
@@ -1062,17 +1062,17 @@ bool eval_neg_test(){
 bool eval_not_test(){
 
   cam_value_t cv = { .value = 0, .flags = 0 }; // false
-  VM_t mockvm = { .env = cv };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = cv };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[22])(&vmc, &pc_idx);
   // No Failure cases
-  UINT t = vmc.vm.env.value;
+  UINT t = vmc.context.env.value;
 
   // Now the environment holds true
   (*evaluators[22])(&vmc, &pc_idx);
-  UINT f = vmc.vm.env.value;
+  UINT f = vmc.context.env.value;
 
   if(t == 1 && f == 0){
     return true;
@@ -1084,13 +1084,13 @@ bool eval_not_test(){
 bool eval_dec_test(){
 
   cam_value_t cv = { .value = (UINT)-5, .flags = 0 };
-  VM_t mockvm = { .env = cv };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = cv };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[23])(&vmc, &pc_idx);
   // No Failure cases; possible underflow
-  if((INT)vmc.vm.env.value == -6 && pc_idx == 1){
+  if((INT)vmc.context.env.value == -6 && pc_idx == 1){
     return true;
   } else {
     return false;
@@ -1113,8 +1113,8 @@ bool eval_gt_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[38])(&vmc, &pc_idx);
@@ -1124,7 +1124,7 @@ bool eval_gt_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  st_v.value > env_v.value){
+  if(vmc.context.env.value ==  st_v.value > env_v.value){
     return true;
   } else {
     return false;
@@ -1147,8 +1147,8 @@ bool eval_lt_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[39])(&vmc, &pc_idx);
@@ -1158,7 +1158,7 @@ bool eval_lt_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  st_v.value < env_v.value){
+  if(vmc.context.env.value ==  st_v.value < env_v.value){
     return true;
   } else {
     return false;
@@ -1181,8 +1181,8 @@ bool eval_ge_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[41])(&vmc, &pc_idx);
@@ -1192,7 +1192,7 @@ bool eval_ge_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  st_v.value >= env_v.value){
+  if(vmc.context.env.value ==  st_v.value >= env_v.value){
     return true;
   } else {
     return false;
@@ -1215,8 +1215,8 @@ bool eval_le_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[42])(&vmc, &pc_idx);
@@ -1226,7 +1226,7 @@ bool eval_le_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  st_v.value <= env_v.value){
+  if(vmc.context.env.value ==  st_v.value <= env_v.value){
     return true;
   } else {
     return false;
@@ -1253,8 +1253,8 @@ bool eval_gt_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[30])(&vmc, &pc_idx);
@@ -1265,7 +1265,7 @@ bool eval_gt_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val > e_val){
     return true;
   } else {
@@ -1293,8 +1293,8 @@ bool eval_lt_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[31])(&vmc, &pc_idx);
@@ -1305,7 +1305,7 @@ bool eval_lt_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val < e_val){
     return true;
   } else {
@@ -1333,8 +1333,8 @@ bool eval_ge_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[33])(&vmc, &pc_idx);
@@ -1345,7 +1345,7 @@ bool eval_ge_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val >= e_val){
     return true;
   } else {
@@ -1373,8 +1373,8 @@ bool eval_le_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[34])(&vmc, &pc_idx);
@@ -1385,7 +1385,7 @@ bool eval_le_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val <= e_val){
     return true;
   } else {
@@ -1413,8 +1413,8 @@ bool eval_gtf_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[43])(&vmc, &pc_idx);
@@ -1425,7 +1425,7 @@ bool eval_gtf_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val > e_val){
     return true;
   } else {
@@ -1453,8 +1453,8 @@ bool eval_ltf_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[44])(&vmc, &pc_idx);
@@ -1465,7 +1465,7 @@ bool eval_ltf_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val < e_val){
     return true;
   } else {
@@ -1493,8 +1493,8 @@ bool eval_gef_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[46])(&vmc, &pc_idx);
@@ -1505,7 +1505,7 @@ bool eval_gef_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val >= e_val){
     return true;
   } else {
@@ -1533,8 +1533,8 @@ bool eval_lef_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[47])(&vmc, &pc_idx);
@@ -1545,7 +1545,7 @@ bool eval_lef_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == s_val <= e_val){
     return true;
   } else {
@@ -1569,8 +1569,8 @@ bool eval_eq_unsignedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[40])(&vmc, &pc_idx);
@@ -1580,7 +1580,7 @@ bool eval_eq_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  (st_v.value == env_v.value)){
+  if(vmc.context.env.value ==  (st_v.value == env_v.value)){
     return true;
   } else {
     return false;
@@ -1607,8 +1607,8 @@ bool eval_eq_signedi_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[32])(&vmc, &pc_idx);
@@ -1619,7 +1619,7 @@ bool eval_eq_signedi_test(){
   }
   free(m);
   INT result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == (s_val == e_val)){
     return true;
   } else {
@@ -1647,8 +1647,8 @@ bool eval_eqf_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[45])(&vmc, &pc_idx);
@@ -1659,7 +1659,7 @@ bool eval_eqf_test(){
   }
   free(m);
   float result;
-  memcpy(&result, &vmc.vm.env.value, sizeof(UINT));
+  memcpy(&result, &vmc.context.env.value, sizeof(UINT));
   if(result == (s_val == e_val)){
     return true;
   } else {
@@ -1683,8 +1683,8 @@ bool eval_eq_bool_test(){
     printf("Stack push has failed");
     return false;
   }
-  VM_t mockvm = { .env = env_v, .stack = s };
-  vmc_t vmc = { .vm = mockvm };
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc = { .context = mock_context };
 
   INT pc_idx = 0;
   (*evaluators[48])(&vmc, &pc_idx);
@@ -1694,7 +1694,7 @@ bool eval_eq_bool_test(){
     return false;
   }
   free(m);
-  if(vmc.vm.env.value ==  (st_v.value == env_v.value)){
+  if(vmc.context.env.value ==  (st_v.value == env_v.value)){
     return true;
   } else {
     return false;
@@ -1716,9 +1716,9 @@ bool eval_pack_test(){
     return false;
   }
 
-  VM_t mockvm = { .env = v };
+  Context_t mock_context = { .env = v };
   uint8_t code [] = { 11, 0, 1, 3}; // {opcode, label_byte_1, label_byte_2, next opcode}
-  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  vmc_t vmc = { .context = mock_context, .heap = h, .code_memory = code};
   INT pc_idx = 0;
   (*evaluators[11])(&vmc, &pc_idx);
   if(pc_idx == -1){
@@ -1727,8 +1727,8 @@ bool eval_pack_test(){
   }
 
   //heap_show(&vmc.heap, 3);
-  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
-  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.context.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.context.env.value);
   free(hm);
   uint16_t merged_tag = (code[1] << 8) | code[2];
   if(fst.value == merged_tag && snd.value == v.value){
@@ -1787,8 +1787,8 @@ bool eval_switch_test(){
    stop, skip }           // next opcodes
   */
   uint8_t code [] = { 19, 2, 0, 1, 0, 15, 0, 2, 0, 11, 13, 12 };
-  VM_t mockvm = { .stack = s, .env = env_pointer };
-  vmc_t vmc = { .vm = mockvm, .heap = h, .code_memory = code};
+  Context_t mock_context = { .stack = s, .env = env_pointer };
+  vmc_t vmc = { .context = mock_context, .heap = h, .code_memory = code};
   INT pc_idx = 0;
 
   // Mock Machine state before eval_switch
@@ -1821,14 +1821,14 @@ bool eval_switch_test(){
     return false;
   }
   cam_register_t dummyreg = { .value = 0 };
-  int j = stack_pop(&vmc.vm.stack, &dummyreg);
+  int j = stack_pop(&vmc.context.stack, &dummyreg);
   if (j == 0){
     printf("Stack pop has failed");
     free(m); free(hm);
     return false;
   }
-  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.vm.env.value);
-  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.vm.env.value);
+  cam_value_t fst = heap_fst(&vmc.heap, (INT)vmc.context.env.value);
+  cam_value_t snd = heap_snd(&vmc.heap, (INT)vmc.context.env.value);
 
   free(m);
   free(hm);
