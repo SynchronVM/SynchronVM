@@ -1001,7 +1001,7 @@ bool eval_gotofalse_f_test(){
 }
 
 bool eval_loadi_test(){
-  uint8_t code [] = { 254, 237, 202, 254, 255, 0, 1, // magic code, pool size
+  uint8_t code [] = { 254, 237, 202, 254, 255, 0, 1, // magic code, version, pool size
                       255, 255, 255, 236, 6, 0, 0 }; // {-20, loadi, x00, x00}
   vmc_t vmc   = { .code_memory = code };
   INT pc_idx = 11;
