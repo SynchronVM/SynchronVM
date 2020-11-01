@@ -21,6 +21,12 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  */
 /* SOFTWARE.									  */
 /**********************************************************************************/
+#ifdef DEBUG
+#include <stdio.h>
+# define DEBUG_PRINT(x) printf x
+#else
+# define DEBUG_PRINT(x) do {} while (0)
+#endif
 
 #include <stack.h>
 
@@ -45,6 +51,7 @@ int stack_push(cam_stack_t *s, cam_value_t cvalue) {
   if (s->sp == s->size) return 0;
   s->data[s->sp] = cvalue.value;
   s->flags[s->sp++] = cvalue.flags;
+  s->size++;
   return 1;
 }
 /* int stack_push(cam_stack_t *s, UINT value) { */
@@ -67,6 +74,25 @@ int stack_pop(cam_stack_t *s, cam_register_t *r) {
   s->sp--;
   r->value = s->data[s->sp];
   r->flags = s->flags[s->sp];
+  s->size--;
   return 1;
 }
 
+#ifdef DEBUG
+void stack_show(cam_stack_t *stack, int size){
+  int num_cells;
+  if(size > (INT)stack->size){
+    num_cells = stack->size;
+  } else if(size < 0){
+    num_cells = 0;
+  } else {
+    num_cells = size;
+  }
+
+  for (int i = 0; i < num_cells; i ++) {
+    DEBUG_PRINT(("| %u | %u |-> ", stack->data[i], stack->flags[i]));
+  }
+
+  DEBUG_PRINT(("STACK_END\n"));
+}
+#endif

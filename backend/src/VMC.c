@@ -147,7 +147,7 @@ int vmc_run(vmc_t *container) {
   cam_stack_t s = { .size = 0 };
   int w = stack_init(&s, container->stack_memory, 256);
   if (w == 0){
-    DEBUG_PRINT(printf("Stack initialization has failed"));
+    DEBUG_PRINT(("Stack initialization has failed"));
     return -1; // indicates error
   }
 
@@ -158,13 +158,30 @@ int vmc_run(vmc_t *container) {
   while(current_inst != 13){ // stop instruction
     (*evaluators[current_inst])(container, &pc);
     if(pc == -1){
-      DEBUG_PRINT(printf("Instruction %u failed",current_inst));
+      DEBUG_PRINT(("Instruction %u failed",current_inst));
       return -1; // error
     }
-    current_inst = container->code_memory[pc];
-  }
+    current_inst = container->code_memory[pc];  }
   /* Encountered STOP now */
 
   /* end */
   return 1;
 }
+
+/* DEBUG loop
+   while(current_inst != 13){ // stop instruction
+     DEBUG_PRINT(("Current instruction : %u\n\n",current_inst));
+     (*evaluators[current_inst])(container, &pc);
+     if(pc == -1){
+       DEBUG_PRINT(("Instruction %u failed",current_inst));
+       return -1; // error
+     }
+     current_inst = container->code_memory[pc];
+     DEBUG_PRINT((" Env : %u\n\n", container->context.env.value));
+     heap_show(&container->heap, 10);
+     DEBUG_PRINT((" Stack pointer : %u\n\n",container->context.stack.sp));
+     stack_show(&container->context.stack,5);
+     DEBUG_PRINT(("\n\n"));
+   }
+
+ */

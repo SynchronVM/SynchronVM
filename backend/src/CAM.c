@@ -238,7 +238,7 @@ void eval_loadi(vmc_t *vmc, INT *pc_idx) {
   uint16_t int_idx =
     (vmc->code_memory[int_idx1] << 8) | vmc->code_memory[int_idx2]; // merge 2 bytes
   INT int_pool_offset = 7; //TODO: Should we verify the int pool size here?
-  INT i_idx = int_pool_offset + int_idx;
+  INT i_idx = int_pool_offset + 4 * int_idx; // each int 4 bytes wide
   uint8_t byte0 = vmc->code_memory[i_idx];
   uint8_t byte1 = vmc->code_memory[i_idx + 1];
   uint8_t byte2 = vmc->code_memory[i_idx + 2];
