@@ -62,6 +62,8 @@ bool vmc_run_1_test(){
     return false;
   }
 
+  free(hm);
+  free(sm);
 
   if(container.context.env.value == 25){
     return true;
@@ -105,6 +107,9 @@ bool vmc_run_2_test(){
     free(sm);
     return false;
   }
+
+  free(hm);
+  free(sm);
 
   if(container.context.env.value == 9){
     return true;
