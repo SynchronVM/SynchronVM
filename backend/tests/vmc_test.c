@@ -118,6 +118,48 @@ bool vmc_run_2_test(){
   }
 }
 
+bool vmc_run_3_test(){
+  /* Stack memory */
+  uint8_t *sm = malloc(256);
+
+  /* HEAP */
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    free(hm);
+    free(sm);
+    return false;
+  }
+
+  /*
+    ((\x -> x + 4) 3)
+  */
+  uint8_t code [] =
+    { 254,237,202,254,1,0,2,0,0,0,3,0,0,0,4,0,0,0,0,0,0,0,21,4,6,0,0,5,10,0,33,14,13,4,2,0,12,5,6,0,1,24,15,12 };
+
+  vmc_t container = { .heap = h, .code_memory = code, .stack_memory = sm};
+
+  int run = vmc_run(&container);
+
+  if (run == -1){
+    printf("vmc_run has failed");
+    free(hm);
+    free(sm);
+    return false;
+  }
+
+  free(hm);
+  free(sm);
+
+  if(container.context.env.value == 7){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -137,6 +179,8 @@ int main(int argc, char **argv) {
   test_stat("vmc_run_1", &total, t1);
   bool t2 = vmc_run_2_test();
   test_stat("vmc_run_2", &total, t2);
+  bool t3 = vmc_run_3_test();
+  test_stat("vmc_run_3", &total, t3);
 
-  printf("Passed total : %d/%d tests\n", total, 2);
+  printf("Passed total : %d/%d tests\n", total, 3);
 }
