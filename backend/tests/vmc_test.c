@@ -207,6 +207,51 @@ bool vmc_run_4_test(){
   }
 }
 
+bool vmc_run_5_test(){
+  /* Stack memory */
+  uint8_t *sm = malloc(256);
+
+  /* HEAP */
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1550); // allocate more than 1024 bytes
+  int h_init = heap_init(&h, hm, 1550); // allocate more than 1024 bytes
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    free(hm);
+    free(sm);
+    return false;
+  }
+
+  /*
+    letrec even = \n -> if (n == 0) then true else not (even (n - 1))
+    in even 1
+  */
+  uint8_t code [] =
+    { 254,237,202,254,1,0,2,0,0,0,56,0,0,0,0,0,0,0,0,0,0,0,52,4,6,0,0,5,3,0,16,0,36,12,14,13,10,0,40,15,4,4,2,0,12,5,6,0,1,32,18,0,58,7,1,17,0,72,4,2,0,12,23,5,3,1,16,0,36,12,14,22,12,15,12 };
+
+  vmc_t container = { .heap = h, .code_memory = code, .stack_memory = sm};
+
+  int run = vmc_run(&container);
+
+  /* heap_show(&container.heap, 120); */
+
+  if (run == -1){
+    printf("vmc_run has failed");
+    free(hm);
+    free(sm);
+    return false;
+  }
+
+  free(hm);
+  free(sm);
+
+  if(container.context.env.value == 1){ //env register contains True?
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -230,6 +275,8 @@ int main(int argc, char **argv) {
   test_stat("vmc_run_3", &total, t3);
   bool t4 = vmc_run_4_test();
   test_stat("vmc_run_4", &total, t4);
+  bool t5 = vmc_run_5_test();
+  test_stat("vmc_run_5", &total, t5);
 
-  printf("Passed total : %d/%d tests\n", total, 4);
+  printf("Passed total : %d/%d tests\n", total, 5);
 }

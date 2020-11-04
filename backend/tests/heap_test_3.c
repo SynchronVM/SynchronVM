@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
   //  return 0;
   //}
 
-  if ((hptr->bptr & 0x3) != 0) {
+  if ((hptr->bptr & 0x3) != 0) { // addr % 4 == 0
     printf("Heap is not 4 byte aligned\n");
     return 0;
   } 

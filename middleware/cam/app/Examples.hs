@@ -113,7 +113,7 @@ example7 = Letrec [( (PatVar "even")
                                         (Sys $ LBool True)
                                         (Sys $ Sys1 NOT (App (Var "even") (Sys $ Sys1 DEC (Var "n")))))))
                   ]
-                  (App (Var "even") (Sys $ LInt 1))
+                  (App (Var "even") (Sys $ LInt 56))
 
 {-
 let y = 1 in
