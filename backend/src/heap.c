@@ -155,15 +155,18 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
   return 1;
 }
-
 /*******************/
 /* Heap Allocation */
 /*******************/
 
-
-/* Hughes Lazy sweep */
-
 heap_index heap_allocate(heap_t *heap) {
+
+  /* Hughes Lazy sweep */
+  /* Instead of sweeping every time after mark completes      */
+  /* wait for the allocation call to happen and lazily sweep  */
+  /* then and instead of returning to the free list return    */
+  /* the current index as the place for allocation. Further   */
+  /* allocations will keep clearing cells, unmarking them etc */
 
   while (heap->sweep_pos < heap->size_cells) {
 
@@ -177,17 +180,9 @@ heap_index heap_allocate(heap_t *heap) {
   }
 
   heap->sweep_pos = 0;
-  /*
-    heap_allocate_helper(vmc_t)
-    if HEAP_NULL
-    collect all roots and run heap_mark for all of them
-    call helper again
-    if fails the second time
-    HEAP_NULL
-
-   */
-  return HEAP_NULL; // Heap is full and a mark phase should be run
+  return HEAP_NULL;
 }
+
 
 /**********************/
 /* Garbage Collection */

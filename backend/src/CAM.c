@@ -147,6 +147,34 @@ eval_fun evaluators[] =
     eval_lef,
     eval_eq_bool };
 
+heap_index heap_alloc_withGC(vmc_t *container) {
+
+  heap_index hi = heap_allocate(&container->heap);
+  if(hi == HEAP_NULL){
+    // heap full; time to do a GC
+
+    /* GC parent context */
+    // run mark from env
+    heap_mark(&container->heap, container->context.env);
+
+    // run mark for each element of the stack
+    for(unsigned int i = 0; i < container->context.stack.size; i++){
+      cam_value_t cv =
+        get_cam_val(    container->context.stack.data[i]
+                        , container->context.stack.flags[i]);
+      heap_mark(&container->heap, cv);
+    }
+    // First phase mark complete; try allocating again
+    // Sweeping is lazy and integrated into the allocator
+
+    //TODO: Need to GC all active child context roots
+    // if heap_allocate_helper returns HEAP_NULL again need to resize heap
+    return heap_allocate(&container->heap);
+  }
+
+  return hi;
+}
+
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
   INT lab_idx2 = (*pc_idx) + 2;
@@ -273,7 +301,7 @@ void eval_cons(vmc_t *vmc, INT *pc_idx) {
     *pc_idx = -1;
     return;
   }
-  heap_index hi = heap_allocate(&vmc->heap);
+  heap_index hi = heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -293,7 +321,7 @@ void eval_cur(vmc_t *vmc, INT *pc_idx) {
   uint16_t label = get_label(vmc, pc_idx);
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
-  heap_index hi = heap_allocate(&vmc->heap);
+  heap_index hi = heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -312,7 +340,7 @@ void eval_pack(vmc_t *vmc, INT *pc_idx) {
   uint16_t tag = get_tag(vmc, pc_idx);
   cam_value_t cam_tag =
     { .value = (UINT)tag, .flags = 0 };
-  heap_index hi = heap_allocate(&vmc->heap);
+  heap_index hi = heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -349,7 +377,7 @@ void eval_app(vmc_t *vmc, INT *pc_idx) {
   heap_index closure_address = e.value; // TODO: should we do a pointer check here?
   cam_value_t val = heap_fst(&vmc->heap, closure_address);
   cam_value_t label = heap_snd(&vmc->heap, closure_address);
-  heap_index hi = heap_allocate(&vmc->heap);
+  heap_index hi = heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -460,7 +488,7 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
     return;
   }
 
-  heap_index hi = heap_allocate(&vmc->heap);
+  heap_index hi = heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;

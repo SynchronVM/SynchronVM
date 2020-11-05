@@ -60,6 +60,7 @@ typedef struct {
 } heap_t;
 
 
+/* could go to a util namespace */
 extern cam_value_t get_cam_val(UINT ui, value_flags_t f); /* maybe put elsewhere */
 
 extern unsigned int heap_num_free(heap_t *heap);

@@ -213,8 +213,8 @@ bool vmc_run_5_test(){
 
   /* HEAP */
   heap_t h = { .size_bytes = 0 };
-  uint8_t *hm = malloc(1550); // allocate more than 1024 bytes
-  int h_init = heap_init(&h, hm, 1550); // allocate more than 1024 bytes
+  uint8_t *hm = malloc(1024); // requires GC
+  int h_init = heap_init(&h, hm, 1024);
   if (h_init == 0){
     printf("Heap initialization has failed");
     free(hm);
