@@ -1124,7 +1124,7 @@ bool eval_gt_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.context.env.value ==  st_v.value > env_v.value){
+  if(vmc.context.env.value ==  (st_v.value > env_v.value)){
     return true;
   } else {
     return false;
@@ -1158,7 +1158,7 @@ bool eval_lt_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.context.env.value ==  st_v.value < env_v.value){
+  if(vmc.context.env.value == (st_v.value < env_v.value)){
     return true;
   } else {
     return false;
@@ -1192,7 +1192,7 @@ bool eval_ge_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.context.env.value ==  st_v.value >= env_v.value){
+  if(vmc.context.env.value == (st_v.value >= env_v.value)){
     return true;
   } else {
     return false;
@@ -1226,7 +1226,7 @@ bool eval_le_unsignedi_test(){
     return false;
   }
   free(m);
-  if(vmc.context.env.value ==  st_v.value <= env_v.value){
+  if(vmc.context.env.value == (st_v.value <= env_v.value)){
     return true;
   } else {
     return false;
@@ -1266,7 +1266,7 @@ bool eval_gt_signedi_test(){
   free(m);
   INT result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val > e_val){
+  if(result == (s_val > e_val)){
     return true;
   } else {
     return false;
@@ -1306,7 +1306,7 @@ bool eval_lt_signedi_test(){
   free(m);
   INT result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val < e_val){
+  if(result == (s_val < e_val)){
     return true;
   } else {
     return false;
@@ -1346,7 +1346,7 @@ bool eval_ge_signedi_test(){
   free(m);
   INT result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val >= e_val){
+  if(result == (s_val >= e_val)){
     return true;
   } else {
     return false;
@@ -1386,7 +1386,7 @@ bool eval_le_signedi_test(){
   free(m);
   INT result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val <= e_val){
+  if(result == (s_val <= e_val)){
     return true;
   } else {
     return false;
@@ -1426,7 +1426,7 @@ bool eval_gtf_test(){
   free(m);
   float result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val > e_val){
+  if(result == (s_val > e_val)){
     return true;
   } else {
     return false;
@@ -1466,7 +1466,7 @@ bool eval_ltf_test(){
   free(m);
   float result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val < e_val){
+  if(result == (s_val < e_val)){
     return true;
   } else {
     return false;
@@ -1506,7 +1506,7 @@ bool eval_gef_test(){
   free(m);
   float result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val >= e_val){
+  if(result == (s_val >= e_val)){
     return true;
   } else {
     return false;
@@ -1546,7 +1546,7 @@ bool eval_lef_test(){
   free(m);
   float result;
   memcpy(&result, &vmc.context.env.value, sizeof(UINT));
-  if(result == s_val <= e_val){
+  if(result == (s_val <= e_val)){
     return true;
   } else {
     return false;
