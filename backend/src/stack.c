@@ -51,7 +51,6 @@ int stack_push(cam_stack_t *s, cam_value_t cvalue) {
   if (s->sp == s->size) return 0;
   s->data[s->sp] = cvalue.value;
   s->flags[s->sp++] = cvalue.flags;
-  s->size++;
   return 1;
 }
 /* int stack_push(cam_stack_t *s, UINT value) { */
@@ -74,7 +73,6 @@ int stack_pop(cam_stack_t *s, cam_register_t *r) {
   s->sp--;
   r->value = s->data[s->sp];
   r->flags = s->flags[s->sp];
-  s->size--;
   return 1;
 }
 
