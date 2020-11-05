@@ -147,6 +147,23 @@ eval_fun evaluators[] =
     eval_lef,
     eval_eq_bool };
 
+
+
+static inline void mark_heap_context(Context_t *context, heap_t *heap){
+  /* GC Roots - env register, the full stack */
+
+  // run mark from env
+  heap_mark(heap, context->env);
+
+  // run mark for each element of the stack
+  for(unsigned int i = 0; i < context->stack.size; i++){
+    cam_value_t cv =
+      get_cam_val(context->stack.data[i], context->stack.flags[i]);
+    heap_mark(heap, cv);
+  }
+}
+
+
 heap_index heap_alloc_withGC(vmc_t *container) {
 
   heap_index hi = heap_allocate(&container->heap);
@@ -154,20 +171,19 @@ heap_index heap_alloc_withGC(vmc_t *container) {
     // heap full; time to do a GC
 
     /* GC parent context */
-    // run mark from env
-    heap_mark(&container->heap, container->context.env);
+    mark_heap_context(&container->context, &container->heap);
 
-    // run mark for each element of the stack
-    for(unsigned int i = 0; i < container->context.stack.size; i++){
-      cam_value_t cv =
-        get_cam_val(    container->context.stack.data[i]
-                        , container->context.stack.flags[i]);
-      heap_mark(&container->heap, cv);
+    /* GC all active child contexts */
+    for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
+      if(container->context_used[i] ){
+        mark_heap_context(&container->contexts[i], &container->heap);
+      }
     }
+
     // First phase mark complete; try allocating again
     // Sweeping is lazy and integrated into the allocator
 
-    //TODO: Need to GC all active child context roots
+
     // if heap_allocate_helper returns HEAP_NULL again need to resize heap
     return heap_allocate(&container->heap);
   }
