@@ -30,13 +30,10 @@
 #include <heap.h>
 /* #include <string.h> */ // has memcpy
 
-bool prepare_container(vmc_t *container, int stack_memory_size, int heap_memory_size, uint8_t *code){
-  /* Stack memory */
-  uint8_t *sm = malloc(stack_memory_size);
+bool prepare_container(vmc_t *container, int stack_memory_size, int heap_memory_size, uint8_t *code, uint8_t *sm, uint8_t *hm){
 
   /* HEAP */
   heap_t h = { .size_bytes = 0 };
-  uint8_t *hm = malloc(heap_memory_size);
   int h_init = heap_init(&h, hm, heap_memory_size);
   if (h_init == 0){
     printf("Heap initialization has failed");
@@ -73,7 +70,11 @@ bool vmc_run_1_test(){
 
 
   vmc_t container;
-  bool p = prepare_container(&container, 256, 1024, code);
+  int stack_mem_size = 256;
+  int heap_mem_size = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
   if(!p){
     return false;
   }
@@ -82,13 +83,13 @@ bool vmc_run_1_test(){
 
   if (run == -1){
     printf("vmc_run has failed");
-    /* free(&container.heap); */
-    free(container.stack_memory);
+    free(sm);
+    free(hm);
     return false;
   }
 
-  /* free(&container.heap); */
-  free(container.stack_memory);
+  free(sm);
+  free(hm);
 
   if(container.context.env.value == 25){
     return true;
@@ -110,7 +111,11 @@ bool vmc_run_2_test(){
     { 254,237,202,254,1,0,3,0,0,0,3,0,0,0,2,0,0,0,4,0,0,0,0,0,0,0,36,4,4,10,0,58,9,6,0,0,9,4,4,2,0,12,5,6,0,1,24,9,4,2,0,12,5,6,0,2,24,13,2,0,12,15,12 };
 
   vmc_t container;
-  bool p = prepare_container(&container, 256, 1024, code);
+  int stack_mem_size = 256;
+  int heap_mem_size = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
   if(!p){
     return false;
   }
@@ -119,11 +124,13 @@ bool vmc_run_2_test(){
 
   if (run == -1){
     printf("vmc_run has failed");
-    free(container.stack_memory);
+    free(sm);
+    free(hm);
     return false;
   }
 
-  free(container.stack_memory);
+  free(sm);
+  free(hm);
 
   if(container.context.env.value == 9){
     return true;
@@ -141,7 +148,11 @@ bool vmc_run_3_test(){
     { 254,237,202,254,1,0,2,0,0,0,3,0,0,0,4,0,0,0,0,0,0,0,21,4,6,0,0,5,10,0,33,14,13,4,2,0,12,5,6,0,1,24,15,12 };
 
   vmc_t container;
-  bool p = prepare_container(&container, 256, 1024, code);
+  int stack_mem_size = 256;
+  int heap_mem_size = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
   if(!p){
     return false;
   }
@@ -150,11 +161,13 @@ bool vmc_run_3_test(){
 
   if (run == -1){
     printf("vmc_run has failed");
-    free(container.stack_memory);
+    free(sm);
+    free(hm);
     return false;
   }
 
-  free(container.stack_memory);
+  free(sm);
+  free(hm);
 
   if(container.context.env.value == 7){
     return true;
@@ -178,7 +191,11 @@ bool vmc_run_4_test(){
 
 
   vmc_t container;
-  bool p = prepare_container(&container, 256, 1024, code);
+  int stack_mem_size = 256;
+  int heap_mem_size = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
   if(!p){
     return false;
   }
@@ -187,11 +204,13 @@ bool vmc_run_4_test(){
 
   if (run == -1){
     printf("vmc_run has failed");
-    free(container.stack_memory);
+    free(sm);
+    free(hm);
     return false;
   }
 
-  free(container.stack_memory);
+  free(sm);
+  free(hm);
 
   if(container.context.env.value == 6){
     return true;
@@ -209,7 +228,11 @@ bool vmc_run_5_test(){
     { 254,237,202,254,1,0,2,0,0,0,56,0,0,0,0,0,0,0,0,0,0,0,52,4,6,0,0,5,3,0,16,0,36,12,14,13,10,0,40,15,4,4,2,0,12,5,6,0,1,32,18,0,58,7,1,17,0,72,4,2,0,12,23,5,3,1,16,0,36,12,14,22,12,15,12 };
 
   vmc_t container;
-  bool p = prepare_container(&container, 512, 1024, code); // requires more stack as well as GC
+  int stack_mem_size = 512; // requires more stack
+  int heap_mem_size = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
   if(!p){
     return false;
   }
@@ -218,11 +241,14 @@ bool vmc_run_5_test(){
 
   if (run == -1){
     printf("vmc_run has failed");
-    free(container.stack_memory);
+    free(sm);
+    free(hm);
+
     return false;
   }
 
-  free(container.stack_memory);
+  free(sm);
+  free(hm);
 
   if(container.context.env.value == 1){ //env register contains True?
     return true;
@@ -241,7 +267,11 @@ bool vmc_run_6_test(){
     { 254,237,202,254,1,0,2,0,0,0,53,0,0,0,0,0,0,0,0,0,0,0,85,4,6,0,0,5,3,0,16,0,40,12,14,13,10,0,86,15,10,0,44,15,4,4,2,0,12,5,6,0,1,32,18,0,62,7,1,17,0,84,4,4,2,0,12,23,5,3,1,16,0,40,12,14,5,3,1,16,0,36,12,14,12,15,4,4,2,0,12,5,7,1,32,18,0,103,7,0,17,0,105,7,1,12,15,12 };
 
   vmc_t container;
-  bool p = prepare_container(&container, 1024, 1024, code); // requires even more stack than test 5; candidate for tail recursion
+  int stack_mem_size = 1024; // requires a lot of stack; candidate for tail recursion
+  int heap_mem_size  = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
   if(!p){
     return false;
   }
@@ -251,11 +281,13 @@ bool vmc_run_6_test(){
 
   if (run == -1){
     printf("vmc_run has failed");
-    free(container.stack_memory);
+    free(sm);
+    free(hm);
     return false;
   }
 
-  free(container.stack_memory);
+  free(sm);
+  free(hm);
 
   if(container.context.env.value == 0){ //env register contains False?
     return true;

@@ -140,7 +140,7 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
   heap->cells = (heap_cell_t *)mem;
   heap->value_flags = (heap_flags_t*)(mem + value_flags_start);
   heap->flags = (uint8_t *)(mem + flags_start);
-  heap->bptr = (uintptr_t)heap;
+  heap->bptr = (uintptr_t)mem;
 
   for (unsigned int i = 0; i < n_cells; i ++) {
     heap->cells[i].snd = i + 1;
