@@ -42,28 +42,29 @@ module Typechecker.Environment
        , lookupCons
 
        , TC()
+       , runTC
        , TCError(..)
+       , Constraint(..)
+       , uni
+       , uniMany
+       , uniEither
        , letters
        , fresh
        ) where
 
 import Parser.AbsTinyCamiot ( Type(TVar), UIdent, Ident(..) )
 import Parser.PrintTinyCamiot ()
-import Typechecker.Substitution
-    ( Substitutable(..), Subst, nullSubst, compose )
-import Typechecker.Constraint ( Constraint )
+import Typechecker.Substitution ( Substitutable(..))
+--import Typechecker.Constraint ( Constraint )
 import Typechecker.TCUtils ( TCError(..) )
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Control.Monad.State
-    ( replicateM, MonadState(put, get), StateT )
-import Control.Monad.Reader
-    ( replicateM, MonadReader(ask, local), ReaderT )
-import Control.Monad.Writer ( replicateM, WriterT )
-import Control.Monad.Except
-    ( replicateM, MonadError(throwError), ExceptT )
+import Control.Monad.State  ( replicateM, MonadState(put, get), StateT, runStateT )
+import Control.Monad.Reader ( MonadReader(ask, local), ReaderT, runReaderT )
+import Control.Monad.Writer ( WriterT, runWriterT, tell )
+import Control.Monad.Except ( MonadError(throwError), ExceptT, runExceptT )
 
 -- | Type schemas, e.g forall a . Maybe a.
 data Scheme = Forall [Ident] Type
@@ -145,13 +146,52 @@ data TCState = TCState
 emptyState :: TCState
 emptyState = TCState 0 Map.empty
 
--- | The type checking monad (this should be moved somewhere else)
+data Constraint 
+    = C (Type, Type, Maybe (Type -> Type -> Maybe TCError))
+    | C2 [Constraint]
+
+instance Substitutable Constraint where
+    apply s (C (t1, t2, test)) = C (apply s t1, apply s t2, test)
+    apply s (C2 cs)            = C2 (map (apply s) cs)
+
+    ftv (C (t1, t2, _)) = Set.union (ftv t1) (ftv t2)
+    ftv (C2 cs)         = Set.unions (map ftv cs)
+    
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
             StateT TCState (
             ExceptT TCError 
             IO))) 
             a
+
+-- | Run a TC computation, discarding the state.
+runTC :: TC a -> TEnv -> IO (Either TCError (a, [Constraint]))
+runTC tc initEnv = do
+  ex <- (runExceptT . flip runStateT emptyState . runWriterT) (runReaderT tc initEnv)
+  case ex of
+    Left  e -> return $ Left e
+    Right r -> return $ Right $ fst r
+
+-- | Emit two types that should be unified
+uni :: Type -> Type -> Maybe (Type -> Type -> Maybe TCError) -> TC ()
+uni t1 t2 test = tell [C (t1, t2, test)]
+
+{-- | Unify many types. I've (Robert) convinced myself that if you can unify t1 and t2,
+and you can unify t2 and t3, then you can surely unify t1 and t3.
+-}
+uniMany :: [Type] -> Maybe (Type -> Type -> Maybe TCError) -> TC ()
+uniMany []       _ = return ()
+uniMany [x]      t = uni x x t
+uniMany [x,y]    t = uni x y t
+uniMany (x:y:xs) t = uni x y t >> uniMany (y:xs) t
+
+{-- | Presented with a list of pairs of types, `uniEither` will try to unify one pair
+at a time until one of them succeeds. Used when e.g typechecking `(+)`, which has
+the type forall a . a -> a -> a, but must be unified with either Int -> Int -> Int,
+or Float -> Float -> Float.
+-}
+uniEither :: [(Type, Type)] -> TC ()
+uniEither cs = tell [C2 (map (\(t1,t2) -> C (t1,t2,Nothing)) cs)]
 
 -- | Helper function used to generate fresh type variables.
 letters :: [String]

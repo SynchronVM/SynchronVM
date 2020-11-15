@@ -23,111 +23,44 @@
 module Typechecker.TypecheckTinyCamiot where
 
 import Parser.AbsTinyCamiot
-    ( PatMatch(..),
-      Pat(..),
-      Const(..),
-      RelOp(..),
-      MulOp(Div, Times),
-      AddOp(Minus, Plus),
-      Exp(..),
-      Type(TAdt, TLam, TVar, TTup, TNil),
-      ConstructorDec(..),
-      Def(..),
-      UIdent,
-      Ident(..) )
-import Parser.PrintTinyCamiot ( printTree )
-
-import Typechecker.Substitution
-    ( Subst, Substitutable(ftv, apply) )
+import Parser.PrintTinyCamiot
+import Typechecker.Substitution hiding (Subst)
 import Typechecker.Environment
-    ( TCError(ConstructorNotFullyApplied, DuplicateTypeSig,
-              DuplicateConstructor, UnboundTypeVariable, TypeArityError,
-              WrongConstructorGoal, AloneTypeSignature,
-              RecursiveFunctionWithoutTypesig, FunctionClausesNotEqual,
-              TypeSignatureTooGeneral, FunctionClauseWrongType, LambdaConstError,
-              PatternTypeError),
-      TC,
-      TCState(constructors),
-      TEnv,
-      Scheme(..),
-      emptyEnv,
-      extend,
-      inEnvMany,
-      instantiate,
-      generalize,
-      lookupVar,
-      lookupCons,
-      emptyState,
-      fresh )
-import Typechecker.Unification
-    ( uni, uniMany, uniEither, runSolve )
 import Typechecker.AstUtils
-    ( (*->),
-      getAddopVar,
-      getMulopVar,
-      getRelopVar,
-      getPMType,
-      bool,
-      int,
-      float,
-      functionType,
-      countArguments,
-      getExpVar,
-      getPatVar )
 import Typechecker.TCUtils
-    ( TCError(ConstructorNotFullyApplied, DuplicateTypeSig,
-              DuplicateConstructor, UnboundTypeVariable, TypeArityError,
-              WrongConstructorGoal, AloneTypeSignature,
-              RecursiveFunctionWithoutTypesig, FunctionClausesNotEqual,
-              TypeSignatureTooGeneral, FunctionClauseWrongType, LambdaConstError,
-              PatternTypeError),
-      isMoreGeneral,
-      usesVar )
 
 import Control.Monad.State
-    ( modify, MonadState(put, get), StateT(runStateT) )
 import Control.Monad.Reader
-    ( MonadReader(ask, local), ReaderT(runReaderT) )
-import Control.Monad.Writer ( WriterT(runWriterT) )
-import Control.Monad.Except ( runExceptT, MonadError(throwError) )
-import Data.Maybe ( catMaybes, fromJust )
+import Control.Monad.Writer
+import Control.Monad.Except
+import Data.Maybe
 import Data.List
-    ( groupBy, intercalate, intersect, nub, partition )
 import Data.Foldable ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-runTC :: TC [Def Type] -> TEnv -> IO (Either TCError Subst)
-runTC tc initEnv = do
-    let rd = runReaderT tc initEnv
-    let wr = runWriterT rd
-    let st = runStateT wr emptyState
-    let ex = runExceptT st
-    res <- ex
-    case res of -- Either TCError (([Def ()]], [Constraint]), TCState)
-        Left err -> return $ Left err
-        Right ((annotatedTree, constraints), _) -> do
-            --putStrLn $ intercalate "\n" $ map show constraints
-            esubst <- runSolve constraints
-            case esubst of
-                (Left err')   -> return esubst
-                (Right subst) -> do
-                    --putStrLn $ showSubst subst
-                    putStrLn $ printTree $ apply subst annotatedTree
-                    return (Right subst) 
+import HindleyMilner.TypeInference
+import HindleyMilner.HM
 
-showSubst :: Map.Map Ident Type -> String
-showSubst = intercalate "\n" . map (\(k,v) -> "binding " ++ printTree k ++ " to " ++ printTree v) . Map.toList
+typecheck :: [Def ()] -> IO (Either TCError Subst)
+typecheck tc = do
+    res <- runTC (checkProgram tc) emptyEnv
+    case res of
+        Left err -> return $ Left err
+        Right (_, constraints) -> do
+                    let esubst = runUnify (convCons constraints)
+                    case esubst of
+                        Just subst -> return (Right subst)
+                        Nothing    -> undefined 
+
+convCons :: [Constraint] -> [[(Type, Type)]]
+convCons []                   = []
+convCons (C (t1, t2, _) : cs) = [(t1,t2)] : convCons cs
+convCons (C2 c : cs)          = map (\(C (t1,t2,_)) -> (t1,t2) ) c : convCons cs
 
 {---------------------------------------------------------------------}
 {- ******************** -}
 -- top level typecheck
-
-{-- | Given a program as a list of definitions, return either a type checking error or
-a valid substitution.
--}
-typecheck :: [Def ()] -> IO (Either TCError Subst)
-typecheck defs = runTC (checkProgram defs) emptyEnv
 
 -- | Traverses the program and returns a list of type signatures and their variables.
 gatherTypeSigs :: [Def ()] -> TC [(Ident, Scheme)]
@@ -135,8 +68,6 @@ gatherTypeSigs ds = do
     let typesigs = catMaybes (map go ds)
     let funs     = map fst typesigs
     e           <- ask
-
-    let typeschemes = map (\(n,t) -> (n, generalize e t)) typesigs
 
     case length funs == length (nub funs) of
         True  -> return $ map (\(n, t) -> (n, (generalize e t))) typesigs

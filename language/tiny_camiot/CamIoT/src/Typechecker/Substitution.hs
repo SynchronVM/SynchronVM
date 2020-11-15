@@ -55,21 +55,21 @@ class Substitutable a where
 instance Substitutable Type where
     apply s (TLam t1 t2)     = TLam (apply s t1) (apply s t2)
     apply s (TTup types)     = TTup (map (apply s) types)
-    apply _ TNil           = TNil
+    apply _ TNil             = TNil
     apply s (TVar var)       = Map.findWithDefault (TVar var) var s
     apply s (TAdt con types) = TAdt con (map (apply s) types)
-    apply _ TInt           = TInt
-    apply _ TBool          = TBool
-    apply _ TFloat         = TFloat
+    apply _ TInt             = TInt
+    apply _ TBool            = TBool
+    apply _ TFloat           = TFloat
 
     ftv (TLam t1 t2)     = Set.union (ftv t1) (ftv t2)
     ftv (TTup types)     = Set.unions (map ftv types)
-    ftv TNil           = Set.empty
+    ftv TNil             = Set.empty
     ftv (TVar var)       = Set.singleton var
     ftv (TAdt con types) = Set.unions (map ftv types)
-    ftv TInt           = Set.empty
-    ftv TBool          = Set.empty
-    ftv TFloat         = Set.empty
+    ftv TInt             = Set.empty
+    ftv TBool            = Set.empty
+    ftv TFloat           = Set.empty
 
 instance Substitutable a => Substitutable [a] where
     apply s = map (apply s)--fmap . apply

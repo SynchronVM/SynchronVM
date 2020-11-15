@@ -37,11 +37,11 @@ library
       Parser.Preprocessor
       Typechecker.TypecheckTinyCamiot
       Typechecker.Environment
-      Typechecker.Unification
       Typechecker.AstUtils
       Typechecker.Substitution
-      Typechecker.Constraint
       Typechecker.TCUtils
+      HindleyMilner.HM
+      HindleyMilner.TypeInference
   hs-source-dirs:
       src
   build-depends:
