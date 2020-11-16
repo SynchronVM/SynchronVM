@@ -33,14 +33,18 @@ renameDef (d:ds) = case d of
     DDataDec uid ids cdecs -> undefined
 
 renamePatMatch :: PatMatch a -> R (PatMatch a)
-renamePatMatch (PM p e) = undefined
+renamePatMatch (PM p e) = renamePat p (renameExp e) >>= \(p',e') -> return $ PM p' e'
 
 renameExp :: Exp a -> R (Exp a)
 renameExp e = case e of
     ECase a e pms   -> undefined
-    ELet a p e1 e2  -> undefined
+    ELet a p e1 e2  -> do
+        (p', [e1', e2']) <- renamePat p (sequence [renameExp e1, renameExp e2])
+        return $ ELet a p' e1' e2'
     ELetR a p e1 e2 -> undefined
-    ELam a p e      -> undefined
+    ELam a p e      -> do
+        (p', e') <- renamePat p (renameExp e)
+        return $ ELam a p' e'
     EIf a e1 e2 e3  -> do
         e1' <- renameExp e1
         e2' <- renameExp e2
