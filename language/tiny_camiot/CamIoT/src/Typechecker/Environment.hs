@@ -146,10 +146,12 @@ data TCState = TCState
 emptyState :: TCState
 emptyState = TCState 0 Map.empty
 
+-- | The type of constraints emitted by the typechecker
 data Constraint 
     = C (Type, Type, Maybe (Type -> Type -> Maybe TCError))
     | C2 [Constraint]
 
+-- | Substitutable instance for constraints
 instance Substitutable Constraint where
     apply s (C (t1, t2, test)) = C (apply s t1, apply s t2, test)
     apply s (C2 cs)            = C2 (map (apply s) cs)
@@ -157,6 +159,7 @@ instance Substitutable Constraint where
     ftv (C (t1, t2, _)) = Set.union (ftv t1) (ftv t2)
     ftv (C2 cs)         = Set.unions (map ftv cs)
     
+-- | Type checking monad
 type TC a = ReaderT TEnv (
             WriterT [Constraint] (
             StateT TCState (
