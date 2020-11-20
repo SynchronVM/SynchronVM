@@ -42,6 +42,7 @@ library
       Typechecker.TCUtils
       HindleyMilner.HM
       HindleyMilner.TypeInference
+      Renaming.Renaming
   hs-source-dirs:
       src
   build-depends:

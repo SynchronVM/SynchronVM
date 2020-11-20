@@ -21,11 +21,13 @@
 -- SOFTWARE.
 module Lib
     ( readAndParse
+    , readAndRename
     ) where
 
 import System.Exit
 
 import Parser.AbsTinyCamiot
+import Parser.PrintTinyCamiot
 
 import qualified Parser.Parser as P
 import qualified Parser.Preprocessor as PreP
@@ -35,6 +37,8 @@ import Text.Megaparsec
 import Typechecker.TypecheckTinyCamiot
 import Typechecker.Environment
 import Typechecker.Substitution
+
+import qualified Renaming.Renaming as R
 
 readAndParse :: String -> IO (Either String Subst)
 readAndParse input = do
@@ -48,3 +52,16 @@ readAndParse input = do
             case tc of
                 Left err -> return $ Left $ show err
                 Right tc -> return (Right tc)
+
+-- for testing
+readAndRename :: String -> IO ()
+readAndRename input = do
+    contents <- T.readFile input
+    let processed = PreP.process contents
+    let parsed = Text.Megaparsec.parse P.pProgram input processed
+    case parsed of
+        Left err -> return ()
+        Right defs -> do
+            putStrLn $ printTree defs
+            rn <- R.rename defs
+            putStrLn $ printTree rn

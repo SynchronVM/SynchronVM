@@ -12,6 +12,15 @@ type ReaderState = Map.Map Ident Ident
 type R a = StateT StateEnv (
              ReaderT ReaderState IO) a
 
+rename :: [Def a ] -> IO [Def a]
+rename ds = runR $ renameDef ds
+
+runR :: R a -> IO a
+runR ra = do
+    let rea = runStateT ra 0
+    (a,_) <- runReaderT rea Map.empty
+    return a
+
 fresh :: R Ident
 fresh = do
     i <- get
@@ -26,24 +35,52 @@ inEnv (idfrom, idto) = local (Map.insert idfrom idto)
 inEnvMany :: [(Ident, Ident)] -> R a -> R a
 inEnvMany names = local (Map.union (Map.fromList names))
 
+isRenamed :: Ident -> R Bool
+isRenamed id = do
+    e <- ask
+    case Map.lookup id e of
+        Just _  -> return True
+        Nothing -> return False
+
 renameDef :: [Def a] -> R [Def a]
+renameDef []     = return []
 renameDef (d:ds) = case d of
-    DEquation a id ps e    -> undefined
-    DTypeSig id t          -> undefined
-    DDataDec uid ids cdecs -> undefined
+    DEquation _ id _ _ -> do
+        b <- isRenamed id
+        if b
+            then do d'  <- renameDef' d
+                    ds' <- renameDef ds
+                    return $ d':ds'
+            else do id' <- fresh
+                    inEnv (id, id') (renameDef (d:ds))
+    DTypeSig id t       -> do
+        id' <- fresh
+        inEnv (id, id') (renameDef ds >>= \ds' -> return $ DTypeSig id' t : ds')
+    DDataDec uid ids cd -> renameDef ds >>= \ds' -> return $ DDataDec uid ids cd : ds'
+  where
+        renameDef' :: Def a -> R (Def a)
+        renameDef' (DEquation a id ps e) = do
+            env <- ask
+            case Map.lookup id env of
+                Just id' -> do (ps',e') <- renamePat ps (renameExp e)
+                               return $ DEquation a id' ps' e'
+                Nothing  -> undefined
 
 renamePatMatch :: PatMatch a -> R (PatMatch a)
-renamePatMatch (PM p e) = renamePat p (renameExp e) >>= \(p',e') -> return $ PM p' e'
+renamePatMatch (PM p e) = renamePat [p] (renameExp e) >>= \([p'],e') -> return $ PM p' e'
 
 renameExp :: Exp a -> R (Exp a)
 renameExp e = case e of
-    ECase a e pms   -> undefined
+    ECase a e pms   -> do
+        e'   <- renameExp e
+        pms' <- mapM renamePatMatch pms
+        return $ ECase a e' pms'
     ELet a p e1 e2  -> do
-        (p', [e1', e2']) <- renamePat p (sequence [renameExp e1, renameExp e2])
+        ([p'], [e1', e2']) <- renamePat [p] (sequence [renameExp e1, renameExp e2])
         return $ ELet a p' e1' e2'
     ELetR a p e1 e2 -> undefined
     ELam a p e      -> do
-        (p', e') <- renamePat p (renameExp e)
+        ([p'], e') <- renamePat [p] (renameExp e)
         return $ ELam a p' e'
     EIf a e1 e2 e3  -> do
         e1' <- renameExp e1
@@ -87,11 +124,11 @@ renameVar id = do
         Just id' -> return id'
         Nothing  -> error $ "name " ++ printTree id ++ " not found in environment"
 
-renamePat :: Pat a -> R b -> R (Pat a, b)
-renamePat p mb = do
-    (p', names) <- giveFreshName p
-    b <- inEnvMany names mb
-    return (p', b)
+renamePat :: [Pat a] -> R b -> R ([Pat a], b)
+renamePat ps mb = do
+    (ps', names) <- unzip <$> mapM giveFreshName ps
+    b <- inEnvMany (concat names) mb
+    return (ps', b)
   where {-- | Renames a pattern and returns the new pattern and a list of
               old-new name pairs. -}
         giveFreshName :: Pat a -> R (Pat a, [(Ident, Ident)])
