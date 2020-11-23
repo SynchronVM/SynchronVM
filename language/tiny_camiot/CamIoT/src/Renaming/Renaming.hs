@@ -7,34 +7,46 @@ import Control.Monad.Reader
 import Control.Monad.State
 import qualified Data.Map as Map
 
+-- | Internal state used to generate fresh names
 type StateEnv    = Int
+
+-- | The reader state will map old names to new, fresh names
 type ReaderState = Map.Map Ident Ident
+
+-- | The renaming monad
 type R a = StateT StateEnv (
              ReaderT ReaderState IO) a
 
-rename :: [Def a ] -> IO [Def a]
-rename ds = runR $ renameDef ds
-
+-- | Run a renaming computation
 runR :: R a -> IO a
 runR ra = do
     let rea = runStateT ra 0
     (a,_) <- runReaderT rea Map.empty
     return a
 
+-- | Alpha-rename a program
+rename :: [Def a ] -> IO [Def a]
+rename ds = runR $ renameDef ds
+
+-- | Generate a fresh name
 fresh :: R Ident
 fresh = do
     i <- get
     put (i + 1)
     return $ Ident ("var" ++ show i)
 
+{- | Extend the local environment with the new (old, new)-name pair, and run the
+renaming compuation in the second argument. -}
 inEnv :: (Ident, Ident) -> R a -> R a
 inEnv (idfrom, idto) = local (Map.insert idfrom idto)
 
+-- | Same as above, but adds many (old, new)-name pairs at once.
 -- Important to use the left-biased union. since we want to, in the local computation,
 -- keep mainly the names in names.
 inEnvMany :: [(Ident, Ident)] -> R a -> R a
 inEnvMany names = local (Map.union (Map.fromList names))
 
+-- | Returns `True` if there exists a name for this variable in the local environment.
 isRenamed :: Ident -> R Bool
 isRenamed id = do
     e <- ask
@@ -42,6 +54,7 @@ isRenamed id = do
         Just _  -> return True
         Nothing -> return False
 
+-- | Rename a list of definitions.
 renameDef :: [Def a] -> R [Def a]
 renameDef []     = return []
 renameDef (d:ds) = case d of
@@ -66,9 +79,11 @@ renameDef (d:ds) = case d of
                                return $ DEquation a id' ps' e'
                 Nothing  -> undefined
 
+-- | Rename a case-match branch.
 renamePatMatch :: PatMatch a -> R (PatMatch a)
 renamePatMatch (PM p e) = renamePat [p] (renameExp e) >>= \([p'],e') -> return $ PM p' e'
 
+-- | Rename an expression.
 renameExp :: Exp a -> R (Exp a)
 renameExp e = case e of
     ECase a e pms   -> do
@@ -117,6 +132,7 @@ renameExp e = case e of
     EUVar a uid     -> return $ EUVar a uid
     EConst a c      -> return $ EConst a c
 
+-- | Rename a variable. If the variable has no new name an error is thrown.
 renameVar :: Ident -> R Ident
 renameVar id = do
     e <- ask
@@ -124,6 +140,7 @@ renameVar id = do
         Just id' -> return id'
         Nothing  -> error $ "name " ++ printTree id ++ " not found in environment"
 
+-- | Rename a pattern.
 renamePat :: [Pat a] -> R b -> R ([Pat a], b)
 renamePat ps mb = do
     (ps', names) <- unzip <$> mapM giveFreshName ps
