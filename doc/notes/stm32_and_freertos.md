@@ -16,7 +16,6 @@
 	  But then you cannot use FreeRTOS functions in that interrupt (as the interrups 
 	  will pre-empt the scheduler.
 	  
-  
   - FreeRTOS
 	- xQueueSend - xQueueReceive : send data between FreeRTOS tasks. 
 		Sender should yield so receiver has chance to run. 
@@ -51,14 +50,11 @@
 	
   C-Code maps very directly to the above description with th 4 sections. 
   
-  
 - High level patterns for driver development
  - struct pattern
  - multilevel struct pattern. 
  - opaque objects
  - container of pattern
- 
- 
  
 - struct pattern 
   - all data stored in structs, passed as arguments (not globals). 
@@ -79,8 +75,7 @@
   - multiple instances of behaviours can be created. 
   - make "local scopes" with inline structs. (grouping of concerns). 
   
-  
-  
+
 - Opaque objects  (when writing platform dependent stuff) 
   - opaque objects are allocated on the heap. 
   - object definition is same file as implementation (not public object). 
@@ -106,7 +101,6 @@
   - cache pattern
   - aggregator pattern 
   
-
 - Interrupt pattern 
 
 - Task pattern (When things happen on different heartbeats)
@@ -133,7 +127,6 @@
   
 -- Aggregator pattern
   - collection of interfaces. 
-  
   
 ----------------------------------
 -- tools to look at the elf file
