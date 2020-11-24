@@ -142,3 +142,83 @@ interrupt:
   - See stm32_uart.c as an example. 
   
   
+## Tue Nov 24
+
+Theme:  RTOS high resolution timing. 
+  "RTOS features for enforcing timing"
+  An RTOS is a means to enforce timing. 
+  
+* Measure time 
+* Partition timing resources
+* Enforce timing
+* Simplify Software structure
+* Solves problem for parallel workloads
+* ensure portability
+
+  "One task for each timing domain" 
+  
+
+App          |   Driver                  |     HW 
+Write data   |                           |
+             | Set data ptr            |                   |
+             | enable tx_rdy interrupt |                   |
+             | start transmission      |                   |
+             |                         |                   |
+             | Sleep                   | data transmission |
+             |                         |                   |
+             | wait more data or done  |                   |
+
+
+
+- Timers and delays 
+  - multiples of the tick counter for the RTOS
+  
+if you need intervals that are not a multiple of tick counter
+  - Wrong way: Busy wait loop 
+    - Stops counting if interrupted by interrupt. 
+  - DWT: Cycle counter. increments each clock cycle 
+    - 32 bit counter. overflows. 
+    - Always compare it as a subtraction to handle overflow of 
+	  counter. 
+	- Can have a jitter in the precision.
+	- essentially a busy loop. but better as it checks 
+	  a counter. Do not use for long delays, only very short ones. 
+    - DWT->CYCNT = 0; // reset
+	- DWT->CTRL  |= 1; // enable count
+	  
+  - vTaskDelay: provided by the RTOS and limited to muiltiples 
+    of tick counter. for example 1ms. 
+	- ideal for delays of several ms - to a few seconds. 
+	- puts the task to sleep. consumes less CPU. 
+	- blocks the currently running task
+	
+	
+  - Asynchronous delays
+    - RTOS Timers: asynchronous timers that calls a callback. 
+	  - multiples of systick. 
+	  - notification on expiration. 
+	  - Running as part of a special RTOS timer thread. 
+	- Hardware Timers: 
+	  - High precision (does not depend on systick). 
+	  - combine with notification that can be sent to task. 
+	  - launch timer and set task to wait for notification. 
+	  - ulTaskNotifyTake() 
+	  - vTaskNotifyGiveFromISR()
+	  - portYIELD_FROM_ISR()
+	  
+
+- If you have two tasks on the same priority (both looping)
+  They must sleep! (Yield occasionally). 
+  
+
+- xTaskGetTickCount()
+
+- How to select what frequency to use on the systick (which triggers tasks switches) 
+  - tradeoff between rate and cost of switch. 
+  
+
+
+  
+		 
+
+
