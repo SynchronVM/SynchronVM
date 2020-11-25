@@ -215,10 +215,132 @@ if you need intervals that are not a multiple of tick counter
 
 - How to select what frequency to use on the systick (which triggers tasks switches) 
   - tradeoff between rate and cost of switch. 
+  		 
+## Wed Now 25 
+
+DMA on the STM32 
+
+DMA Controller is a separate little controller. 
+
+
+- Automatic transfer between memory locations.
+- Peripheral to memory
+- memory to peripheral
+- memory to memory
+- can be configured
+  - increment src, dst or both pointers 
+  - if you transfer from application memory to peripheral 
+    increment only src pointer. 
+- dedicated streams 
+- High data rates.
+- Interrupts at half transfer or full transfer. 
+
+- Use DMA to respond to the arrival of data instantaneously 
+  - no software involved in the transfer. 
   
-
-
+- Uart can be configured to use DMA
+  - configure uart to generate request 
+  - configure DMA controller to respond to this request. 
   
-		 
+- DMA can be used to send data directly to GPIO pins 
+  - bit-banging! 
+- DMA can be used to implement more complex protocols 
+  that require very precise timing. 
+  
+DMA Streams: 
+- Each DMA stream connected to a few different peripherals. 
+- A stream can only be used for one thing at a time. 
+- See STM32F4 reference manual (or datasheet).  Table 42, 43
+
+- There are priority levels. 
+  
+DMA Modes: 
+- What happens when transfer completed
+- NORMAL mode: 
+  - single transfer 
+  - DMA disables after transfer. 
+- CIRCULAR mode: 
+  - Start transfer
+  - When transfer finishes, DMA is restarted from the start of the buffer.
+  - Ideal for reception of data. 
+  - Will overwrite oldest data. 
+  - Stream transmission or stream reception without interruptions. 
+  - Interrupt can be set at half-buffer. 
+- DOUBLE BUFFER mode:
+  - Software can update memory register while transfer is active. 
+  - buffers swapped at end of each transaction. 
+
+DMA PRIORITIES: 
+- very high
+- high
+- medium
+- low. 
+
+DMA Restrictions: 
+- You cannot use all memory (not the core coupled memory) 
+- there is a max transfer size. 
+- Very expensive if you transfer small amounts of data.
+
+DMA Events: 
+- Half transfer event. half buffer transferred. 
+- Transfer complete. 
+- There is one interrupt per stream. 
+
+When using DMA with a Peripheral your application will not be listening 
+for peripheral events anymore. Rather it will just wait for DMA events (interrupts). 
 
 
+DMA Fifos: 
+- You can fifo to bridge between different data-widths. 
+
+
+Example UART: 
+- Transfers happen entirely in hardware. 
+- Optimal for highest baud rate and low power systems. 
+- optimal for sending packets for fast communications
+-* How do we know that a reception is actually done? 
+   - Idle line detection (definitely exists on F4 and above). Configure 
+     the UART to use idle line detection. 
+   - receive timeout
+
+- Problems with UART without DMA 
+  - Depends heavily on fast interrupt handling
+  - an interrupt for every single byte
+  - high probability of missing bytes. 
+  
+UART DMA TX:
+- Configure DMA to transfer blocks of a given size. 
+- Uart is configured as usual. 
+- Enable DMA2_Stream7 interrupt in NVIC (DMA interrupt) (UART 1 uses stream 7).
+- Enable TX DMA request on UART.
+
+
+UART DMA RX: 
+- Configure uart as usual 
+- Enable idle interrupt
+- set transfer length
+- set memory and peripheral addresses
+- set direction 
+- set mode (circular or normal)
+- enbla DMA and UART
+- application is notified for each half of the buffer received so you ca
+  copy the data to you application "space".
+- application is notified by IDLE event when reception is completely 
+  ended. 
+
+
+Random stuff
+- LOOK AT the bus matrix! 
+  - DMA is at most "as fast as" a memcpy. 
+  - parallelism between the streams.
+  
+- Peripherals can generate RX or TX requests to the DMA controller. 
+
+
+- Data burst: a mode that exists in the STM32. 
+  - Single transfer of 4, 8 or 16 beats.
+  - 10.3.11 in reference manual RM0090 REV 18
+  
+  
+  
+- DWT counter use this to measure number of cycles between 2 points.
