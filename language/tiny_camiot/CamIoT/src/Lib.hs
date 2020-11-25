@@ -39,6 +39,7 @@ import Typechecker.Environment
 import Typechecker.Substitution
 
 import qualified Renaming.Renaming as R
+import qualified LambdaLifting.LambdaLifting as L
 
 readAndParse :: String -> IO (Either String Subst)
 readAndParse input = do
@@ -62,6 +63,7 @@ readAndRename input = do
     case parsed of
         Left err -> return ()
         Right defs -> do
-            putStrLn $ printTree defs
+            --putStrLn $ printTree defs
             rn <- R.rename defs
-            putStrLn $ printTree rn
+            ll <- L.lambdaLift rn
+            putStrLn $ printTree ll

@@ -43,6 +43,7 @@ library
       HindleyMilner.HM
       HindleyMilner.TypeInference
       Renaming.Renaming
+      LambdaLifting.LambdaLifting
   hs-source-dirs:
       src
   build-depends:

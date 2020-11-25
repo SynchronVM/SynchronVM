@@ -1,10 +1,10 @@
-module Renaming.Renaming where
+module Renaming.Renaming (rename) where
 
-import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
+import Parser.AbsTinyCamiot ( Def(..), Exp(..), Ident(..), Pat(..), PatMatch(..) )
+import Parser.PrintTinyCamiot ( printTree )
 
-import Control.Monad.Reader
-import Control.Monad.State
+import Control.Monad.Reader (ReaderT(runReaderT), MonadReader(ask, local) )
+import Control.Monad.State  (StateT(runStateT), MonadState(put, get) )
 import qualified Data.Map as Map
 
 -- | Internal state used to generate fresh names

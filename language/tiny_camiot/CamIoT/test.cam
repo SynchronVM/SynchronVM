@@ -1,0 +1,10 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+map : (a -> b) -> List a -> List b
+map _ Nil = Nil
+map f (Cons x xs) = Cons (f x) (map f xs)
+
+add3 : List Int -> List Int
+add3 xs = map (\x -> x + 3) xs
