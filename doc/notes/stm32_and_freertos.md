@@ -344,3 +344,17 @@ Random stuff
   
   
 - DWT counter use this to measure number of cycles between 2 points.
+
+
+## Mon Nov 30 
+
+A look at some projects to see what patterns they use. 
+
+
+Looking at the vesc BLDC code. 
+ - Does not consistently follow the design patterns from earlier. 
+ - Argument placement not consistent. 
+ 
+ 
+
+ 
