@@ -33,6 +33,7 @@ import qualified Parser.Parser as P
 import qualified Parser.Preprocessor as PreP
 import qualified Data.Text.IO as T
 import Text.Megaparsec
+import Data.List
 
 import Typechecker.TypecheckTinyCamiot
 import Typechecker.Environment
@@ -51,8 +52,8 @@ readAndParse input = do
         Right defs -> do
             tc <- typecheck defs
             case tc of
-                Left err -> return $ Left $ show err
-                Right tc -> return (Right tc)
+                Left err     -> return $ Left $ show err
+                Right (_,tc) -> return (Right tc)
 
 -- for testing
 readAndRename :: String -> IO ()
@@ -63,7 +64,27 @@ readAndRename input = do
     case parsed of
         Left err -> return ()
         Right defs -> do
-            --putStrLn $ printTree defs
-            rn <- R.rename defs
-            ll <- L.lambdaLift rn
-            putStrLn $ printTree ll
+            tc <- typecheck defs
+            case tc of
+                Left err    -> putStrLn "error"
+                Right (tree,subst) -> do (rn, state) <- R.rename (apply subst tree)
+                                         ll          <- L.lambdaLift rn state
+                                         betterPrint ll -- putStrLn $ printTree ll
+
+betterPrint :: (Show a, Print a) => [Def a] -> IO ()
+betterPrint defs = putStrLn $ intercalate "\n\n" (map printTree groups){-let sdecs = map printTree datadecs
+                       sfuns = map printTree funs
+                       ssdecs = intercalate "\n" sdecs
+                       ssfuns = intercalate "\n" sfuns
+                   in putStrLn $ ssdecs ++ ssfuns-}
+  where
+        f (DEquation _ n1 _ _) (DEquation _ n2 _ _) = n1 == n2
+        f (DTypeSig n1 _) (DEquation _ n2 _ _)      = n1 == n2
+        f _ _                                       = False
+
+        groups = groupBy f defs
+
+        isDataDec [(DDataDec _ _ _)] = True
+        isDataDec _                  = False
+
+        (datadecs, funs) = partition isDataDec groups

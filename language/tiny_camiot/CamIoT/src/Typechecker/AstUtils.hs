@@ -181,11 +181,14 @@ instance Substitutable a => Substitutable (Def a) where
   ftv d = undefined -- see below
 
 instance Substitutable a => Substitutable (Pat a) where
-  --apply s (PTyped a p t)        = PTyped a (apply s p) (apply s t)
-  apply s (PNAdt a con adtpats) = PNAdt (apply s a) con (map (apply s) adtpats)
-  apply s (PTup a tuppats)      = PTup (apply s a) (map (apply s) tuppats)
-  apply s (PLay a var pat)      = PLay (apply s a) var (apply s pat)
-  apply s p                     = p
+  apply s (PConst a c)       = PConst (apply s a) c
+  apply s (PVar a id)        = PVar (apply s a) id
+  apply s (PZAdt a uid)      = PZAdt (apply s a) uid
+  apply s (PNAdt a uid pats) = PNAdt (apply s a) uid (apply s pats)
+  apply s (PWild a)          = PWild (apply s a)
+  apply s (PNil a)           = PNil (apply s a)
+  apply s (PTup a pats)      = PTup (apply s a) (apply s pats)
+  apply s (PLay a id p)      = PLay (apply s a) id (apply s p)
 
   ftv p = undefined -- don't think we need this.. TODO backtrack here,
                     -- either implement for good measure or think of something else

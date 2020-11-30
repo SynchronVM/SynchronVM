@@ -42,15 +42,15 @@ import qualified Data.Set as Set
 import HindleyMilner.TypeInference
 import HindleyMilner.HM
 
-typecheck :: [Def ()] -> IO (Either TCError Subst)
+typecheck :: [Def ()] -> IO (Either TCError ([Def Type], Subst))
 typecheck tc = do
     res <- runTC (checkProgram tc) emptyEnv
     case res of
         Left err -> return $ Left err
-        Right (_, constraints) -> do
+        Right (tc', constraints) -> do
                     let esubst = runUnify (convCons constraints)
                     case esubst of
-                        Just subst -> return (Right subst)
+                        Just subst -> return (Right (tc',subst))
                         Nothing    -> undefined 
 
 convCons :: [Constraint] -> [[(Type, Type)]]

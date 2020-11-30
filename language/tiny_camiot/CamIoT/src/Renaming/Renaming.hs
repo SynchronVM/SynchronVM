@@ -18,14 +18,14 @@ type R a = StateT StateEnv (
              ReaderT ReaderState IO) a
 
 -- | Run a renaming computation
-runR :: R a -> IO a
+runR :: R a -> IO (a, Int)
 runR ra = do
     let rea = runStateT ra 0
-    (a,_) <- runReaderT rea Map.empty
-    return a
+    (a,state) <- runReaderT rea Map.empty
+    return (a, state)
 
--- | Alpha-rename a program
-rename :: [Def a ] -> IO [Def a]
+-- | Alpha-rename a program, returns the state so that it can be passed along to the lifter
+rename :: [Def a ] -> IO ([Def a], Int)
 rename ds = runR $ renameDef ds
 
 -- | Generate a fresh name
@@ -33,7 +33,7 @@ fresh :: R Ident
 fresh = do
     i <- get
     put (i + 1)
-    return $ Ident ("var" ++ show i)
+    return $ Ident ("v" ++ show i)
 
 {- | Extend the local environment with the new (old, new)-name pair, and run the
 renaming compuation in the second argument. -}
