@@ -194,20 +194,22 @@ instance Substitutable a => Substitutable (Pat a) where
                     -- either implement for good measure or think of something else
 
 instance Substitutable a => Substitutable (Exp a) where
-  apply s (ETup a texps) = ETup (apply s a) (map (apply s) texps)
   apply s (ECase a e branches) = ECase (apply s a) (apply s e) (map (apply s) branches)
-  apply s (ELet a p e1 e2) = ELet (apply s a) (apply s p) (apply s e1) (apply s e2)
-  apply s (ELetR a p e1 e2) = ELetR (apply s a) (apply s p) (apply s e1) (apply s e2)
-  apply s (ELam a p e)   = ELam (apply s a) (apply s p) (apply s e)
-  apply s (EIf a e1 e2 e3)  = EIf (apply s a) (apply s e1) (apply s e2) (apply s e3)
-  apply s (EApp a e1 e2)   = EApp (apply s a) (apply s e1) (apply s e2)
-  apply s (EOr a e1 e2)    = EOr (apply s a) (apply s e1) (apply s e2)
-  apply s (EAnd a e1 e2)   = EAnd (apply s a) (apply s e1) (apply s e2)
-  apply s (ERel a e1 op e2) = ERel (apply s a) (apply s e1) (apply s op) (apply s e2)
-  apply s (EAdd a e1 op e2) = EAdd (apply s a) (apply s e1) (apply s op) (apply s e2)
-  apply s (EMul a e1 op e2) = EMul (apply s a) (apply s e1) (apply s op) (apply s e2)
-  apply s (ENot a e)     = ENot (apply s a) (apply s e)
-  apply s e = e
+  apply s (ELet a p e1 e2)     = ELet (apply s a) (apply s p) (apply s e1) (apply s e2)
+  apply s (ELetR a p e1 e2)    = ELetR (apply s a) (apply s p) (apply s e1) (apply s e2)
+  apply s (ELam a p e)         = ELam (apply s a) (apply s p) (apply s e)
+  apply s (EIf a e1 e2 e3)     = EIf (apply s a) (apply s e1) (apply s e2) (apply s e3)
+  apply s (EApp a e1 e2)       = EApp (apply s a) (apply s e1) (apply s e2)
+  apply s (EOr a e1 e2)        = EOr (apply s a) (apply s e1) (apply s e2)
+  apply s (EAnd a e1 e2)       = EAnd (apply s a) (apply s e1) (apply s e2)
+  apply s (ERel a e1 op e2)    = ERel (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (EAdd a e1 op e2)    = EAdd (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (EMul a e1 op e2)    = EMul (apply s a) (apply s e1) (apply s op) (apply s e2)
+  apply s (ETup a texps)       = ETup (apply s a) (map (apply s) texps)
+  apply s (ENot a e)           = ENot (apply s a) (apply s e)
+  apply s (EVar a id)          = EVar (apply s a) id
+  apply s (EUVar a uid)        = EUVar (apply s a) uid
+  apply s (EConst a c)         = EConst (apply s a) c
 
   ftv p = undefined -- same reasoning as above
 

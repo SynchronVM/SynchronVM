@@ -6,12 +6,5 @@ map : (a -> b) -> List a -> List b
 map _ Nil = Nil
 map f (Cons x xs) = Cons (f x) (map f xs)
 
-add3 : List Int -> List Int
-add3 xs = map (\x -> x + 3) xs
-
-
-addl3 : List (List Int) -> List (List Int)
-addl3 xs = map (\x -> map (\y -> y + 3) x) xs
-
-addln : List (List Int) -> Int -> List (List Int)
-addln xs n = map (\x -> map (\y -> y + n) x) xs
+test : List (List Int) -> Int -> List (List Int)
+test xs n = map (\x -> map (\y -> y + n) x) xs

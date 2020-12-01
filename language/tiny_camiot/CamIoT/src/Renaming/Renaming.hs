@@ -3,7 +3,7 @@ module Renaming.Renaming (rename) where
 import Parser.AbsTinyCamiot ( Def(..), Exp(..), Ident(..), Pat(..), PatMatch(..) )
 import Parser.PrintTinyCamiot ( printTree )
 
-import Control.Monad.Reader (ReaderT(runReaderT), MonadReader(ask, local) )
+import Control.Monad.Reader
 import Control.Monad.State  (StateT(runStateT), MonadState(put, get) )
 import qualified Data.Map as Map
 
@@ -15,17 +15,16 @@ type ReaderState = Map.Map Ident Ident
 
 -- | The renaming monad
 type R a = StateT StateEnv (
-             ReaderT ReaderState IO) a
+             Reader ReaderState) a
 
 -- | Run a renaming computation
-runR :: R a -> IO (a, Int)
-runR ra = do
+runR :: R a -> (a, Int)
+runR ra = 
     let rea = runStateT ra 0
-    (a,state) <- runReaderT rea Map.empty
-    return (a, state)
+    in runReader rea Map.empty
 
 -- | Alpha-rename a program, returns the state so that it can be passed along to the lifter
-rename :: [Def a ] -> IO ([Def a], Int)
+rename :: [Def a ] -> ([Def a], Int)
 rename ds = runR $ renameDef ds
 
 -- | Generate a fresh name
@@ -91,12 +90,12 @@ renameExp e = case e of
         pms' <- mapM renamePatMatch pms
         return $ ECase a e' pms'
     ELet a p e1 e2  -> do
-        ([p'], [e1', e2']) <- renamePat [p] (sequence [renameExp e1, renameExp e2])
-        return $ ELet a p' e1' e2'
+        (p', e) <- renamePat [p] (sequence [renameExp e1, renameExp e2])
+        return $ ELet a (head p') (head e) (last e)
     ELetR a p e1 e2 -> undefined
     ELam a p e      -> do
-        ([p'], e') <- renamePat [p] (renameExp e)
-        return $ ELam a p' e'
+        (p', e') <- renamePat [p] (renameExp e)
+        return $ ELam a (head p') e'
     EIf a e1 e2 e3  -> do
         e1' <- renameExp e1
         e2' <- renameExp e2

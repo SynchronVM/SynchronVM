@@ -67,8 +67,8 @@ readAndRename input = do
             tc <- typecheck defs
             case tc of
                 Left err    -> putStrLn "error"
-                Right (tree,subst) -> do (rn, state) <- R.rename (apply subst tree)
-                                         ll          <- L.lambdaLift rn state
+                Right (tree,subst) -> do let (rn, state) = R.rename (apply subst tree)
+                                         let ll          = L.lambdaLift rn state
                                          betterPrint ll -- putStrLn $ printTree ll
 
 betterPrint :: (Show a, Print a) => [Def a] -> IO ()
