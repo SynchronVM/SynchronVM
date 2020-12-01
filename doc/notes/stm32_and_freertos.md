@@ -350,11 +350,113 @@ Random stuff
 
 A look at some projects to see what patterns they use. 
 
-
 Looking at the vesc BLDC code. 
  - Does not consistently follow the design patterns from earlier. 
  - Argument placement not consistent. 
  
  
+## Tue Dec 1
 
+STM32 Timers! 
+
+- Suitable for multichannel PWM generation 
+- multichannel input capture
+- start upon a trigger event 
+- control external hardware 
+- trigger output 
+
+STM32F4: 
+ - Use cases for timers: 
+   - measuring pulse width
+   - ouput pwm
+   - read and interpret hall sensors
+   - read motor rotary encoder
+ - Two advanced timers TIM1 and TIM8
+ - medium TIM 2,3, 4, 5
+ - Simple TIM 9, 12
+ - Simplest TIM 10, 11, 13, 14
+ - special: DWT, SysTick 
+   - DWT is the debug unit in the chip, 
+     but it also has a timer. 
+
+Advanced controll timer (TIM 1, 8) 
+ - 16 bit
+ - clock div 1,2,4
+ - prescaler 1 to 65536
+ - direction selection 
+ - one pulse mode 
+ - high/low output for H-Bridge
+ - hall sensor input support
+ - filtering 
+ - repeat counter 
+ - emergency brake : reset into known state. 
+ - slave mode update generation 
+ - Each have 4 channels. 
  
+you can start ADC conversion from a timer. Trigger output. 
+
+Timer Configuration: 
+ - enable the clock for the timer (RCC) 
+ - TIM_TimeBaseInitTypeDef (stdperipheral library st)
+ - set mode, prescale, period, division. 
+ - very flexible selection of period, by division and prescaler. 
+
+Clock Selection: 
+ - Internal clock (CLK_INT) from RCC. 
+ - External clock from pin 
+ - External clock from trigger input 
+ - internal tridder inputs (ITRx).
+ 
+
+Output compare: 
+ - Generate waveform by comparing a value to the current counter value
+   OCxM register compared to coutner. 
+ - PWM 1 & 2 (pos, neg)
+ - Center aligned or edge aligned 
+ - When switchin transistors current draw increases 
+   - center aligned spreads out the switching pulses. 
+   
+Input Capture: 
+ - Measure pulse width 
+ - measure PWM width and duty cycle 
+ - capture HALL sensor 
+ 
+HALL sensor interface in hardware: 
+ - Generate events on every transition of the hal sensor. 
+ 
+Encoder Interface: 
+ - Table 93 ref manual 
+ 
+Synchronization: 
+ - A master timer can start, stop, reset or clock another 
+   timer. 
+ - ADC can be set to respond to timer trigger
+
+3-phase PWM
+ - Start timer clock
+ - configure timebase and pwm 
+ - configure output compare 
+ - configure deadtime 
+ - enable update interrupt
+
+
+General control timers. 
+ - Tim2 to Tim5 
+ 
+
+The Std peripheral library can be used together with FreeRTOS.
+
+--- 
+- 30 - 60KHz pwm drives the mosfets. 
+- The commutation happens at artificial intervals. Low frequency updates
+  (but several times per rotation of motor?)
+
+
+   U     V    W 
+1  +     -   off 
+2  +    off   - 
+3  off   +    -
+4  -     +   off
+5  -    off   + 
+6  off   -    +
+
