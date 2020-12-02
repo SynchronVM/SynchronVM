@@ -452,6 +452,7 @@ The Std peripheral library can be used together with FreeRTOS.
   (but several times per rotation of motor?)
 
 
+Commutations of 3 phase motor 
    U     V    W 
 1  +     -   off 
 2  +    off   - 
@@ -460,3 +461,149 @@ The Std peripheral library can be used together with FreeRTOS.
 5  -    off   + 
 6  off   -    +
 
+
+## Wed Dec 2 2020
+
+Zephyr RTOS 
+ - How Zephyr is architected. 
+ - How to set up a Driver 
+ - How to set up a new Board. 
+ 
+Started as a project by windriver, now in linux foundation. 
+ - Evolved tremendously! 
+
+Device tree based configuration of embedded systems. 
+ - small devices does not allow a device-tree-BLOB in memory. 
+ - The blob in memory is not efficient 
+ - Zephyr solves this by compiling the Device tree to C headers and code. 
+   together with macro magic. 
+ - Static instantiation of drivers. 
+ - Truely really eliminate dynamic memory allocation. 
+ 
+Project Structure: 
+
+The west tool creates a lot for you 
+ - bootloader 
+ - modules
+ - tools 
+ - zephyr 
+ - app 
+   - boards 
+   - drivers 
+   - dts 
+   - include 
+   - src
+
+The app has a predefined directory structure so zephyr knows where 
+everything is. 
+
+ - Zephyr supports memory protection on embedded platforms
+   - kernel space and user space 
+   - that is why drivers are separate. 
+   
+Board Directory: 
+ - boars/<arch>/<board>/yourboard
+   - .dts
+   - _overlay 
+   - board.cmake
+   - _defconfig
+   - .yaml             : definition for west tool 
+   - Kconfig.board
+   - Kconfig_defconfig
+
+make menuconfig starts graphical config editor. 
+
+
+Start a new Application: 
+
+ - west init <directory> 
+ - cd directory 
+ - west update 
+ - source zephyr-env.sh
+ - mkdir <app-directory>
+ - cd <app-directory> 
+ - create CMakeLists.txt
+ - create src/main.c
+ - mkdir build
+ - cd build
+ - cmake -DBOARD=strm32f429i-disc1
+ - make
+ - make flash
+ 
+Device Tree Overlays 
+ 
+ - zephyr creates bindings dts/bindings for access to the peripherals 
+   (pins) and settings of the device tree. 
+ - Describe drivers
+ - DEVICE_AND_API_INIT - see Zephyr documentation 
+ 
+API Definitions 
+ - include/drivers 
+ - Abstracts devices between platforms 
+ 
+PIN MUX 
+ - Flexible way to define pins 
+ - System for configure the alternative functions of the pins 
+  
+BACK TO BOARDS 
+
+ Board OpenOCD config 
+  - may need to create this yourself 
+  - default configuration may not work if you do not use reset pin for example. 
+  - openocd.cfg
+  
+ Board CMake
+  - add to boards folder. 
+  - look at a default one and copy
+  
+ Board DTS 
+  - copy an existing  (or include files)
+  - define all devices 
+  - "Compatible" string can be used to write a board specific driver. 
+  - set console to UART1 for example. 
+  - status = OK : means the device is going to be used. 
+  - only device tree nodes with status OK will be instantiated. 
+  
+ Board Overlay 
+  - You have a supported board but want to change some details use an overlay. 
+  - Define a board variant. 
+  
+ Board Defconfig
+  - Look at existing defconfigs to get a good feeling for how these work. 
+  - Clock configuration 
+  - MPU enable 
+  - Stack protection 
+  - serial console, uart console. 
+  - Set the HSE clock (8MHz, 16MHz)
+  - set the PLL values (configure the derived clocks). 
+
+ Board YAML
+  - Just lets west know that this board exists. 
+  
+ Board KConfic
+  - Hierarchical menu structure 
+  
+ Board defaults 
+  - defaults for the menu config. 
+  
+ Menuconfig 
+  - do we want USB, Filesystem? 
+ 
+ 
+ Zephyr vs FreeRTOS 
+  
+  FreeRTOS 5 - 6 files <-> Zephyr 19333 files 
+  
+  Zephyr:
+   - Has data-structures. 
+   - APIs. 
+   - write quite generic code.
+   - Scheduler
+   - separates settings from code
+  
+  FreeRTOS:
+   - Scheduler. 
+   
+   
+   
+  
