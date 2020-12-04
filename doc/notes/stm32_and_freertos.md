@@ -587,9 +587,7 @@ BACK TO BOARDS
   - defaults for the menu config. 
   
  Menuconfig 
-  - do we want USB, Filesystem? 
- 
- 
+  
  Zephyr vs FreeRTOS 
   
   FreeRTOS 5 - 6 files <-> Zephyr 19333 files 
@@ -604,6 +602,61 @@ BACK TO BOARDS
   FreeRTOS:
    - Scheduler. 
    
-   
-   
+## Fri Dec 4 
+
+RTOS and STM32  (Zephyr)
+
+
+FMC SDRAM Driver for STM32F4 in Zephyr.
+
+
+Drivers/memc/Kconfig.stm32 
+
+ - FMC CLOCK is on AHB3
+ - clock control is configured in clock_stm32_ll_common.c 
+ - we need to add support for AHB3 clock. 
+ - Datasheet gives wich bit to set.  (READ THE DATASHEETS)
+   RCC_AHB3ENR
+ - Add a  device tree node to enable this bit in the FMC device tree node. 
   
+SDRAM
+ - SDRAM for example on stm32F429i-disc1
+ - SDRAM 
+   - Ax  : address wires
+   - Dx  : data wires
+   - BAx : bank
+   - Clk
+   - cke
+   - cs 
+   - ras
+   - cas
+   - wr
+   - LDQM UDQM: lower/upper byte mask
+
+Configure the device tree. 
+  - Look at the Schematic (how is the memory connected to the mcu). 
+  - for every pin, create a pinmux-0 entry. 
+  - if any pins are missing you may need to add them at SOC level 
+    - middle level device tree files. (not the lowest level)
+	
+  - Pins are named in the device tree as they are named in the datasheet. 
+  
+  - The board dts should just be doing tweaks to things already defined in lower 
+    level dts files that describe the SOC. 
+	
+  - look at example code from ST on how information for how to configure the 
+    driver. 
+	- Look at the datasheet for the SDRAM chip used. 
+	
+  Add an SDRAM node 
+   - sdram:2 sdram@d0000000 
+     - provide address and size.
+   - dts file node. (where leds are defined) 
+   
+	
+	
+	
+
+
+
+ 
