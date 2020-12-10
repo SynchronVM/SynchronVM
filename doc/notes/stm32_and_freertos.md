@@ -656,7 +656,68 @@ Configure the device tree.
 	
 	
 	
+## Wed Dec 9 
 
+Debugging Embedded Systems (ru
 
-
+ -1 GDB 
+ -2 KGDB
+ -3 Debug like a normal program (compile the system for PC and run as normal app).
+ -4 QEMU debugging   (emulation of the chip in use)
+    - Also supports some boards (full system emulation) 
+	- Inspect how code is working down to the lowest level. 
+  
  
+ - User mode Linux? 
+   - Interesting build target for linux. 
+   - Build the linux kernel into a program that you can run 
+     as a normal program. 
+   - Supply a rootfs filesystem to it. 
+   - It runs completely as a user-mode application
+   - Can also use hostfs to access native file system 
+   - Somewhere between a docker image and a virtual machine. 
+   - linux built to run on linux. 
+   
+ - Debug the user mode linux application
+   - gdb ./linux
+     - The argument is the executable to read debug symbols from.
+   - b ksys_write  - set a breakpoint
+   - attach <kernel pid> 
+ 
+ - Build a rootfs
+   - buildroot - small 
+   - OpenWRT - bigger    (very good networking support and things centered on broadband modems)
+   - Yocto - huge
+   - Debian - massive
+   
+ - Then use the rootfs together with the UML (User Mode Linux)
+ 
+ 
+ - QEMU
+ 
+   - Emulating the chip (ARM Cortex M4 for example). 
+   - Can run a GDB server. 
+   - Use gdb for the architecture that you debug. 
+     - gdb-multiarch
+   
+   - Zephyr 
+     - make debugserver (starts a gdb server and QEMU) 
+   	 
+   - The bad side is that QEMU does not have much support 
+     for hardware peripherals/devices
+	 - things like LEDS or GPIO is hard to emulate in QEMU
+  
+ - Best! 
+   - Have access to the hardware and debug over the JTAG
+   - connect with OpenOCD and 
+ 
+ - Odds and ends 
+   - Zephyr can also be compiled into a user mode application. 
+ 
+ 
+   - When Debugging by building for a Linux target.
+     - Pseudoterminals are pretty much like a UART. 
+       - UARTS, serialports. 
+     - Shared memory 
+       - GPIO 
+   
