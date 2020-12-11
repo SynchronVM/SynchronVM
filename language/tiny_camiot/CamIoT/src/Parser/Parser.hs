@@ -210,22 +210,11 @@ pPatClosed allowConstants allowNAry = choice $ maybe ++ always
         always = [ PVar  () <$> pIdent
                  , PWild () <$ pChar '_'
                  , do pChar '('
-                      ps <- sepBy1 (pPatAs allowConstants allowNAry) (pChar ',') <* pChar ')'
+                      ps <- sepBy (pPatAs allowConstants allowNAry) (pChar ',') <* pChar ')'
                       case ps of
+                        []  -> pure $ PNil ()
                         [p] -> pure p
                         _   -> pure (PTup () ps)]
-
---pPatApp :: Bool -> Parser (Pat ())
---pPatApp allowConstants = choice [ do
---  con <- pUIdent
---  vars <- many (pPatClosed allowConstants)
---  case vars of
---    [] -> return $ PZAdt () con
---    _  -> return $ PNAdt () con (map (PAdtPat ()) vars)
---  ,
---
---  pPatClosed allowConstants
---  ]
 
 pPatApp :: Bool -> Bool -> Parser (Pat ())
 pPatApp allowConstants allowNAry = choice $ adt' ++ [pPatClosed allowConstants allowNAry]
