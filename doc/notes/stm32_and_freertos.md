@@ -721,3 +721,83 @@ Debugging Embedded Systems (ru
      - Shared memory 
        - GPIO 
    
+
+# Mon Dec 14
+
+Interrupts (a bit like a context switch) (or like signals in Linux). 
+
+- Hardware saves the current state and jumps to Interrupt service routine. 
+
+NVIC - Nested vector interrupt controller 
+ 
+ 
+Interplay App - Interrupt 
+  - Be careful and protect the application data. 
+  
+  - disable interrupts 
+  - raise interrupt priority 
+  
+
+Communication Task to interrups 
+  - Disable interrupts that may modify same data
+  - modify data
+  - enable interrupts
+  
+Interrupt to task
+  - task cannot preempt interrupt
+  - just use the data. 
+  
+Main patterns 
+  - Semaphore
+  - message queue 
+  - Fifo, circular buffer. 
+  - do not use a Mutex 
+  
+
+When does interrupts run? 
+  - Device must be configured to generate interrupt. 
+  
+  - Interrupt priority must be higher than currently 
+    running interrupt for an interrupt to preempt another. 
+
+  - Enable interrupt enable bit in peripheral register 
+  - Configure NVIC to deliver the interrupt request
+  - Global interrupts are enabled by default so 
+    no need to worry about the global flag. 
+	
+  
+Disabling interrupts:
+  - When entering a critical section, disable interrupts. 
+  - Can disable an individual interrupt that uses the same shared data. 
+  - BASEPRI
+  - PRIMASK - disable all maskable interrupts 
+  
+  - To Disable
+	- Set PRIMASK = 1;
+	- set BASEPRI != 0
+	- NVIC_DisableIRQ(X_IRQn);
+	
+  - Enable
+    - PRIMASK = 0
+	- BASEPRI = 0
+	- NVIC_EnableIRQ(X_IRQn);
+  
+  
+UART
+  - Init uart and then do 
+    - enable RXNE and TXE in NVIC 
+	- only RXNE at init stage
+	
+  - send data 
+    - disable TXE interrupt 
+	- push data into shared buffer
+	- enable TXE interrups 
+	- wait for transmission to complete (or move on). 
+  - inside TXE handler
+    - Pick next byte from buffer and send 
+	- if buffer is empty then disable TXE interrupt 
+	  and notify completion (do this as a separate step to not signal 
+	  complete while a byte is still transmitted. 
+	  
+
+  
