@@ -149,7 +149,7 @@ When you have `DEAD` and `UNUSED` threads and you get a `spawn` call which threa
 
 #### What does `spawn` do?
 
-Imagine the "entity" running the following is the `schduler`:
+Imagine the "entity" running the following is the `scheduler`:
 
 - Take the `contexts` array 
 - Find the first `DEAD` or `UNUSED` context (GC might trigger here)
@@ -157,7 +157,7 @@ Imagine the "entity" running the following is the `schduler`:
 - Switch to child thread PC and evaluate it by passing ()
 - Continue evaluation until you encounter something synchronous (like `send`)
 - Mark that context as `SUSPENDED`
-- Switch to the parent thread and continue the parent PC from after the `spawn** call
+- Switch to the parent thread and continue the parent PC from after the `spawn` call
 
 *Question*
 
@@ -169,7 +169,7 @@ let f = let ch = channel () in
         (*maybe other operations*)
         sync (recv_ch)
 ```
-When do you suspend the spawned thread above? According to the above we should suspend when we get to the synchronous `send` call. However the `389270**89270` will engage the ALU and block can we suspend then?
+When do you suspend the spawned thread above? According to the above we should suspend when we get to the synchronous `send` call. However the `389270**89270` will engage the ALU and block. Can we suspend then?
 
 #### Channel
 
