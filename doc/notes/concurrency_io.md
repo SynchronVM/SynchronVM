@@ -174,3 +174,10 @@ When do you suspend the spawned thread above? According to the above we should s
 #### Channel
 
 #### Event
+
+
+### References
+
+- [Reppy's continuation based Parallel Concurrent ML implementation](https://cliplab.org/Conferences/DAMP08/papers/7.pdf)
+- [Concurrent ML embedded in Concurrent Haskell](https://www.cs.umd.edu/~avik/projects/cmllch/)
+- [Rob Pike's CSP based Newsqueak runtime implementation](https://swtch.com/~rsc/thread/newsquimpl.pdf)
