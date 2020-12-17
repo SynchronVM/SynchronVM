@@ -57,7 +57,7 @@ Can we have a design where the channels are never deallocated? There will be a s
 #### Proposed API
 
 ```
-channel : Channel a
+channel : () -> Channel a
 send : Channel a -> a -> Event ()
 recv : Channel a -> Event a
 choose : [Event a] -> Event a -- non-determinism
@@ -73,6 +73,10 @@ We add the following to the runtime:
 #### Thread
 
 This is inside each container.
+
+```
+Note : We use the term "thread" and "context" interchangeably
+```
 
 Currently represented as:
 
@@ -132,15 +136,40 @@ typedef struct {
 
 ```
 
-#### Question
+*Question*
 How do we know when a thread has terminated i.e its environment register can be wiped clean? Even if the stack is not used the environment register might be accessed by the parent thread.
-#### Answer
-When the main thread's stack holds no pointers to the thread. In that case we do a lazy GC i.e only when `spawn` is called and we see there are contexts which are marked `DEAD`, we initiate their GC. 
-#### Tradeoff: 
+
+*Answer*
+When the main thread's stack holds no pointers to the child thread only then mark it as `DEAD`. In that case we do a lazy GC i.e only when `spawn` is called and we see there are threads which are marked `DEAD` we initiate their GC. 
+
+*Tradeoff* 
 When you have `DEAD` and `UNUSED` threads and you get a `spawn` call which thread should you use?
 - Using the `DEAD` thread means do GC (slower) but keeps the heap cleaner (less garbage)
 - Using the `UNUSED` thread prevents GC(faster) but keeps the heap dirty (more garbage)
 
+#### What does `spawn` do?
+
+Imagine the "entity" running the following is the `schduler`:
+
+- Take the `contexts` array 
+- Find the first `DEAD` or `UNUSED` context (GC might trigger here)
+- Copy the stack, PC, env to that context
+- Switch to child thread PC and evaluate it by passing ()
+- Continue evaluation until you encounter something synchronous (like `send`)
+- Mark that context as `SUSPENDED`
+- Switch to the parent thread and continue the parent PC from after the `spawn** call
+
+*Question*
+
+How about the following program:
+```OCaml
+let f = let ch = channel () in
+        let _ = spawn (\() -> let x = 389270**89270 in (*long running*)
+                              sync (send ch x)) in
+        (*maybe other operations*)
+        sync (recv_ch)
+```
+When do you suspend the spawned thread above? According to the above we should suspend when we get to the synchronous `send` call. However the `389270**89270` will engage the ALU and block can we suspend then?
 
 #### Channel
 
