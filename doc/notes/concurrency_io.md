@@ -28,7 +28,7 @@ Concurrency & I/O = Lightweight threads + channels + scheduler
 ```
 
 #### Design Questions
-1. Channels. Channels can be thought of as a thread safe concurrent dequeue. The questions is **who manages the memory or lifetime of a channel?** If channels are used for inter-thread as well as inter-container as well as thread-I/O driver communication it cannot reside in the heap of a single container or `vmc_t`. For inter-container communication it should inspect the stack(s) of both containers(stacks because we can have multiple threads in each container) and when references from all stacks are dead only then it should be deallocated.
+1. Channels. Channels can be thought of as a thread safe concurrent dequeue. The question is **who manages the memory or lifetime of a channel?** If channels are used for inter-thread as well as inter-container as well as thread-I/O driver communication it cannot reside in the heap of a single container or `vmc_t`. For inter-container communication it should inspect the stack(s) of both containers(stacks because we can have multiple threads in each container) and when references from all stacks are dead only then it should be deallocated.
 
 2. Related to point 1. A proposed design where the entire application will have a separate memory area dedicated to channels like:
 
@@ -65,7 +65,83 @@ sync : Event a -> a
 spawn : (() -> ()) -> ThreadId
 
 guard, wrap, wrapabort other helper combinators
-to build an Event.
+to build richer Events.
 ```
 
-*Details coming soon*
+We add the following to the runtime:
+
+#### Thread
+
+This is inside each container.
+
+Currently represented as:
+
+```C
+typedef struct {
+  cam_register_t env;
+  UINT       pc;
+  cam_stack_t    stack;
+} Context_t;
+
+```
+
+We should add an identifier
+
+```C
+typedef uint16_t UUID; // limits to 65536 threads; should be configurable
+
+typedef struct {
+  UUID threadid;
+  cam_register_t env;
+  UINT       pc;
+  cam_stack_t    stack;
+} Context_t;
+
+```
+
+We need a `suspended thread queue`; We can do that using:
+
+```C
+typedef struct {
+  ...
+  Context_t  contexts[VMC_MAX_CONTEXTS];
+  bool       context_used[VMC_MAX_CONTEXTS];
+} vmc_t;
+
+```
+
+1 represents active; 0 represents ?? (suspended?! dead?! unused?!)
+
+We need more than a `bool` to represent the thread states.
+
+```C
+typedef enum {
+  UNUSED,
+  ACTIVE,
+  SUSPENDED,
+  DEAD //GC to free the heap (eager GC to allow more thread creation)
+       // Or do lazy GC. Only when `spawn` is called GC the DEAD threads stack pointers
+       // and clean the stack, env, PC etc
+} Context_state_t;
+
+typedef struct {
+  ...
+  Context_t  contexts[VMC_MAX_CONTEXTS];
+  Context_state_t  context_used[VMC_MAX_CONTEXTS];
+} vmc_t;
+
+```
+
+#### Question
+How do we know when a thread has terminated i.e its environment register can be wiped clean? Even if the stack is not used the environment register might be accessed by the parent thread.
+#### Answer
+When the main thread's stack holds no pointers to the thread. In that case we do a lazy GC i.e only when `spawn` is called and we see there are contexts which are marked `DEAD`, we initiate their GC. 
+#### Tradeoff: 
+When you have `DEAD` and `UNUSED` threads and you get a `spawn` call which thread should you use?
+- Using the `DEAD` thread means do GC (slower) but keeps the heap cleaner (less garbage)
+- Using the `UNUSED` thread prevents GC(faster) but keeps the heap dirty (more garbage)
+
+
+#### Channel
+
+#### Event
