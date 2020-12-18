@@ -167,14 +167,98 @@ let f = let ch = channel () in
         let _ = spawn (\() -> let x = 389270**89270 in (*long running*)
                               sync (send ch x)) in
         (*maybe other operations*)
-        sync (recv_ch)
+        sync (recv ch)
 ```
 When do you suspend the spawned thread above? According to the above we should suspend when we get to the synchronous `send` call. However the `389270**89270` will engage the ALU and block. Can we suspend then?
 
 #### Channel
 
+Channels are used for three types of communication:
+
+- inter thread communication
+- inter container communication
+- thread-I/O driver communication
+
+A tentative structure:
+
+```C
+typedef struct {
+   UUID channel_id, //maybe not necessary
+   pthread_mutex_t lock, // if sticking to C99 might have to roll out our own locks
+                         // or maybe unnecessary in a single threaded runtime
+   Queue sendq,
+   Queue recvq
+} Channel_t;
+```
+
+There should be an area outside the containers which will statically allocate channels:
+
+```C
+Channel_t channels[MAX_CHANNELS];
+```
+
+`MAX_CHANNELS` instead of static number should be determined by looking at the structure of the program. Of course it is allocated before the program starts and is not dynamically created but the number can be detected from the structure of the program.
+
+#### Possible Optimisation
+
+```OCaml
+(* Thread id 20 *)
+let c = channel () in
+let val = a large value in
+sync (send val c)
+```
+
+If the receiver to this channel has not arrived then this block. So we do not directly send the value to the channel. We simply register the thread id in the `sendq` of channel `c`.
+
+```
+Channel c
+sendq -> 20 -> Nil
+recvq -> Nil
+
+```
+
+Now as this blocks we simply wait for a receiver to arrive. After some time a receiver from a different thread id arrives and says
+
+```OCaml
+(* Thread id 30 *)
+...sync (recv c) // same c as above
+```
+
+we have
+
+```
+Channel c
+sendq -> 20 -> Nil
+recvq -> 30 -> Nil
+
+```
+
+Now on channel `c` threadid 20 is sending data and threadid 30 is going to receive. After doing the necessary synchronisation we can simply do the following as a *transaction*
+
+- copy data from thread 20's stack to thread 30's stack (because thread 20 got suspended when it was waiting on send the top value of the stack will be the value, in this way we don't have to copy the value to the channel and so on)
+- clear c.sendq head
+- clear c.recvq head
+
+#### Optimisation 2
+
+Use meaningful (or semantic) UUIDs. If we see that thread 20 and thread 30 are from the same container id (the container id should be encoded in the thread's UUID) we can avoid a copy operation as well. Because they are from the same container they share the heap so simply give thread 30 a pointer to the heap location of `val` in thread 20's stack.
+
+The above approach would work fine for
+
+- inter thread communication
+- inter container(threads within containers) communication
+
+How about `thread-I/O driver` communication?
+
+*Coming soon*
+
+
+
+
+
 #### Event
 
+*Coming soon*
 
 ### References
 
