@@ -199,7 +199,7 @@ Channel_t channels[MAX_CHANNELS];
 
 `MAX_CHANNELS` instead of static number should be determined by looking at the structure of the program. Of course it is allocated before the program starts and is not dynamically created but the number can be detected from the structure of the program.
 
-#### Possible Optimisation
+*Possible Optimisation*
 
 ```OCaml
 (* Thread id 20 *)
@@ -239,7 +239,7 @@ Now on channel `c` threadid 20 is sending data and threadid 30 is going to recei
 - clear c.sendq head
 - clear c.recvq head
 
-#### Optimisation 2
+*Optimisation 2*
 
 Use meaningful (or semantic) UUIDs. If we see that thread 20 and thread 30 are from the same container id (the container id should be encoded in the thread's UUID) we can avoid a copy operation as well. Because they are from the same container they share the heap so simply give thread 30 a pointer to the heap location of `val` in thread 20's stack.
 
