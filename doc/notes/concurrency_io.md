@@ -197,7 +197,7 @@ There should be an area outside the containers which will statically allocate ch
 Channel_t channels[MAX_CHANNELS];
 ```
 
-`MAX_CHANNELS` instead of static number should be determined by looking at the structure of the program. Of course it is allocated before the program starts and is not dynamically created but the number can be detected from the structure of the program.
+`MAX_CHANNELS` instead of a static number should be determined by looking at the structure of the program. Of course it is allocated before the program starts and is not dynamically created but the number can be detected from the structure of the program.
 
 *Possible Optimisation*
 
@@ -208,16 +208,16 @@ let val = a large value in
 sync (send val c)
 ```
 
-If the receiver to this channel has not arrived then this block. So we do not directly send the value to the channel. We simply register the thread id in the `sendq` of channel `c`.
+If the receiver to the above channel `c` has not arrived then this program blocks. So we do not directly send the value to the channel. We simply register the thread id in the `sendq` of channel `c`.
 
 ```
 Channel c
-sendq -> 20 -> Nil
+sendq -> 20 -> Nil //20 is the thread id
 recvq -> Nil
 
 ```
 
-Now as this blocks we simply wait for a receiver to arrive. After some time a receiver from a different thread id arrives and says
+Now as this blocks we sleep until a receiver arrives. After some time a receiver from a different thread id arrives and says
 
 ```OCaml
 (* Thread id 30 *)
@@ -241,7 +241,7 @@ Now on channel `c` threadid 20 is sending data and threadid 30 is going to recei
 
 *Optimisation 2*
 
-Use meaningful (or semantic) UUIDs. If we see that thread 20 and thread 30 are from the same container id (the container id should be encoded in the thread's UUID) we can avoid a copy operation as well. Because they are from the same container they share the heap so simply give thread 30 a pointer to the heap location of `val` in thread 20's stack.
+Use meaningful (or semantic) UUIDs. If we see that thread 20 and thread 30 are from the same container id (the container id should be encoded in the thread's UUID) we can avoid a copy operation as well. Because they are from the same container, they share the heap so simply give thread 30 a pointer to the heap location of `val` in thread 20's stack.
 
 The above approach would work fine for
 
@@ -250,10 +250,67 @@ The above approach would work fine for
 
 How about `thread-I/O driver` communication?
 
-*Coming soon*
+The thread and I/O driver communication is a separate type of communication which somehow lies outside the model. Our generl API is
 
+```
+send : Channel a -> a -> Event ()
+recv : Channel a -> Event a
+```
 
+Now imagine we expect to receive data from an I/O driver if we simply do
 
+```OCaml
+... let ch = channel () in
+    let a  = recv ch...
+```
+
+In the above it expects a value from the sender, but if the sender is an I/O driver how do we make it send data? We firstly need to specify the name of the driver, and also then the `send` is initiated asynchronously by the external world which is outside our program and programming model.
+
+One proposed solution is having two special unidirectional channel creation functions for I/O. So our new API will have:
+
+```
+iochannelS : IODriver -> Channel a 
+iochannelR : IODriver -> Channel a
+```
+
+The `IODriver` type is a representation of some kind of asynchronous I/O port which is handled by the runtime. Imagine we have
+
+```
+gpioDriver1 : IODriver
+```
+
+provided by the runtime where all the necessary interrupt handlers required by `GPIODriver1` is already supported in the runtime(interrupt handlers written in C which abstract over with a general API). So our original API changes very slightly:
+
+```OCaml
+... let ch = iochannelR gpioDriver1 in
+    let a  = recv ch...
+```
+
+The only change was from `channel ()` to `iochannelR gpioDriver1`. Now the scheduler can easily support the general programming model and pre-empt the program when it reaches `recv ch`. Only when GPIO driver receives an interrupt, we handle that and awaken the remaining parts.
+
+Runtime wise with to new function we have two new channel types:
+
+```C
+typedef struct {
+   UUID channel_id,
+   pthread_mutex_t lock,
+   Queue sendq,
+   IODriver driver_details
+} IOChannel_send_t;
+
+typedef struct {
+   UUID channel_id,
+   pthread_mutex_t lock,
+   Queue recvq,
+   IODriver driver_details
+} IOChannel_recv_t;
+```
+
+In the program when we reach `iochannelR gpioDriver1` we assume that the runtime already contains details related to interrupt handling for GPIO Driver1. All it does is, takes the thread id of program and enqueues that thread id to `recvq` of `IOChannel_recv_t` type.
+
+Now, given we have a bridging system, we accepts the hardware interrupts and transform them into software messages (stored in a buffer). Once the scheduler determines its time to wake up the correct thread it takes that software message and straight away pushes it to the stack of the suspended thread.
+
+For `send` it will do something similar. If the bridge buffer is full it will suspend the send threads and when there is enough space copy the top of the stack of the suspended send threads to the buffer of the concerned I/O driver. The "concerned I/O driver" is stored in the `driver_details` field.
 
 
 #### Event
