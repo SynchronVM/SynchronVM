@@ -250,7 +250,7 @@ The above approach would work fine for
 
 #### How about `thread-I/O driver` communication?
 
-The thread and I/O driver communication is a separate type of communication which somehow lies outside the model. Our generl API is
+The thread and I/O driver communication is a separate type of communication which somehow lies outside the model. Our general API is
 
 ```
 send : Channel a -> a -> Event ()
@@ -288,7 +288,7 @@ provided by the runtime where all the necessary interrupt handlers required by `
 
 The only change was from `channel ()` to `iochannelR gpioDriver1`. Now the scheduler can easily support the general programming model and pre-empt the program when it reaches `recv ch`. Only when GPIO driver receives an interrupt, we handle that and awaken the remaining parts.
 
-Runtime wise with to new function we have two new channel types:
+Runtime wise with two new functions we have two new channel types:
 
 ```C
 typedef struct {
@@ -308,9 +308,9 @@ typedef struct {
 
 In the program when we reach `iochannelR gpioDriver1` we assume that the runtime already contains details related to interrupt handling for GPIO Driver1. All it does is, takes the thread id of program and enqueues that thread id to `recvq` of `IOChannel_recv_t` type.
 
-Now, given we have a bridging system, we accepts the hardware interrupts and transform them into software messages (stored in a buffer). Once the scheduler determines its time to wake up the correct thread it takes that software message and straight away pushes it to the stack of the suspended thread.
+Now, given we have a bridging system, we accept the hardware interrupts and transform them into software messages (stored in a buffer). Once the scheduler determines its time to wake up the correct thread it takes that software message and straight away pushes it to the stack of the suspended thread.
 
-For `send` it will do something similar. If the bridge buffer is full it will suspend the send threads and when there is enough space copy the top of the stack of the suspended send threads to the buffer of the concerned I/O driver. The "concerned I/O driver" is stored in the `driver_details` field.
+For `send` it will do something similar. If the bridge buffer is full it will suspend the send threads. Once the buffer has some space it will copy the top of the stack of the suspended send threads to the buffer of the concerned I/O driver. The "concerned I/O driver" is stored in the `driver_details` field.
 
 
 #### Event
