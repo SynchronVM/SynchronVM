@@ -248,7 +248,7 @@ The above approach would work fine for
 - inter thread communication
 - inter container(threads within containers) communication
 
-How about `thread-I/O driver` communication?
+#### How about `thread-I/O driver` communication?
 
 The thread and I/O driver communication is a separate type of communication which somehow lies outside the model. Our generl API is
 
