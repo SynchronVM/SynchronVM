@@ -221,7 +221,7 @@ Now as this blocks we sleep until a receiver arrives. After some time a receiver
 
 ```OCaml
 (* Thread id 30 *)
-...sync (recv c) // same c as above
+...sync (recv c) (* same c as above *)
 ```
 
 we have
@@ -315,7 +315,41 @@ For `send` it will do something similar. If the bridge buffer is full it will su
 
 #### Event
 
-*Coming soon*
+An `Event` is the intermediate abstraction that is used to **compose** and build larger communication blocks. `Event`s distinguish Concurrent ML from all other CSP implementations and APIs and (in my opinion) makes all communication truly compositional.
+
+Eg:
+
+```OCaml
+(* foo : Event () *)
+let foo =
+    let c1 = channel () in
+    let c2 = channel () in
+    let c5 = channel () in
+    let c6 = channel () in
+    choose
+      [ choose [ send c1 a
+               , wrap (recv c1) (\m1 -> sync (send c2 a))
+               ]
+      , guard (\() -> pre-sync action;
+                      send c2 a))
+      , wrap (choose [ recv c5
+                     , recv c6
+                     , wrap (send c1 a) (\() -> sync (recv c2))
+               ]) (\m3 -> sync (send m3))
+      ]
+```
+
+The above is just an example, but represents how we can *compositionally* build a complex Event out of *base event constructors* (In CML literature `send` and `recv` are called "base event constructors"), choice and other pre- and post-synchronisation helpers. The function foo represents an Event but we can see that Event is a composition of a complex tree of several events. So when we say
+
+```OCaml
+sync foo
+```
+
+It takes the entire Event tree, does multiple races (using `choose`) and when one of the action wins cancels all of the others. In the runtime an Event is represented as a tree, which will be allocated on the VM heap. 
+
+Runtime representation of Event:
+
+*COMING SOON*
 
 ### References
 
