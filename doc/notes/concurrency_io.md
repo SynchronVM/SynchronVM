@@ -310,7 +310,29 @@ In the program when we reach `iochannelR gpioDriver1` we assume that the runtime
 
 Now, given we have a bridging system, we accept the hardware interrupts and transform them into software messages (stored in a buffer). Once the scheduler determines its time to wake up the correct thread it takes that software message and straight away pushes it to the stack of the suspended thread.
 
-For `send` it will do something similar. If the bridge buffer is full it will suspend the send threads. Once the buffer has some space it will copy the top of the stack of the suspended send threads to the buffer of the concerned I/O driver. The "concerned I/O driver" is stored in the `driver_details` field.
+For `send` it will do something similar. If the bridge buffer is full it will suspend the send threads. Once the buffer has some space it will copy the top of the stack of the suspended send threads to the buffer of the concerned I/O driver. The "concerned I/O driver** is stored in the `driver_details** field.
+
+
+*Alternate IOChannel design*
+
+API :
+
+```
+iochannel : IODriver -> Channel a
+```
+
+Runtime :
+
+```C
+typedef struct {
+   UUID channel_id,
+   pthread_mutex_t lock,
+   Queue sendq, // when receiving messages this remains empty
+   Queue recvq, // when sending message this remains empty
+   IODriver driver_details
+} IOChannel_t;
+```
+
 
 
 #### Event
