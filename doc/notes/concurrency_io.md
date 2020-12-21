@@ -335,7 +335,8 @@ let foo =
       , wrap (choose [ recv c5
                      , recv c6
                      , wrap (send c1 a) (\() -> sync (recv c2))
-               ]) (\m3 -> sync (send m3))
+                     ]
+             ) (\m3 -> sync (send m3))
       ]
 ```
 
