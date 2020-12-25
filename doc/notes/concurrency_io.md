@@ -417,7 +417,7 @@ If none of the operations are ready to be synchronized it calls the `blockFn` of
 
 If any one operation is ready to be synchronised it executes the `doFn` of the `Event` which mainly `moves the current stack` into the `readyQ`. Also it ensures the desired message copying happens. This is the main role.
 
-The `pollFn` should take care of dequeuing from the `readyQ` failed actions.
+The `pollFn` should take care of dequeuing from the corresponding `sendQ` and `recvQ` of the channel on which we are synchronizing.
 
 ```
 spawn (() -> send c 5) -- or spawn (() -> sync (send c 5))
