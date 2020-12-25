@@ -44,6 +44,8 @@ library
       HindleyMilner.TypeInference
       Renaming.Renaming
       LambdaLifting.LambdaLifting
+      Monomorphisation.Monomorphise
+      Monomorphisation.Environment
   hs-source-dirs:
       src
   build-depends:

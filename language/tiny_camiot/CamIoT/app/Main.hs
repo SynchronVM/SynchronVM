@@ -24,7 +24,7 @@ module Main where
 import System.Environment (getArgs)
 import System.Exit
 
-import Lib (readAndParse)
+import Lib (compile)
 
 main :: IO ()
 main = do
@@ -32,8 +32,8 @@ main = do
   case args of
     ["--help"] -> putStrLn "no help offered :D" -- write a nice message
     [fs] -> do
-        res <- readAndParse fs
+        res <- compile fs
         case res of
-          Left err -> putStrLn err >> exitFailure
-          Right tree -> putStrLn "parse & typecheck succeeded!"
+          Left err   -> putStrLn err >> exitFailure
+          Right tree -> putStrLn tree >> exitSuccess
     _ -> putStrLn "Right now I can only handle one input file" -- :c

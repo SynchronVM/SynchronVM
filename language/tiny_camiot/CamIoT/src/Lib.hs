@@ -20,11 +20,8 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 module Lib
-    ( readAndParse
-    , readAndRename
+    ( compile
     ) where
-
-import System.Exit
 
 import Parser.AbsTinyCamiot
 import Parser.PrintTinyCamiot
@@ -36,55 +33,33 @@ import Text.Megaparsec
 import Data.List
 
 import Typechecker.TypecheckTinyCamiot
-import Typechecker.Environment
 import Typechecker.Substitution
 
 import qualified Renaming.Renaming as R
 import qualified LambdaLifting.LambdaLifting as L
+import qualified Monomorphisation.Monomorphise as M
 
-readAndParse :: String -> IO (Either String Subst)
-readAndParse input = do
+compile :: String -> IO (Either String String)
+compile input = do
     contents <- T.readFile input
     let processed = PreP.process contents
     let parsed = Text.Megaparsec.parse P.pProgram input processed
     case parsed of
-        Left err   -> return (Left (show err))
+        Left err   -> return $ Left (show err)
         Right defs -> do
             tc <- typecheck defs
             case tc of
-                Left err     -> return $ Left $ show err
-                Right (_,tc) -> return (Right tc)
+                Left err2           -> return $ Left (show err2)
+                Right (tree, subst) -> do let (rn, state1) = R.rename (apply subst tree)
+                                          let (ll, state2) = L.lambdaLift rn state1
+                                          mm              <- M.monomorphise ll state2
+                                          return $ Right (betterPrint mm)
 
--- for testing
-readAndRename :: String -> IO ()
-readAndRename input = do
-    contents <- T.readFile input
-    let processed = PreP.process contents
-    let parsed = Text.Megaparsec.parse P.pProgram input processed
-    case parsed of
-        Left err -> return ()
-        Right defs -> do
-            tc <- typecheck defs
-            case tc of
-                Left err    -> putStrLn "error"
-                Right (tree,subst) -> do let (rn, state) = R.rename (apply subst tree)
-                                         let ll          = L.lambdaLift rn state
-                                         betterPrint ll -- putStrLn $ printTree ll
-
-betterPrint :: (Show a, Print a) => [Def a] -> IO ()
-betterPrint defs = putStrLn $ intercalate "\n\n" (map printTree groups){-let sdecs = map printTree datadecs
-                       sfuns = map printTree funs
-                       ssdecs = intercalate "\n" sdecs
-                       ssfuns = intercalate "\n" sfuns
-                   in putStrLn $ ssdecs ++ ssfuns-}
+betterPrint :: (Show a, Print a) => [Def a] -> String
+betterPrint defs = intercalate "\n\n" (map printTree groups)
   where
         f (DEquation _ n1 _ _) (DEquation _ n2 _ _) = n1 == n2
         f (DTypeSig n1 _) (DEquation _ n2 _ _)      = n1 == n2
         f _ _                                       = False
 
         groups = groupBy f defs
-
-        isDataDec [(DDataDec _ _ _)] = True
-        isDataDec _                  = False
-
-        (datadecs, funs) = partition isDataDec groups

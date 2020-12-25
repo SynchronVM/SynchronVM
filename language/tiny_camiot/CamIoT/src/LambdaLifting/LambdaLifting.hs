@@ -1,4 +1,4 @@
-module LambdaLifting.LambdaLifting (lambdaLift) where
+module LambdaLifting.LambdaLifting (lambdaLift, renameExp) where
 
 import Parser.AbsTinyCamiot
 import Parser.PrintTinyCamiot
@@ -12,17 +12,22 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
 
+import System.IO.Unsafe (unsafePerformIO)
+
+trace :: Show a => a -> a
+trace x = unsafePerformIO $ putStrLn (show x) >> return x
+
 type LL b a = StateT Int (               -- ^ State to generate names
               Reader [(Ident, Type)]) a  -- ^ Variables currently in scope
 
-lambdaLift :: [Def Type] -> Int -> [Def Type]
+lambdaLift :: [Def Type] -> Int -> ([Def Type], Int)
 lambdaLift defs = runLL (llDefs defs)
 
 {- | Runs the lifting computation and returns a pair with the new AST and
 the lifted functions. -}
-runLL :: LL Type [Def Type] -> Int -> [Def Type]
+runLL :: LL Type [Def Type] -> Int -> ([Def Type], Int)
 runLL ma state = do
-    let rd = evalStateT ma state
+    let rd = runStateT ma state
     runReader rd []
     
 -- | Generate fresh function name
@@ -79,9 +84,10 @@ llExp e = case e of
                 return (ELet a p e1' e2', ds1++ds2)
         ELetR a p e1 e2 -> undefined
         ELam a p e      -> do
-            let pvars = varsInPat p -- vars in p
+            let pvars      = varsInPat p -- vars in p
+            (penv, pvars') <- convertPat p -- rename variables in p, returning an env and the new p
 
-            -- first, recursively lambdalift the expression
+            -- recursively lambdalift the expression
             (e', d) <- local (`myUnion` pvars) (llExp e)
 
             -- calculate which of the bound variables need to be applied to the lifted function
@@ -94,20 +100,25 @@ llExp e = case e of
             toApply' <- mapM (\(_,t) -> fresh >>= \v -> return (v,t)) toApply
 
             -- environment for renaming of the expression
-            let env = Map.fromList $ zipWith (\x y -> (fst x, fst y)) toApply toApply'
-            let e'' = renameExp env e'
+            let env  = Map.fromList $ zipWith (\x y -> (fst x, fst y)) toApply toApply'
+            let m    = Map.union env penv
+            let e''  = renameExp m e'
             
             -- All arguments the lifted function will have, and the type of the lifted function
-            let args = toApply' ++ pvars
-            let ftype = foldr TLam (snd (last args)) $ map snd (init args) ++ [unwrapFunction a]
+            let args = map (\(v,t) -> (PVar t v, t)) toApply' ++ [(pvars', getPatVar pvars')]
+            let ftype = foldr (TLam . snd) (unwrapFunction a) args
 
-            f <- fresh                       -- fresh name for the lifted function
+            -- Create the lifted function
+            f          <- fresh              -- fresh name for the lifted function
             let dtypsig = DTypeSig f ftype   -- it's type signature
-            let params  = toApply' ++ pvars  -- the parameters it'll have
-            let def     = DEquation ftype f (map (\(v,t) -> PVar t v) params) e''  -- the equation itself
+            let def     = DEquation ftype f (map fst args) e''  -- the equation itself
 
-            -- It's a long line, but this is the expression we are replacing the lambda with
-            let res = foldl (\f'@(EVar (TLam _ t) _) (v,t') -> EApp t f' (EVar t' v) ) (EVar ftype f) toApply
+            -- Create the new application
+            let res = foldl (\f' (v,t') -> case f' of
+                                     (EVar (TLam _ t) _)   -> EApp t f' (EVar t' v)
+                                     (EApp (TLam _ t) _ _) -> EApp t f' (EVar t' v))
+                            (EVar ftype f)
+                            toApply
 
             return (res, d ++ [dtypsig, def])
         EIf a e1 e2 e3  -> do
@@ -175,26 +186,44 @@ varsInExp e = case e of
         EConst _ _      -> []
 
 -- | Some set operations on lists (lol cheeky)
-exclude :: [(Ident, Type)] -> [(Ident, Type)] -> [(Ident, Type)]
+exclude :: (Ord a, Ord b) => [(a,b)] -> [(a,b)] -> [(a,b)]
 exclude xs ys = Set.toList $ Set.fromList xs Set.\\ Set.fromList ys
 
-myUnion :: [(Ident, Type)] -> [(Ident, Type)] -> [(Ident, Type)]
+myUnion :: (Ord a, Ord b) => [(a,b)] -> [(a,b)] -> [(a,b)]
 myUnion xs ys = Set.toList $ Set.union (Set.fromList xs) (Set.fromList ys)
 
-myIntersection :: [(Ident, Type)] -> [(Ident, Type)] -> [(Ident, Type)]
+myIntersection :: (Ord a, Ord b) => [(a,b)] -> [(a,b)] -> [(a,b)]
 myIntersection xs ys = Set.toList $ Set.intersection (Set.fromList xs) (Set.fromList ys)
 
--- | All variables and their types in a pattern
 varsInPat :: Pat Type -> [(Ident, Type)]
 varsInPat p = case p of
         PConst _ _      -> []
         PVar a id       -> [(id, a)]
         PZAdt _ _       -> []
         PNAdt _ _ apats -> concat $ map varsInPat apats
-        PWild _         -> []
-        PNil _          -> []
+        PWild a         -> []
+        PNil a          -> []
         PTup _ tpats    -> concat $ map varsInPat tpats
         PLay a id p'    -> (id, a) :  varsInPat p'
+
+convertPat :: Pat Type -> LL Type (Map.Map Ident Ident, Pat Type)
+convertPat p = case p of
+        PConst _ _        -> return (Map.empty, p)
+        PVar a id         -> do id' <- fresh
+                                return (Map.singleton id id', PVar a id')
+        PZAdt _ _         -> return (Map.empty, p)
+        PNAdt a uid apats -> do (maps, apats') <- unzip <$> mapM convertPat apats
+                                let m = Map.unions maps
+                                return (m, PNAdt a uid apats')
+        PWild _           -> return (Map.empty, p)
+        PNil _            -> return (Map.empty, p)
+        PTup a tpats      -> do (maps, tpats') <- unzip <$> mapM convertPat tpats
+                                let m = Map.unions maps
+                                return (m, PTup a tpats')
+        PLay a id p'      -> do id' <- fresh
+                                (m, p'') <- convertPat p'
+                                let m' = Map.union m (Map.singleton id id')
+                                return (m', PLay a id' p'')
 
 -- | Lambda lifts a case-branch
 llPatMatch :: PatMatch Type -> LL Type (PatMatch Type, [Def Type])

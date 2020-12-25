@@ -22,8 +22,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Typechecker.AstUtils
        (
+         -- * Transform definitions
+         groupAsFunctions
+
          -- * Fetch functor values
-         getExpVar
+       , getExpVar
        , getPatVar
        , getAddopVar
        , getMulopVar
@@ -42,6 +45,7 @@ module Typechecker.AstUtils
        , bool
        , int
        , float
+       , containsTypeVariable
        ) where
 
 import Parser.AbsTinyCamiot
@@ -51,11 +55,20 @@ import Parser.AbsTinyCamiot
       MulOp(Div, Times),
       AddOp(Minus, Plus),
       Exp(..),
-      Type(TFloat, TVar, TAdt, TTup, TLam, TBool, TInt),
-      Def(DEquation),
+      Type(TFloat, TVar, TAdt, TNil, TTup, TLam, TBool, TInt),
+      Def(DEquation, DTypeSig),
       Ident )
 import Typechecker.Substitution ( Substitutable(..) )
 
+import Data.List ( groupBy )
+
+{- | This function will traverse the AST and group definitions together such that
+each group represents one function. -}
+groupAsFunctions :: [Def Type] -> [[Def Type]]
+groupAsFunctions = groupBy f
+  where f (DEquation _ n1 _ _) (DEquation _ n2 _ _) = n1 == n2
+        f (DTypeSig n1 _) (DEquation _ n2 _ _)      = n1 == n2
+        f _ _                                       = False
 
 -- | Returns the functor value of expressions
 getExpVar :: Exp a -> a
@@ -152,7 +165,16 @@ int = TInt --TAdt () (UIdent "Int") []
 float :: Type
 float = TFloat -- TAdt () (UIdent "Float") []
 
-
+containsTypeVariable :: Type -> Bool
+containsTypeVariable t = case t of
+    TLam t1 t2  -> containsTypeVariable t1 || containsTypeVariable t2
+    TAdt _ typs -> any containsTypeVariable typs
+    TTup typs   -> any containsTypeVariable typs
+    TVar _      -> True
+    TNil        -> False
+    TBool       -> False
+    TInt        -> False
+    TFloat      -> False
 
 
 

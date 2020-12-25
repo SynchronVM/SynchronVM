@@ -11,4 +11,9 @@ Todo items
 * case checking on line 374, the error is rendered incorrectly..
 * We should try to be more correct about the way types are handled right now. Checking that ADTs and type constructors
   are correctly applied etc is very crude. We should perhaps try to do it in terms of kinds and stuff, like it is done in Haskell.
-  
+* Basically I believe the typechecker could benefit from a rewrite now that I know how it should work. Right now it's an initial attempt that has been quickfixed a few times too many.
+
+
+* move `renameExp` from `LambdaLifting` and generalise. It can probably be reused in a lot of places.
+
+* The monomorphizer needs a runover. Some of the code does a little too much and it can be structured nicer.

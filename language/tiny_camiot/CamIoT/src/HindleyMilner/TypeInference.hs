@@ -2,13 +2,13 @@
 {-# LANGUAGE TypeFamilies #-}
 module HindleyMilner.TypeInference where
 
-import Parser.AbsTinyCamiot
-import HindleyMilner.HM
-import Typechecker.Substitution hiding (Subst, compose)
+import Parser.AbsTinyCamiot ( Ident, Type(..) )
+import HindleyMilner.HM ( Unify(..) )
+import Typechecker.Substitution ( Substitutable(ftv, apply) )
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Foldable
+import Data.Foldable ( foldlM )
 
 type Subst = Map.Map Ident Type
 
