@@ -372,7 +372,63 @@ It takes the entire Event tree, does multiple races (using `choose`) and when on
 
 Runtime representation of Event:
 
-*COMING SOON*
+The structure of an `Event` is directly related to the main combinators that operate on it. The most important combinator is
+
+```OCaml
+sync : Event a -> a
+```
+
+The structure of an `Event` in CML is dictated by the operations that the sync operation would do. In SML it is represented as:
+
+```SML
+datatype 'a base_evt = BEVT of {
+    pollFn  : unit -> bool,
+    doFn    : unit -> 'a,
+    blockFn : (bool ref * 'a cont) -> unit
+  }
+and 'a event = EVT of 'a base_evt list
+
+(* 'a cont represents a suspended continuation *)
+```
+
+We need to distinguish between 3 different operations:
+
+```
+send c 5
+sync (send c 5)
+spawn (() -> send c 5) -- or spawn (() -> sync (send c 5))
+```
+
+```
+send c 5
+```
+
+The above creates a record of functions. None of the functions are applied and they will be used when `sync` is called. An Event says **what need to be done**. Doesn't actually do it. The doing part happens after `sync` is called. It is a recipe.
+
+```
+sync (send c 5)
+```
+
+It takes the record of functions from above and **actually does** the operations.
+
+First it polls to see if any operation is ready to be synchronised. It does this by going through that `Event`'s channels and seeing if the corresponding queue has any synchronizer.
+
+If none of the operations are ready to be synchronized it calls the `blockFn` of the respective base events which internally takes the `copy of stack` and stores it in the suspended queue and registers the thread id to the respective channel's queue. It then switches to work with the other elements of the `readyQ`.
+
+If any one operation is ready to be synchronised it executes the `doFn` of the `Event` which mainly `moves the current stack` into the `readyQ`. Also it ensures the desired message copying happens. This is the main role.
+
+The `pollFn` should take care of dequeuing from the `readyQ` failed actions.
+
+```
+spawn (() -> send c 5) -- or spawn (() -> sync (send c 5))
+```
+
+`copy the stack` to `readyQ`.
+
+Question: Execute which bytecode after copying next?
+Choices: Either the parent or the bytecode of the spawned thunk (child). Might need a way to distinguish the end of a child thread bytecode.
+
+
 
 ### References
 
