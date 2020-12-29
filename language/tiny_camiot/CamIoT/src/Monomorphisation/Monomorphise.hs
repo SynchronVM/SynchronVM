@@ -20,7 +20,7 @@ import Control.Monad.State ( gets, MonadState(put, get), liftIO, zipWithM )
 --------------- Monomorphise functions ---------------
 
 -- | Monomorphize a program.
-monomorphise :: [Def Type] -> Int -> IO [Def Type]
+monomorphise :: [Def Type] -> Int -> IO ([Def Type], Int)
 monomorphise defs st = runM (monomorphise' defs) state 
   where
       types   = Map.fromList $ gatherTypes defs

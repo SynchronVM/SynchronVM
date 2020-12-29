@@ -13,7 +13,11 @@ Todo items
   are correctly applied etc is very crude. We should perhaps try to do it in terms of kinds and stuff, like it is done in Haskell.
 * Basically I believe the typechecker could benefit from a rewrite now that I know how it should work. Right now it's an initial attempt that has been quickfixed a few times too many.
 
+* some notion of function (entity that holds a list of definitions) should be added, instead of passing
+  around a list of `[Def a]` in the compiler.
 
 * move `renameExp` from `LambdaLifting` and generalise. It can probably be reused in a lot of places.
 
 * The monomorphizer needs a runover. Some of the code does a little too much and it can be structured nicer.
+
+* add a `main` to the pipeline. The typechecker should check for its presence and for its type.

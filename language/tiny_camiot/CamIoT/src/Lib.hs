@@ -38,6 +38,7 @@ import Typechecker.Substitution
 import qualified Renaming.Renaming as R
 import qualified LambdaLifting.LambdaLifting as L
 import qualified Monomorphisation.Monomorphise as M
+import qualified Desugaring.Desugar as D
 
 compile :: String -> IO (Either String String)
 compile input = do
@@ -50,10 +51,11 @@ compile input = do
             tc <- typecheck defs
             case tc of
                 Left err2           -> return $ Left (show err2)
-                Right (tree, subst) -> do let (rn, state1) = R.rename (apply subst tree)
-                                          let (ll, state2) = L.lambdaLift rn state1
-                                          mm              <- M.monomorphise ll state2
-                                          return $ Right (betterPrint mm)
+                Right (tree, subst) -> do let (rn, state1) =  R.rename (apply subst tree)
+                                          let (ll, state2) =  L.lambdaLift rn state1
+                                          (mm, state3)     <- M.monomorphise ll state2
+                                          let ss           =  D.desugar state3 mm
+                                          return $ Right (printTree ss)
 
 betterPrint :: (Show a, Print a) => [Def a] -> String
 betterPrint defs = intercalate "\n\n" (map printTree groups)

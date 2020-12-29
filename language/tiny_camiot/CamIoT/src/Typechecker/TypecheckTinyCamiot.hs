@@ -26,7 +26,7 @@ import Parser.AbsTinyCamiot
 import Parser.PrintTinyCamiot
 import Typechecker.Substitution hiding (Subst)
 import Typechecker.Environment
-import Typechecker.AstUtils
+import Typechecker.AstUtils hiding (recursive)
 import Typechecker.TCUtils
 
 import Control.Monad.State

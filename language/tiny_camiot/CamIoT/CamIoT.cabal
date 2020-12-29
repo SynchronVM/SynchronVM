@@ -46,6 +46,8 @@ library
       LambdaLifting.LambdaLifting
       Monomorphisation.Monomorphise
       Monomorphisation.Environment
+      Desugaring.Desugar
+      Desugaring.AST
   hs-source-dirs:
       src
   build-depends:

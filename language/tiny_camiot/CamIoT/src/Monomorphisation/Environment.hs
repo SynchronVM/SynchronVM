@@ -37,8 +37,10 @@ data MState = MState { -- Counter to generate fresh variable names
 type M a = StateT MState IO a
 
 -- | Run a monomorphisation computation.
-runM :: M a -> MState -> IO a
-runM = evalStateT
+runM :: M a -> MState -> IO (a, Int)
+runM ma state = do
+  (a, st) <- runStateT ma state
+  return (a, counter st)
 
 -- | Generate a fresh variable name.
 fresh :: M Ident

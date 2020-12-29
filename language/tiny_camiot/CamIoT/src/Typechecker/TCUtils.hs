@@ -25,7 +25,6 @@ module Typechecker.TCUtils
 
          -- * Functions that inspects the AST
        , isMoreGeneral
-       , usesVar
        ) where
 
 import Parser.AbsTinyCamiot
@@ -164,49 +163,3 @@ isMoreGeneral (TTup t1s) (TTup t2s) =
     let maybes = zipWith isMoreGeneral t1s t2s
     in foldl (\b1 b2 -> (||) <$> b1 <*> b2) (Just False) maybes
 isMoreGeneral _ _ = Nothing
-
-{-- | Checks if the argument identifier occurs in the argument expression.
-Used to check for e.g if a function is recursive.
--}
-usesVar
-    :: Ident  -- ^ Argument identifier, e.g fac
-    -> Exp a  -- ^ Argument expression, e.g n * fac (n-1)
-    -> Bool
-usesVar id e = case e of
-    (ETup a texps)    -> any (usesVar id) texps
-    (ECase a e1 br)   -> usesVar id e1 || any (usesVarPatMatch id) br
-    (ELet a p e1 e2)  -> usesVarPat id p || usesVar id e1 || usesVar id e2
-    (ELetR a p e1 e2) -> usesVarPat id p || usesVar id e1 || usesVar id e2
-    (ELam a p e1)     -> usesVarPat id p || usesVar id e1
-    (EIf a e1 e2 e3)  -> usesVar id e1 || usesVar id e2 || usesVar id e3
-    (EApp a e1 e2)    -> usesVar id e1 || usesVar id e2
-    (EOr a e1 e2)     -> usesVar id e1 || usesVar id e2
-    (EAnd a e1 e2)    -> usesVar id e1 || usesVar id e2
-    (ERel a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (EAdd a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (EMul a e1 op e2) -> usesVar id e1 || usesVar id e2
-    (ENot a e1)       -> usesVar id e1
-    (EVar a id')      -> id == id'
-    (EUVar a _)       -> False
-    (EConst a c)      -> False
-
--- | Checks if the argument identifier appears in the argument pattern.
-usesVarPat
-    :: Ident  -- ^ Argument identifier, e.g x
-    -> Pat a  -- ^ Argument pattern, e.g (x,3)
-    -> Bool
-usesVarPat id p = case p of
-    PConst _ c       -> False
-    PVar _ id'       -> id == id'
-    PZAdt _ _        -> False
-    PNAdt _ _ pats   -> any (usesVarPat id) pats
-    PWild _          -> False
-    PNil _           -> False
-    PTup _ patterns  -> any (usesVarPat id) patterns
-    PLay _ id' pat   -> id == id' || usesVarPat id pat
-
-{-- | Checks if the argument identifier appears in the pattern match clause,
-which is just a pair of a pattern and an expression.
--}
-usesVarPatMatch :: Ident -> PatMatch a -> Bool
-usesVarPatMatch id (PM pat exp) = usesVarPat id pat || usesVar id exp

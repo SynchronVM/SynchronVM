@@ -21,7 +21,7 @@ type R a = StateT StateEnv (
 runR :: R a -> (a, Int)
 runR ra = 
     let rea = runStateT ra 0
-    in runReader rea Map.empty
+    in runReader rea $ Map.singleton (Ident "main") (Ident "main") -- Don't want to rename main, should already be unique though
 
 -- | Alpha-rename a program, returns the state so that it can be passed along to the lifter
 rename :: [Def a ] -> ([Def a], Int)
