@@ -35,5 +35,5 @@ main = do
         res <- compile fs
         case res of
           Left err   -> putStrLn err >> exitFailure
-          Right tree -> putStrLn tree >> exitSuccess
+          Right tree -> {-putStrLn tree >>-} exitSuccess
     _ -> putStrLn "Right now I can only handle one input file" -- :c

@@ -39,6 +39,7 @@ module Typechecker.AstUtils
        , functionType
        , unwrapFunction
        , countArguments
+       , typearguments
        , usesVar
        , recursive
 
@@ -149,6 +150,10 @@ specified in the type.
 countArguments :: Type -> Int
 countArguments (TLam _ t) = 1 + countArguments t
 countArguments _          = 0
+
+typearguments :: Type -> [Type]
+typearguments (TLam t1 t2) = t1 : typearguments t2
+typearguments _            = []
 
 -- | Operator alias to construct a function type
 infixr 8 *->

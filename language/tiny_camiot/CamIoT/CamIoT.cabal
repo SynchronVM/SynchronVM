@@ -48,6 +48,7 @@ library
       Monomorphisation.Environment
       Desugaring.Desugar
       Desugaring.AST
+      Interpreter.Interpreter
   hs-source-dirs:
       src
   build-depends:

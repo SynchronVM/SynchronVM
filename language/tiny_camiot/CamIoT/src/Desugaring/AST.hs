@@ -36,7 +36,7 @@ data SExp a
     | SETup   a (SExp a) (SExp a)
     | SENot   a (SExp a)
     | SEVar   a AST.Ident
-    | SEUVar  a AST.UIdent
+    | SETag   a AST.UIdent (Maybe (SExp a))
     | SEConst a AST.Const
   deriving (Eq, Ord, Show, Read)
 
@@ -59,13 +59,13 @@ getSExpVar e = case e of
     SETup   a _ _   -> a
     SENot   a _     -> a
     SEVar   a _     -> a
-    SEUVar  a _     -> a
+    SETag   a _ _   -> a
     SEConst a _     -> a
 
 data SPat a
     = SPConst a AST.Const
     | SPVar a AST.Ident
-    | SPNAdt a AST.UIdent [SPat a]
+    | SPNAdt a AST.UIdent (Maybe (SPat a))
     | SPWild a
     | SPNil a
     | SPTup a (SPat a) (SPat a)
@@ -112,7 +112,8 @@ instance Print a => Print (SExp a) where
     SETup a t1 t2 -> prPrec i 7 (concatD ([doc (showString "(")] ++ printTups [t1, t2] ++ [doc (showString ")")]))
     SENot a exp -> prPrec i 6 (concatD [doc (showString "!"), prt 7 exp])
     SEVar a id -> prPrec i 7 (concatD [prt 0 id])
-    SEUVar a uident -> prPrec i 7 (concatD [prt 0 uident])
+    SETag a uident (Just exp1) -> prPrec i 6 (concatD [doc (showString "("), prt 0 uident, prt 1 exp1, doc (showString ")")]) -- not sure why I wrote 6 here, don't know how this works at all
+    SETag a uident Nothing     -> prPrec i 6 (concatD [doc (showString "("), prt 0 uident, doc (showString ")")]) -- not sure why I wrote 6 here, don't know how this works at all
     SEConst a const -> prPrec i 7 (concatD [prt 0 const])
     where
         printTups [] = []
@@ -129,7 +130,8 @@ instance Print (SPat a) where
   prt i e = case e of
     SPConst _ const -> prPrec i 0 (concatD [prt 0 const])
     SPVar _ id -> prPrec i 0 (concatD [prt 0 id])
-    SPNAdt _ uident adtpats -> prPrec i 0 (concatD [doc (showString "("), prt 0 uident, prt 0 adtpats, doc (showString ")")])
+    SPNAdt _ uident Nothing -> prPrec i 0 (concatD [prt 0 uident])
+    SPNAdt _ uident (Just adtpat) -> prPrec i 0 (concatD [doc (showString "("), prt 0 uident, prt 0 adtpat, doc (showString ")")])
     SPWild _ -> prPrec i 0 (concatD [doc (showString "_")])
     SPNil _ -> prPrec i 0 (concatD [doc (showString "("), doc (showString ")")])
     SPTup _ p1 p2 -> prPrec i 1 (concatD ([doc (showString "(")] ++ printTups [p1, p2]++ [doc (showString ")")]))
