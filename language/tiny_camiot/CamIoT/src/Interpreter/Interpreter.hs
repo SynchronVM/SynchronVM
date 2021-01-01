@@ -24,8 +24,8 @@ instance Show Value where
     show (VFloat d)          = show d
     show (VBool b)           = show b
     show (VTup v1 v2)        = "(" ++ show v1 ++ "," ++ show v2 ++ ")"
-    show (VAdt uid Nothing)  = show uid
-    show (VAdt uid (Just v)) = "(" ++ show uid ++ " " ++ show v ++ ")"
+    show (VAdt uid Nothing)  = printTree uid
+    show (VAdt uid (Just v)) = "(" ++ printTree uid ++ " " ++ show v ++ ")"
     show VNil                = "()"
     show _                   = "can not render function"
 
@@ -58,19 +58,13 @@ instance Ord Value where
 
 type Interp a = Reader Environment a
 
-interpret :: SExp SType -> IO ()
+interpret :: SExp SType -> IO String
 interpret e = do
     let v = runReader (interpExp e) (Environment Map.empty Map.empty)
-    putStrLn $ show v
-
-extendFun :: Ident -> Value -> Interp a -> Interp a
-extendFun id v = local (\(Environment funs vars) -> Environment (Map.insert id v funs) vars)
+    return $ show v
 
 extendFuns :: Map.Map Ident Value -> Interp a -> Interp a
 extendFuns funs = local (\(Environment funs' vars) -> Environment (Map.union funs funs') vars)
-
-extendVar :: Ident -> Value -> Interp a -> Interp a
-extendVar id v = local (\(Environment funs vars) -> Environment funs (Map.insert id v vars))
 
 extendVars :: Map.Map Ident Value -> Interp a -> Interp a
 extendVars vars = local (\(Environment funs vars') -> Environment funs (Map.union vars vars'))

@@ -25,9 +25,11 @@ type DS a = State DSState a
 
 desugar :: Int -> [AST.Def AST.Type] -> SExp SType
 desugar state defs = runDS state $ do
-    datadecs <- desugarADTs datadecs
-    program  <- desugarFunctions funs' (fromJust main)
-    return $ datadecs program
+    if length datadecs > 0
+        then do datadecs <- desugarADTs datadecs
+                program  <- desugarFunctions funs' (fromJust main)
+                return $ datadecs program
+        else desugarFunctions funs' (fromJust main)
   where
       funs  = groupAsFunctions defs
       funs' = filter (\(d:_) -> case d of
@@ -95,14 +97,16 @@ desugarADTs decs = do
           return $ \e -> SELet (getSExpVar e) fun res e
 
 desugarFunctions :: [[AST.Def AST.Type]] -> [AST.Def AST.Type] -> DS (SExp SType)
-desugarFunctions (fun:funs) main = do
+desugarFunctions functions main = do
     m <- gets constructorfuncs
-    case funs of
-        [] -> do fun' <- desugarFunction fun
-                 return $ fun' (desugarMain m main)
-        _  -> do fun' <- desugarFunction fun
-                 rest <- desugarFunctions funs main
-                 return $ fun' rest
+    case functions of
+        [] -> return $ desugarMain m main
+        (fun:funs) -> case funs of
+                [] -> do fun' <- desugarFunction fun
+                         return $ fun' (desugarMain m main)
+                _  -> do fun' <- desugarFunction fun
+                         rest <- desugarFunctions funs main
+                         return $ fun' rest
   where
     desugarMain :: Map.Map AST.UIdent AST.Ident -> [AST.Def AST.Type] -> SExp SType
     desugarMain m [AST.DEquation _ _ _ body] = desugarExp m body

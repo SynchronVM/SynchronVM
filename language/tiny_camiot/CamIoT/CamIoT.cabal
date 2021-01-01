@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Lib
+      Interpreter.Interpreter
   other-modules:
       -- what is this?
       Paths_CamIoT
@@ -48,7 +49,6 @@ library
       Monomorphisation.Environment
       Desugaring.Desugar
       Desugaring.AST
-      Interpreter.Interpreter
   hs-source-dirs:
       src
   build-depends:
@@ -85,4 +85,5 @@ test-suite CamIoT-test
   build-depends:
       CamIoT
     , base >=4.7 && <5
+    , directory
   default-language: Haskell2010

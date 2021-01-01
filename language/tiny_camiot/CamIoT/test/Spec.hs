@@ -1,51 +1,46 @@
--- testing that the handwritten parser matches the generated one
-main :: IO ()
-main = putStrLn "not implemented"
 
-{-
-main :: IO ()
-main = putStrLn "" >> sequence_ [
-    runTest "../test/test0.cam",
-    runTest "../test/test2.cam",
-    runTest "../test/test3.cam",
-    runTest "../test/test4.cam",
-    runTest "../test/test5.cam",
-    runTest "../test/test6.cam",
-    runTest "../test/test7.cam",
-    runTest "../test/test8.cam",
-    runTest "../test/test9.cam",
-    runTest "../test/test10.cam",
-    runTest "../test/test11.cam",
-    runTest "../test/test13.cam",
-    runTest "../test/test14.cam",
-    runTest "../test/test15.cam",
-    runTest "../test/test16.cam",
-    runTest "../test/test17.cam",
-    runTest "../test/test19.cam",
-    runTest "../test/test20.cam",
-    runTest "../test/test21.cam",
-    runTest "../test/test22.cam",
-    runTest "../test/test23.cam",
-    runTest "../test/test24.cam",
-    runTest "../test/test25.cam",
-    runTest "../test/test26.cam",
-    runTest "../test/test27.cam",
-    runTest "../test/test28.cam"]
+import Lib
+import Interpreter.Interpreter
 
-runTest :: String -> IO ()
-runTest input = do
-    myp <- parseParser input
-    bnfc <- parseBNFC input
-    case bnfc of
-        (Left e) -> error e
-        (Right d) -> case myp of
-            (Left e2) -> error e2
-            (Right d') -> if d == d'
-                    then putStrLn $ input ++ " OK"
-                    else do
-                        putStrLn "test FAILED"
-                        putStrLn "********** BNFC **********"
-                        putStrLn (printTree d)
-                        putStrLn "\n\n"
-                        putStrLn "********** My Parser **********"
-                        putStrLn (printTree d')-}
+import System.Directory
+
+import Data.List
+
+path = "testcases/"
+
+main :: IO ()
+main = do
+    putStrLn "********** Running tests **********"
+    testcases <- readPairs path
+    res <- mapM runTest testcases
+    let (good, bad) = partition (== True) res
+    putStrLn   "* Summary:"
+    putStrLn $ "  - good tests: " ++ show (length good)
+    putStrLn $ "  - bad tests:  " ++ show (length bad)
+
+readPairs :: FilePath -> IO [(FilePath, FilePath)]
+readPairs filepath = do
+    files <- getDirectoryContents filepath
+    return $ createPairs filepath files
+
+createPairs :: String -> [String] -> [(String, String)]
+createPairs path []     = []
+createPairs path (x:xs) = case reverse x of
+    ('m':'a':'c':'.':prefix) -> (path ++ x, path ++ reverse prefix ++ ".out") : createPairs path xs
+    _                        -> createPairs path xs
+
+runTest :: (String, String) -> IO Bool
+runTest (input, output) = do
+    putStrLn $ "* Running test: " ++ input
+    expected <- readFile output
+    compiled <- compile input
+    case compiled of
+        Left _ -> do putStrLn "FAIL: failed to compile program\n"
+                     return False
+        Right program -> do actual <- interpret program
+                            if expected == actual
+                                then putStrLn "SUCCESS\n" >> return True
+                                else do putStrLn $ "FAIL:" ++
+                                                   "\n  - expected output: " ++ expected ++
+                                                   "\n  - actual output:   " ++ actual ++ "\n"
+                                        return False

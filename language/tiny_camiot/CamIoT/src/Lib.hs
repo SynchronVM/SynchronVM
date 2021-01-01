@@ -24,6 +24,7 @@ module Lib
     ) where
 
 import Parser.AbsTinyCamiot
+import Desugaring.AST
 import Parser.PrintTinyCamiot
 
 import qualified Parser.Parser as P
@@ -41,7 +42,7 @@ import qualified Monomorphisation.Monomorphise as M
 import qualified Desugaring.Desugar as D
 import qualified Interpreter.Interpreter as I
 
-compile :: String -> IO (Either String String)
+compile :: String -> IO (Either String (SExp SType))
 compile input = do
     contents <- T.readFile input
     let processed = PreP.process contents
@@ -56,8 +57,7 @@ compile input = do
                                           let (ll, state2) =  L.lambdaLift rn state1
                                           (mm, state3)     <- M.monomorphise ll state2
                                           let ss           =  D.desugar state3 mm
-                                          I.interpret ss
-                                          return $ Right (printTree ss)
+                                          return $ Right ss
 
 betterPrint :: (Show a, Print a) => [Def a] -> String
 betterPrint defs = intercalate "\n\n" (map printTree groups)
