@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
+/* Copyright (c) 2020 Abhiroop Sarkar             		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,20 +22,22 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __TYPEDEFS_H_
-#define __TYPEDEFS_H_
+#ifndef __QUEUE_H_
+#define __QUEUE_H_
 
-#include <stdint.h>
-#include <flags.h>
-
-typedef uint32_t UINT;
-typedef int32_t  INT;
-typedef uint8_t  UUID;
+#include <typedefs.h>
 
 typedef struct {
-  value_flags_t flags;
-  UINT          value;
-} cam_value_t;
+  UUID *data;  /* Prototype; Type of content may change from UUID to cam_value_t */
+  int capacity;
+  int front;
+  int rear;
+} Queue_t;
 
+extern int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes);
+
+extern int q_enqueue(Queue_t *q, UUID context_id);
+extern int q_dequeue(Queue_t *q, UUID *context_id);
+extern int q_front  (Queue_t *q, UUID *context_id);
 
 #endif
