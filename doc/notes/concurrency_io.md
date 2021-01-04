@@ -13,7 +13,7 @@ In addition to the synchronous model, `lightweight threads` allow us to prevent 
 - thread-I/O driver communication
 - inter container communication (containers are not currently part of the programming model but an application level abstraction)
 
-The final and very important component of our design is a `scheduler`. The schduler does the following
+The final and very important component of our design is a `scheduler`. The scheduler does the following
 - prevents starvations of threads
 - maintains a "thread id to I/O driver" mapping for threads which have requested communication (send or receive)
 - suspends blocking threads and sets the program counter on the active threads
