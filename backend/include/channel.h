@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
+/* Copyright (c) 2020 Abhiroop Sarkar             		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,20 +22,21 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __TYPEDEFS_H_
-#define __TYPEDEFS_H_
+#ifndef __CHANNEL_H_
+#define __CHANNEL_H_
 
-#include <stdint.h>
-#include <flags.h>
+#include <queue.h>
+#include <stdbool.h>
+#include <typedefs.h>
 
-typedef uint32_t UINT;
-typedef int32_t  INT;
-typedef uint8_t  UUID;
 
 typedef struct {
-  value_flags_t flags;
-  UINT          value;
-} cam_value_t;
+  UUID    channel_id;
+  Queue_t sendq;
+  Queue_t recvq;
+  bool    in_use;
+} Channel_t;
 
+extern int channel_init(Channel_t *c, UUID cid, Queue_t sq, Queue_t rq);
 
 #endif

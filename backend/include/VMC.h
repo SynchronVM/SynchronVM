@@ -29,6 +29,7 @@
 #include <typedefs.h>
 #include <register.h>
 #include <heap.h>
+#include <channel.h>
 #include <Context.h>
 
 #include <stdint.h>
@@ -58,5 +59,8 @@ extern int vmc_init(void);
 
 // These need to run within some lower level thread abstractions
 extern int vmc_run(vmc_t *container);
+
+
+extern Channel_t channels[];
 
 #endif
