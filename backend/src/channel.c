@@ -26,8 +26,7 @@
 #include<channel.h>
 
 
-int channel_init(Channel_t *c, UUID cid, Queue_t sq, Queue_t rq){
-  c->channel_id = cid;
+int channel_init(Channel_t *c, Queue_t sq, Queue_t rq){
   c->sendq = sq;
   c->recvq = rq;
   c->in_use = false;
