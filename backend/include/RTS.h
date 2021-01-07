@@ -28,5 +28,7 @@
 #include <VMC.h>
 
 int channel(vmc_t *container, Channel_t *chan);
+int spawn(vmc_t *container, uint16_t label);
+int dispatch(vmc_t *container); /* internal function called by sync */
 
 #endif

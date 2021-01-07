@@ -42,3 +42,32 @@ int channel(vmc_t *container, Channel_t *chan){
   DEBUG_PRINT(("All channels in current container in use \n"));
   return -1;
 }
+
+int spawn(vmc_t *container, uint16_t label){
+  for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
+    if(container->context_used[i] == false){
+      container->contexts[i] = container->context; // copying everything because the stack and PC will change
+      container->contexts[i].pc = (UINT)label;
+      q_enqueue(&container->rdyQ, i);
+      // eval_RTS_spawn should now simply do *pc_idx++
+      // so that the parent context can continue running
+      return 1;
+    }
+  }
+  DEBUG_PRINT(("Cannot spawn more threads \n"));
+  return -1;
+}
+
+int dispatch(vmc_t *container){
+  UUID context_id = 0;
+  int de_q_status = q_dequeue(&container->rdyQ, &context_id);
+  if (de_q_status == -1){
+    DEBUG_PRINT(("Ready Queue is empty\n"));
+    return -1; // This is the standard state of a microcontroller
+               // and it should sleep when it gets -1 on dispatch
+  }
+  container->context = container->contexts[context_id]; // This will overwrite the parent context;
+                                                        // Do we want to store it somewhere?
+  return 1;
+
+}

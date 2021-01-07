@@ -51,6 +51,7 @@ typedef struct {
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
+  Queue_t       rdyQ;
 } vmc_t;
 
 extern vmc_t vm_containers[]; /* For testing, remove this later */

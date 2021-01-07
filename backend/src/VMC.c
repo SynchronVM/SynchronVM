@@ -49,6 +49,7 @@ uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];
 uint8_t vmc_container_1_stack[VMC_CONTAINER_1_STACK_SIZE_BYTES];
 uint8_t vmc_container_1_arrays[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];
 uint8_t vmc_container_1_channels[VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES];
+uint8_t vmc_container_1_rdyq[sizeof(UUID) * VMC_MAX_CONTEXTS];
 
 const uint8_t vmc_container_1_code[] = {
   #include VMC_CONTAINER_1_BYTECODE_FILE
@@ -81,6 +82,13 @@ int vmc_init(void) {
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   init_all_chans(vm_containers[VMC_CONTAINER_1].channels, vmc_container_1_channels);
+  Queue_t readyq = { .capacity = 0 };
+  int readyq_status = q_init(&readyq, vmc_container_1_rdyq, VMC_MAX_CONTEXTS);
+  if(readyq_status == -1){
+    DEBUG_PRINT(("Failed to initialise ready queue"));
+    return -1;
+  }
+  vm_containers[VMC_CONTAINER_1].rdyQ  = readyq;
   r++;
   #endif
 
@@ -171,6 +179,8 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
     Queue_t sq = { .capacity = 0 };
     Queue_t rq = { .capacity = 0 };
 
+    // Each participant is a UUID which is 1 byte, so we are requesting
+    // 3 bytes for each queue (sendq and recvq)
     int sq_status = q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
     if(sq_status == -1){
       DEBUG_PRINT(("Failed to initialise sendq for %dth channel", i));
