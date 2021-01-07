@@ -169,8 +169,8 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
   int mem_offset = 0;
   for(int i = 0; i < MAX_CHANNELS; i++){
 
-    Queue_t sq = { .capacity = 0 };
-    Queue_t rq = { .capacity = 0 };
+    chan_queue_t sq = { .capacity = 0 };
+    chan_queue_t rq = { .capacity = 0 };
 
     int sq_status = q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
     if(sq_status == -1){
