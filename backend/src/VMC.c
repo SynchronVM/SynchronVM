@@ -172,13 +172,13 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
     chan_queue_t sq = { .capacity = 0 };
     chan_queue_t rq = { .capacity = 0 };
 
-    int sq_status = q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
+    int sq_status = chan_q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
     if(sq_status == -1){
       DEBUG_PRINT(("Failed to initialise sendq for %dth channel", i));
       return -1;
     }
 
-    int rq_status = q_init(&rq, &mem[mem_offset + MAX_WAIT_PARTICIPANTS], MAX_WAIT_PARTICIPANTS);
+    int rq_status = chan_q_init(&rq, &mem[mem_offset + MAX_WAIT_PARTICIPANTS], MAX_WAIT_PARTICIPANTS);
     if(rq_status == -1){
       DEBUG_PRINT(("Failed to initialise recvq for %dth channel", i));
       return -1;
