@@ -35,6 +35,7 @@
 int channel(vmc_t *container, Channel_t *chan){
   for(int i = 0; i < MAX_CHANNELS; i++){
     if(container->channels[i].in_use == false){
+      container->channels[i].in_use = true;
       *chan = container->channels[i];
       return 1;
     }
@@ -46,8 +47,13 @@ int channel(vmc_t *container, Channel_t *chan){
 int spawn(vmc_t *container, uint16_t label){
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
     if(container->context_used[i] == false){
-      container->contexts[i] = container->context; // copying everything because the stack and PC will change
       container->contexts[i].pc = (UINT)label;
+      container->contexts[i].env = container->context.env; //copying the environment
+      // XXX
+      //container->contexts[i].stack = Case 1. statically allocated in vmc_init; nothing to be done here
+      //                               Case 2. some kind of malloc with GC for stack memory with optimal memory use
+      //                                       In Case 2 we have to call the stack_alloc function here
+      container->context_used[i] = true;
       q_enqueue(&container->rdyQ, i);
       // eval_RTS_spawn should now simply do *pc_idx++
       // so that the parent context can continue running
