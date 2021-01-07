@@ -146,6 +146,7 @@ int vmc_run(vmc_t *container) {
   cam_value_t v_empty = get_cam_val(0,0);
   container->context.env = v_empty;
   container->context.pc  = pc;
+  container->context.context_id = 0; /* Not useful here; will be used in concurrency */
 
 
   /* Start executing instructions now */
