@@ -32,12 +32,12 @@ typedef struct {
   int capacity;
   int front;
   int rear;
-} chan_queue_t;
+} Queue_t;
 
-extern int q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes);
+extern int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes);
 
-extern int q_enqueue(chan_queue_t *q, UUID context_id);
-extern int q_dequeue(chan_queue_t *q, UUID *context_id);
-extern int q_front  (chan_queue_t *q, UUID *context_id);
+extern int q_enqueue(Queue_t *q, UUID context_id);
+extern int q_dequeue(Queue_t *q, UUID *context_id);
+extern int q_front  (Queue_t *q, UUID *context_id);
 
 #endif

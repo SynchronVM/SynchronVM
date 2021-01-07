@@ -31,11 +31,11 @@
 
 
 typedef struct {
-  chan_queue_t sendq;
-  chan_queue_t recvq;
+  Queue_t sendq;
+  Queue_t recvq;
   bool    in_use;
 } Channel_t;
 
-extern int channel_init(Channel_t *c, chan_queue_t sq, chan_queue_t rq);
+extern int channel_init(Channel_t *c, Queue_t sq, Queue_t rq);
 
 #endif

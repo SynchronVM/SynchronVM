@@ -30,7 +30,7 @@
 
 #include<queue.h>
 
-int q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes){
+int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes){
 
   if (!mem || !q || size_bytes < 256) return 0;
   unsigned int num_elt = size_bytes / sizeof(UUID);
@@ -41,7 +41,7 @@ int q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes){
   return 1;
 }
 
-int q_enqueue(chan_queue_t *q, UUID context_id){
+int q_enqueue(Queue_t *q, UUID context_id){
   if ((q->front == 0 && q->rear == q->capacity-1) || (q->rear == (q->front-1)%(q->capacity-1))){
     DEBUG_PRINT(("Queue is full\n"));
     return -1;
@@ -62,7 +62,7 @@ int q_enqueue(chan_queue_t *q, UUID context_id){
   return 1;
 }
 
-int q_dequeue(chan_queue_t *q, UUID *context_id){
+int q_dequeue(Queue_t *q, UUID *context_id){
   if (q->front == -1){
     DEBUG_PRINT(("Queue is empty\n"));
     return -1;
@@ -81,7 +81,7 @@ int q_dequeue(chan_queue_t *q, UUID *context_id){
   return 1;
 }
 
-int q_front(chan_queue_t *q, UUID *context_id){
+int q_front(Queue_t *q, UUID *context_id){
   if (q->front == -1){
     DEBUG_PRINT(("Queue is empty\n"));
     return -1;
