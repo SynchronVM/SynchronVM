@@ -1,110 +1,61 @@
 module Monomorphisation.Environment where
 
 import Parser.AbsTinyCamiot
-import Parser.PrintTinyCamiot
 import Typechecker.AstUtils
 
-import Control.Monad.State
 import qualified Data.Map as Map
+import Control.Monad.State
+import Control.Monad.Writer
 
-import System.IO.Unsafe
-import Data.List ( find, nubBy )
+data MState = MState {
+              -- | Counter used to generate fresh variable names
+              counter      :: Int
+              -- | Map that maps function names to their definitions
+            , functions    :: Map.Map Ident [Def Type]
+              -- | Map that maps a function and its type to a new identifier
+            , newFunctions :: Map.Map (Ident, Type) Ident
+              -- | Map that maps an old constructor and its type to a new constructor
+            , newConstructors :: Map.Map (UIdent, Type) UIdent
+            }
 
-trace :: Show a => a -> a
-trace x = unsafePerformIO $ putStrLn (show x) >> return x
+-- | Create a map from function names to their definitions
+functionsMap :: [Def Type] -> Map.Map Ident [Def Type]
+functionsMap defs = Map.fromList pairs
+  where
+      tmp   = filter pred $ groupAsFunctions defs
+      pairs = map (\fun@(d:_) -> (name d, fun)) tmp
 
-trace2 :: Print a => a -> a
-trace2 x = unsafePerformIO $ putStrLn (printTree x) >> return x
+      pred :: [Def Type] -> Bool
+      pred (DDataDec _ _ _:_) = False
+      pred _                  = True
 
-data MState = MState { -- Counter to generate fresh variable names
-                       counter  :: Int
+      name :: Def Type -> Ident
+      name (DTypeSig id _)      = id
+      name (DEquation _ id _ _) = id
 
-                       -- ^ For monomorphizing functions
+type M a = StateT MState (
+             WriterT [Def Type] IO) a
 
-                       -- Types of all definitions in the program
-                     , types    :: Map.Map Ident Type
-                       {- | A map of keys and values. The keys are original function
-                       names of polymorphic functions, while the values are pairs of
-                       new names and types, which will be used to generate new
-                       specialized functions, with that name and of that type. -}
-                     , functionsToCreate :: Map.Map Ident [(Ident, Type)]
-
-                       -- ^ For monomorphizing datatypes
-                       -- Map from old constructornames to new constructornames
-                     , newConstructors :: Map.Map (UIdent, Type) UIdent
-                     }
-
-type M a = StateT MState IO a
-
--- | Run a monomorphisation computation.
+-- | Run a monomorphising computation and return the result, and the new counter
 runM :: M a -> MState -> IO (a, Int)
-runM ma state = do
-  (a, st) <- runStateT ma state
-  return (a, counter st)
+runM ma st = do
+    let wa = runStateT ma st
+    ((a, c),_) <- runWriterT wa
+    return (a, counter c)
 
--- | Generate a fresh variable name.
+-- | Returns True if the identifier has a polymorphic type in the map.
+hasPolymorphicType :: Ident -> M Bool
+hasPolymorphicType id = do
+    types <- gets functions
+    case Map.lookup id types of
+        Just d  -> case d of
+            (DTypeSig _ t:_)      -> return $ containsTypeVariable t
+            (DEquation t _ _ _:_) -> return $ containsTypeVariable t
+        Nothing -> return False
+
+-- | Generate a fresh name
 fresh :: M Ident
 fresh = do
     st <- get
     put $ st { counter = counter st + 1}
     return $ Ident $ "v" ++ show (counter st)
-
-{- | Given the name of a function and the type it is applied to, return the
-name of the new lifted function. If the (name, type) combo has not been given a
-new name before, a new name is generated and inserted into the current context. -}
-newId :: Ident -> Type -> M Ident
-newId id typ = do
-  st <- get
-  let toc = functionsToCreate st
-  case Map.lookup id toc of
-    Just new -> case find ((==) typ . snd) new of
-      Just (id',_) -> return id'
-      Nothing      -> do let id' = Ident $ "v" ++ show (counter st)
-                         let m = Map.singleton id [(id', typ)]
-                         put $ st { functionsToCreate = Map.unionWith (++) toc m
-                                  , counter           = counter st + 1
-                                  }
-                         return id'
-    Nothing  -> do let id' = Ident $ "v" ++ show (counter st)
-                   let m = Map.singleton id [(id', typ)]
-                   put $ st { functionsToCreate = Map.unionWith (++) toc m
-                            , counter           = counter st + 1
-                            }
-                   return id'
-
--- | Returns True if the identifier has a polymorphic type in the map.
-hasPolymorphicType :: Ident -> M Bool
-hasPolymorphicType id = do
-    types <- gets types
-    case Map.lookup id types of
-        Just t  -> return $ containsTypeVariable t
-        Nothing -> return False
-
--- | Returns True if the given equation is a polymorphic definition, otherwise False.
-isPolyMorphicDef :: Def Type -> Bool
-isPolyMorphicDef d = case d of
-    DDataDec _ _ _    -> False
-    DTypeSig _ t      -> containsTypeVariable t
-    DEquation t _ _ _ -> containsTypeVariable t
-
-getNewConstructor :: (UIdent, Type) -> M UIdent
-getNewConstructor pair@(UIdent name, _) = do
-    constructors <- gets newConstructors
-    case Map.lookup pair constructors of
-        Just uid -> return uid
-        Nothing  -> do st <- get
-                       let uid = UIdent $ name ++ show (counter st)
-                       put $ st { counter = counter st + 1
-                                , newConstructors = Map.insert pair uid constructors
-                                }
-                       return uid
-
--- | This function will traverse the AST and build a map of functions and their types.
-gatherTypes :: [Def Type] -> [(Ident, Type)]
-gatherTypes ds = nubBy (\(id1,_) (id2,_) -> id1 == id2) (gatherTypes' ds)
-  where
-    gatherTypes' []     = []
-    gatherTypes' (d:ds) = case d of
-        DDataDec uid ids cd   -> gatherTypes' ds
-        DTypeSig id t         -> (id, t) : gatherTypes' ds
-        DEquation t id args e -> (id, t) : gatherTypes' ds

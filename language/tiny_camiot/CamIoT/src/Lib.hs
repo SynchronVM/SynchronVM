@@ -54,9 +54,21 @@ compile input = do
             case tc of
                 Left err2           -> return $ Left (show err2)
                 Right (tree, subst) -> do let (rn, state1) =  R.rename (apply subst tree)
+                                          --putStrLn "***** Alpha Renamed version *****"
+                                          --putStrLn $ betterPrint rn
+                                          --putStrLn ""
                                           let (ll, state2) =  L.lambdaLift rn state1
-                                          (mm, state3)     <- M.monomorphise ll state2
-                                          let ss           =  D.desugar state3 mm
+                                          --putStrLn "***** LambdaLifted version *****"
+                                          --putStrLn $ betterPrint ll
+                                          --putStrLn ""
+                                          (mm2, state3) <- M.monomorphise state2 ll
+                                          --putStrLn "***** Monomorphized version 2 *****"
+                                          --putStrLn $ betterPrint mm2
+                                          --putStrLn ""
+                                          let ss           =  D.desugar state3 mm2
+                                          --putStrLn "***** Desugared version *****"
+                                          --putStrLn $ printTree ss
+                                          --putStrLn ""
                                           return $ Right ss
 
 betterPrint :: (Show a, Print a) => [Def a] -> String

@@ -35,7 +35,7 @@ runTest (input, output) = do
     expected <- readFile output
     compiled <- compile input
     case compiled of
-        Left _ -> do putStrLn "FAIL: failed to compile program\n"
+        Left _ -> do putStrLn "FAIL\n"
                      return False
         Right program -> do actual <- interpret program
                             if expected == actual
