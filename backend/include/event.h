@@ -36,6 +36,11 @@ typedef struct {
   event_type_t e_type;
   UUID context_id;
   UUID channel_id;
+} base_event_simple_t;
+
+typedef struct {
+  base_event_simple_t bev;
+  uint16_t wrap_label;
 } base_event_t;
 
 typedef struct {
