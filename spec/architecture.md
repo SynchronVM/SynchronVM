@@ -510,3 +510,72 @@ well.
 The parent context can use the stack memory of the container to initialize the stack.
 
 We can impose some kind of channel abstraction for communication between the threads.
+
+
+
+
+
+# Hardware abstraction and Drivers (Bridge)
+
+
+An API for driver implementation that has a set of high-level
+interfacing functions and a set of low-level interfacing functions. 
+
+This interface has to be able to handle many different kinds of
+peripherals that operate in very different ways. 
+
+
+
+High-level API thought.
+
+``` 
+/* RTS interface - interfaces with the scheduler */ 
+typedef struct { 
+	
+	bool rdy_recv; /* driver is ready to receive (buffer is not full) */
+	bool rdy_send; /* driver is ready to send (buffer is not empty) */
+	
+	cam_value_t (*recv)();  /* CAM values or something else? */ 
+	bool (*send)(cam_value_t)(); /* CAM values or something else? */
+	
+} driver_rts_if_t;
+```
+
+```
+/* Driver provided RTS Function for creation of a driver */
+driver_rts_if_t *init_driver();
+
+
+/* Possible alternative for DMA drivers */
+driver_rts_if_t *init_driver_dma(uint8_t *array); /* may need additional parameters */ 
+``` 
+
+In the case of a DMA driver, the RTS needs to know how to sensibly
+turn the raw array into CAM values that make sense. 
+
+I do not think that the DMA engine should be writing data directly to "array" 
+it should have a driver private buffer that it writes to. Each time the 
+DMA "half-full" or "full" interrupt occurs, data should be copied from the 
+private buffer to the "array". 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
