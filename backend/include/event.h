@@ -25,15 +25,21 @@
 #ifndef __EVENT_H_
 #define __EVENT_H_
 
+#include <heap.h>
+
 typedef enum {
    SEND,
    RECV
-} event_type_t ;
+} event_type_t;
 
 typedef struct {
   event_type_t e_type;
-  UUID *context_id;
-  UUID *channel_id;
+  UUID context_id;
+  UUID channel_id;
 } base_event_t;
+
+typedef struct {
+  heap_index event_head;
+} event_t;
 
 #endif
