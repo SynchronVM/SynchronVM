@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson             				  */
+/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar       			  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -47,6 +47,16 @@
 
 #define VMC_CONTAINER_1_USE_UART_0            1
 //#define VMC_CONTAINER_1_USE_UART_1            1
+
+/*
+  Each channel has a capacity of storing 3 elements
+  in sendq and 3 elements in recvq.
+  So 6 elements each 1 bytes -> 6 bytes
+  Assuming 100 channels -> 600 bytes
+  MAX_CHANNELS and MAX_WAIT_PARTICIPANTS can move here
+*/
+
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  600
 
 /*********/
 /* VMC 2 */

@@ -203,5 +203,27 @@ example14 =
 
 example15 = App (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Sys $ LInt 4))) (Sys $ LInt 3)
 
+
+{-
+((\n -> \m -> \r -> n + m + r) 1 2 3)
+-}
+
+
+example16 =
+  App
+  (App
+   (App
+    (Lam (PatVar "n")
+     (Lam (PatVar "m")
+      (Lam (PatVar "r") nplusmplusr)))
+    (Sys $ LInt 1))
+   (Sys $ LInt 2))
+  (Sys $ LInt 3)
+  where
+    mplusr = Sys (Sys2 PlusI (Var "m") (Var "r"))
+    nplusmplusr = (Sys $ Sys2 PlusI (Var "n") mplusr)
+
+
+
 run :: Exp -> Val
 run = evaluate . interpret

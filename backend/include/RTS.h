@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Abhiroop Sarkar             				  */
+/* Copyright (c) 2020 Abhiroop Sarkar                            		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,13 +22,13 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
+#ifndef __RTS_H_
+#define __RTS_H_
 
-#include<channel.h>
+#include <VMC.h>
 
+int channel(vmc_t *container, Channel_t *chan);
+int spawn(vmc_t *container, uint16_t label);
+int dispatch(vmc_t *container); /* internal function called by sync */
 
-int channel_init(Channel_t *c, Queue_t sq, Queue_t rq){
-  c->sendq = sq;
-  c->recvq = rq;
-  c->in_use = false;
-  return 1;
-}
+#endif

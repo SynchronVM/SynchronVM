@@ -39,6 +39,9 @@
 
 #define VMC_MAX_CONTEXTS 16
 
+#define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
+#define MAX_WAIT_PARTICIPANTS 3
+
 typedef struct {
   heap_t        heap;
   uint8_t       *stack_memory;
@@ -47,6 +50,8 @@ typedef struct {
   Context_t     context;      /* represents the parent context for now */
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
+  Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
+  Queue_t       rdyQ;
 } vmc_t;
 
 extern vmc_t vm_containers[]; /* For testing, remove this later */
@@ -60,7 +65,7 @@ extern int vmc_init(void);
 // These need to run within some lower level thread abstractions
 extern int vmc_run(vmc_t *container);
 
+extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
 
-extern Channel_t channels[];
 
 #endif

@@ -46,7 +46,7 @@ bool prepare_container(vmc_t *container, int stack_memory_size, int heap_memory_
 
   // Initialize parent context stack
   cam_stack_t s = { .size = 0 };
-  int s_init = stack_init(&s, container->stack_memory, stack_memory_size);
+  int s_init = stack_init(&s, container->stack_memory, stack_memory_size); // The whole stack memory is given away to the parent context
   if (s_init == 0){
     printf("Stack initialization has failed");
     free(sm);
