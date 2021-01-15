@@ -43,6 +43,8 @@
 #include "usbcfg.h"
 #include "chprintf.h"
 
+#include "driver_rts_if.h"
+
 BaseSequentialStream *chp = NULL;
 
 int inputline(BaseSequentialStream *chp, char *buffer, int size) {

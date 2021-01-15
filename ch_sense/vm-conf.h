@@ -48,6 +48,8 @@
 #define VMC_CONTAINER_1_USE_UART_0            1
 //#define VMC_CONTAINER_1_USE_UART_1            1
 
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES        40
+
 /*********/
 /* VMC 2 */
 /*********/
