@@ -40,4 +40,6 @@ extern int q_enqueue(Queue_t *q, UUID context_id);
 extern int q_dequeue(Queue_t *q, UUID *context_id);
 extern int q_front  (Queue_t *q, UUID *context_id);
 
+extern int q_remove(Queue_t *q, UUID *context_id); /* Not a regular queue operation */
+
 #endif
