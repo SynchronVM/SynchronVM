@@ -532,26 +532,35 @@ High-level API thought.
 /* RTS interface - interfaces with the scheduler */ 
 typedef struct { 
 	
-	bool rdy_recv; /* driver is ready to receive (buffer is not full) */
-	bool rdy_send; /* driver is ready to send (buffer is not empty) */
+	volatile bool rdy_recv; /* driver is ready to receive (buffer is not full) */
+	volatile bool rdy_send; /* driver is ready to send (buffer is not empty) */
 	
 	cam_value_t (*recv)();  /* CAM values or something else? */ 
-	bool (*send)(cam_value_t)(); /* CAM values or something else? */
+	bool (*send)(cam_value_t); /* CAM values or something else? */
 	
 } driver_rts_if_t;
 ```
 
 ```
-/* Driver provided RTS Function for creation of a driver */
-driver_rts_if_t *init_driver();
+/* Each driver provides a RTS Function for initialization */
+bool init_X_driver(driver_rts_if_t, more parameters); 
+
+/* Example */
+bool init_uart_driver(driver_rts_if_t *, more parameters );
 
 
 /* Possible alternative for DMA drivers */
-driver_rts_if_t *init_driver_dma(uint8_t *array); /* may need additional parameters */ 
+bool init_driver_dma(driver_rts_if_t *, uint8_t *array); /* may need additional parameters */ 
 ``` 
 
+Init driver takes a pointer to a `driver_rts_if_t` rather than 
+returns one. This is so that the RTS is the entity in control of 
+where and how to store these `driver_rts_if_t` data structures. 
+One thought is that the RTS will have an array of a fixed number 
+of `driver_rts_if_t` storage locations. 
+
 In the case of a DMA driver, the RTS needs to know how to sensibly
-turn the raw array into CAM values that make sense. 
+turn the raw array into CAM values that make sense.  
 
 I do not think that the DMA engine should be writing data directly to "array" 
 it should have a driver private buffer that it writes to. Each time the 
