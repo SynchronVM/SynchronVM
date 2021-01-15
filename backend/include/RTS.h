@@ -26,9 +26,14 @@
 #define __RTS_H_
 
 #include <VMC.h>
+#include <event.h>
 
 int channel(vmc_t *container, Channel_t *chan);
 int spawn(vmc_t *container, uint16_t label);
 int dispatch(vmc_t *container); /* internal function called by sync */
+
+int sync(vmc_t *container, event_t *evts);
+int sendEvt(vmc_t *container, Channel_t *chan);
+int recvEvt(vmc_t *container, Channel_t *chan);
 
 #endif

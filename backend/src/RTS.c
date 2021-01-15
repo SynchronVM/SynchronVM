@@ -74,6 +74,10 @@ int dispatch(vmc_t *container){
   }
   container->context = container->contexts[context_id]; // This will overwrite the parent context;
                                                         // Do we want to store it somewhere?
+  container->context.env = container->contexts[context_id].env;
+  container->context.pc = container->contexts[context_id].pc;
+  //hopefully stack is set by line 75
+
   return 1;
 
 }
