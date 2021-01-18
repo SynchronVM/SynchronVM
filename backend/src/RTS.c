@@ -31,7 +31,6 @@
 
 #include <RTS.h>
 
-
 int channel(vmc_t *container, Channel_t *chan){
   for(int i = 0; i < MAX_CHANNELS; i++){
     if(container->channels[i].in_use == false){
@@ -64,7 +63,7 @@ int spawn(vmc_t *container, uint16_t label){
   return -1;
 }
 
-int dispatch(vmc_t *container){
+static int dispatch(vmc_t *container){
   UUID context_id = 0;
   int de_q_status = q_dequeue(&container->rdyQ, &context_id);
   if (de_q_status == -1){
@@ -76,8 +75,12 @@ int dispatch(vmc_t *container){
                                                         // Do we want to store it somewhere?
   container->context.env = container->contexts[context_id].env;
   container->context.pc = container->contexts[context_id].pc;
-  //hopefully stack is set by line 75
+  //hopefully stack is set by the first container->context = ....
 
   return 1;
 
+}
+
+int sync(vmc_t *container, event_t *evts){
+  return 1;
 }

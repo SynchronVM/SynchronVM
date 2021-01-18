@@ -22,17 +22,21 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __RTS_H_
-#define __RTS_H_
+#ifdef DEBUG
+#include <stdio.h>
+# define DEBUG_PRINT(x) printf x
+#else
+# define DEBUG_PRINT(x) do {} while (0)
+#endif
 
-#include <VMC.h>
 #include <event.h>
 
-extern int channel(vmc_t *container, Channel_t *chan);
-extern int spawn(vmc_t *container, uint16_t label);
-
-extern int sync(vmc_t *container, event_t *evts);
-extern int sendEvt(vmc_t *container, Channel_t *chan);
-extern int recvEvt(vmc_t *container, Channel_t *chan);
-
-#endif
+bool pollQ(Queue_t *q){
+  UUID context_id = 0;
+  int op_status = q_front(q, &context_id);
+  if(op_status == -1){ //empty queue
+    return false;
+  } else {
+    return true; // the actual dequeing should happen inside doFn
+  }
+}

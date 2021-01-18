@@ -26,6 +26,7 @@
 #define __EVENT_H_
 
 #include <heap.h>
+#include <queue.h>
 
 typedef enum {
    SEND,
@@ -46,5 +47,7 @@ typedef struct {
 typedef struct {
   heap_index event_head;
 } event_t;
+
+extern bool pollQ(Queue_t *q);
 
 #endif
