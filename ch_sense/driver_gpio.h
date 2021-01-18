@@ -18,6 +18,10 @@
 #ifndef _DRIVER_GPIO_
 #define _DRIVER_GPIO_
 
+#define DRIVER_GPIO_COMMAND_READ  0x0001
+#define DRIVER_GPIO_COMMAND_SET   0x0002
+#define DRIVER_GPIO_COMMAND_CLR   0x0004
+
 
 extern bool init_gpio_driver(driver_rts_if_t *drv);
 

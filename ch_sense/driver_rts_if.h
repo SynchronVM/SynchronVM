@@ -50,4 +50,22 @@ inline void driver_set_rdy_recv_bit(driver_rts_if_t* drv) {
 inline void driver_set_rdy_send_bit(driver_rts_if_t* drv) {
   drv->flags &= DRIVER_RDY_SEND_MASK;
 }
+
+inline bool driver_rdy_recv(driver_rts_if_t* drv) {
+  return (drv->flags & DRIVER_RDY_RECV_MASK) ? true : false;
+}
+
+inline bool driver_rdy_send(driver_rts_if_t* drv) {
+  return (drv->flags & DRIVER_RDY_SEND_MASK) ? true : false; // feels a bit dumb.... 
+}
+
+inline void driver_send(driver_rts_if_t* drv, cam_value_t val) {
+  drv->send(drv, val);
+}
+
+inline cam_value_t driver_recv(driver_rts_if_t* drv) {
+  return drv->recv(drv);
+}
+  
+
 #endif

@@ -107,8 +107,26 @@ int main(void) {
   chp = (BaseSequentialStream*)&SDU1;
   
   while(1) {
+
+    
+    if (driver_rdy_recv(&gpio)) {
+      cam_value_t val;
+      val.value = DRIVER_GPIO_COMMAND_SET;
+      val.value = val.value << 16;
+      gpio.send(&gpio, val);
+    }
+    
     chprintf(chp, "Tick!\r\n");
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(500);
+
+    if (driver_rdy_recv(&gpio)) {
+      cam_value_t val;
+      val.value = DRIVER_GPIO_COMMAND_CLR;
+      val.value = val.value << 16;
+      gpio.send(&gpio, val);
+    }
+
+    chThdSleepMilliseconds(500);
   }
 
 }

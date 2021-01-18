@@ -37,10 +37,6 @@
 #define DRIVER_GPIO_COMMAND_MASK  0xFFFF0000
 #define DRIVER_GPIO_PIN_MASK      0x0000FFFF
 
-#define DRIVER_GPIO_COMMAND_READ  0x0001
-#define DRIVER_GPIO_COMMAND_SET   0x0002
-#define DRIVER_GPIO_COMMAND_CLR   0x0004
-
 
 #define DRIVER_GPIO_GET(X) ((X) & DRIVER_GPIO_PIN_MASK) 
 
@@ -74,7 +70,7 @@ cam_value_t driver_send_buffer;
 
 static cam_value_t recv(driver_rts_if_t *this) { // used to send data from driver
 
-  driver_clear_rdy_recv_bit(this);
+  driver_clear_rdy_send_bit(this);
   return driver_send_buffer;
 }
 
@@ -87,7 +83,7 @@ static bool send(driver_rts_if_t *this, cam_value_t value) {  // used to send da
   switch (cmd) {
   case DRIVER_GPIO_COMMAND_READ:
     driver_send_buffer.value = palReadPad(pads[pad].port,pads[pad].pad);
-    driver_set_rdy_recv_bit(this);
+    driver_set_rdy_send_bit(this);
     break;
   case DRIVER_GPIO_COMMAND_SET:
     palSetPad(pads[pad].port, pads[pad].pad);
@@ -103,11 +99,22 @@ static bool send(driver_rts_if_t *this, cam_value_t value) {  // used to send da
 
 bool init_gpio_driver(driver_rts_if_t *drv) {
 
+  for (int i = 0; i < 8; i ++) {
+
+    palSetPadMode(pads[i].port, pads[i].pad,
+		 PAL_MODE_OUTPUT_PUSHPULL |
+		 PAL_STM32_OSPEED_HIGHEST);
+
+    palClearPad(pads[i].port, pads[i].pad);
+  }
+
+
+  
   drv->flags = DRIVER_OK;
   drv->recv = recv;
   drv->send = send;
 
-  driver_set_rdy_send_bit(drv);
+  driver_set_rdy_recv_bit(drv); // driver is ready to recv 
   
   return true;
 }
