@@ -19,24 +19,95 @@
 #include "driver_gpio.h"
 #include "typedefs.h"      
 
+/* GPIO
+   
+   GPIO is a bit of a funny case because as soon as the 
+   purpose of a pin has been decided for a specific io pin 
+   in a finished process, it is no longer "General purpose". 
+   
+   GPIO is a kind of temporary situation for experimentation  
+   and development. 
 
-static cam_value_t recv(void) { // used to send data from driver
+   To support "GPIO" fully one would want a lot of configuration
+   capabilities exposed to tinker with. Input/Output, Pull up/down or
+   float and so on. 
 
+ */ 
+
+#define DRIVER_GPIO_COMMAND_MASK  0xFFFF0000
+#define DRIVER_GPIO_PIN_MASK      0x0000FFFF
+
+#define DRIVER_GPIO_COMMAND_READ  0x0001
+#define DRIVER_GPIO_COMMAND_SET   0x0002
+#define DRIVER_GPIO_COMMAND_CLR   0x0004
+
+
+#define DRIVER_GPIO_GET(X) ((X) & DRIVER_GPIO_PIN_MASK) 
+
+/* Sketch built on ChibiOS */
+#include <ch.h>
+#include <hal.h>
+#include <hal_pal.h>
+
+/* Board dependent code */
+
+typedef struct {
+  stm32_gpio_t *port;
+  uint16_t pad;
+} driver_io_pad_t;
+
+driver_io_pad_t pads[] =
+  {{GPIOA, 0},
+   {GPIOA, 1},
+   {GPIOA, 2},
+   {GPIOA, 3},
+   {GPIOA, 4},
+   {GPIOA, 5},
+   {GPIOA, 6},
+   {GPIOA, 7}};
+  
+
+cam_value_t driver_send_buffer;
+
+
+
+
+static cam_value_t recv(driver_rts_if_t *this) { // used to send data from driver
+
+  driver_clear_rdy_recv_bit(this);
+  return driver_send_buffer;
 }
 
 
-static send(cam_value_t) {  // used to send data to driver 
+static bool send(driver_rts_if_t *this, cam_value_t value) {  // used to send data to driver 
 
-  
-  
-  
+  uint16_t cmd = (uint16_t) (value.value >> 16);
+  uint16_t pad = (uint16_t) value.value;
+
+  switch (cmd) {
+  case DRIVER_GPIO_COMMAND_READ:
+    driver_send_buffer.value = palReadPad(pads[pad].port,pads[pad].pad);
+    driver_set_rdy_recv_bit(this);
+    break;
+  case DRIVER_GPIO_COMMAND_SET:
+    palSetPad(pads[pad].port, pads[pad].pad);
+    break;
+  case DRIVER_GPIO_COMMAND_CLR:
+    palClearPad(pads[pad].port, pads[pad].pad);
+    break;
+  default:
+    break;
+  }
+  return true;
 }
 
 bool init_gpio_driver(driver_rts_if_t *drv) {
 
-  drv.flags = DRIVER_OK;
-  drv.recv = recv;
-  drv.send = send;
+  drv->flags = DRIVER_OK;
+  drv->recv = recv;
+  drv->send = send;
 
+  driver_set_rdy_send_bit(drv);
+  
   return true;
 }

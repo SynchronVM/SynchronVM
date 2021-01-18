@@ -26,12 +26,28 @@
 #define DRIVER_RDY_SEND_MASK 0x02
 #define DRIVER_OK            0x80 
 
-typedef struct {
+typedef struct driver_rts_if_s{
   volatile uint8_t flags; /* rdy_recv, rdy_send, maybe more? */
 
-  cam_value_t (*recv)(void);
-  bool (*send)(cam_value_t);
+  cam_value_t (*recv)(struct driver_rts_if_s *this);
+  bool (*send)(struct driver_rts_if_s *this, cam_value_t);
 
 } driver_rts_if_t;
 
+
+inline void driver_clear_rdy_recv_bit(driver_rts_if_t* drv) {
+  drv->flags = drv->flags & ~(DRIVER_RDY_RECV_MASK);
+}
+
+inline void driver_clear_rdy_send_bit(driver_rts_if_t* drv) {
+  drv->flags = drv->flags & ~(DRIVER_RDY_RECV_MASK);
+}
+
+inline void driver_set_rdy_recv_bit(driver_rts_if_t* drv) {
+  drv->flags &= DRIVER_RDY_RECV_MASK;
+}
+
+inline void driver_set_rdy_send_bit(driver_rts_if_t* drv) {
+  drv->flags &= DRIVER_RDY_SEND_MASK;
+}
 #endif
