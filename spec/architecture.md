@@ -546,11 +546,11 @@ typedef struct {
 bool init_X_driver(driver_rts_if_t, more parameters); 
 
 /* Example */
-bool init_uart_driver(driver_rts_if_t *, more parameters );
+bool init_uart_driver(driver_rts_if_t *drv, more parameters );
 
 
 /* Possible alternative for DMA drivers */
-bool init_driver_dma(driver_rts_if_t *, uint8_t *array); /* may need additional parameters */ 
+bool init_driver_dma(driver_rts_if_t *drv, uint8_t *array); /* may need additional parameters */ 
 ``` 
 
 Init driver takes a pointer to a `driver_rts_if_t` rather than 
@@ -560,7 +560,7 @@ One thought is that the RTS will have an array of a fixed number
 of `driver_rts_if_t` storage locations. 
 
 In the case of a DMA driver, the RTS needs to know how to sensibly
-turn the raw array into CAM values that make sense.  
+turn the raw array into CAM values that make sense.
 
 I do not think that the DMA engine should be writing data directly to "array" 
 it should have a driver private buffer that it writes to. Each time the 
@@ -568,7 +568,107 @@ DMA "half-full" or "full" interrupt occurs, data should be copied from the
 private buffer to the "array". 
 
 
+```plantuml
+	scale max 4096 width
+	scale max 1024 height
 
+
+	frame "ChibiOS" as CH { 
+		[C_UART]
+		[C_BLE] 
+	    [C_GPIO] 
+		[C_SPI]
+		[C_I2C]
+	}
+
+
+	frame "Zephyr" as Z { 
+		[Z_UART]
+		[Z_BLE] 
+	    [Z_GPIO] 
+		[Z_SPI]
+		[Z_I2C]
+	}
+
+	frame "FreeRTOS" as F { 
+		[F_UART]
+		[F_BLE] 
+	    [F_GPIO] 
+		[F_SPI]
+		[F_I2C]
+	}
+		
+
+	frame "driver_rts_interface" as if  {
+		[SEND]
+		[RECV]
+	}
+
+	frame "driver_gpio" as gpio{ 
+		[GPIO_SEND]
+		[GPIO_RECV]
+		[GPIO_INIT]
+	}
+
+	frame "driver_uart" as uart { 
+		[UART_SEND]
+		[UART_RECV]
+		[UART_INIT]
+	}
+
+	frame "sense_vm" as vm { 
+		[RTS] 
+	}
+
+	
+	vm -[hidden]-> if
+	if -[hidden]-> gpio
+	if -[hidden]-> uart
+	gpio -[hidden]-> Z
+	uart -[hidden]-> F
+	uart -[hidden]-> CH
+ 
+    CH -[hidden]> Z
+	Z -[hidden]> F
+   
+
+	[RTS] --> [SEND]
+	[RECV] --> [RTS]
+	[RTS] --> [GPIO_INIT]
+	[RTS] --> [UART_INIT]
+	
+	[SEND] --> [UART_SEND]
+	[SEND] --> [GPIO_SEND]
+	[UART_RECV] --> [RECV]
+	[GPIO_RECV] --> [RECV]
+	
+	[UART_SEND] --> [F_UART]
+	[F_UART] --> [UART_RECV] 
+	
+	[UART_SEND] --> [Z_UART] 
+	[Z_UART] --> [UART_RECV]
+	
+	[GPIO_SEND] --> [F_GPIO]
+	[F_GPIO] --> [GPIO_RECV]
+	
+	[GPIO_SEND] --> [Z_GPIO]
+	[Z_GPIO] -> [GPIO_RECV]
+	
+``` 
+The picture above is simplifying the problem a bit. There is also an 
+additional layer of architectures and "boards". It would be good to be 
+able to leverage on some existing effort here and the best effort currently 
+is probably ZephyrOS. 
+
+| OS  | PROS | CONS | 
+| --- | ---  | ---  | 
+| Zephyr | Supports lots of boards | Huge | 
+| ChibiOS | Simple and familiar | Very STM focused| 
+| FreeRTOS | Well established | No HAL | 
+
+
+
+## N times M problem 
 
 
 

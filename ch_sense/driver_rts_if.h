@@ -15,19 +15,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _RTS_DRIVER_IF_
-#define _RTS_DRIVER_IF_
+#ifndef _DRIVER_RTS_IF_
+#define _DRIVER_RTS_IF_
 
 #include "typedefs.h"
 #include <stdbool.h>
 
-#define RDY_RECV_MASK 0x01
-#define RDY_SEND_MASK 0x02
+#define DRIVER_FLAGS_NONE    0x00
+#define DRIVER_RDY_RECV_MASK 0x01
+#define DRIVER_RDY_SEND_MASK 0x02
+#define DRIVER_OK            0x80 
 
 typedef struct {
   volatile uint8_t flags; /* rdy_recv, rdy_send, maybe more? */
 
-  cam_value_t (*recv)();
+  cam_value_t (*recv)(void);
   bool (*send)(cam_value_t);
 
 } driver_rts_if_t;

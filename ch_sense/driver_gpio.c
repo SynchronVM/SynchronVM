@@ -22,17 +22,19 @@
 
 static cam_value_t recv(void) { // used to send data from driver
 
-  
 }
 
 
 static send(cam_value_t) {  // used to send data to driver 
+
+  
+  
   
 }
 
 bool init_gpio_driver(driver_rts_if_t *drv) {
 
-  drv.flags = DRIVER_FLAGS_NONE;
+  drv.flags = DRIVER_OK;
   drv.recv = recv;
   drv.send = send;
 

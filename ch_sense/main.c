@@ -44,6 +44,8 @@
 #include "chprintf.h"
 
 #include "driver_rts_if.h"
+#include "driver_gpio.h"
+
 
 BaseSequentialStream *chp = NULL;
 
@@ -89,6 +91,9 @@ int main(void) {
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
 
+  driver_rts_if_t gpio;
+  init_gpio_driver(&gpio);
+  
   /*
    * Activates the USB driver and then the USB bus pull-up on D+.
    * Note, a delay is inserted in order to not have to disconnect the cable
