@@ -653,7 +653,16 @@ private buffer to the "array".
 	
 	[GPIO_SEND] --> [Z_GPIO]
 	[Z_GPIO] -> [GPIO_RECV]
-	
+
+	[GPIO_SEND] --> [C_GPIO]
+	[C_GPIO] --> [GPIO_RECV]
+
+	[UART_SEND] --> [C_UART] 
+	[C_UART] --> [UART_RECV]
+
+
+
+
 ``` 
 The picture above is simplifying the problem a bit. There is also an 
 additional layer of architectures and "boards". It would be good to be 
