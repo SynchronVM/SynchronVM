@@ -139,6 +139,7 @@ CSRC = $(ALLCSRC) \
        $(SENSEVM_SRC) \
        main.c \
        usbcfg.c \
+       driver_gpio.c \
        $(CHIBIOS)/os/various/syscalls.c 
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
