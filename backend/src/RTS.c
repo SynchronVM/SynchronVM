@@ -34,6 +34,10 @@
 
 static UINT extract_bits(UINT value, int lsbstart, int numbits){
   unsigned mask = ( (1<<(numbits-lsbstart+1))-1) << lsbstart;
+  //                                                   ^
+  //                                                   |
+  //                             shifts the mask such that counting `numbits`
+  //                             begins from the point of the shift
   return (value & mask) >> lsbstart;
 }
 
