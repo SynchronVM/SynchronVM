@@ -31,6 +31,57 @@
 
 #include <RTS.h>
 
+
+static UINT extract_bits(UINT value, int lsbstart, int numbits){
+  unsigned mask = ( (1<<(numbits-lsbstart+1))-1) << lsbstart;
+  return (value & mask) >> lsbstart;
+}
+
+
+static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev){
+  heap_index index = evts->event_head;
+  do{
+
+      cam_value_t base_evt_pointer = heap_fst(&container->heap, index);
+      if(base_evt_pointer.flags & (1 << 15)){ // check if cell is actually a pointer
+        cam_value_t base_evt_simple_cam = heap_fst(&container->heap, (heap_index)base_evt_pointer.value);
+        base_event_simple_t bevt_simple =
+          {   .e_type     = extract_bits(base_evt_simple_cam.value, 16, sizeof(event_type_t))
+            , .context_id = extract_bits(base_evt_simple_cam.value,  8, sizeof(UUID))
+            , .channel_id = extract_bits(base_evt_simple_cam.value,  0, sizeof(UUID))
+          };
+
+        if(bevt_simple.e_type == SEND){
+          if(pollQ(&container->channels[bevt_simple.channel_id].recvq)){
+            cam_value_t wrap_label_cam = heap_snd(&container->heap, (heap_index)base_evt_pointer.value);
+            base_event_t bevt = { .bev = bevt_simple, .wrap_label = (uint16_t)wrap_label_cam.value };
+            *bev = bevt;
+            return 1;
+          } // else continue
+        } else { // recvEvt
+          if(pollQ(&container->channels[bevt_simple.channel_id].sendq)){
+            cam_value_t wrap_label_cam = heap_snd(&container->heap, (heap_index)base_evt_pointer.value);
+            base_event_t bevt = { .bev = bevt_simple, .wrap_label = (uint16_t)wrap_label_cam.value };
+            *bev = bevt;
+            return 1;
+          } // else continue
+        }
+      } else {
+        DEBUG_PRINT(("Error in heap layout; Not a pointer\n"));
+        return -2; //XXX: Used a different error code
+      }
+
+      cam_value_t pointer_to_next = heap_snd(&container->heap, index);
+      index = (heap_index)pointer_to_next.value;
+
+  } while(index != HEAP_NULL);
+
+  return -1;
+}
+
+
+
+
 int channel(vmc_t *container, Channel_t *chan){
   for(int i = 0; i < MAX_CHANNELS; i++){
     if(container->channels[i].in_use == false){
@@ -82,5 +133,12 @@ static int dispatch(vmc_t *container){
 }
 
 int sync(vmc_t *container, event_t *evts){
+  base_event_t bev = { .wrap_label = 0 };
+  int i = findSynchronizable(container, evts, &bev);
+  /*
+   * if i is -1 call block on all evts and do dispatch
+   * if i is  1 then call doFn
+   */
   return 1;
 }
+

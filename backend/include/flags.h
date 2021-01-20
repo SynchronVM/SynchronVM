@@ -27,13 +27,13 @@
 
 typedef uint16_t value_flags_t;
 
-typedef struct { 
+typedef struct {
   value_flags_t fst;
   value_flags_t snd;
 } heap_flags_t;
- 
+
 /* Bit masks for flags of a memory cell */
-/* Tweak these later to make more sense */ 
+/* Tweak these later to make more sense */
 
 #define     VALUE_PTR_BIT            0x8000
 

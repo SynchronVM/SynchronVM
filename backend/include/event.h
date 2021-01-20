@@ -50,4 +50,13 @@ typedef struct {
 
 extern bool pollQ(Queue_t *q);
 
+/*
+ *  Proposed heap structure
+ *  heap_cell_ev -> fst = base_event_simple_t // 24 bits
+ *               -> snd = wrap_label or NULL  // 32 bits
+ *
+ *  heap_cell_list -> fst = heap_cell_ev
+ *                 -> snd = pointer to next heap_cell_ev
+ */
+
 #endif
