@@ -11,7 +11,12 @@
 #include <bluetooth/gatt.h>
 #include <sys/byteorder.h>
 
+#include <drivers/gpio.h>
+
+
+/* Our own library of stuff! */ 
 #include "defines.h"
+#include "usb_cdc.h"
 
 struct remote_device* remote;
 bool discovered = 0;
@@ -19,6 +24,22 @@ bool discovered = 0;
 #define BT_UUID_MY_DEVICE              BT_UUID_DECLARE_16(0xffaa)
 #define BT_UUID_MY_SERVICE             BT_UUID_DECLARE_16(0xffa1)
 #define BT_UUID_MY_CHARACTERISTIC      BT_UUID_DECLARE_16(0xffa2)
+
+
+/* LEDS */
+
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
+#else
+#error "NO LED0"
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
+#else
+#error "NO LED1"
+#endif
+
+#define LED_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
+#define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
+#define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
 /****************************/
 /*  Communication Protocol  */
@@ -215,7 +236,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 	int err;
-
+	
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	isConnected = 1;
 
@@ -305,23 +326,48 @@ uint8_t characteristic[] = {0x12, 0xff};
 char* data = "client";
 
 void main(void) {
-    /* Create and initialise remote device information */
-	remote = new_remote_device(device, service, characteristic);
-    set_message_payload(data, strlen(data) + 1, remote);
-    remote->handle.func   = cb;
 
-    start_bt();
+  /* Start USB_CDC and set up LEDs  
+     LEDS depend on definitions in the devicetree (dts file)
+   */
+  	
+  start_usb_cdc_thread();
+    
+  const struct device *d_led0;
+  const struct device *d_led1;
+  
+  d_led0 = device_get_binding(LED_DEVICE_LABEL(led0));
+  d_led1 = device_get_binding(LED_DEVICE_LABEL(led1));
+  gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
+  gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
+       
+  /* Create and initialise remote device information */
+  remote = new_remote_device(device, service, characteristic);
+  set_message_payload(data, strlen(data) + 1, remote);
+  remote->handle.func   = cb;
 
-	while(!discovered) {
-		k_sleep(K_SECONDS(1));
-		printk("have not discovered yet\n");
-	}
-	while(1) {
-		k_sleep(K_SECONDS(1));
+  start_bt();
 
-		int err = bt_gatt_write(remote->connection, &remote->handle);
-		if(err) {
-			printk("error while writing (err %d)\n", err);
-		}
-	}
+  int led0_state = 1;
+  
+  while(!discovered) {
+    gpio_pin_set(d_led0, LED_PIN(led0), led0_state);
+        led0_state = 1 - led0_state;
+    k_sleep(K_SECONDS(1));
+    //printk("have not discovered yet\n");
+    usb_printf("CLIENT: Have not discovered yet\r\n");
+  }
+  int led1_state = 1;
+  while(1) {
+    gpio_pin_set(d_led1, LED_PIN(led1), led1_state);
+    led1_state = 1 - led1_state;
+    k_sleep(K_SECONDS(1));
+    
+    int err = bt_gatt_write(remote->connection, &remote->handle);
+    if(err) {
+      //printk("error while writing (err %d)\n", err);
+      usb_printf("CLIENT: error while writing (err %d)\r\n", err);
+    }
+    
+  }
 }

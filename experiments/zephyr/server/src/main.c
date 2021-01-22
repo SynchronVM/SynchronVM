@@ -201,14 +201,15 @@ void main(void)
 
 
   start_usb_cdc_thread();
-  
+
   const struct device *d_led0;
   const struct device *d_led1;
-
+  
   d_led0 = device_get_binding(LED_DEVICE_LABEL(led0));
   d_led1 = device_get_binding(LED_DEVICE_LABEL(led1));
   gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
   gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
+
   
   /* Implement notification. At the moment there is no suitable way
    * of starting delayed work so we do it here
