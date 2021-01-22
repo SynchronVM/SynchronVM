@@ -1,5 +1,5 @@
 #!/bin/sh
 
-export ZEPHYR_BASE=../zephyrproject
+export ZEPHYR_BASE=$HOME/Work/zephyrproject
 
-source ../zephyrproject/zephyr/zephyr-env.sh
+source $ZEPHYR_BASE/zephyr/zephyr-env.sh
