@@ -14,7 +14,7 @@
 
 / {
 	model = "BLE Module V1";
-	compatible = "nordic,nrf52840";
+	compatible = "ble-module-v1";
 
 	chosen {
 		zephyr,console = &uart0;
