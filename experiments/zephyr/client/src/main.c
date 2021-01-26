@@ -21,9 +21,12 @@
 struct remote_device* remote;
 bool discovered = 0;
 
-#define BT_UUID_MY_DEVICE              BT_UUID_DECLARE_16(0xffaa)
-#define BT_UUID_MY_SERVICE             BT_UUID_DECLARE_16(0xffa1)
-#define BT_UUID_MY_CHARACTERISTIC      BT_UUID_DECLARE_16(0xffa2)
+const struct bt_uuid * BT_UUID_MY_DEVICE           =   BT_UUID_DECLARE_16(0xffaa);
+const struct bt_uuid * BT_UUID_MY_SERVICE          =   BT_UUID_DECLARE_16(0xffa1);
+const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2);
+
+#define PRINT usb_printf
+//#define PRINT printk
 
 
 /* LEDS */
@@ -46,18 +49,18 @@ bool discovered = 0;
 
 /* All possible variants of a message that can be transmitted. */
 typedef enum MessageType{ 
-	                      /* Request a remote devices time at the point of receiving this message. */
-	                      REQUEST_TIME
-						  /* A reply to a `REQUEST_TIME` request. Contains the time in the `time` field. */
-                        , RESPOND_TIME
-                        } message_type;
+    /* Request a remote devices time at the point of receiving this message. */
+  REQUEST_TIME
+    /* A reply to a `REQUEST_TIME` request. Contains the time in the `time` field. */
+  , RESPOND_TIME
+} message_type;
 
 struct message {
-	message_type type;
-	union {
-		/* Response to a `REQUEST_TIME` request */
-		uint64_t time;
-	};
+  message_type type;
+  union {
+    /* Response to a `REQUEST_TIME` request */
+    uint64_t time;
+  };
 };
 
 /****************************/
@@ -115,12 +118,12 @@ static uint8_t discover_temperature(struct bt_conn *conn,
 	int err;
 
 	if (!attr) {
-		printk("Discover complete\n");
+		PRINT("Discover complete\r\n");
 		(void)memset(params, 0, sizeof(*params));
 		return BT_GATT_ITER_STOP;
 	}
 
-	printk("[ATTRIBUTE] handle %u\n", attr->handle);
+	PRINT("[ATTRIBUTE] handle %u\r\n", attr->handle);
 
     /* If we found the service */
 	if (!bt_uuid_cmp(discover_params.uuid, remote->service)) {
@@ -130,13 +133,13 @@ static uint8_t discover_temperature(struct bt_conn *conn,
 
 		err = bt_gatt_discover(conn, &discover_params);
 		if (err) {
-			printk("Discover failed (err %d)\n", err);
+			PRINT("Discover failed (err %d)\n", err);
 		}
 	/* If we found the characteristic */
 	} else if (!bt_uuid_cmp(discover_params.uuid, remote->characteristic)) {
 		set_handle(bt_gatt_attr_value_handle(attr), remote);
 		discovered = 1;
-		printk("Found characteristic handle\n");
+		PRINT("Found characteristic handle\n");
 	}
 
 	return BT_GATT_ITER_STOP;
@@ -151,13 +154,13 @@ static bool eir_found(struct bt_data *data, void *user_data)
 
 	bt_addr_le_to_str(addr, dev, sizeof(dev));
 
-	//printk("[AD]: %u data_len %u, addr %s: \n", data->type, data->data_len, dev);
+	//PRINT("[AD]: %u data_len %u, addr %s: \n", data->type, data->data_len, dev);
 
 	switch (data->type) {
 	case BT_DATA_UUID16_SOME:
 	case BT_DATA_UUID16_ALL:
 		if (data->data_len % sizeof(uint16_t) != 0U) {
-			printk("AD malformed\n");
+			PRINT("AD malformed\n");
 			return true;
 		}
 
@@ -172,19 +175,19 @@ static bool eir_found(struct bt_data *data, void *user_data)
 			if (bt_uuid_cmp(uuid, remote->uuid)) {
 				continue;
 			} else {
-				printk("Found device uuid\n");
+				PRINT("Found device uuid\n");
 			}
 
 			err = bt_le_scan_stop();
 			if (err) {
-				printk("Stop LE scan failed (err %d)\n", err);
+				PRINT("Stop LE scan failed (err %d)\n", err);
 				continue;
 			}
 
 			err = connect(addr, remote);
 
 			if (err) {
-				printk("Create conn failed (err %d)\n", err);
+				PRINT("Create conn failed (err %d)\n", err);
 			}
 			set_addr(*addr, remote);
 
@@ -224,11 +227,11 @@ static void start_scan(void)
 
 	err = bt_le_scan_start(&scan_param, device_found);
 	if (err) {
-		printk("Scanning failed to start (err %d)\n", err);
+		PRINT("Scanning failed to start (err %d)\n", err);
 		return;
 	}
 
-	printk("Scanning successfully started\n");
+	PRINT("Scanning successfully started\n");
 }
 
 uint8_t isConnected = 0;
@@ -241,7 +244,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 	isConnected = 1;
 
 	if (conn_err) {
-		printk("Failed to connect to %s (%u)\n", addr, conn_err);
+		PRINT("Failed to connect to %s (%u)\n", addr, conn_err);
 
 		bt_conn_unref(remote->connection);
 		remote->connection = NULL;
@@ -250,7 +253,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 		return;
 	}
 
-	printk("Connected: %s\n", addr);
+	PRINT("Connected: %s\n", addr);
 
 	discover_params.uuid         = remote->service;
 	discover_params.func         = discover_temperature;
@@ -260,7 +263,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 	
 	err = bt_gatt_discover(remote->connection, &discover_params);
 	if(err) {
-		printk("Discover failed(err %d)\n", err);
+		PRINT("Discover failed(err %d)\n", err);
 		return;
 	}
 }
@@ -271,7 +274,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	printk("Disconnected: %s (reason 0x%02x)\n", addr, reason);
+	PRINT("Disconnected: %s (reason 0x%02x)\n", addr, reason);
 	isConnected = 0;
 
 	if (remote->connection != conn) {
@@ -291,31 +294,31 @@ static struct bt_conn_cb conn_callbacks = {
 
 void start_bt(void)
 {
-	int err;
-	err = bt_enable(NULL);
+  int err;
+  err = bt_enable(NULL);
 
-	if (err) {
-		printk("Bluetooth init failed (err %d)\n", err);
-		return;
-	}
+  if (err) {
+    PRINT("Bluetooth init failed (err %d)\r\n", err);
+    return;
+  }
 
-	printk("Bluetooth initialized\n");
-    err = register_service(BT_UUID_MY_SERVICE, BT_UUID_MY_CHARACTERISTIC);
-	if(err) {
-		printk("Registering service failed (err %d)\n",err);
-		return;
-	} else {
-		printk("It seemed that registering went fine\n");
-	}
+  PRINT("Bluetooth initialized\n");
+  err = register_service(BT_UUID_MY_SERVICE, BT_UUID_MY_CHARACTERISTIC);
+  if(err) {
+    PRINT("Registering service failed (err %d)\n",err);
+    return;
+  } else {
+    PRINT("It seemed that registering went fine\n");
+  }
 
 
-	bt_conn_cb_register(&conn_callbacks);
+  bt_conn_cb_register(&conn_callbacks);
 
-	start_scan();
+  start_scan();
 }
 
 void cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_write_params *params) {
-    printk("Performed write (err %d) (offset %d) (len %d)\n", err, params->offset, params->length);
+    PRINT("Performed write (err %d) (offset %d) (len %d)\n", err, params->offset, params->length);
 }
 
 /* Little endian rep. of remote device's uuid */
@@ -340,7 +343,14 @@ void main(void) {
   d_led1 = device_get_binding(LED_DEVICE_LABEL(led1));
   gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
   gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
-       
+  gpio_pin_set(d_led0, LED_PIN(led0), 0);
+  gpio_pin_set(d_led1, LED_PIN(led1), 0);
+
+  
+  k_sleep(K_SECONDS(5));
+  PRINT("Starting up\r\n");
+
+  
   /* Create and initialise remote device information */
   remote = new_remote_device(device, service, characteristic);
   set_message_payload(data, strlen(data) + 1, remote);
@@ -352,10 +362,10 @@ void main(void) {
   
   while(!discovered) {
     gpio_pin_set(d_led0, LED_PIN(led0), led0_state);
-        led0_state = 1 - led0_state;
+    led0_state = 1 - led0_state;
     k_sleep(K_SECONDS(1));
-    //printk("have not discovered yet\n");
-    usb_printf("CLIENT: Have not discovered yet\r\n");
+    //PRINT("have not discovered yet\n");
+    PRINT("CLIENT: Have not discovered yet\r\n");
   }
   int led1_state = 1;
   while(1) {
@@ -365,7 +375,7 @@ void main(void) {
     
     int err = bt_gatt_write(remote->connection, &remote->handle);
     if(err) {
-      //printk("error while writing (err %d)\n", err);
+      //PRINT("error while writing (err %d)\n", err);
       usb_printf("CLIENT: error while writing (err %d)\r\n", err);
     }
     

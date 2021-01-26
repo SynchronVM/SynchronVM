@@ -5,7 +5,7 @@
 
 extern void usb_printf(char *format, ...);
 
-extern void usb_cdc_thread_start(void);
+extern void start_usb_cdc_thread(void);
 
 
 #endif 

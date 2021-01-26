@@ -23,15 +23,19 @@
 #include "defines.h"
 #include "usb_cdc.h"
 
+#define PRINT usb_printf
+//#define PRINT printk
+
+
 #define BT_UUID_MY_DEVICE              BT_UUID_DECLARE_16(0xffcc)
 #define BT_UUID_MY_SERVICE             BT_UUID_DECLARE_16(0xff11)
 #define BT_UUID_MY_CHARACTERISTIC      BT_UUID_DECLARE_16(0xff12)
 
-uint8_t discovered = 0;
+volatile uint8_t discovered = 0;
 
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
 #else
-#error "NO LED0"
+#error "NO LED0" 
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
 #else
@@ -47,25 +51,25 @@ uint8_t discovered = 0;
 
 static char value[6];
 static ssize_t read_value( struct bt_conn *conn
-                         , const struct bt_gatt_attr *attr
-						 , void *buf, uint16_t len, uint16_t offset) {
-	const char *data = attr->user_data;
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, data, sizeof(value));
+			   , const struct bt_gatt_attr *attr
+			   , void *buf, uint16_t len, uint16_t offset) {
+  const char *data = attr->user_data;
+  return bt_gatt_attr_read(conn, attr, buf, len, offset, data, sizeof(value));
 }
 
 static ssize_t write_value( struct bt_conn *conn
-                           , const struct bt_gatt_attr *attr
-						   , const void *buf, uint16_t len, uint16_t offset
-						   , uint8_t flags) {
-    char text[len];
+			    , const struct bt_gatt_attr *attr
+			    , const void *buf, uint16_t len, uint16_t offset
+			    , uint8_t flags) {
+  char text[len];
 
-	if (offset + len > sizeof(value) + 1) {
-		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
-	}
+  if (offset + len > sizeof(value) + 1) {
+    return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
+  }
 
-	memcpy(text + offset, buf, len);
-	printk("got %s\n", text);
-	return len;
+  memcpy(text + offset, buf, len);
+  PRINT("got %s\n", text);
+  return len;
 }
 
 /*
@@ -74,15 +78,15 @@ BT_GATT_CHARACTERISTIC = BT_GATT_ATTRIBUTE x 2
 
 */
 
-/*
+
 BT_GATT_SERVICE_DEFINE(my_service,
-    BT_GATT_PRIMARY_SERVICE(BT_UUID_MY_SERVICE),
-	    BT_GATT_CHARACTERISTIC(BT_UUID_MY_CHARACTERISTIC,
-		                BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
-						BT_GATT_CHRC_AUTH | BT_GATT_PERM_READ |
-						BT_GATT_PERM_WRITE, read_value, write_value, &value),
-);
-*/
+		       BT_GATT_PRIMARY_SERVICE(BT_UUID_MY_SERVICE),
+		       BT_GATT_CHARACTERISTIC(BT_UUID_MY_CHARACTERISTIC,
+					      BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
+					      BT_GATT_CHRC_AUTH | BT_GATT_PERM_READ |
+					      BT_GATT_PERM_WRITE, read_value, write_value, &value),
+		       );
+
 
 /************/
 
@@ -92,103 +96,124 @@ static struct bt_gatt_discover_params discover_params;
 struct remote_device* remote;
 
 static uint8_t discover_temperature(struct bt_conn *conn,
-                                 const struct bt_gatt_attr *attr,
-                                 struct bt_gatt_discover_params *params) {
-	int err;
+				    const struct bt_gatt_attr *attr,
+				    struct bt_gatt_discover_params *params) {
+  int err;
 
-	if (!attr) {
-		printk("Discover complete\n");
-		(void)memset(params, 0, sizeof(*params));
-		return BT_GATT_ITER_STOP;
-	}
+  if (!attr) {
+    if (!attr) PRINT("Discover_temperature: attr == NULL\r\n");
+    
+    PRINT("Discover complete\r\n");
 
-	printk("[ATTRIBUTE] handle %u\n", attr->handle);
+    PRINT("Clearing params\r\n");
+    (void)memset(params, 0, sizeof(struct bt_gatt_discover_params));
 
-    /* If we found the service */
-	if (!bt_uuid_cmp(discover_params.uuid, remote->service)) {
-		discover_params.uuid         = remote->characteristic;
-		discover_params.start_handle = attr->handle + 1;
-		discover_params.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
+    return BT_GATT_ITER_STOP;
+  }
 
-		err = bt_gatt_discover(conn, &discover_params);
-		if (err) {
-			printk("Discover failed (err %d)\n", err);
-		}
-	/* If we found the characteristic */
-	} else if (!bt_uuid_cmp(discover_params.uuid, remote->characteristic)) {
-		set_handle(bt_gatt_attr_value_handle(attr), remote);
-		discovered = 1;
-		printk("Found characteristic handle\n");
-	}
 
-	return BT_GATT_ITER_STOP;
+  PRINT("Discover_temperature\r\n");
+  
+
+  PRINT("[ATTRIBUTE] handle %u\r\n", attr->handle);
+
+  /* If we found the service */
+  if (!bt_uuid_cmp(discover_params.uuid, remote->service)) {
+    discover_params.uuid         = remote->characteristic;
+    discover_params.start_handle = attr->handle + 1;
+    discover_params.type         = BT_GATT_DISCOVER_CHARACTERISTIC;
+
+    err = bt_gatt_discover(conn, &discover_params);
+    if (err) {
+      PRINT("Discover failed (err %d)\r\n", err);
+    }
+    /* If we found the characteristic */
+  } else if (!bt_uuid_cmp(discover_params.uuid, remote->characteristic)) {
+    set_handle(bt_gatt_attr_value_handle(attr), remote);
+    discovered = 1;
+    PRINT("Found characteristic handle\r\n");
+  }
+
+  return BT_GATT_ITER_STOP;
 }
 
 static const struct bt_data ad[] = {
-	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	// 0xcc & 0xff here is the device UUID
-	BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0xcc, 0xff, 0xaa, 0xff, 0x0a, 0x18),
+  BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+  // 0xcc & 0xff here is the device UUID
+  BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0xcc, 0xff, 0xaa, 0xff, 0x0a, 0x18),
 };
+
 
 static void connected(struct bt_conn *conn, uint8_t conn_err)
 {
-	char addr[BT_ADDR_LE_STR_LEN];
+  char addr[BT_ADDR_LE_STR_LEN];
 
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+  bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	
-	if (conn_err) {
-		printk("Connection failed (err 0x%02x)\n", conn_err);
-	} else {
-		printk("Connected %s\n", addr);
-		set_connection(conn, remote);
-		set_addr(*bt_conn_get_dst(conn), remote);
+  if (conn_err) {
+    PRINT("Connection failed (err 0x%02x)\r\n", conn_err);
+  } else {
+    PRINT("Connected %s\r\n", addr);
+    //    set_connection(conn, remote);
+    remote->connection = bt_conn_ref(conn);
 
-		discover_params.uuid         = remote->service;
-		discover_params.func         = discover_temperature;
-		discover_params.start_handle = 0x0001;
-		discover_params.end_handle   = 0xffff;
-		discover_params.type         = BT_GATT_DISCOVER_PRIMARY;
+
+    // remote->address does not seem to be used anywhere.
+    //con_addr = bt_conn_get_dst(conn);
+    //remote->address = (const bt_addr_le_t *) *con_addr;
+    //set_addr(*bt_conn_get_dst(conn), remote);
+
+    discover_params.uuid         = remote->service;
+    discover_params.func         = discover_temperature;
+    discover_params.start_handle = 0x0001;
+    discover_params.end_handle   = 0xffff;
+    discover_params.type         = BT_GATT_DISCOVER_PRIMARY;
 		
-		uint8_t disc_err = bt_gatt_discover(remote->connection, &discover_params);
-		if(disc_err) {
-			printk("Discover failed(err %u)\n", disc_err);
-			return;
-		}
-	}
+    uint8_t disc_err = bt_gatt_discover(remote->connection, &discover_params);
+    if(disc_err) {
+      PRINT("Discover failed(err %u)\r\n", disc_err);
+      return;
+    }
+  }
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	printk("Disconnected (reason 0x%02x)\n", reason);
+  PRINT("Disconnected (reason 0x%02x)\r\n", reason);
 
-	if (remote->connection) {
-		bt_conn_unref(remote->connection);
-		remote->connection = NULL;
-	}
+  if (remote->connection) {
+    bt_conn_unref(remote->connection);
+    remote->connection = NULL;
+  }
 }
 
 static struct bt_conn_cb conn_callbacks = {
-	.connected = connected,
-	.disconnected = disconnected,
+  .connected = connected,
+  .disconnected = disconnected,
 };
 
-static void bt_ready(void)
+static void bt_ready(int e_val)
 {
-	int err;
+  if (e_val) {
+    PRINT("Bluetooth init failed (err %d)\r\n", e_val);
+    return;
+  }
+  
+  int err;
 
-	printk("Bluetooth initialized\n");
+  PRINT("Bluetooth initialized\r\n");
 
-	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
-	if (err) {
-		printk("Advertising failed to start (err %d)\n", err);
-		return;
-	}
+  err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
+  if (err) {
+    PRINT("Advertising failed to start (err %d)\n", err);
+    return;
+  }
 
-	printk("Advertising successfully started\n");
+  PRINT("Advertising successfully started\r\n");
 }
 
 void cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_write_params *params) {
-    printk("Performed write\n");
+  printk("Performed write\n");
 }
 
 uint8_t device[]         = {0xaa, 0xff};
@@ -210,23 +235,30 @@ void main(void)
   gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
   gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
 
+
+  k_sleep(K_SECONDS(4)); /* Give me a chance to connect the usb */   
+
+  PRINT("Server starting up\r\n");
   
   /* Implement notification. At the moment there is no suitable way
    * of starting delayed work so we do it here
    */
   char* data = "server";
 
-  err = bt_enable(NULL);
+  err = bt_enable(bt_ready);
   if (err) {
-    //printk("Bluetooth init failed (err %d)\n", err);
+    PRINT("Failed to init Bluetooth\r\n");
     return;
   }
 
   remote = new_remote_device(device, service, characteristic);
+  if (!remote) {
+    PRINT("Failed to new_remote_device\r\n");
+  }
+  PRINT("new_remote_device called successfully\r\n");
+  
   set_message_payload(data, strlen(data) + 1, remote);
   remote->handle.func = cb;
-
-  bt_ready();
 
   bt_conn_cb_register(&conn_callbacks);
 
@@ -234,7 +266,7 @@ void main(void)
   while(!discovered) {
     gpio_pin_set(d_led0, LED_PIN(led0), led0_state);
     k_sleep(K_SECONDS(1));
-    usb_printf("have not discovered yet\r\n");
+    PRINT("have not discovered yet\r\n");
 
     led0_state = 1 - led0_state;
   }
@@ -247,13 +279,11 @@ void main(void)
     
     k_sleep(K_SECONDS(1));
 
-    usb_printf("Hello world\r\n");
-
     int err = bt_gatt_write(remote->connection, &remote->handle);
     if(err) {
-      //printk("error while writing (err %d)\n", err);
+      PRINT("error while writing (err %d)\n", err);
     } else {
-      //printk("seems to have worked (err %d)\n", err);
+      PRINT("seems to have worked (err %d)\n", err);
     }
 
     led1_state = 1 - led1_state;
