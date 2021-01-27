@@ -136,7 +136,8 @@ int spawn(vmc_t *container, uint16_t label){
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
     if(container->context_used[i] == false){
       container->contexts[i].pc = (UINT)label;
-      container->contexts[i].env = container->context.env; //copying the environment
+      container->contexts[i].env =
+        container->contexts[container->current_running_context_id].env; //copying the environment
       // XXX
       //container->contexts[i].stack = Case 1. statically allocated in vmc_init; nothing to be done here
       //                               Case 2. some kind of malloc with GC for stack memory with optimal memory use
@@ -160,13 +161,16 @@ static int dispatch(vmc_t *container){
     return -1; // This is the standard state of a microcontroller
                // and it should sleep when it gets -1 on dispatch
   }
-  container->context = container->contexts[context_id]; // This will overwrite the parent context;
-                                                        // Do we want to store it somewhere?
-  container->context.env = container->contexts[context_id].env;
-  container->context.pc = container->contexts[context_id].pc;
-  //hopefully stack is set by the first container->context = ....
-
+  container->current_running_context_id = context_id;
   return 1;
+
+
+  /* Before current_running_context_id was introduced */
+  /* container->context = container->contexts[context_id]; // This will overwrite the parent context; */
+  /*                                                       // Do we want to store it somewhere? */
+  /* container->context.env = container->contexts[context_id].env; */
+  /* container->context.pc = container->contexts[context_id].pc; */
+  //hopefully stack is set by the first container->context = ....
 
 }
 

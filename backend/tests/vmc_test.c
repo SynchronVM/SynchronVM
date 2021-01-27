@@ -53,7 +53,8 @@ bool prepare_container(vmc_t *container, int stack_memory_size, int heap_memory_
     return false; // indicates error
   }
 
-  container->context.stack = s; /* Parent context uses the full stack memory for now */
+  container->current_running_context_id = 0;
+  container->contexts[container->current_running_context_id].stack = s; /* Parent context uses the full stack memory for now */
 
   return true;
 
@@ -91,7 +92,7 @@ bool vmc_run_1_test(){
   free(sm);
   free(hm);
 
-  if(container.context.env.value == 25){
+  if(container.contexts[container.current_running_context_id].env.value == 25){
     return true;
   } else {
     return false;
@@ -132,7 +133,7 @@ bool vmc_run_2_test(){
   free(sm);
   free(hm);
 
-  if(container.context.env.value == 9){
+  if(container.contexts[container.current_running_context_id].env.value == 9){
     return true;
   } else {
     return false;
@@ -169,7 +170,7 @@ bool vmc_run_3_test(){
   free(sm);
   free(hm);
 
-  if(container.context.env.value == 7){
+  if(container.contexts[container.current_running_context_id].env.value == 7){
     return true;
   } else {
     return false;
@@ -212,7 +213,7 @@ bool vmc_run_4_test(){
   free(sm);
   free(hm);
 
-  if(container.context.env.value == 6){
+  if(container.contexts[container.current_running_context_id].env.value == 6){
     return true;
   } else {
     return false;
@@ -250,7 +251,7 @@ bool vmc_run_5_test(){
   free(sm);
   free(hm);
 
-  if(container.context.env.value == 1){ //env register contains True?
+  if(container.contexts[container.current_running_context_id].env.value == 1){ //env register contains True?
     return true;
   } else {
     return false;
@@ -289,7 +290,7 @@ bool vmc_run_6_test(){
   free(sm);
   free(hm);
 
-  if(container.context.env.value == 0){ //env register contains False?
+  if(container.contexts[container.current_running_context_id].env.value == 0){ //env register contains False?
     return true;
   } else {
     return false;

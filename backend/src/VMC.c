@@ -81,6 +81,7 @@ int vmc_init(void) {
   vm_containers[VMC_CONTAINER_1].stack_memory   = vmc_container_1_stack;
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
+  vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
   init_all_chans(vm_containers[VMC_CONTAINER_1].channels, vmc_container_1_channels);
   Queue_t readyq = { .capacity = 0 };
   int readyq_status = q_init(&readyq, vmc_container_1_rdyq, VMC_MAX_CONTEXTS);
@@ -98,6 +99,8 @@ int vmc_init(void) {
   vm_containers[VMC_CONTAINER_2].stack_memory  = vmc_container_2_stack;
   vm_containers[VMC_CONTAINER_2].code_memory   = vmc_container_2_code;
   vm_containers[VMC_CONTAINER_2].arrays_memory = vmc_container_2_arrays;
+  vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
+  // channel initialization missing
   r++;
   #endif
 
@@ -152,8 +155,9 @@ int vmc_run(vmc_t *container) {
   /* set up the parent context */
   /* Running all computations in parent context for now */
   cam_value_t v_empty = get_cam_val(0,0);
-  container->context.env = v_empty;
-  container->context.pc  = pc;
+  //container->current_running_context_id = 0; // done by the scheduler
+  container->contexts[container->current_running_context_id].env = v_empty;
+  container->contexts[container->current_running_context_id].pc  = pc;
 
 
   /* Start executing instructions now */

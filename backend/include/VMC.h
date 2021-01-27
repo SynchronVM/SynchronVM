@@ -47,7 +47,7 @@ typedef struct {
   uint8_t       *stack_memory;
   uint8_t       *arrays_memory;
   const uint8_t *code_memory;
-  Context_t     context;      /* represents the parent context for now */
+  UUID          current_running_context_id;
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
