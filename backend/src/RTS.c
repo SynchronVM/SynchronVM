@@ -83,7 +83,41 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
   return -1;
 }
 
+static int blockAllEvents(vmc_t *container, event_t *evts){
+  heap_index index = evts->event_head;
+  do{
 
+      cam_value_t base_evt_pointer = heap_fst(&container->heap, index);
+      if(base_evt_pointer.flags & (1 << 15)){ // check if cell is actually a pointer
+        cam_value_t base_evt_simple_cam = heap_fst(&container->heap, (heap_index)base_evt_pointer.value);
+        base_event_simple_t bevt_simple =
+          {   .e_type     = extract_bits(base_evt_simple_cam.value, 16, sizeof(event_type_t))
+            , .context_id = extract_bits(base_evt_simple_cam.value,  8, sizeof(UUID))
+            , .channel_id = extract_bits(base_evt_simple_cam.value,  0, sizeof(UUID))
+          };
+
+        if(bevt_simple.e_type == SEND){
+          //XXX: The current context's id is required here
+          /* The Context_t context; field should instead be
+           * UUID current_runnting_context; and then we can take that context id and enqueue that
+           */
+          // int j = q_enqueue(&container->channels[bevt_simple.channel_id].sendq, container->current_running_context_id);
+
+        } else { // recvEvt
+          // int j = q_enqueue(&container->channels[bevt_simple.channel_id].recvq, container->current_running_context_id);
+        }
+      } else {
+        DEBUG_PRINT(("Error in heap layout; Not a pointer\n"));
+        return -2; //XXX: Used a different error code
+      }
+
+      cam_value_t pointer_to_next = heap_snd(&container->heap, index);
+      index = (heap_index)pointer_to_next.value;
+
+  } while(index != HEAP_NULL);
+
+  return 1;
+}
 
 
 int channel(vmc_t *container, Channel_t *chan){
@@ -143,6 +177,18 @@ int sync(vmc_t *container, event_t *evts){
    * if i is -1 call block on all evts and do dispatch
    * if i is  1 then call doFn
    */
+  if(i == 1){
+    //doFn
+  } else if (i == -1) {
+    int j = blockAllEvents(container, evts);
+    if(j == -1){
+      DEBUG_PRINT(("Block events failed! \n"));
+      return -1;
+    }
+    dispatch(container);
+  } else {
+    // error
+  }
   return 1;
 }
 
