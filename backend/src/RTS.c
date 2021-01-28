@@ -46,34 +46,31 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
   heap_index index = evts->event_head;
   do{
 
-      cam_value_t base_evt_pointer = heap_fst(&container->heap, index);
-      if(base_evt_pointer.flags & (1 << 15)){ // check if cell is actually a pointer
-        cam_value_t base_evt_simple_cam = heap_fst(&container->heap, (heap_index)base_evt_pointer.value);
-        base_event_simple_t bevt_simple =
-          {   .e_type     = extract_bits(base_evt_simple_cam.value, 16, sizeof(event_type_t))
-            , .context_id = extract_bits(base_evt_simple_cam.value,  8, sizeof(UUID))
-            , .channel_id = extract_bits(base_evt_simple_cam.value,  0, sizeof(UUID))
-          };
+      cam_value_t base_evt_cam = heap_fst(&container->heap, index);
 
-        if(bevt_simple.e_type == SEND){
-          if(pollQ(&container->channels[bevt_simple.channel_id].recvq)){
-            cam_value_t wrap_label_cam = heap_snd(&container->heap, (heap_index)base_evt_pointer.value);
-            base_event_t bevt = { .bev = bevt_simple, .wrap_label = (uint16_t)wrap_label_cam.value };
-            *bev = bevt;
-            return 1;
-          } // else continue
-        } else { // recvEvt
-          if(pollQ(&container->channels[bevt_simple.channel_id].sendq)){
-            cam_value_t wrap_label_cam = heap_snd(&container->heap, (heap_index)base_evt_pointer.value);
-            base_event_t bevt = { .bev = bevt_simple, .wrap_label = (uint16_t)wrap_label_cam.value };
-            *bev = bevt;
-            return 1;
-          } // else continue
-        }
-      } else {
-        DEBUG_PRINT(("Error in heap layout; Not a pointer\n"));
-        return -2; //XXX: Used a different error code
+
+      base_event_t bevt =
+        {   .e_type     = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
+          , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
+          , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
+        };
+
+      if(bevt.e_type == SEND){
+
+        if(pollQ(&container->channels[bevt.channel_id].recvq)){
+          *bev = bevt;
+          return 1;
+        } // else continue the do-while loop
+
+      } else { // recvEvt
+
+        if(pollQ(&container->channels[bevt.channel_id].sendq)){
+          *bev = bevt;
+          return 1;
+        } // else continue the do-while loop
+
       }
+
 
       cam_value_t pointer_to_next = heap_snd(&container->heap, index);
       index = (heap_index)pointer_to_next.value;
@@ -87,29 +84,26 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
   heap_index index = evts->event_head;
   do{
 
-      cam_value_t base_evt_pointer = heap_fst(&container->heap, index);
-      if(base_evt_pointer.flags & (1 << 15)){ // check if cell is actually a pointer
-        cam_value_t base_evt_simple_cam = heap_fst(&container->heap, (heap_index)base_evt_pointer.value);
-        base_event_simple_t bevt_simple =
-          {   .e_type     = extract_bits(base_evt_simple_cam.value, 16, sizeof(event_type_t))
-            , .context_id = extract_bits(base_evt_simple_cam.value,  8, sizeof(UUID))
-            , .channel_id = extract_bits(base_evt_simple_cam.value,  0, sizeof(UUID))
-          };
+      cam_value_t base_evt_cam = heap_fst(&container->heap, index);
 
-        if(bevt_simple.e_type == SEND){
-          //XXX: The current context's id is required here
-          /* The Context_t context; field should instead be
-           * UUID current_runnting_context; and then we can take that context id and enqueue that
-           */
-          // int j = q_enqueue(&container->channels[bevt_simple.channel_id].sendq, container->current_running_context_id);
 
-        } else { // recvEvt
-          // int j = q_enqueue(&container->channels[bevt_simple.channel_id].recvq, container->current_running_context_id);
-        }
-      } else {
-        DEBUG_PRINT(("Error in heap layout; Not a pointer\n"));
-        return -2; //XXX: Used a different error code
+      base_event_t bevt =
+        {   .e_type     = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
+          , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
+          , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
+        };
+
+      if(bevt.e_type == SEND){
+        //XXX: The current context's id is required here
+        /* The Context_t context; field should instead be
+         * UUID current_runnting_context; and then we can take that context id and enqueue that
+         */
+        // int j = q_enqueue(&container->channels[bevt_simple.channel_id].sendq, container->current_running_context_id);
+
+      } else { // recvEvt
+        // int j = q_enqueue(&container->channels[bevt_simple.channel_id].recvq, container->current_running_context_id);
       }
+
 
       cam_value_t pointer_to_next = heap_snd(&container->heap, index);
       index = (heap_index)pointer_to_next.value;
@@ -175,7 +169,7 @@ static int dispatch(vmc_t *container){
 }
 
 int sync(vmc_t *container, event_t *evts){
-  base_event_t bev = { .wrap_label = 0 };
+  base_event_t bev;
   int i = findSynchronizable(container, evts, &bev);
   /*
    * if i is -1 call block on all evts and do dispatch

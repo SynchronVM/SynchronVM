@@ -34,14 +34,9 @@ typedef enum {
 } event_type_t;
 
 typedef struct {
-  event_type_t e_type;
-  UUID context_id;
-  UUID channel_id;
-} base_event_simple_t;
-
-typedef struct {
-  base_event_simple_t bev;
-  uint16_t wrap_label;
+  event_type_t e_type; //  8 bits
+  UUID channel_id;     //  8 bits
+  uint16_t wrap_label; // 16 bits
 } base_event_t;
 
 typedef struct {
@@ -52,10 +47,8 @@ extern bool pollQ(Queue_t *q);
 
 /*
  *  Proposed heap structure
- *  heap_cell_ev -> fst = base_event_simple_t // 24 bits
- *               -> snd = wrap_label or NULL  // 32 bits
  *
- *  heap_cell_list -> fst = heap_cell_ev
+ *  heap_cell_list -> fst = base_event_t
  *                 -> snd = pointer to next heap_cell_ev
  */
 
