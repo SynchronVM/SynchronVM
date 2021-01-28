@@ -50,7 +50,7 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
 
 
       base_event_t bevt =
-        {   .e_type     = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
+        {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
           , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
           , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
         };
@@ -88,20 +88,29 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
 
 
       base_event_t bevt =
-        {   .e_type     = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
+        {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
           , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
           , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
         };
 
       if(bevt.e_type == SEND){
-        //XXX: The current context's id is required here
-        /* The Context_t context; field should instead be
-         * UUID current_runnting_context; and then we can take that context id and enqueue that
-         */
-        // int j = q_enqueue(&container->channels[bevt_simple.channel_id].sendq, container->current_running_context_id);
+        int j =
+          q_enqueue(  &container->channels[bevt.channel_id].sendq
+                    , container->current_running_context_id);
+        if(j == -1){
+          DEBUG_PRINT(( "Cannot enqueue in channel %u 's send queue \n"
+                       , bevt.channel_id));
+          return -1;
+        }
 
       } else { // recvEvt
-        // int j = q_enqueue(&container->channels[bevt_simple.channel_id].recvq, container->current_running_context_id);
+        int j = q_enqueue(&container->channels[bevt.channel_id].recvq, container->current_running_context_id);
+        if(j == -1){
+          DEBUG_PRINT((" Cannot enqueue in channel %u 's recv queue \n"
+                       , bevt.channel_id));
+          return -1;
+        }
+
       }
 
 
@@ -137,7 +146,11 @@ int spawn(vmc_t *container, uint16_t label){
       //                               Case 2. some kind of malloc with GC for stack memory with optimal memory use
       //                                       In Case 2 we have to call the stack_alloc function here
       container->context_used[i] = true;
-      q_enqueue(&container->rdyQ, i);
+      int j = q_enqueue(&container->rdyQ, i);
+      if(j == -1){
+        DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
+        return -1;
+      }
       // eval_RTS_spawn should now simply do *pc_idx++
       // so that the parent context can continue running
       return 1;
@@ -148,7 +161,7 @@ int spawn(vmc_t *container, uint16_t label){
 }
 
 static int dispatch(vmc_t *container){
-  UUID context_id = 0;
+  UUID context_id;
   int de_q_status = q_dequeue(&container->rdyQ, &context_id);
   if (de_q_status == -1){
     DEBUG_PRINT(("Ready Queue is empty\n"));
@@ -177,16 +190,15 @@ int sync(vmc_t *container, event_t *evts){
    */
   if(i == 1){
     //doFn
-  } else if (i == -1) {
+  } else {
     int j = blockAllEvents(container, evts);
     if(j == -1){
       DEBUG_PRINT(("Block events failed! \n"));
       return -1;
     }
     dispatch(container);
-  } else {
-    // error
   }
+
   return 1;
 }
 
