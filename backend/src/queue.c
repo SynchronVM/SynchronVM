@@ -90,3 +90,9 @@ int q_front(Queue_t *q, UUID *context_id){
   *context_id = q->data[q->front];
   return 1;
 }
+
+int q_remove(Queue_t *q, UUID* context_id){
+  (void)q;
+  (void)context_id;
+  return -1;
+}

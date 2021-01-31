@@ -32,7 +32,7 @@
 #include <event.h>
 
 bool pollQ(Queue_t *q){
-  UUID context_id = 0;
+  UUID context_id;
   int op_status = q_front(q, &context_id);
   if(op_status == -1){ //empty queue
     return false;

@@ -181,22 +181,134 @@ static int dispatch(vmc_t *container){
 
 }
 
+static int synchronizeNow(vmc_t *container, base_event_t bev){
+  /* NOTE: BEWARE! SEND and RECV have different behaviours! Study */
+  /* both the if and else blocks carefully to understand the */
+  /* difference. In both cases the receiving thread starts executing */
+  /* when `sync` succeeds! Therefore the code is differnt if you */
+  /* view it from the perspective of the sender or the receiver. */
+
+  if(bev.e_type == SEND){
+
+    UUID recv_context_id;
+    int deq_status =
+      q_dequeue(&container->channels[bev.channel_id].recvq, &recv_context_id);
+    if(deq_status == -1){ //empty queue
+      DEBUG_PRINT(( "Recv Queue of %u empty for syncing send \n"
+                   , bev.channel_id));
+      return -1;
+    }
+
+    int rem_status =
+      q_remove(&container->channels[bev.channel_id].recvq, &recv_context_id);
+    if(rem_status == -1){
+      DEBUG_PRINT((  "Failed to remove %u from channel %u 's recv queue \n"
+                   , recv_context_id
+                   , bev.channel_id));
+      return -1;
+    }
+    /* NOTE Message passing begins */
+    /*
+     * Put the message residing in the env register of the sender (currently
+     *  running) on the receiving context's env register
+     */
+
+    container->contexts[recv_context_id].env =
+      container->contexts[container->current_running_context_id].env;
+
+
+    // Now simply place () or v_empty in the sender's env(currently running)
+    cam_value_t v_empty = get_cam_val(0,0);
+    container->contexts[container->current_running_context_id].env = v_empty;
+
+    //XXX: PC_IDX should be moved to bev.wrap_label here and the
+    // wrapped function should be applied now
+
+    /* NOTE Message passing ends */
+
+    int enq_status =
+      q_enqueue(&container->rdyQ, container->current_running_context_id); // queueing sender
+    if (enq_status == -1){
+      DEBUG_PRINT(("Ready Queue is full\n"));
+      return -1;
+    }
+
+    // the receiving thread will run now
+    container->current_running_context_id = recv_context_id;
+
+    return 1;
+
+  } else {
+
+    UUID send_context_id;
+    int deq_status =
+      q_dequeue(&container->channels[bev.channel_id].sendq, &send_context_id);
+    if(deq_status == -1){ //empty queue
+      DEBUG_PRINT((  "Send Queue of %u empty for syncing recv \n"
+                   , bev.channel_id));
+      return -1;
+    }
+
+    int rem_status =
+      q_remove(&container->channels[bev.channel_id].sendq, &send_context_id);
+    if(rem_status == -1){
+      DEBUG_PRINT((  "Failed to remove %u from channel %u 's send queue \n"
+                   , send_context_id
+                   , bev.channel_id));
+      return -1;
+    }
+    /* NOTE Message passing begins */
+    /*
+     * Take the message from sender's environment where it has to be
+     * blocked if `sync` call was issued with the message on the env register
+     * Place the message on the receivers env (current running context)
+     */
+
+    container->contexts[container->current_running_context_id].env =
+      container->contexts[send_context_id].env;
+
+    // Now simply place () or v_empty in sender's env and proceed
+    cam_value_t v_empty = get_cam_val(0,0);
+    container->contexts[send_context_id].env = v_empty;
+
+    //XXX: PC_IDX should be moved to bev.wrap_label here and the
+    // wrapped function should be applied now
+
+    /* NOTE Message passing ends */
+
+    int enq_status = q_enqueue(&container->rdyQ, send_context_id); // queueing sender
+    if (enq_status == -1){
+      DEBUG_PRINT(("Ready Queue is full\n"));
+      return -1;
+    }
+
+    // the receiver will automatically run because we are now executing its context
+    return 1;
+
+  }
+}
+
 int sync(vmc_t *container, event_t *evts){
   base_event_t bev;
   int i = findSynchronizable(container, evts, &bev);
-  /*
-   * if i is -1 call block on all evts and do dispatch
-   * if i is  1 then call doFn
-   */
+
   if(i == 1){
-    //doFn
+
+    int sync_status = synchronizeNow(container, bev);
+    if(sync_status == -1){
+      DEBUG_PRINT(("Synchronization failed! \n"));
+      return -1;
+    }
+
   } else {
+
     int j = blockAllEvents(container, evts);
     if(j == -1){
       DEBUG_PRINT(("Block events failed! \n"));
       return -1;
     }
     dispatch(container);
+
   }
 
   return 1;
