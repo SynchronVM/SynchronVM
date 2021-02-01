@@ -94,5 +94,6 @@ int q_front(Queue_t *q, UUID *context_id){
 int q_remove(Queue_t *q, UUID* context_id){
   (void)q;
   (void)context_id;
+  // if no such entries exist return 1
   return -1;
 }

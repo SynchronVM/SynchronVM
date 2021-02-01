@@ -147,52 +147,6 @@ eval_fun evaluators[] =
     eval_lef,
     eval_eq_bool };
 
-
-
-static inline void mark_heap_context(Context_t *context, heap_t *heap){
-  /* GC Roots - env register, the full stack */
-
-  // run mark from env
-  heap_mark(heap, context->env);
-
-  // run mark for each element of the stack
-  for(unsigned int i = 0; i < context->stack.size; i++){
-    cam_value_t cv =
-      get_cam_val(context->stack.data[i], context->stack.flags[i]);
-    heap_mark(heap, cv);
-  }
-}
-
-
-heap_index heap_alloc_withGC(vmc_t *container) {
-
-  heap_index hi = heap_allocate(&container->heap);
-  if(hi == HEAP_NULL){
-    // heap full; time to do a GC
-
-    /* GC parent context */
-    mark_heap_context
-      (  &container->contexts[container->current_running_context_id]
-       , &container->heap);
-
-    /* GC all active child contexts; children starts from 1 */
-    for(int i = 1; i < VMC_MAX_CONTEXTS; i++){
-      if(container->context_used[i] ){
-        mark_heap_context(&container->contexts[i], &container->heap);
-      }
-    }
-
-    // First phase mark complete; try allocating again
-    // Sweeping is lazy and integrated into the allocator
-
-
-    // if heap_allocate_helper returns HEAP_NULL again need to resize heap
-    return heap_allocate(&container->heap);
-  }
-
-  return hi;
-}
-
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
   INT lab_idx2 = (*pc_idx) + 2;

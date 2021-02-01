@@ -32,8 +32,6 @@ typedef struct {
   cam_value_t message;
 } chan_data_t;
 
-chan_data_t default_val = { .context_id = 255 };
-
 typedef struct {
   chan_data_t *data;
   int capacity;
@@ -47,4 +45,5 @@ extern int chan_q_enqueue(chan_queue_t *q, chan_data_t chan_data);
 extern int chan_q_dequeue(chan_queue_t *q, chan_data_t *chan_data);
 extern int chan_q_front  (chan_queue_t *q, chan_data_t *chan_data);
 
+extern int chan_q_remove (chan_queue_t *q, UUID *context_id);
 #endif

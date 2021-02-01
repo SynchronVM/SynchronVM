@@ -180,12 +180,10 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
   int mem_offset = 0;
   for(int i = 0; i < MAX_CHANNELS; i++){
 
-    Queue_t sq = { .capacity = 0 };
-    Queue_t rq = { .capacity = 0 };
+    chan_queue_t sq;
+    Queue_t rq;
 
-    // Each participant is a UUID which is 1 byte, so we are requesting
-    // 3 bytes for each queue (sendq and recvq)
-    int sq_status = q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
+    int sq_status = chan_q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
     if(sq_status == -1){
       DEBUG_PRINT(("Failed to initialise sendq for %dth channel", i));
       return -1;
@@ -197,8 +195,9 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
       return -1;
     }
 
-    mem_offset += 2 * MAX_WAIT_PARTICIPANTS;
-    Channel_t ch = { .in_use = false };
+    mem_offset +=   (MAX_WAIT_PARTICIPANTS * 6)  // sendq is 6 bytes each
+                  + (MAX_WAIT_PARTICIPANTS * 1); // recvq is 1 byte  each
+    Channel_t ch;
     int ch_status = channel_init(&ch, sq, rq);
     if(ch_status == -1){
       DEBUG_PRINT(("Failed to initialise %dth channel", i));
@@ -228,3 +227,48 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
    }
 
  */
+
+
+static inline void mark_heap_context(Context_t *context, heap_t *heap){
+  /* GC Roots - env register, the full stack */
+
+  // run mark from env
+  heap_mark(heap, context->env);
+
+  // run mark for each element of the stack
+  for(unsigned int i = 0; i < context->stack.size; i++){
+    cam_value_t cv =
+      get_cam_val(context->stack.data[i], context->stack.flags[i]);
+    heap_mark(heap, cv);
+  }
+}
+
+
+heap_index heap_alloc_withGC(vmc_t *container) {
+
+  heap_index hi = heap_allocate(&container->heap);
+  if(hi == HEAP_NULL){
+    // heap full; time to do a GC
+
+    /* GC parent context */
+    mark_heap_context
+      (  &container->contexts[container->current_running_context_id]
+         , &container->heap);
+
+    /* GC all active child contexts; children starts from 1 */
+    for(int i = 1; i < VMC_MAX_CONTEXTS; i++){
+      if(container->context_used[i] ){
+        mark_heap_context(&container->contexts[i], &container->heap);
+      }
+    }
+
+    // First phase mark complete; try allocating again
+    // Sweeping is lazy and integrated into the allocator
+
+
+    // if heap_allocate_helper returns HEAP_NULL again need to resize heap
+    return heap_allocate(&container->heap);
+  }
+
+  return hi;
+}

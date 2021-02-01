@@ -31,7 +31,17 @@
 
 #include <event.h>
 
-bool pollQ(Queue_t *q){
+bool poll_sendq(chan_queue_t *q){
+  chan_data_t chan_data;
+  int op_status = chan_q_front(q, &chan_data);
+  if(op_status == -1){ //empty queue
+    return false;
+  } else {
+    return true; // the actual dequeing should happen inside doFn
+  }
+}
+
+bool poll_recvq(Queue_t *q){
   UUID context_id;
   int op_status = q_front(q, &context_id);
   if(op_status == -1){ //empty queue

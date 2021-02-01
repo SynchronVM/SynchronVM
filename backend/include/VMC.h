@@ -67,5 +67,6 @@ extern int vmc_run(vmc_t *container);
 
 extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
 
+extern heap_index heap_alloc_withGC(vmc_t *container);
 
 #endif

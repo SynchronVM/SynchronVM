@@ -70,7 +70,8 @@ int chan_q_dequeue(chan_queue_t *q, chan_data_t *chan_data){
 
   *chan_data = q->data[q->front];
 
-  q->data[q->front] = default_val;
+  chan_data_t cd = { .context_id = 255 };
+  q->data[q->front] = cd;
 
   if (q->front == q->rear){
     q->front = -1;
@@ -91,4 +92,11 @@ int chan_q_front(chan_queue_t *q, chan_data_t *chan_data){
 
   *chan_data = q->data[q->front];
   return 1;
+}
+
+int chan_q_remove(chan_queue_t *q, UUID* context_id){
+  (void)q;
+  (void)context_id;
+  // if no such entry exists return 1
+  return -1;
 }

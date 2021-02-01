@@ -43,7 +43,7 @@ static UINT extract_bits(UINT value, int lsbstart, int numbits){
 
 
 static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev){
-  heap_index index = evts->event_head;
+  heap_index index = *evts;
   do{
 
       cam_value_t base_evt_cam = heap_fst(&container->heap, index);
@@ -57,14 +57,14 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
 
       if(bevt.e_type == SEND){
 
-        if(pollQ(&container->channels[bevt.channel_id].recvq)){
+        if(poll_recvq(&container->channels[bevt.channel_id].recvq)){
           *bev = bevt;
           return 1;
         } // else continue the do-while loop
 
       } else { // recvEvt
 
-        if(pollQ(&container->channels[bevt.channel_id].sendq)){
+        if(poll_sendq(&container->channels[bevt.channel_id].sendq)){
           *bev = bevt;
           return 1;
         } // else continue the do-while loop
@@ -80,54 +80,53 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
   return -1;
 }
 
-static int blockAllEvents(vmc_t *container, event_t *evts){
-  heap_index index = evts->event_head;
-  do{
+/* static int blockAllEvents(vmc_t *container, event_t *evts){ */
+/*   heap_index index = evts->event_head; */
+/*   do{ */
 
-      cam_value_t base_evt_cam = heap_fst(&container->heap, index);
-
-
-      base_event_t bevt =
-        {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
-          , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
-          , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
-        };
-
-      if(bevt.e_type == SEND){
-        int j =
-          q_enqueue(  &container->channels[bevt.channel_id].sendq
-                    , container->current_running_context_id);
-        if(j == -1){
-          DEBUG_PRINT(( "Cannot enqueue in channel %u 's send queue \n"
-                       , bevt.channel_id));
-          return -1;
-        }
-
-      } else { // recvEvt
-        int j = q_enqueue(&container->channels[bevt.channel_id].recvq, container->current_running_context_id);
-        if(j == -1){
-          DEBUG_PRINT((" Cannot enqueue in channel %u 's recv queue \n"
-                       , bevt.channel_id));
-          return -1;
-        }
-
-      }
+/*       cam_value_t base_evt_cam = heap_fst(&container->heap, index); */
 
 
-      cam_value_t pointer_to_next = heap_snd(&container->heap, index);
-      index = (heap_index)pointer_to_next.value;
+/*       base_event_t bevt = */
+/*         {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t)) */
+/*           , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID)) */
+/*           , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t)) */
+/*         }; */
 
-  } while(index != HEAP_NULL);
+/*       if(bevt.e_type == SEND){ */
+/*         int j = */
+/*           chan_q_enqueue(&container->channels[bevt.channel_id].sendq, container->current_running_context_id); */
+/*         if(j == -1){ */
+/*           DEBUG_PRINT(( "Cannot enqueue in channel %u 's send queue \n" */
+/*                        , bevt.channel_id)); */
+/*           return -1; */
+/*         } */
 
-  return 1;
-}
+/*       } else { // recvEvt */
+/*         int j = q_enqueue(&container->channels[bevt.channel_id].recvq, container->current_running_context_id); */
+/*         if(j == -1){ */
+/*           DEBUG_PRINT((" Cannot enqueue in channel %u 's recv queue \n" */
+/*                        , bevt.channel_id)); */
+/*           return -1; */
+/*         } */
+
+/*       } */
 
 
-int channel(vmc_t *container, Channel_t *chan){
+/*       cam_value_t pointer_to_next = heap_snd(&container->heap, index); */
+/*       index = (heap_index)pointer_to_next.value; */
+
+/*   } while(index != HEAP_NULL); */
+
+/*   return 1; */
+/* } */
+
+
+int channel(vmc_t *container, UUID *chan_id){
   for(int i = 0; i < MAX_CHANNELS; i++){
     if(container->channels[i].in_use == false){
       container->channels[i].in_use = true;
-      *chan = container->channels[i];
+      *chan_id = (UUID)i;
       return 1;
     }
   }
@@ -199,27 +198,40 @@ static int synchronizeNow(vmc_t *container, base_event_t bev){
       return -1;
     }
 
-    int rem_status =
+    int rq_rem_status =
       q_remove(&container->channels[bev.channel_id].recvq, &recv_context_id);
-    if(rem_status == -1){
-      DEBUG_PRINT((  "Failed to remove %u from channel %u 's recv queue \n"
-                   , recv_context_id
-                   , bev.channel_id));
+    if(rq_rem_status == -1){
+      DEBUG_PRINT(( " Failed remove op from recvq of %u \n"
+                    , bev.channel_id));
       return -1;
     }
+
+    chan_data_t cd;
+    int chan_deq_status =
+      chan_q_dequeue(&container->channels[bev.channel_id].sendq, &cd);
+    if(chan_deq_status == -1){ //empty queue
+      DEBUG_PRINT(( "Send Queue of %u empty for syncing send \n"
+                    , bev.channel_id));
+      return -1;
+    }
+
+    int sq_rem_status =
+      chan_q_remove(&container->channels[bev.channel_id].sendq, &cd.context_id);
+    if(sq_rem_status == -1){
+      DEBUG_PRINT(( " Failed remove op from sendq of %u \n"
+                    , bev.channel_id));
+      return -1;
+    }
+
+
+
     /* NOTE Message passing begins */
     /*
      * Put the message residing in the env register of the sender (currently
      *  running) on the receiving context's env register
      */
 
-    container->contexts[recv_context_id].env =
-      container->contexts[container->current_running_context_id].env;
-
-
-    // Now simply place () or v_empty in the sender's env(currently running)
-    cam_value_t v_empty = get_cam_val(0,0);
-    container->contexts[container->current_running_context_id].env = v_empty;
+    container->contexts[recv_context_id].env = cd.message;
 
     //XXX: PC_IDX should be moved to bev.wrap_label here and the
     // wrapped function should be applied now
@@ -232,6 +244,9 @@ static int synchronizeNow(vmc_t *container, base_event_t bev){
       DEBUG_PRINT(("Ready Queue is full\n"));
       return -1;
     }
+    //XXX: Should increment container->contexts[container->current_running_context_id].pc
+    // so that the next instruction after sync is executed in the sender when it gets
+    // scheduled
 
     // the receiving thread will run now
     container->current_running_context_id = recv_context_id;
@@ -240,23 +255,23 @@ static int synchronizeNow(vmc_t *container, base_event_t bev){
 
   } else {
 
-    UUID send_context_id;
+    chan_data_t sender_data;
     int deq_status =
-      q_dequeue(&container->channels[bev.channel_id].sendq, &send_context_id);
+      chan_q_dequeue(&container->channels[bev.channel_id].sendq, &sender_data);
     if(deq_status == -1){ //empty queue
       DEBUG_PRINT((  "Send Queue of %u empty for syncing recv \n"
                    , bev.channel_id));
       return -1;
     }
 
-    int rem_status =
-      q_remove(&container->channels[bev.channel_id].sendq, &send_context_id);
-    if(rem_status == -1){
-      DEBUG_PRINT((  "Failed to remove %u from channel %u 's send queue \n"
-                   , send_context_id
-                   , bev.channel_id));
+    int sd_rem_status =
+      chan_q_remove(&container->channels[bev.channel_id].sendq, &sender_data.context_id);
+    if(sd_rem_status == -1){
+      DEBUG_PRINT(( " Failed remove op from sendq of %u \n"
+                    , bev.channel_id));
       return -1;
     }
+
     /* NOTE Message passing begins */
     /*
      * Take the message from sender's environment where it has to be
@@ -265,22 +280,20 @@ static int synchronizeNow(vmc_t *container, base_event_t bev){
      */
 
     container->contexts[container->current_running_context_id].env =
-      container->contexts[send_context_id].env;
-
-    // Now simply place () or v_empty in sender's env and proceed
-    cam_value_t v_empty = get_cam_val(0,0);
-    container->contexts[send_context_id].env = v_empty;
+      sender_data.message;
 
     //XXX: PC_IDX should be moved to bev.wrap_label here and the
     // wrapped function should be applied now
 
     /* NOTE Message passing ends */
 
-    int enq_status = q_enqueue(&container->rdyQ, send_context_id); // queueing sender
+    int enq_status = q_enqueue(&container->rdyQ, sender_data.context_id); // queueing sender
     if (enq_status == -1){
       DEBUG_PRINT(("Ready Queue is full\n"));
       return -1;
     }
+    //XXX: Should increment container->contexts[sender_data.context_id].pc so that
+    // the next instruction after sync is executed
 
     // the receiver will automatically run because we are now executing its context
     return 1;
@@ -302,15 +315,80 @@ int sync(vmc_t *container, event_t *evts){
 
   } else {
 
-    int j = blockAllEvents(container, evts);
-    if(j == -1){
-      DEBUG_PRINT(("Block events failed! \n"));
-      return -1;
-    }
+    /* int j = blockAllEvents(container, evts); */
+    /* if(j == -1){ */
+    /*   DEBUG_PRINT(("Block events failed! \n")); */
+    /*   return -1; */
+    /* } */
     dispatch(container);
 
   }
 
   return 1;
+}
+
+int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
+  chan_data_t sender_data =
+    { .context_id = container->current_running_context_id, .message = msg };
+
+  int i = chan_q_enqueue(&container->channels[*chan_id].sendq, sender_data);
+  if(i == -1){
+    DEBUG_PRINT(( " Could not enqueue message in sendq of channel %u \n"
+                  , *chan_id));
+    return -1;
+  }
+
+  base_event_t bev = { .e_type = SEND, .channel_id = *chan_id };
+
+  // do some bit shifting to set UINT data = (SEND, chan_id, null)
+  // cam_value_t event = {.value = data, .flags = 0}
+
+  heap_index hi = heap_alloc_withGC(container);
+
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    return -1;
+  }
+
+  //heap_set_fst(&container->heap, hi, event);
+  // snd remains NULL because it is just one event. Choose creates the links
+
+  *sevt = hi;
+
+  //XXX: does `choose` require heap_alloc and inlining(or copying) everytime or
+  // should the heap structure be made of pointers? then the snd field remains empty
+
+  return 1;
+
+}
+
+int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
+
+  int i = q_enqueue(&container->channels[*chan_id].recvq, container->current_running_context_id);
+  if(i == -1){
+    DEBUG_PRINT(( " Could not enqueue message in recvq of channel %u \n"
+                  , *chan_id));
+    return -1;
+  }
+
+  base_event_t bev = { .e_type = RECV, .channel_id = *chan_id };
+
+  // do some bit shifting to set UINT data = (RECV, chan_id, null)
+  // cam_value_t event = {.value = data, .flags = 0}
+
+  heap_index hi = heap_alloc_withGC(container);
+
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    return -1;
+  }
+
+  //heap_set_fst(&container->heap, hi, event);
+  // snd remains NULL because it is just one event. Choose creates the links
+
+  *revt = hi;
+
+  return 1;
+
 }
 

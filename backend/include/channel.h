@@ -25,17 +25,18 @@
 #ifndef __CHANNEL_H_
 #define __CHANNEL_H_
 
+#include <chan_queue.h>
 #include <queue.h>
 #include <stdbool.h>
 #include <typedefs.h>
 
 
 typedef struct {
-  Queue_t sendq;
-  Queue_t recvq;
-  bool    in_use;
+  chan_queue_t sendq;
+  Queue_t      recvq;
+  bool         in_use;
 } Channel_t;
 
-extern int channel_init(Channel_t *c, Queue_t sq, Queue_t rq);
+extern int channel_init(Channel_t *c, chan_queue_t sq, Queue_t rq);
 
 #endif
