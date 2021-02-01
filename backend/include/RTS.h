@@ -28,14 +28,11 @@
 #include <VMC.h>
 #include <event.h>
 
-extern int channel(vmc_t *container, UUID *chan_id);
-extern int spawn  (vmc_t *container, uint16_t label);
+extern int channel(vmc_t *container, Channel_t *chan);
+extern int spawn(vmc_t *container, uint16_t label);
 
 extern int sync(vmc_t *container, event_t *evts);
-extern int sendEvt(  vmc_t       *container
-                   , UUID        *chan_id
-                   , cam_value_t  msg
-                   , event_t     *sevt);
-extern int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt);
+extern int sendEvt(vmc_t *container, Channel_t *chan);
+extern int recvEvt(vmc_t *container, Channel_t *chan);
 
 #endif

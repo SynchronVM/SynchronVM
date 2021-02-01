@@ -40,11 +40,6 @@ typedef struct {
 } base_event_t;
 
 typedef struct {
-  base_event_t bevt; // 32 bits
-  cam_value_t  msg;  // 32 bits // NULL for recv
-} cam_event_t;
-
-typedef struct {
   heap_index event_head;
 } event_t;
 
@@ -53,10 +48,7 @@ extern bool pollQ(Queue_t *q);
 /*
  *  Proposed heap structure
  *
- *  cam_event_t    -> fst = base_event_t
- *                 -> snd = message
- *
- *  heap_cell_list -> fst = pointer to cam_event_t
+ *  heap_cell_list -> fst = base_event_t
  *                 -> snd = pointer to next heap_cell_ev
  */
 
