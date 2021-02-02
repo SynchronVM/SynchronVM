@@ -33,12 +33,11 @@
 
 
 static UINT extract_bits(UINT value, int lsbstart, int numbits){
-  unsigned mask = ( (1<<(numbits-lsbstart+1))-1) << lsbstart;
-  //                                                   ^
-  //                                                   |
-  //                             shifts the mask such that counting `numbits`
-  //                             begins from the point of the shift
-  return (value & mask) >> lsbstart;
+  // counting begins with 1
+  //  Bit pattern -> 0 1 0 0 1 1
+  //  Index       -> 6 5 4 3 2 1
+  // counting always moves towards left
+  return (((1 << numbits) - 1) & (value >> (lsbstart - 1)));
 }
 
 
@@ -50,9 +49,9 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
 
 
       base_event_t bevt =
-        {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
-          , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
-          , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
+        {   .e_type = extract_bits(base_evt_cam.value, 25, sizeof(event_type_t))
+          , .channel_id = extract_bits(base_evt_cam.value, 17, sizeof(UUID))
+          , .wrap_label = extract_bits(base_evt_cam.value,  1, sizeof(uint16_t))
         };
 
       if(bevt.e_type == SEND){
@@ -88,9 +87,9 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
 
 
 /*       base_event_t bevt = */
-/*         {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t)) */
-/*           , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID)) */
-/*           , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t)) */
+/*         {   .e_type = extract_bits(base_evt_cam.value, 25, sizeof(event_type_t)) */
+/*           , .channel_id = extract_bits(base_evt_cam.value, 17, sizeof(UUID)) */
+/*           , .wrap_label = extract_bits(base_evt_cam.value,  1, sizeof(uint16_t)) */
 /*         }; */
 
 /*       if(bevt.e_type == SEND){ */
