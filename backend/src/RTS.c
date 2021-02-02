@@ -32,12 +32,12 @@
 #include <RTS.h>
 
 
+
 static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
   // counting begins with 1
   //  Bit pattern -> 0 1 0 0 1 1
   //  Index       -> 6 5 4 3 2 1
   // counting always moves towards left
-
   UINT mask = (1 << numbits) - 1;
   return ( mask & (value >> (lsbstart - 1)));
 }
