@@ -32,14 +32,33 @@
 #include <RTS.h>
 
 
-static UINT extract_bits(UINT value, int lsbstart, int numbits){
-  unsigned mask = ( (1<<(numbits-lsbstart+1))-1) << lsbstart;
-  //                                                   ^
-  //                                                   |
-  //                             shifts the mask such that counting `numbits`
-  //                             begins from the point of the shift
-  return (value & mask) >> lsbstart;
+static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
+  // counting begins with 1
+  //  Bit pattern -> 0 1 0 0 1 1
+  //  Index       -> 6 5 4 3 2 1
+  // counting always moves towards left
+
+  UINT mask = (1 << numbits) - 1;
+  return ( mask & (value >> (lsbstart - 1)));
 }
+
+
+static inline UINT set_first_16_bits(uint8_t first8bits, uint8_t second8bits){
+
+  uint16_t a_temp  = first8bits << 8;
+  uint16_t a_temp2 = a_temp | 255;
+  uint32_t a_final = a_temp2 << 16;
+
+  uint16_t b_temp  = 255 << 8;
+  uint16_t b_temp2 = b_temp | second8bits;
+  uint32_t b_final = b_temp2 << 16;
+
+  uint32_t c_final = a_final & b_final;
+
+  return c_final;
+
+}
+
 
 
 static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev){
@@ -50,9 +69,9 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
 
 
       base_event_t bevt =
-        {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
-          , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
-          , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
+        {   .e_type = extract_bits(base_evt_cam.value, 25, sizeof(event_type_t))
+          , .channel_id = extract_bits(base_evt_cam.value, 17, sizeof(UUID))
+          , .wrap_label = extract_bits(base_evt_cam.value,  1, sizeof(uint16_t))
         };
 
       if(bevt.e_type == SEND){
@@ -88,9 +107,9 @@ static int findSynchronizable(vmc_t *container, event_t *evts, base_event_t *bev
 
 
 /*       base_event_t bevt = */
-/*         {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t)) */
-/*           , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID)) */
-/*           , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t)) */
+/*         {   .e_type = extract_bits(base_evt_cam.value, 25, sizeof(event_type_t)) */
+/*           , .channel_id = extract_bits(base_evt_cam.value, 17, sizeof(UUID)) */
+/*           , .wrap_label = extract_bits(base_evt_cam.value,  1, sizeof(uint16_t)) */
 /*         }; */
 
 /*       if(bevt.e_type == SEND){ */
@@ -338,10 +357,8 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
     return -1;
   }
 
-  base_event_t bev = { .e_type = SEND, .channel_id = *chan_id };
-
-  // do some bit shifting to set UINT data = (SEND, chan_id, null)
-  // cam_value_t event = {.value = data, .flags = 0}
+  UINT data = set_first_16_bits(SEND, *chan_id); // wrap_label not set
+  cam_value_t event = {.value = data, .flags = 0};
 
   heap_index hi = heap_alloc_withGC(container);
 
@@ -350,7 +367,7 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
     return -1;
   }
 
-  //heap_set_fst(&container->heap, hi, event);
+  heap_set_fst(&container->heap, hi, event);
   // snd remains NULL because it is just one event. Choose creates the links
 
   *sevt = hi;
@@ -371,10 +388,8 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
     return -1;
   }
 
-  base_event_t bev = { .e_type = RECV, .channel_id = *chan_id };
-
-  // do some bit shifting to set UINT data = (RECV, chan_id, null)
-  // cam_value_t event = {.value = data, .flags = 0}
+  UINT data = set_first_16_bits(RECV, *chan_id); // wrap_label not set
+  cam_value_t event = {.value = data, .flags = 0};
 
   heap_index hi = heap_alloc_withGC(container);
 
@@ -383,7 +398,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
     return -1;
   }
 
-  //heap_set_fst(&container->heap, hi, event);
+  heap_set_fst(&container->heap, hi, event);
   // snd remains NULL because it is just one event. Choose creates the links
 
   *revt = hi;
