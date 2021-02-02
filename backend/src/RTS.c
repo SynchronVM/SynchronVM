@@ -45,17 +45,11 @@ static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
 
 static inline UINT set_first_16_bits(uint8_t first8bits, uint8_t second8bits){
 
-  uint16_t a_temp  = first8bits << 8;
-  uint16_t a_temp2 = a_temp | 255;
-  uint32_t a_final = a_temp2 << 16;
+  UINT value = 0;
+  value = value | (first8bits << 24);
+  value = value | (second8bits << 16);
 
-  uint16_t b_temp  = 255 << 8;
-  uint16_t b_temp2 = b_temp | second8bits;
-  uint32_t b_final = b_temp2 << 16;
-
-  uint32_t c_final = a_final & b_final;
-
-  return c_final;
+  return value;
 
 }
 
