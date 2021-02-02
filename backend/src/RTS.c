@@ -263,9 +263,13 @@ static int synchronizeNow(vmc_t *container, base_event_t bev){
       DEBUG_PRINT(("Ready Queue is full\n"));
       return -1;
     }
-    //XXX: Should increment container->contexts[container->current_running_context_id].pc
-    // so that the next instruction after sync is executed in the sender when it gets
-    // scheduled
+
+    /****** PC increment *****/
+
+    container->contexts[container->current_running_context_id].pc++; // increments the PC of the sender
+    container->contexts[recv_context_id].pc++; // increments the PC of the receiver
+
+    /****** PC increment *****/
 
     // the receiving thread will run now
     container->current_running_context_id = recv_context_id;
@@ -311,8 +315,14 @@ static int synchronizeNow(vmc_t *container, base_event_t bev){
       DEBUG_PRINT(("Ready Queue is full\n"));
       return -1;
     }
-    //XXX: Should increment container->contexts[sender_data.context_id].pc so that
-    // the next instruction after sync is executed
+
+    /****** PC increment *****/
+
+    container->contexts[sender_data.context_id].pc++; //sender is unblocked now
+    container->contexts[container->current_running_context_id].pc++; //continue executing the receiver
+
+    /****** PC increment *****/
+
 
     // the receiver will automatically run because we are now executing its context
     return 1;
@@ -359,6 +369,7 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   UINT data = set_first_16_bits(SEND, *chan_id); // wrap_label not set
   cam_value_t event = {.value = data, .flags = 0};
+  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
   heap_index hi = heap_alloc_withGC(container);
 
@@ -367,13 +378,9 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
     return -1;
   }
 
-  heap_set_fst(&container->heap, hi, event);
-  // snd remains NULL because it is just one event. Choose creates the links
+  heap_set(&container->heap, hi, event, null);
 
   *sevt = hi;
-
-  //XXX: does `choose` require heap_alloc and inlining(or copying) everytime or
-  // should the heap structure be made of pointers? then the snd field remains empty
 
   return 1;
 
@@ -390,6 +397,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
   UINT data = set_first_16_bits(RECV, *chan_id); // wrap_label not set
   cam_value_t event = {.value = data, .flags = 0};
+  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
   heap_index hi = heap_alloc_withGC(container);
 
@@ -398,8 +406,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
     return -1;
   }
 
-  heap_set_fst(&container->heap, hi, event);
-  // snd remains NULL because it is just one event. Choose creates the links
+  heap_set(&container->heap, hi, event, null);
 
   *revt = hi;
 
