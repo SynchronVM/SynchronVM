@@ -326,4 +326,8 @@ int main(int argc, char **argv) {
   test_stat("vmc_run_6", &total, t6);
 
   printf("Passed total : %d/%d tests\n", total, 6);
+  if (t1 && t2 && t3 && t4 && t5 && t6) {
+    return 0;
+  }
+  return -1
 }
