@@ -32,6 +32,7 @@ typedef struct {
   int capacity;
   int front;
   int rear;
+  int size;
 } Queue_t;
 
 extern int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes);
