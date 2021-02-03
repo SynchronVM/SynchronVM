@@ -35,10 +35,6 @@ int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes){
 
   if (!mem || !q || size_bytes < 256) return 0;
   unsigned int num_elt = size_bytes / sizeof(UUID);
-  /* q->front = -1; */
-  /* q->rear  = -1; */
-  /* q->data  = mem; */
-  /* q->capacity = num_elt; */
   q->capacity = num_elt;
   q->front = q->size = 0;
   q->rear  = num_elt - 1;
@@ -54,24 +50,6 @@ static inline bool is_empty(Queue_t *q)
 {  return (q->size == 0); }
 
 int q_enqueue(Queue_t *q, UUID context_id){
-  /* if ((q->front == 0 && q->rear == q->capacity-1) || (q->rear == (q->front-1)%(q->capacity-1))){ */
-  /*   DEBUG_PRINT(("Queue is full\n")); */
-  /*   return -1; */
-  /* } */
-
-  /* else if (q->front == -1){ /\* Insert First Element *\/ */
-  /*   q->front = 0; */
-  /*   q->rear = 0; */
-  /*   q->data[q->rear] = context_id; */
-  /* } */
-  /* else if (q->rear == q->capacity-1 && q->front != 0) { /\* Circle around *\/ */
-  /*   q->rear = 0; */
-  /*   q->data[q->rear] = context_id; */
-  /* } */
-  /* else { */
-  /*   q->data[q->rear++] = context_id; */
-  /* } */
-  /* return 1; */
 
 
   if (is_full(q)){
@@ -85,22 +63,6 @@ int q_enqueue(Queue_t *q, UUID context_id){
 }
 
 int q_dequeue(Queue_t *q, UUID *context_id){
-  /* if (q->front == -1){ */
-  /*   DEBUG_PRINT(("Queue is empty\n")); */
-  /*   return -1; */
-  /* } */
-
-  /* *context_id = q->data[q->front]; */
-  /* q->data[q->front] = -1; */
-  /* if (q->front == q->rear){ */
-  /*   q->front = -1; */
-  /*   q->rear = -1; */
-  /* } */
-  /* else if (q->front == q->capacity-1) */
-  /*   q->front = 0; */
-  /* else */
-  /*   q->front++; */
-  /* return 1; */
 
 
   if (is_empty(q)){
@@ -114,13 +76,6 @@ int q_dequeue(Queue_t *q, UUID *context_id){
 }
 
 int q_front(Queue_t *q, UUID *context_id){
-  /* if (q->front == -1){ */
-  /*   DEBUG_PRINT(("Queue is empty\n")); */
-  /*   return -1; */
-  /* } */
-
-  /* *context_id = q->data[q->front]; */
-  /* return 1; */
 
 
   if (is_empty(q)){
