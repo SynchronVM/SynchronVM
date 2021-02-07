@@ -329,5 +329,5 @@ int main(int argc, char **argv) {
   if (t1 && t2 && t3 && t4 && t5 && t6) {
     return 0;
   }
-  return -1
+  return -1;
 }

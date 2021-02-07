@@ -25,11 +25,13 @@
 #ifndef __CHAN_QUEUE_H_
 #define __CHAN_QUEUE_H_
 
+#include <stdbool.h>
 #include <typedefs.h>
 
 typedef struct {
-  UUID context_id;
-  cam_value_t message;
+  UUID         context_id;
+  cam_value_t  message;
+  bool        *dirty_flag;
 } chan_data_t;
 
 typedef struct {
@@ -37,6 +39,7 @@ typedef struct {
   int capacity;
   int front;
   int rear;
+  int size;
 } chan_queue_t;
 
 extern int chan_q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes);

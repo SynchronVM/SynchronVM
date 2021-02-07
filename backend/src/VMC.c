@@ -181,7 +181,7 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
   for(int i = 0; i < MAX_CHANNELS; i++){
 
     chan_queue_t sq;
-    Queue_t rq;
+    chan_recv_queue_t rq;
 
     int sq_status = chan_q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
     if(sq_status == -1){
@@ -189,14 +189,15 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
       return -1;
     }
 
-    int rq_status = q_init(&rq, &mem[mem_offset + MAX_WAIT_PARTICIPANTS], MAX_WAIT_PARTICIPANTS);
+    int rq_status =
+      chan_recv_q_init(&rq, &mem[mem_offset + MAX_WAIT_PARTICIPANTS], MAX_WAIT_PARTICIPANTS);
     if(rq_status == -1){
       DEBUG_PRINT(("Failed to initialise recvq for %dth channel", i));
       return -1;
     }
 
     mem_offset +=   (MAX_WAIT_PARTICIPANTS * 6)  // sendq is 6 bytes each
-                  + (MAX_WAIT_PARTICIPANTS * 1); // recvq is 1 byte  each
+                  + (MAX_WAIT_PARTICIPANTS * 2); // recvq is 2 bytes each
     Channel_t ch;
     int ch_status = channel_init(&ch, sq, rq);
     if(ch_status == -1){

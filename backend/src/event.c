@@ -32,21 +32,36 @@
 #include <event.h>
 
 bool poll_sendq(chan_queue_t *q){
-  chan_data_t chan_data;
-  int op_status = chan_q_front(q, &chan_data);
-  if(op_status == -1){ //empty queue
-    return false;
-  } else {
-    return true; // the actual dequeing should happen inside doFn
+  while(true){
+    chan_data_t chan_data;
+    int op_status = chan_q_front(q, &chan_data);
+    if(op_status == -1){ //empty queue
+      return false;
+    } else {
+      if(*chan_data.dirty_flag){
+        chan_data_t temp;
+        chan_q_dequeue(q, &temp); // no need to check status we know there is data
+      } else {
+        return true; // the actual dequeing should happen inside doFn
+      }
+    }
   }
 }
 
-bool poll_recvq(Queue_t *q){
-  UUID context_id;
-  int op_status = q_front(q, &context_id);
-  if(op_status == -1){ //empty queue
-    return false;
-  } else {
-    return true; // the actual dequeing should happen inside doFn
+bool poll_recvq(chan_recv_queue_t *q){
+  while(true){
+    recv_data_t recv_data;
+    int op_status = chan_recv_q_front(q, &recv_data);
+    if(op_status == -1){ //empty queue
+      return false;
+    } else {
+      if(*recv_data.dirty_flag){
+        recv_data_t temp;
+        chan_recv_q_dequeue(q, &temp); // no need to check status
+                                       // we know there is data
+      } else {
+        return true; // the actual dequeing should happen inside doFn
+      }
+    }
   }
 }

@@ -29,6 +29,7 @@
 #include <typedefs.h>
 #include <register.h>
 #include <heap.h>
+#include <queue.h>
 #include <channel.h>
 #include <Context.h>
 

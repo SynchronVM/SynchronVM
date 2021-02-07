@@ -26,6 +26,7 @@
 #define __EVENT_H_
 
 #include <chan_queue.h>
+#include <chan_recv_queue.h>
 #include <heap.h>
 #include <queue.h>
 
@@ -40,15 +41,24 @@ typedef struct {
   uint16_t wrap_label; // 16 bits
 } base_event_t;
 
+
+typedef struct {
+  base_event_t bev; // 32 bits
+  cam_value_t  msg; // 32 bits; NULL for recv
+} cam_event_t;
+
 typedef heap_index event_t;
 
-extern bool poll_sendq(chan_queue_t *q);
-extern bool poll_recvq(Queue_t      *q);
+extern bool poll_sendq(chan_queue_t      *q);
+extern bool poll_recvq(chan_recv_queue_t *q);
 
 /*
  *  Proposed heap structure
  *
- *  heap_cell_list -> fst = base_event_t
+ *  cam_event_t -> fst = base_event_t
+ *              -> snd = message or pointer to message or null for recv
+ *
+ *  heap_cell_list -> fst = pointer to cam_event_t
  *                 -> snd = pointer to next heap_cell_ev
  */
 

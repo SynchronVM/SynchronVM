@@ -28,29 +28,27 @@
 # define DEBUG_PRINT(x) do {} while (0)
 #endif
 
-#include<chan_queue.h>
+#include<chan_recv_queue.h>
 
-int chan_q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes){
+int chan_recv_q_init(chan_recv_queue_t *q, uint8_t *mem, unsigned int size_bytes){
 
   if (!mem || !q || size_bytes < 256) return 0;
-  unsigned int num_elt = size_bytes / sizeof(chan_data_t);
+  unsigned int num_elt = size_bytes / sizeof(recv_data_t);
   q->capacity = num_elt;
   q->front = q->size = 0;
   q->rear  = num_elt - 1;
-  q->data  = (chan_data_t*)mem;
+  q->data  = (recv_data_t*)mem;
 
   return 1;
-
 }
 
-
-static inline bool is_full(chan_queue_t *q)
+static inline bool is_full(chan_recv_queue_t *q)
 {  return (q->size == q->capacity);  }
 
-static inline bool is_empty(chan_queue_t *q)
+static inline bool is_empty(chan_recv_queue_t *q)
 {  return (q->size == 0); }
 
-int chan_q_enqueue(chan_queue_t *q, chan_data_t chan_data){
+int chan_recv_q_enqueue(chan_recv_queue_t *q, recv_data_t chan_data){
 
   if (is_full(q)){
     DEBUG_PRINT(("Chan recv queue is full\n"));
@@ -63,10 +61,10 @@ int chan_q_enqueue(chan_queue_t *q, chan_data_t chan_data){
 
 }
 
-int chan_q_dequeue(chan_queue_t *q, chan_data_t *chan_data){
+int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
 
   if (is_empty(q)){
-    DEBUG_PRINT(("Chan send queue is empty\n"));
+    DEBUG_PRINT(("Chan recv queue is empty\n"));
     return -1;
   }
   *chan_data = q->data[q->front];
@@ -75,10 +73,10 @@ int chan_q_dequeue(chan_queue_t *q, chan_data_t *chan_data){
   return 1;
 }
 
-int chan_q_front  (chan_queue_t *q, chan_data_t *chan_data){
+int chan_recv_q_front  (chan_recv_queue_t *q, recv_data_t *chan_data){
 
   if (is_empty(q)){
-    DEBUG_PRINT(("Chan send queue is empty\n"));
+    DEBUG_PRINT(("Chan recv queue is empty\n"));
     return -1;
   }
 
