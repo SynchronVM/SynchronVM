@@ -180,7 +180,7 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
   int mem_offset = 0;
   for(int i = 0; i < MAX_CHANNELS; i++){
 
-    chan_queue_t sq;
+    chan_send_queue_t sq;
     chan_recv_queue_t rq;
 
     int sq_status = chan_q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);

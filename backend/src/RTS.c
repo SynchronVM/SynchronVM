@@ -125,14 +125,14 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
       bool dirty = false;
 
       //XXX: Instead of copying the whole message send its reference.
-      // chan_data_t should have the field cam_value_t *message
-      chan_data_t sender_data =
+      // send_data_t should have the field cam_value_t *message
+      send_data_t sender_data =
         {   .context_id = container->current_running_context_id
           , .message = msg
           , .dirty_flag = &dirty };
 
       int j =
-        chan_q_enqueue(&container->channels[bevt.channel_id].sendq, sender_data);
+        chan_send_q_enqueue(&container->channels[bevt.channel_id].sendq, sender_data);
 
       if(j == -1){
         DEBUG_PRINT(( "Cannot enqueue in channel %u 's send queue \n"
@@ -287,9 +287,9 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
   } else {
 
-    chan_data_t sender_data;
+    send_data_t sender_data;
     int deq_status =
-      chan_q_dequeue(&container->channels[bevt.channel_id].sendq, &sender_data);
+      chan_send_q_dequeue(&container->channels[bevt.channel_id].sendq, &sender_data);
 
     if(deq_status == -1){ //empty queue
       DEBUG_PRINT((  "Send Queue of %u empty for syncing recv \n"
