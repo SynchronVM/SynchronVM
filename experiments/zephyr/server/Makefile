@@ -1,7 +1,7 @@
 
 
 all:
-	west build -p auto -b nrf52840dk_nrf52840 .
+	west -v build  -p auto -b nrf52840dk_nrf52840 .
 
 
 dev_kit:
