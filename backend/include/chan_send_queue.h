@@ -22,28 +22,30 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __CHAN_QUEUE_H_
-#define __CHAN_QUEUE_H_
+#ifndef __CHAN_SEND_QUEUE_H_
+#define __CHAN_SEND_QUEUE_H_
 
+#include <stdbool.h>
 #include <typedefs.h>
 
 typedef struct {
-  UUID context_id;
-  cam_value_t message;
-} chan_data_t;
+  UUID         context_id;
+  cam_value_t  message;
+  bool        *dirty_flag;
+} send_data_t;
 
 typedef struct {
-  chan_data_t *data;
+  send_data_t *data;
   int capacity;
   int front;
   int rear;
-} chan_queue_t;
+  int size;
+} chan_send_queue_t;
 
-extern int chan_q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes);
+extern int chan_send_q_init(chan_send_queue_t *q, uint8_t *mem, unsigned int size_bytes);
 
-extern int chan_q_enqueue(chan_queue_t *q, chan_data_t chan_data);
-extern int chan_q_dequeue(chan_queue_t *q, chan_data_t *chan_data);
-extern int chan_q_front  (chan_queue_t *q, chan_data_t *chan_data);
+extern int chan_send_q_enqueue(chan_send_queue_t *q, send_data_t chan_data);
+extern int chan_send_q_dequeue(chan_send_queue_t *q, send_data_t *chan_data);
+extern int chan_send_q_front  (chan_send_queue_t *q, send_data_t *chan_data);
 
-extern int chan_q_remove (chan_queue_t *q, UUID *context_id);
 #endif

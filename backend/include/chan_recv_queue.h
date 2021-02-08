@@ -22,25 +22,33 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __QUEUE_H_
-#define __QUEUE_H_
+#ifndef __CHAN_RECV_QUEUE_H_
+#define __CHAN_RECV_QUEUE_H_
 
+#include <stdbool.h>
 #include <typedefs.h>
 
 typedef struct {
-  UUID *data;  /* Prototype; Type of content may change from UUID to cam_value_t */
+  UUID  context_id;
+  bool *dirty_flag;
+} recv_data_t;
+
+
+typedef struct {
+  recv_data_t *data;
   int capacity;
   int front;
   int rear;
   int size;
-} Queue_t;
+} chan_recv_queue_t;
 
-extern int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes);
 
-extern int q_enqueue(Queue_t *q, UUID context_id);
-extern int q_dequeue(Queue_t *q, UUID *context_id);
-extern int q_front  (Queue_t *q, UUID *context_id);
+extern int chan_recv_q_init(chan_recv_queue_t *q, uint8_t *mem, unsigned int size_bytes);
 
-extern int q_remove(Queue_t *q, UUID *context_id); /* Not a regular queue operation; Not used as well */
+extern int chan_recv_q_enqueue(chan_recv_queue_t *q, recv_data_t chan_data);
+extern int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data);
+extern int chan_recv_q_front  (chan_recv_queue_t *q, recv_data_t *chan_data);
+
+
 
 #endif

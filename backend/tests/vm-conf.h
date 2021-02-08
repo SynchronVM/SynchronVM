@@ -49,16 +49,16 @@
 //#define VMC_CONTAINER_1_USE_UART_1            1
 
 /*
-  Each channel has a capacity of storing 3 elements
-  in sendq and 3 elements in recvq.
+  Each channel has a max capacity of storing 3 elements
+  in sendq and 3 elements in recvq.x
   sendq = 6 bytes * 3 = 18 bytes
-  recvq = 1 byte  * 3 =  3 bytes
-  Total -> 21 bytes
-  Assuming 100 channels -> 2100 bytes
+  recvq = 2 byte  * 3 =  6 bytes
+  Total -> 24 bytes
+  Assuming 100 channels -> 2400 bytes
   MAX_CHANNELS and MAX_WAIT_PARTICIPANTS can move here
 */
 
-#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  2100
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  2400
 
 /*********/
 /* VMC 2 */

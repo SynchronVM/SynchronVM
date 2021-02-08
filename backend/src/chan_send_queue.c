@@ -28,75 +28,60 @@
 # define DEBUG_PRINT(x) do {} while (0)
 #endif
 
-#include<chan_queue.h>
+#include<chan_send_queue.h>
 
-int chan_q_init(chan_queue_t *q, uint8_t *mem, unsigned int size_bytes){
+int chan_send_q_init(chan_send_queue_t *q, uint8_t *mem, unsigned int size_bytes){
 
   if (!mem || !q || size_bytes < 256) return 0;
-  unsigned int num_elt = size_bytes / sizeof(chan_data_t);
-  q->front = -1;
-  q->rear  = -1;
-  q->data  = (chan_data_t*)mem;
+  unsigned int num_elt = size_bytes / sizeof(send_data_t);
   q->capacity = num_elt;
+  q->front = q->size = 0;
+  q->rear  = num_elt - 1;
+  q->data  = (send_data_t*)mem;
+
+  return 1;
+
+}
+
+
+static inline bool is_full(chan_send_queue_t *q)
+{  return (q->size == q->capacity);  }
+
+static inline bool is_empty(chan_send_queue_t *q)
+{  return (q->size == 0); }
+
+int chan_send_q_enqueue(chan_send_queue_t *q, send_data_t send_data){
+
+  if (is_full(q)){
+    DEBUG_PRINT(("Chan recv queue is full\n"));
+    return -1;
+  }
+  q->rear = (q->rear + 1)%q->capacity;
+  q->data[q->rear] = send_data;
+  q->size = q->size + 1;
+  return 1;
+
+}
+
+int chan_send_q_dequeue(chan_send_queue_t *q, send_data_t *send_data){
+
+  if (is_empty(q)){
+    DEBUG_PRINT(("Chan send queue is empty\n"));
+    return -1;
+  }
+  *send_data = q->data[q->front];
+  q->front = (q->front + 1)%q->capacity;
+  q->size = q->size - 1;
   return 1;
 }
 
-int chan_q_enqueue(chan_queue_t *q, chan_data_t chan_data){
-  if ((q->front == 0 && q->rear == q->capacity-1) || (q->rear == (q->front-1)%(q->capacity-1))){
-    DEBUG_PRINT(("Queue is full\n"));
+int chan_send_q_front  (chan_send_queue_t *q, send_data_t *send_data){
+
+  if (is_empty(q)){
+    DEBUG_PRINT(("Chan send queue is empty\n"));
     return -1;
   }
 
-  else if (q->front == -1){ /* Insert First Element */
-    q->front = 0;
-    q->rear = 0;
-    q->data[q->rear] = chan_data;
-  }
-  else if (q->rear == q->capacity-1 && q->front != 0) { /* Circle around */
-    q->rear = 0;
-    q->data[q->rear] = chan_data;
-  }
-  else {
-    q->data[q->rear++] = chan_data;
-  }
+  *send_data = q->data[q->front];
   return 1;
-}
-
-int chan_q_dequeue(chan_queue_t *q, chan_data_t *chan_data){
-  if (q->front == -1){
-    DEBUG_PRINT(("Queue is empty\n"));
-    return -1;
-  }
-
-  *chan_data = q->data[q->front];
-
-  chan_data_t cd = { .context_id = 255 };
-  q->data[q->front] = cd;
-
-  if (q->front == q->rear){
-    q->front = -1;
-    q->rear = -1;
-  }
-  else if (q->front == q->capacity-1)
-    q->front = 0;
-  else
-    q->front++;
-  return 1;
-}
-
-int chan_q_front(chan_queue_t *q, chan_data_t *chan_data){
-  if (q->front == -1){
-    DEBUG_PRINT(("Queue is empty\n"));
-    return -1;
-  }
-
-  *chan_data = q->data[q->front];
-  return 1;
-}
-
-int chan_q_remove(chan_queue_t *q, UUID* context_id){
-  (void)q;
-  (void)context_id;
-  // if no such entry exists return 1
-  return -1;
 }
