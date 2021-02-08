@@ -23,21 +23,13 @@
 
 	leds {
 		compatible = "gpio-leds";
-		orange_led_3: led_3 {
-			gpios = <&gpiod 13 GPIO_ACTIVE_HIGH>;
-			label = "User LD3";
+		green_led_0: led_0 {
+			gpios = <&gpioc 8 GPIO_ACTIVE_HIGH>;
+			label = "D1";
 		};
-		green_led_4: led_4 {
-			gpios = <&gpiod 12 GPIO_ACTIVE_HIGH>;
-			label = "User LD4";
-		};
-		red_led_5: led_5 {
-			gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
-			label = "User LD5";
-		};
-		blue_led_6: led_6 {
-			gpios = <&gpiod 15 GPIO_ACTIVE_HIGH>;
-			label = "User LD6";
+		red_led_1: led_1 {
+			gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
+			label = "D2";
 		};
 	};
 
@@ -50,10 +42,8 @@
 	};
 
 	aliases {
-		led0 = &green_led_4;
-		led1 = &orange_led_3;
-		led2 = &red_led_5;
-		led3 = &blue_led_6;
+		led0 = &green_led_0;
+		led1 = &red_led_1;
 		sw0 = &user_button;
 	};
 };

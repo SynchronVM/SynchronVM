@@ -49,16 +49,24 @@ void main(void)
   gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
   gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
 
+  gpio_pin_set(d_led0, LED_PIN(led0), 0);
+  gpio_pin_set(d_led1, LED_PIN(led1), 0);
+  
   k_sleep(K_SECONDS(4)); /* Give me a chance to connect the usb */   
 
+  int led0_state = 0;
+  int led1_state = 1;
   
-  int led1_state = 1; 
   while(1) {
 
+    gpio_pin_set(d_led0, LED_PIN(led0), led0_state);
     gpio_pin_set(d_led1, LED_PIN(led1), led1_state);
+
+    PRINT("ping!\r\n");
     
     k_sleep(K_SECONDS(1));
 
-    led1_state = 1 - led1_state;    
+    led1_state = 1 - led1_state;
+    led0_state = 1 - led0_state;    
   }
 }
