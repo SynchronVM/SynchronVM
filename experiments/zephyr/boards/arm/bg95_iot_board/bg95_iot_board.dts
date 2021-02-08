@@ -9,8 +9,8 @@
 #include <st/f4/stm32f405rgtx-pinctrl.dtsi>
 
 / {
-	model = "Octopi IOT Board";
-	compatible = "st,octopi_iot_board";
+	model = "BG95 IOT Board";
+	compatible = "st,bg95_iot_board";
 
 	chosen {
 		zephyr,console = &usart2;

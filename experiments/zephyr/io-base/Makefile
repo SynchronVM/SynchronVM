@@ -13,6 +13,9 @@ nrf_mod:
 base:
 	west build -p auto -b octopi_iot_board -- -DBOARD_ROOT=../ .
 
+bg95_base:
+	west build -p auto -b bg95_iot_board -- -DBOARD_ROOT=../ .
+
 
 discovery:
 	west build -p auto -b stm32f4_disco

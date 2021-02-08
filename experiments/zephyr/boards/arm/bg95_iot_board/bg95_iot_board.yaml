@@ -1,5 +1,5 @@
 identifier: octopi_iot_board
-name: Octopi IOT Board
+name: BG95 IOT Board
 type: mcu
 arch: arm
 toolchain:

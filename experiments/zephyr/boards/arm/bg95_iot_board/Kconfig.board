@@ -3,6 +3,6 @@
 # Copyright (c) 2016 Linaro Limited.
 # SPDX-License-Identifier: Apache-2.0
 
-config BOARD_OCTOPI_IOT_BOARD
-	bool "OCTOPI IOT BOARD"
+config BOARD_BG95_IOT_BOARD
+	bool "BG95 IOT BOARD"
 	depends on SOC_STM32F405XG
