@@ -60,6 +60,12 @@
 	status = "okay";
 };
 
+&uart5 {
+       pinctrl-0 = <&uart5_tx_pc12 &uart5_rx_pd2>;
+       current-speed = <115200>;
+       status = "okay";
+};
+
 &timers2 {
 	status = "okay";
 

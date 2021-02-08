@@ -41,6 +41,7 @@
 		};
 	};
 
+	
 	aliases {
 		led0 = &green_led_0;
 		led1 = &red_led_1;
@@ -48,10 +49,9 @@
 	};
 };
 
-&usart1 {
-	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
-	current-speed = <115200>;
-	status = "okay";
+
+&gpioa {
+       status = "okay";
 };
 
 &usart2 {

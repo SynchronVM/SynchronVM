@@ -1,5 +1,3 @@
-
-
 #include <zephyr.h>
 
 #include <sys/ring_buffer.h>
