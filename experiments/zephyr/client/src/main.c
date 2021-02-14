@@ -104,19 +104,16 @@ static void uart_isr(const struct device *dev, void *args)
     }
 
     if (uart_irq_tx_ready(dev)) {
-      uint8_t buffer[64];
+      uint8_t c;
       int rb_len, send_len;
 
-      rb_len = ring_buf_get(&bufs->out_ringbuf, buffer, sizeof(buffer));
+      rb_len = ring_buf_get(&bufs->out_ringbuf, &c, 1);
       if (!rb_len) {
 	uart_irq_tx_disable(dev);
 	continue;
       }
 
-      send_len = uart_fifo_fill(dev, buffer, rb_len);
-      if (send_len < rb_len) {
-	//LOG_ERR("Drop %d bytes", rb_len - send_len);
-      }
+      send_len = uart_fifo_fill(dev, &c, 1);
     }
   }
 }
