@@ -19,10 +19,10 @@ endif # I2C
 if SPI
 
 config SPI_1
-	default y
+       default y
 
-config SPI_2
-	default y
+#config SPI_2
+#	default y
 
 endif # SPI
 

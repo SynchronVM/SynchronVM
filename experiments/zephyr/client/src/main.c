@@ -15,7 +15,7 @@
 
 #include <drivers/gpio.h>
 #include <drivers/uart.h>
-
+#include <drivers/i2c.h>
 
 
 /* Our own library of stuff! */ 
@@ -32,7 +32,6 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #define PRINT usb_printf
 //#define PRINT printk
 
-
 /* LEDS */
 
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
@@ -47,6 +46,29 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #define LED_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
+
+
+/* I2C */
+
+#define I2C_ADDR	0x29
+
+#define ALS_CONTROL_REG 0x80
+#define ALS_RESET       0x1
+#define ALS_ACTIVE      0x2
+
+
+
+/* BME 280 */
+
+#define BME280 DT_INST(0, bosch_bme280)
+
+#if DT_NODE_HAS_STATUS(BME280, okay)
+#define BME280_LABEL DT_LABEL(BME280)
+#else
+#error Your devicetree has no enabled nodes with compatible "bosch,bme280"
+#define BME280_LABEL "<none>"
+#endif
+
 
 /****************************/
 /*  Communication Protocol  */
@@ -453,7 +475,54 @@ void main(void) {
   k_sleep(K_SECONDS(5));
   PRINT("Starting up\r\n");
 
+  /* configure i2c */
+  const struct device *i2c_dev;
 
+  i2c_dev = device_get_binding("I2C_0");
+  if (!i2c_dev) {
+    PRINT("I2C: Device driver not found.\r\n");
+    return;
+  }
+
+  uint8_t data[16];
+  int ret = 0;
+
+
+  /* while (true) { */
+  
+  /*   ret = write_byte(i2c_dev, ALS_CONTROL_REG, ALS_RESET); */
+  /*   if (ret) { */
+  /*     PRINT("I2C: Error writing data. Code %d\r\n", ret); */
+  /*   } else { */
+  /*     PRINT("I2C: Reset performed.\r\n"); */
+  /*   } */
+
+  /*   k_sleep(K_MSEC(10)); */
+
+  /*   ret = write_byte(i2c_dev, ALS_CONTROL_REG, ALS_ACTIVE); */
+  /*   if (ret) { */
+  /*     PRINT("I2C: Error writing data. Code %d\r\n", ret); */
+  /*   } else { */
+  /*     PRINT("I2C: ACTIVATED.\r\n"); */
+  /*   } */
+
+  /*   k_sleep(K_MSEC(500)); */
+
+  /*   data[0] = 0x00; */
+  /*   ret = read_byte(i2c_dev, 0x8c, &data[0]); */
+  /*   if (ret) { */
+  /*     PRINT("I2C: Error reading! error code (%d)\r\n", ret); */
+  /*   } else { */
+  /*     printk("I2C: Read 0x%X from address 0x01.\r\n", data[0]); */
+  /*   } */
+    
+  /*   k_sleep(K_MSEC(500)); */
+    
+  /* } */
+  
+  
+  
+ 
   /* configure uart */
 
   uint32_t baudrate;
