@@ -91,7 +91,7 @@
       miso-pin = <44>;
       
 
-  /*    cs-gpios = <&gpio1 15 GPIO_ACTIVE_LOW>; */
+      cs-gpios = <&gpio1 15 GPIO_ACTIVE_LOW>;
 
       bme280@0 {
         compatible = "bosch,bme280";

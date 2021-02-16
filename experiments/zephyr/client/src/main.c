@@ -16,7 +16,7 @@
 #include <drivers/gpio.h>
 #include <drivers/uart.h>
 #include <drivers/i2c.h>
-
+#include <drivers/sensor.h>
 
 /* Our own library of stuff! */ 
 #include "defines.h"
@@ -519,7 +519,33 @@ void main(void) {
   /*   k_sleep(K_MSEC(500)); */
     
   /* } */
-  
+
+  /* BME280 */
+
+  const struct device *bme280_dev = device_get_binding(BME280_LABEL);
+
+  if (bme280_dev == NULL) {
+    PRINT("BME280: Device not found\r\n");
+    return;
+  } else {
+    PRINT("BME280: OK!\r\n");
+  }
+
+  while (true) {
+    struct sensor_value temp, press, humidity;
+
+    sensor_sample_fetch(bme280_dev);
+    sensor_channel_get(bme280_dev, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+    sensor_channel_get(bme280_dev, SENSOR_CHAN_PRESS, &press);
+    sensor_channel_get(bme280_dev, SENSOR_CHAN_HUMIDITY, &humidity);
+
+    PRINT("temp: %d.%06d; press: %d.%06d; humidity: %d.%06d\r\n",
+	   temp.val1, temp.val2, press.val1, press.val2,
+	   humidity.val1, humidity.val2);
+
+    k_sleep(K_MSEC(1000));
+
+  }
   
   
  
