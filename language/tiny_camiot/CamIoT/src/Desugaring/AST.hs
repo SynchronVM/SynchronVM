@@ -66,10 +66,10 @@ data SPat a
     = SPConst a AST.Const
     | SPVar a AST.Ident
     | SPNAdt a AST.UIdent (Maybe (SPat a))
-    | SPWild a
+    | SPWild a -- _
     | SPNil a
     | SPTup a (SPat a) (SPat a)
-    | SPLay a AST.Ident (SPat a)
+    | SPLay a AST.Ident (SPat a) -- f@(a,b)
   deriving (Eq, Ord, Show, Read)
 
 {- ********** Pretty Printing ********** -}

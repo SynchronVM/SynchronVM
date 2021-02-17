@@ -20,7 +20,7 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE OverloadedStrings #-}
-module Parser.Parser (pProgram, Parser) where
+module Parser.Parser (pProgram, Parser, pType) where
 
 import Prelude hiding (unlines)
 import Parser.AbsTinyCamiot
@@ -60,6 +60,7 @@ pClosed = choice [ TInt    <$ pSymbol "Int"
                  , TBool   <$ pSymbol "Bool"
                  , TFloat  <$ pSymbol "Float"
                  , TVar    <$> pIdent
+                 , flip TAdt [] <$> pUIdent
                  , do pChar '('
                       ts <- sepBy pFun (pChar ',') <* pChar ')'
                       case ts of
