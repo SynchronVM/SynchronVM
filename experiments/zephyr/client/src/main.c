@@ -50,13 +50,17 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 
 /* I2C */
 
-#define I2C_ADDR	0x29
+#define I2C_ADDR        0x29
 
 #define ALS_CONTROL_REG 0x80
 #define ALS_RESET       0x1
 #define ALS_ACTIVE      0x2
 
 
+#define ALS_DATA_CH_0_LOW   0x8A
+#define ALS_DATA_CH_0_HIGH  0x8B
+#define ALS_DATA_CH_1_LOW   0x88
+#define ALS_DATA_CH_1_HIGH  0x89
 
 /* BME 280 */
 
@@ -69,14 +73,55 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #define BME280_LABEL "<none>"
 #endif
 
+/****************************/
+/* LTR-303ALS               */
+  
+  
+int init_als(const struct device *dev) {
+
+  return i2c_reg_write_byte (dev, I2C_ADDR, ALS_CONTROL_REG, 0x1);
+ 
+}
+
+
+int read_data_als(const struct device *dev, uint16_t *ch0, uint16_t *ch1) { 
+
+  uint8_t ch_0_low;
+  uint8_t ch_0_high;
+  uint8_t ch_1_low;
+  uint8_t ch_1_high;
+
+  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_0_LOW, &ch_0_low)) {
+    return -1;
+  }
+  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_0_HIGH, &ch_0_high)) {
+    return -1;
+  }
+  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_1_LOW, &ch_1_low)) {
+    return -1;
+  }
+  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_1_HIGH, &ch_1_high)) {
+    return -1;
+  }
+
+  uint16_t c0 = ch_0_high << 8 | ch_0_low;
+  uint16_t c1 = ch_1_high << 8 | ch_1_low;
+
+  *ch0 = c0;
+  *ch1 = c1;
+  
+  return 0;
+}
+
+
 
 /****************************/
 /*  Communication Protocol  */
 
 /* All possible variants of a message that can be transmitted. */
 typedef enum MessageType{ 
-    /* Request a remote devices time at the point of receiving this message. */
-  REQUEST_TIME
+			 /* Request a remote devices time at the point of receiving this message. */
+     REQUEST_TIME
     /* A reply to a `REQUEST_TIME` request. Contains the time in the `time` field. */
   , RESPOND_TIME
 } message_type;
@@ -482,11 +527,41 @@ void main(void) {
   if (!i2c_dev) {
     PRINT("I2C: Device driver not found.\r\n");
     return;
+  } else {
+    PRINT("I2C: Device driver OK!\r\n");
   }
 
   uint8_t data[16];
   int ret = 0;
 
+  while (true) {
+
+    if (!init_als(i2c_dev)) {
+      PRINT("I2C ALS: Success\r\n");
+    } else {
+      PRINT("I2C ALS: Error initializing\r\n");
+    }
+
+    k_sleep(K_SECONDS(1));
+
+
+    uint16_t ch0 = 0;
+    uint16_t ch1 = 0;
+    for (int i = 0; i < 10; i ++)  {
+      
+      if (!read_data_als(i2c_dev,&ch0,&ch1)) {
+	PRINT("ALS CH0: %u\r\n", ch0);
+	PRINT("ALS CH1: %u\r\n", ch1);	
+      } else {
+	PRINT("ALS: Error reading data register");
+      }
+      k_sleep(K_SECONDS(1));
+
+    }
+  }
+
+
+  
 
   /* while (true) { */
   
