@@ -33,18 +33,9 @@
 		};
 	};
 
-	gpio_keys {
-		compatible = "gpio-keys";
-		user_button: button {
-			label = "Key";
-			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
-		};
-	};
-
 	aliases {
 		led0 = &green_led_0;
 		led1 = &red_led_1;
-		sw0 = &user_button;
 	};
 };
 
@@ -55,8 +46,10 @@
 };
 
 &usart2 {
-	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
-	current-speed = <115200>;
+	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3 &usart2_rts_pa1 &usart2_cts_pa0>;
+	current-speed = <115200>; /* <115200>; */
+	hw-flow-control;
+
 	status = "okay";
 };
 

@@ -79,6 +79,69 @@ void usb_printf(char *format, ...) {
   }
 }
 
+int usb_get_char(void) {
+
+  int n;
+  uint8_t c;
+  unsigned int key = irq_lock();
+  n = ring_buf_get(&in_ringbuf, &c, 1);
+  irq_unlock(key);
+  if (n == 1) {
+    return c;
+  }
+  return -1;
+}
+
+void usb_put_char(int i) {
+  if (i >= 0 && i < 256) {
+
+    uint8_t c = (uint8_t)i;
+    unsigned int key = irq_lock();
+    ring_buf_put(&out_ringbuf, &c, 1);
+    uart_irq_tx_enable(usb_dev);
+    irq_unlock(key);
+  }
+}
+
+
+int usb_has_data(void) {
+  return !ring_buf_is_empty(&in_ringbuf);
+}
+
+int usb_readl(char *buffer, int size) {
+  int n = 0;
+  int c;
+  for (n = 0; n < size - 1; n++) {
+
+    c = usb_get_char();
+    switch (c) {
+    case 127: /* fall through to below */
+    case '\b': /* backspace character received */
+      if (n > 0)
+        n--;
+      buffer[n] = 0;
+      usb_put_char('\b'); /* output backspace character */
+      n--; /* set up next iteration to deal with preceding char location */
+      break;
+    case '\n': /* fall through to \r */
+    case '\r':
+      buffer[n] = 0;
+      return n;
+    default:
+      if (c != -1 && c < 256) {
+	usb_put_char(c);
+	buffer[n] = c;
+      } else {
+	n --;
+      }
+
+      break;
+    }
+  }
+  buffer[size - 1] = 0;
+  return 0; // Filled up buffer without reading a linebreak
+}
+
 
 
 void usb_cdc_thread_main(void * a, void* b, void *c) {
