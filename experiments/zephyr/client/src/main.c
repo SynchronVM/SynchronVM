@@ -23,6 +23,7 @@
 #include "usb_cdc.h"
 #include "ltr_303als.h"
 #include "bme280.h"
+#include "uart.h"
 
 struct remote_device* remote;
 bool discovered = 0;
@@ -71,103 +72,12 @@ struct message {
 
 /****************************/
 
-/************/
-/*  UART    */
+/* *************** */
+/*   UART buffers  */
 
-const struct device *uart0;
-
-struct uart_buffers {
-  struct ring_buf in_ringbuf;
-  struct ring_buf out_ringbuf;
-}; 
 
 uint8_t uart0_in_buffer[1024];
 uint8_t uart0_out_buffer[1024];
-
-struct uart_buffers uart0_buffers;
-
-static void uart_isr(const struct device *dev, void *args)
-{
-  struct uart_buffers *bufs = (struct uart_buffers*)args;
-  
-  while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
-    if (uart_irq_rx_ready(dev)) {
-      int recv_len, rb_len;
-      uint8_t buffer[64];
-      size_t len = MIN(ring_buf_space_get(&bufs->in_ringbuf),
-		       sizeof(buffer));
-
-      recv_len = uart_fifo_read(dev, buffer, len);
-
-      rb_len = ring_buf_put(&bufs->in_ringbuf, buffer, recv_len);
-      if (rb_len < recv_len) {
-	//silently dropping bytes
-      } 
-    }
-
-    if (uart_irq_tx_ready(dev)) {
-      uint8_t c;
-      int rb_len, send_len;
-
-      rb_len = ring_buf_get(&bufs->out_ringbuf, &c, 1);
-      if (!rb_len) {
-	uart_irq_tx_disable(dev);
-	continue;
-      }
-
-      send_len = uart_fifo_fill(dev, &c, 1);
-    }
-  }
-}
-
-int get_char(struct uart_buffers *buffs) {
-
-  int n;
-  uint8_t c;
-  unsigned int key = irq_lock();
-  n = ring_buf_get(&buffs->in_ringbuf, &c, 1);
-  irq_unlock(key);
-  if (n == 1) {
-    return c;
-  }
-  return -1;
-}
-
-
-int put_char(struct uart_buffers *buffs, char c) {
-
-  int n = 0;
-  unsigned int key = irq_lock();
-  n = ring_buf_put(&buffs->out_ringbuf, &c, 1);
-  irq_unlock(key);
-  uart_irq_tx_enable(uart0); // TODO: Move into some uart struct. 
-  return n;
-}
-
-void uart_printf(struct uart_buffers *buffs, char *format, ...) {
-
-  va_list arg;
-  va_start(arg, format);
-  int len;
-  static char print_buffer[4096];
-
-  len = vsnprintf(print_buffer, 4096,format, arg);
-  va_end(arg);
-
-  int num_written = 0;
-  while (len - num_written > 0) {
-    unsigned int key = irq_lock();
-    num_written +=
-      ring_buf_put(&buffs->out_ringbuf,
-		   (print_buffer + num_written),
-		   (len - num_written));
-    irq_unlock(key);
-    uart_irq_tx_enable(uart0);
-  }
-
-}
-
-
 
 
 /************/
@@ -467,8 +377,8 @@ void main(void) {
   uint8_t data[16];
   int ret = 0;
 
-  int i  = 0; 
-  while (i < 10) {
+  int counter  = 0; 
+  while (counter < 10) {
 
     uint16_t ch0 = 0;
     uint16_t ch1 = 0;
@@ -480,7 +390,7 @@ void main(void) {
       PRINT("ALS: Error reading data register");
     }
     k_sleep(K_SECONDS(1));
-    i ++;
+    counter ++;
   }
   
   /* BME280 */
@@ -493,7 +403,7 @@ void main(void) {
     PRINT("BME280: OK!\r\n");
   }
 
-  while (true) {
+  while (counter < 20) {
     int32_t i, d;
     if (bme_sample()) {
       PRINT("--------------------------------\r\n");
@@ -505,32 +415,31 @@ void main(void) {
       PRINT("Humidity: %d.%06d\r\n", i, d);
     }
     k_sleep(K_SECONDS(1));
+    counter++;
   }
   
   /* configure uart */
 
+  uart_dev_t uart0;
+  if (uart_init(UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
+    PRINT("UART: Initialized\r\n");
+  } else {
+    PRINT("UART: Error!\r\n");
+  }
+    
   uint32_t baudrate;
-  int r;
-  ring_buf_init(&uart0_buffers.in_ringbuf, 1024, uart0_in_buffer);
-  ring_buf_init(&uart0_buffers.out_ringbuf, 1024, uart0_out_buffer);
-  
-  PRINT("Configuring UART2\r\n");
-  uart0 = device_get_binding("UART_0");
-  if (!uart0) {
-    PRINT("UART0: Device binding FAILED!\r\n");
-    return;
+  if (uart_get_baudrate(&uart0, &baudrate)) {
+    PRINT("UART: Baudrate %u\r\n", baudrate);
+  } else {
+    PRINT("UART: Error getting baudrate\r\n");
   }
-  
-  PRINT("UART0: Device binding OK!\r\n");
-  r = uart_line_ctrl_get(uart0, UART_LINE_CTRL_BAUD_RATE, &baudrate);
-  if (r) {
-    PRINT("UART0: Baudrate %u\r\n", baudrate);
+
+  while (counter < 30) {
+    uart_printf(&uart0, "Hello World\r\n");
+    k_sleep(K_SECONDS(1));
+    counter++;
   }
-  
-  
-  uart_irq_callback_user_data_set(uart0, uart_isr, (void*)&uart0_buffers);
-  
-  uart_irq_rx_enable(uart0);
+
   
   
   /* BT Create and initialise remote device information */
@@ -549,14 +458,14 @@ void main(void) {
     
     int c;
 
-    while ((c = get_char(&uart0_buffers)) != -1 ) { 
+    while ((c = uart_get_char(&uart0)) != -1 ) { 
        PRINT("%c", (char)c);
     }
 
     
     //PRINT("have not discovered yet\n");
     PRINT("CLIENT: Have not discovered yet\r\n");
-    uart_printf(&uart0_buffers,"CLIENT: Have not discovered yet\r\n");
+    uart_printf(&uart0,"CLIENT: Have not discovered yet\r\n");
   }
   int led1_state = 1;
   while(1) {
@@ -568,7 +477,7 @@ void main(void) {
     if(err) {
       //PRINT("error while writing (err %d)\n", err);
       usb_printf("CLIENT: error while writing (err %d)\r\n", err);
-      uart_printf(&uart0_buffers, "CLIENT: error while writing (err %d)\r\n", err);
+      uart_printf(&uart0, "CLIENT: error while writing (err %d)\r\n", err);
     }
     
   }
