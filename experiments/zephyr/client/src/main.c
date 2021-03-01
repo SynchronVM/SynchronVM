@@ -22,6 +22,7 @@
 #include "defines.h"
 #include "usb_cdc.h"
 #include "ltr_303als.h"
+#include "bme280.h"
 
 struct remote_device* remote;
 bool discovered = 0;
@@ -48,16 +49,6 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
-/* BME 280 */
-
-#define BME280 DT_INST(0, bosch_bme280)
-
-#if DT_NODE_HAS_STATUS(BME280, okay)
-#define BME280_LABEL DT_LABEL(BME280)
-#else
-#error Your devicetree has no enabled nodes with compatible "bosch,bme280"
-#define BME280_LABEL "<none>"
-#endif
 
 /****************************/
 /*  Communication Protocol  */
@@ -464,51 +455,38 @@ void main(void) {
   k_sleep(K_SECONDS(5));
   PRINT("Starting up\r\n");
 
-  /* configure i2c */
-  const struct device *i2c_dev;
-
-  i2c_dev = device_get_binding("I2C_0");
-  if (!i2c_dev) {
-    PRINT("I2C: Device driver not found.\r\n");
-    return;
-  } else {
-    PRINT("I2C: Device driver OK!\r\n");
+  /* configure ltr-303als */
+  if (!als_init()) {
+    PRINT("ALS: Unable to initialize\r\n");
   }
 
+  if (!als_set_gain(1)) {
+    PRINT("ALS: Unable to set gain\r\n");
+  }
+  
   uint8_t data[16];
   int ret = 0;
 
-  while (true) {
-
-    if (!init_als(i2c_dev, 0x1)) {
-      PRINT("I2C ALS: Success\r\n");
-    } else {
-      PRINT("I2C ALS: Error initializing\r\n");
-    }
-
-    k_sleep(K_SECONDS(1));
-
+  int i  = 0; 
+  while (i < 10) {
 
     uint16_t ch0 = 0;
     uint16_t ch1 = 0;
-    for (int i = 0; i < 10; i ++)  {
       
-      if (!read_data_als(i2c_dev,&ch0,&ch1)) {
-	PRINT("ALS CH0: %u\r\n", ch0);
-	PRINT("ALS CH1: %u\r\n", ch1);	
-      } else {
-	PRINT("ALS: Error reading data register");
-      }
-      k_sleep(K_SECONDS(1));
-
+    if (als_read_data(&ch0,&ch1)) {
+      PRINT("ALS CH0: %u\r\n", ch0);
+      PRINT("ALS CH1: %u\r\n", ch1);	
+    } else {
+      PRINT("ALS: Error reading data register");
     }
+    k_sleep(K_SECONDS(1));
+    i ++;
   }
   
   /* BME280 */
 
-  const struct device *bme280_dev = device_get_binding(BME280_LABEL);
 
-  if (bme280_dev == NULL) {
+  if (!bme_init()) { 
     PRINT("BME280: Device not found\r\n");
     return;
   } else {
@@ -518,17 +496,17 @@ void main(void) {
   while (true) {
     struct sensor_value temp, press, humidity;
 
-    sensor_sample_fetch(bme280_dev);
-    sensor_channel_get(bme280_dev, SENSOR_CHAN_AMBIENT_TEMP, &temp);
-    sensor_channel_get(bme280_dev, SENSOR_CHAN_PRESS, &press);
-    sensor_channel_get(bme280_dev, SENSOR_CHAN_HUMIDITY, &humidity);
-
-    PRINT("temp: %d.%06d; press: %d.%06d; humidity: %d.%06d\r\n",
-	   temp.val1, temp.val2, press.val1, press.val2,
-	   humidity.val1, humidity.val2);
-
-    k_sleep(K_MSEC(1000));
-
+    int32_t i, d;
+    if (bme_sample()) {
+      PRINT("--------------------------------\r\n");
+      bme_get_temperature(&i, &d);
+      PRINT("Temperature: %d.%06d\r\n", i, d);
+      bme_get_pressure(&i,&d);
+      PRINT("Pressure: %d.%06d\r\n", i, d);
+      bme_get_humidity(&i, &d);
+      PRINT("Humidity: %d.%06d\r\n", i, d);
+    }
+    k_sleep(K_SECONDS(1));
   }
   
   /* configure uart */
