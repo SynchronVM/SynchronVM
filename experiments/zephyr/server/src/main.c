@@ -234,8 +234,23 @@ void main(void)
   d_led1 = device_get_binding(LED_DEVICE_LABEL(led1));
   gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
   gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
+  gpio_pin_set(d_led0, LED_PIN(led0), 0);
+  gpio_pin_set(d_led1, LED_PIN(led1), 0);
 
+  
+  int led_test_state = 1;
+  for (int i = 0; i < 5; i ++) {
+    
+    gpio_pin_set(d_led0, LED_PIN(led0), led_test_state);
+    gpio_pin_set(d_led1, LED_PIN(led1), led_test_state);
+    led_test_state = 1 - led_test_state;
+    k_sleep(K_SECONDS(1));
+  }
 
+  gpio_pin_set(d_led0, LED_PIN(led0), 0);
+  gpio_pin_set(d_led1, LED_PIN(led1), 0);
+
+  
   k_sleep(K_SECONDS(4)); /* Give me a chance to connect the usb */   
 
   PRINT("Server starting up\r\n");
