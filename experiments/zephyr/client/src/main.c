@@ -21,6 +21,7 @@
 /* Our own library of stuff! */ 
 #include "defines.h"
 #include "usb_cdc.h"
+#include "ltr_303als.h"
 
 struct remote_device* remote;
 bool discovered = 0;
@@ -47,21 +48,6 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
-
-/* I2C */
-
-#define I2C_ADDR        0x29
-
-#define ALS_CONTROL_REG 0x80
-#define ALS_RESET       0x1
-#define ALS_ACTIVE      0x2
-
-
-#define ALS_DATA_CH_0_LOW   0x8A
-#define ALS_DATA_CH_0_HIGH  0x8B
-#define ALS_DATA_CH_1_LOW   0x88
-#define ALS_DATA_CH_1_HIGH  0x89
-
 /* BME 280 */
 
 #define BME280 DT_INST(0, bosch_bme280)
@@ -72,52 +58,6 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #error Your devicetree has no enabled nodes with compatible "bosch,bme280"
 #define BME280_LABEL "<none>"
 #endif
-
-/****************************/
-/* LTR-303ALS               */
-  
-  
-int init_als(const struct device *dev, uint8_t gain) {
-
-  return i2c_reg_write_byte (dev, I2C_ADDR, ALS_CONTROL_REG, gain);
- 
-}
-
-
-int read_data_als(const struct device *dev, uint16_t *ch0, uint16_t *ch1) { 
-
-  uint8_t ch_0_low;
-  uint8_t ch_0_high;
-  uint8_t ch_1_low;
-  uint8_t ch_1_high;
-
-  
-  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_1_LOW, &ch_1_low)) {
-    return -1;
-  }
-  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_1_HIGH, &ch_1_high)) {
-    return -1;
-  }
-
-  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_0_LOW, &ch_0_low)) {
-    return -1;
-  }
-  if (i2c_reg_read_byte (dev,I2C_ADDR, ALS_DATA_CH_0_HIGH, &ch_0_high)) {
-    return -1;
-  }
-  /* Reading ALS_DATA_CH_0_HIGH triggers a new ADC conversion so 
-     it should be read last */ 
-
-  uint16_t c0 = ch_0_high << 8 | ch_0_low;
-  uint16_t c1 = ch_1_high << 8 | ch_1_low;
-
-  *ch0 = c0;
-  *ch1 = c1;
-  
-  return 0;
-}
-
-
 
 /****************************/
 /*  Communication Protocol  */
@@ -563,42 +503,7 @@ void main(void) {
 
     }
   }
-
-
   
-
-  /* while (true) { */
-  
-  /*   ret = write_byte(i2c_dev, ALS_CONTROL_REG, ALS_RESET); */
-  /*   if (ret) { */
-  /*     PRINT("I2C: Error writing data. Code %d\r\n", ret); */
-  /*   } else { */
-  /*     PRINT("I2C: Reset performed.\r\n"); */
-  /*   } */
-
-  /*   k_sleep(K_MSEC(10)); */
-
-  /*   ret = write_byte(i2c_dev, ALS_CONTROL_REG, ALS_ACTIVE); */
-  /*   if (ret) { */
-  /*     PRINT("I2C: Error writing data. Code %d\r\n", ret); */
-  /*   } else { */
-  /*     PRINT("I2C: ACTIVATED.\r\n"); */
-  /*   } */
-
-  /*   k_sleep(K_MSEC(500)); */
-
-  /*   data[0] = 0x00; */
-  /*   ret = read_byte(i2c_dev, 0x8c, &data[0]); */
-  /*   if (ret) { */
-  /*     PRINT("I2C: Error reading! error code (%d)\r\n", ret); */
-  /*   } else { */
-  /*     printk("I2C: Read 0x%X from address 0x01.\r\n", data[0]); */
-  /*   } */
-    
-  /*   k_sleep(K_MSEC(500)); */
-    
-  /* } */
-
   /* BME280 */
 
   const struct device *bme280_dev = device_get_binding(BME280_LABEL);
@@ -626,8 +531,6 @@ void main(void) {
 
   }
   
-  
- 
   /* configure uart */
 
   uint32_t baudrate;

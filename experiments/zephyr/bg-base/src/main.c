@@ -32,6 +32,13 @@
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
+/* GPIOS */
+#define PSM_IND    1
+#define PON_TRIG   5
+#define PWR_KEY    6
+#define RESET      7
+
+
 /*******************/
 /* UART 2 UART 5   */
 
@@ -170,6 +177,25 @@ void main(void)
   int led0_state = 0;
   int led1_state = 1;
 
+  /* configure gpio pins */
+  const struct device *d_gpio_b;
+
+  d_gpio_b = device_get_binding("GPIOB");
+
+  if (!d_gpio_b) {
+    PRINT("GPIO_B: Error no binding\r\n");
+    return; 
+  } else {
+    PRINT("GPIO_B: Success\r\n");
+  }
+
+  gpio_pin_configure(d_gpio_b, PSM_IND, GPIO_INPUT);
+  gpio_pin_configure(d_gpio_b, PON_TRIG, GPIO_OUTPUT_LOW);
+  gpio_pin_configure(d_gpio_b, PWR_KEY, GPIO_OUTPUT_LOW);
+  gpio_pin_configure(d_gpio_b, RESET, GPIO_OUTPUT_LOW);
+
+  gpio_pin_set(d_gpio_b, PON_TRIG, 1);
+  
   /* configure uart */
 
   ring_buf_init(&uart2_buffers.in_ringbuf, 1024, uart2_in_buffer);
@@ -216,6 +242,13 @@ void main(void)
       if (usb_readl(cmd_buffer, 1024) >= 0) {
 	PRINT("USB: recv %s\r\n", cmd_buffer);
 	uart_printf(&uart2_buffers, "%s", cmd_buffer);
+      }
+
+      if ( strncmp(cmd_buffer, "PWR_KEY", 7) == 0 ) {
+	k_sleep(K_MSEC(5000));
+	gpio_pin_set(d_gpio_b, PWR_KEY, 1);
+	k_sleep(K_MSEC(750));
+	gpio_pin_set(d_gpio_b, PWR_KEY, 0);
       }
     }
     
