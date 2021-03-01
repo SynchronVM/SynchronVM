@@ -22,31 +22,34 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef UART_H_
-#define UART_H_
+#include <ll_uart.h>
 
-#include <sys/ring_buffer.h>
-#include <drivers/uart.h>
+static bool ll_uart_data_available(struct ll_driver_s *this) {
+  return uart_data_available((uart_dev_t*)this->driver_info);
+}
 
-typedef enum { UART0 = 0, UART1, UART2, UART3, UART4, UART5, UART6, UART7 } uart_if_t; 			   
-			  
-typedef struct {
-  struct ring_buf in_ringbuf;
-  struct ring_buf out_ringbuf;
-  const struct device *dev;
-} uart_dev_t; 
+static int ll_uart_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return uart_read_bytes((uart_dev_t*)this->driver_info, data, data_size);
+}
 
-extern bool uart_init(uart_if_t uif, uart_dev_t *u,
-		      uint8_t *in_buffer,
-		      uint32_t in_size,
-		      uint8_t *out_buffer,
-		      uint32_t out_size);
-extern bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud);
-extern bool uart_data_available(uart_dev_t *dev);
-extern int uart_get_char(uart_dev_t *buffs);
-extern int uart_read_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size);
-extern int uart_put_char(uart_dev_t *buffs, char c);
-extern int uart_write_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size);
-extern void uart_printf(uart_dev_t *buffs, char *format, ...);
+static int ll_uart_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return uart_write_bytes((uart_dev_t*)this->driver_info, data, data_size);
+}
 
-#endif
+
+bool ll_uart_init(ll_driver_t* lld, uart_if_t uif, uart_dev_t *u,
+		  uint8_t *in_buffer,
+		  uint32_t in_size,
+		  uint8_t *out_buffer,
+		  uint32_t out_size) {
+
+  bool r = uart_init(uif, u, in_buffer, in_size, out_buffer, out_size);
+  if (r) { 
+    lld->driver_info = (void*) u; /* store the uart device as driver internal info */
+    lld->ll_read_fun = ll_uart_read;
+    lld->ll_write_fun = ll_uart_write;
+  }
+  return r; 
+}
+
+

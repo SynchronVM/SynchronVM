@@ -150,7 +150,7 @@ void usb_cdc_thread_main(void * a, void* b, void *c) {
   (void)c;
 
 
-    uint32_t baudrate, dtr = 0U;
+  uint32_t baudrate, dtr = 0U;
   int ret;
 
   usb_dev = device_get_binding("CDC_ACM_0");
@@ -212,5 +212,7 @@ void start_usb_cdc_thread(void)  {
 					NULL, NULL, NULL,
 					5 /* prio */,
 					0, K_NO_WAIT);
+
+  (void)usb_cdc_tid;
 
 }

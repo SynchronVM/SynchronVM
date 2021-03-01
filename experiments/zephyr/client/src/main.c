@@ -375,7 +375,6 @@ void main(void) {
   }
   
   uint8_t data[16];
-  int ret = 0;
 
   int counter  = 0; 
   while (counter < 10) {
