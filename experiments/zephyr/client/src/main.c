@@ -494,8 +494,6 @@ void main(void) {
   }
 
   while (true) {
-    struct sensor_value temp, press, humidity;
-
     int32_t i, d;
     if (bme_sample()) {
       PRINT("--------------------------------\r\n");
