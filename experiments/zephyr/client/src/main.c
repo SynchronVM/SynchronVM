@@ -23,7 +23,9 @@
 #include "usb_cdc.h"
 #include "ltr_303als.h"
 #include "bme280.h"
-#include "uart.h"
+//#include "uart.h"
+#include "ll_uart.h"
+
 
 struct remote_device* remote;
 bool discovered = 0;
@@ -419,28 +421,24 @@ void main(void) {
   
   /* configure uart */
 
+  ll_driver_t uart_drv;
   uart_dev_t uart0;
-  if (uart_init(UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
-    PRINT("UART: Initialized\r\n");
+  
+  if (ll_uart_init(&uart_drv, UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
+    PRINT("LL_UART: OK!\r\n");
   } else {
-    PRINT("UART: Error!\r\n");
-  }
-    
-  uint32_t baudrate;
-  if (uart_get_baudrate(&uart0, &baudrate)) {
-    PRINT("UART: Baudrate %u\r\n", baudrate);
-  } else {
-    PRINT("UART: Error getting baudrate\r\n");
+    PRINT("LL_UART: Failed!\r\n");
   }
 
+  const char *hello = "hello world\r\n";
+  
   while (counter < 30) {
-    uart_printf(&uart0, "Hello World\r\n");
+    //uart_printf(&uart0, "Hello World\r\n");
+    ll_write(&uart_drv, hello, strlen(hello));
     k_sleep(K_SECONDS(1));
     counter++;
   }
 
-  
-  
   /* BT Create and initialise remote device information */
   remote = new_remote_device(device, service, characteristic);
   set_message_payload(data, strlen(data) + 1, remote);
