@@ -25,10 +25,16 @@
 #ifndef LL_DRIVER_H_
 #define LL_DRIVER_H_
 
+#define LL_DRIVER_CONTROL_FAILURE 0x0
+#define LL_DRIVER_CONTROL_SUCCESS 0x1  
+
+
+
 typedef struct ll_driver_s{
   void *driver_info;
   int (*ll_read_fun)(struct ll_driver_s *this, uint8_t *, uint32_t); 
   int (*ll_write_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
+  uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   bool (*ll_data_available_fun)(struct ll_driver_s *this); 
 } ll_driver_t; 
 
