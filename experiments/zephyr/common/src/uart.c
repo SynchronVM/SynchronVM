@@ -25,19 +25,19 @@
 #include <uart.h>
 #include <stdio.h>
 
-/* TODO: Surely there are problems with this 
-         if multiple os-threads read and write 
+/* TODO: Surely there are problems with this
+         if multiple os-threads read and write
 	 using the same uart device (uart_dev_t) */
-	 
+
 
 
 /* ************************* */
-/* Interrupt service routine */ 
+/* Interrupt service routine */
 
 static void uart_isr(const struct device *dev, void *args)
 {
   uart_dev_t *bufs = (uart_dev_t*)args;
-  
+
   while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
     if (uart_irq_rx_ready(dev)) {
       int recv_len, rb_len;
@@ -50,7 +50,7 @@ static void uart_isr(const struct device *dev, void *args)
       rb_len = ring_buf_put(&bufs->in_ringbuf, buffer, recv_len);
       if (rb_len < recv_len) {
 	//silently dropping bytes
-      } 
+      }
     }
 
     if (uart_irq_tx_ready(dev)) {
@@ -69,7 +69,7 @@ static void uart_isr(const struct device *dev, void *args)
 }
 
 /* ******************************** */
-/* Initialization and configuration */ 
+/* Initialization and configuration */
 
 bool uart_init(uart_if_t uif, uart_dev_t *u,
 	       uint8_t *in_buffer,
@@ -103,13 +103,13 @@ bool uart_init(uart_if_t uif, uart_dev_t *u,
     u->dev = device_get_binding("UART_7");
     break;
   }
-  
+
   if (u->dev) {
 
     ring_buf_init(&u->in_ringbuf, in_size, in_buffer);
     ring_buf_init(&u->out_ringbuf, out_size, out_buffer);
 
-    
+
     uart_irq_callback_user_data_set(u->dev, uart_isr, (void*)u);
     uart_irq_rx_enable(u->dev);
   }
@@ -120,7 +120,7 @@ bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud) {
   return (bool)uart_line_ctrl_get(u->dev, UART_LINE_CTRL_BAUD_RATE, baud);
 }
 
-/* ************************************* */ 
+/* ************************************* */
 /* Are there bytes ?                     */
 
 bool uart_data_available(uart_dev_t *dev) {
@@ -135,7 +135,7 @@ int uart_ndata_available(uart_dev_t *dev) {
 
 
 
-/* ************************************* */ 
+/* ************************************* */
 /* Printing to and reading from the UART */
 
 int uart_get_char(uart_dev_t *buffs) {
@@ -144,7 +144,7 @@ int uart_get_char(uart_dev_t *buffs) {
   uint8_t c;
   unsigned int key = irq_lock(); /* disables all interrupts */
                                  /* TODO: Maybe it is possible to specifically just turn 
-				    of the uart interrupt in question? */ 
+				    of the uart interrupt in question? */
   n = ring_buf_get(&buffs->in_ringbuf, &c, 1);
   irq_unlock(key);
   if (n == 1) {
@@ -157,7 +157,7 @@ int uart_read_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size) {
 
   if (data_size > (ring_buf_capacity_get(&dev->in_ringbuf) -
 		   ring_buf_space_get(&dev->in_ringbuf))) return 0;
-  
+
   int n;
   unsigned int key = irq_lock();
   n = ring_buf_get(&dev->in_ringbuf, data, data_size);

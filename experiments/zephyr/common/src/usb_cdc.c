@@ -40,12 +40,12 @@ struct ring_buf out_ringbuf;
 
 static const struct device *usb_dev;
 
-static volatile bool usb_cdc_enabled = false; 
+static volatile bool usb_cdc_enabled = false;
 
 static void interrupt_handler(const struct device *dev, void *user_data)
 {
   (void)user_data;
-  
+
   while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
     if (uart_irq_rx_ready(dev)) {
       int recv_len, rb_len;
@@ -82,7 +82,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 
 void usb_printf(char *format, ...) {
   if (!usb_cdc_enabled) return;
-  
+
   va_list arg;
   va_start(arg, format);
   int len;
@@ -189,7 +189,7 @@ void usb_cdc_thread_main(void * a, void* b, void *c) {
 
   ring_buf_init(&in_ringbuf, sizeof(in_ring_buffer), in_ring_buffer);
   ring_buf_init(&out_ringbuf, sizeof(out_ring_buffer), out_ring_buffer);
-  
+
   while (true) {
     uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
     if (dtr) {
@@ -198,18 +198,18 @@ void usb_cdc_thread_main(void * a, void* b, void *c) {
       k_sleep(K_MSEC(100));
     }
   }
-  
-  ret = uart_line_ctrl_set(usb_dev, UART_LINE_CTRL_DCD, 1); 
-  if (ret) { 
-    //LOG_WRN("Failed to set DCD, ret code %d", ret); 
-  } 
+
+  ret = uart_line_ctrl_set(usb_dev, UART_LINE_CTRL_DCD, 1);
+  if (ret) {
+    //LOG_WRN("Failed to set DCD, ret code %d", ret);
+  }
   ret = uart_line_ctrl_set(usb_dev, UART_LINE_CTRL_DSR, 1);
   if (ret) {
     //LOG_WRN("Failed to set DSR, ret code %d", ret);
   }
 
   k_busy_wait(1000000);
-  
+
   ret = uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
   if (ret) {
   } else {
@@ -221,9 +221,9 @@ void usb_cdc_thread_main(void * a, void* b, void *c) {
   uart_irq_rx_enable(usb_dev);
 
   usb_cdc_enabled = true;
-  
+
 }
-  
+
 K_THREAD_STACK_DEFINE(usb_cdc_stack_area, 512);
 struct k_thread usb_cdc_thread;
 

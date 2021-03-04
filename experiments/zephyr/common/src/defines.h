@@ -18,13 +18,13 @@
 struct remote_device {
 	/* UUID of remote device */
 	struct bt_uuid* uuid;
-	
+
 	/* UUID of remote devices service */
 	struct bt_uuid* service;
-	
+
 	/* UUID of remote devices characteristic */
 	struct bt_uuid* characteristic;
-	
+
 	/* Handle which to communicate via.
 	   Contains an actual attribute handle. */
 	struct bt_gatt_write_params handle;

@@ -49,14 +49,14 @@ bool ll_uart_init(ll_driver_t* lld, uart_if_t uif, uart_dev_t *u,
 		  uint32_t out_size) {
 
   bool r = uart_init(uif, u, in_buffer, in_size, out_buffer, out_size);
-  if (r) { 
+  if (r) {
     lld->driver_info = (void*) u; /* store the uart device as ll_driver internal info */
     lld->ll_control_fun = ll_uart_control;
     lld->ll_read_fun = ll_uart_read;
     lld->ll_write_fun = ll_uart_write;
     lld->ll_data_available_fun = ll_uart_data_available;
   }
-  return r; 
+  return r;
 }
 
 

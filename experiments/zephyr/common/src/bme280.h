@@ -40,14 +40,11 @@
 extern bool bme_init(void);
 
 /* bme_sample: blocking call that copies sensor data to memory */
-extern bool bme_sample(void);  
+extern bool bme_sample(void);
 
-/* getters: return values stored in memory */ 
+/* getters: return values stored in memory */
 extern bool bme_get_temperature(int32_t *i, int32_t *d);
 extern bool bme_get_pressure(int32_t *i, int32_t *d);
 extern bool bme_get_humidity(int32_t *i, int32_t *d);
 
-
-
-
-#endif 
+#endif

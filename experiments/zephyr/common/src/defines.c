@@ -26,7 +26,7 @@ struct remote_device* new_remote_device( uint8_t* uuid
 
     /* Hardcoded 2 for now, so they have to be 16 bits */
     bool res = true;
-    
+
     res = res && bt_uuid_create(device->uuid          , uuid,           2);
     res = res && bt_uuid_create(device->service       , service,        2);
     res = res && bt_uuid_create(device->characteristic, characteristic, 2);
@@ -43,7 +43,7 @@ void free_device(struct remote_device* device) {
     /* Not sure what this does if the connection object is invalid,
        the documentation says nothing. */
     bt_conn_unref(device->connection);
-    
+
     k_free(device->uuid);
     k_free(device->service);
     k_free(device->characteristic);
@@ -102,20 +102,20 @@ int register_service(struct bt_uuid* service, struct bt_uuid* characteristic) {
    */
   struct bt_gatt_attr* chr_attrs =   k_malloc(3 * sizeof(struct bt_gatt_attr));
   if(!chr_attrs) {
-    
+
     printk("Allocating memory for attributes failed\n");
-        return -1;
+    return -1;
   }
   struct bt_gatt_attr* first      = chr_attrs;
   struct bt_gatt_attr* second     = chr_attrs+1;
   struct bt_gatt_attr* third      = chr_attrs+2;
-  
+
   /* Service Attribute */
   struct bt_uuid* gatt_primary = k_malloc(EXTRA + sizeof(struct bt_uuid_16));
   uint8_t *uuid_data = k_malloc(2);
   uuid_data[0] = (uint8_t) BT_UUID_GATT_PRIMARY_VAL;
   uuid_data[1] = (uint8_t) (BT_UUID_GATT_PRIMARY_VAL >> 8);
-                       
+
   bt_uuid_create(gatt_primary, uuid_data, 2);
 
   first->uuid      = gatt_primary;

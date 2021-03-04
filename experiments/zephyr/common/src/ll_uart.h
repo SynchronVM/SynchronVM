@@ -39,4 +39,4 @@ extern bool ll_uart_init(ll_driver_t* lld, uart_if_t uif, uart_dev_t *u,
 			 uint8_t *out_buffer,
 			 uint32_t out_size);
 
-#endif 
+#endif
