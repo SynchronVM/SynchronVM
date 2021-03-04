@@ -43,6 +43,7 @@ extern bool uart_init(uart_if_t uif, uart_dev_t *u,
 		      uint32_t out_size);
 extern bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud);
 extern bool uart_data_available(uart_dev_t *dev);
+extern int uart_ndata_available(uart_dev_t *dev);
 extern int uart_get_char(uart_dev_t *buffs);
 extern int uart_read_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size);
 extern int uart_put_char(uart_dev_t *buffs, char c);

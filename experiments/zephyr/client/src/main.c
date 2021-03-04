@@ -17,8 +17,9 @@
 #include <drivers/uart.h>
 #include <drivers/i2c.h>
 #include <drivers/sensor.h>
+#include <drivers/counter.h>
 
-/* Our own library of stuff! */ 
+/* Our own library of stuff! */
 #include "defines.h"
 #include "usb_cdc.h"
 #include "ltr_303als.h"
@@ -52,12 +53,18 @@ const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
+/* ********** */
+/*   TIMER    */
+
+#define TIMER DT_LABEL(DT_NODELABEL(timer4))
+struct  counter_alarm_cfg alarm_cfg;
+
 
 /****************************/
 /*  Communication Protocol  */
 
 /* All possible variants of a message that can be transmitted. */
-typedef enum MessageType{ 
+typedef enum MessageType{
 			 /* Request a remote devices time at the point of receiving this message. */
      REQUEST_TIME
     /* A reply to a `REQUEST_TIME` request. Contains the time in the `time` field. */
@@ -256,7 +263,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 	int err;
-	
+
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	isConnected = 1;
 
@@ -277,7 +284,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 	discover_params.start_handle = 0x0001;
 	discover_params.end_handle   = 0xffff;
 	discover_params.type         = BT_GATT_DISCOVER_PRIMARY;
-	
+
 	err = bt_gatt_discover(remote->connection, &discover_params);
 	if(err) {
 		PRINT("Discover failed(err %d)\n", err);
@@ -345,17 +352,45 @@ uint8_t characteristic[] = {0x12, 0xff};
 
 char* data = "client";
 
+void tick_fun(struct k_timer *timer_id) {
+  PRINT("System clock: TICK\r\n");
+}
+
+
+void hw_tick(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_data) {
+
+  struct counter_alarm_cfg *config = user_data;
+  uint32_t now_ticks;
+  if (!counter_get_value(dev, &now_ticks)) {
+    PRINT("hw_tick: now_ticks = %u\r\n", now_ticks);
+    uint32_t now_usec = counter_ticks_to_us(dev, now_ticks);
+    int now_sec = (int)(now_usec / USEC_PER_SEC);
+  } else {
+    PRINT("hw_tick: Error getting now_ticks\r\n");
+  }
+
+  config->ticks = 16000000;
+
+  if (!counter_set_channel_alarm(dev, 0, config)) {
+    //PRINT("hw_tick: Alarm set\r\n");
+  } else {
+    PRINT("hw_tick: Error setting alarm\r\n");
+  }
+
+}
+
+
 void main(void) {
 
-  /* Start USB_CDC and set up LEDs  
+  /* Start USB_CDC and set up LEDs
      LEDS depend on definitions in the devicetree (dts file)
    */
-  	
+
   start_usb_cdc_thread();
-    
+
   const struct device *d_led0;
   const struct device *d_led1;
-  
+
   d_led0 = device_get_binding(LED_DEVICE_LABEL(led0));
   d_led1 = device_get_binding(LED_DEVICE_LABEL(led1));
   gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
@@ -363,10 +398,45 @@ void main(void) {
   gpio_pin_set(d_led0, LED_PIN(led0), 0);
   gpio_pin_set(d_led1, LED_PIN(led1), 0);
 
-  
+
   k_sleep(K_SECONDS(5));
   PRINT("Starting up\r\n");
 
+
+
+  /* ************************************* */
+  /* System clock based timer "interrupts" */
+  PRINT("Configuring k_timer tick_fun\r\n");
+  struct k_timer my_timer;
+
+  k_timer_init(&my_timer, tick_fun, NULL);
+
+  k_timer_start(&my_timer, K_MSEC(500), K_MSEC(500));
+
+  /* ************************* */
+  /* Hardware timer experiment */
+  PRINT("Configuring hardware timer \r\n");
+  const struct device *counter_dev = device_get_binding(TIMER);
+  if (!counter_dev) {
+    PRINT("HWCounter: Device not found error\r\n");
+  }
+
+  counter_start(counter_dev);
+
+  alarm_cfg.flags = 0;
+  alarm_cfg.ticks = 16000000; //counter_us_to_ticks(counter_dev, 1000);
+  alarm_cfg.callback = hw_tick;
+  alarm_cfg.user_data = &alarm_cfg;
+
+  if (!counter_set_channel_alarm(counter_dev, 0, &alarm_cfg)) {
+    PRINT("HWCounter: Alarm set\r\n");
+  } else {
+    PRINT("HWCounter: Error setting alarm\r\n");
+  }
+
+
+
+  PRINT("Configuring sensors\r\n");
   /* configure ltr-303als */
   if (!als_init()) {
     PRINT("ALS: Unable to initialize\r\n");
@@ -375,29 +445,29 @@ void main(void) {
   if (!als_set_gain(1)) {
     PRINT("ALS: Unable to set gain\r\n");
   }
-  
+
   uint8_t data[16];
 
-  int counter  = 0; 
+  int counter  = 0;
   while (counter < 10) {
 
     uint16_t ch0 = 0;
     uint16_t ch1 = 0;
-      
+
     if (als_read_data(&ch0,&ch1)) {
       PRINT("ALS CH0: %u\r\n", ch0);
-      PRINT("ALS CH1: %u\r\n", ch1);	
+      PRINT("ALS CH1: %u\r\n", ch1);
     } else {
       PRINT("ALS: Error reading data register");
     }
     k_sleep(K_SECONDS(1));
     counter ++;
   }
-  
+
   /* BME280 */
 
 
-  if (!bme_init()) { 
+  if (!bme_init()) {
     PRINT("BME280: Device not found\r\n");
     return;
   } else {
@@ -418,12 +488,12 @@ void main(void) {
     k_sleep(K_SECONDS(1));
     counter++;
   }
-  
+
   /* configure uart */
 
   ll_driver_t uart_drv;
   uart_dev_t uart0;
-  
+
   if (ll_uart_init(&uart_drv, UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
     PRINT("LL_UART: OK!\r\n");
   } else {
@@ -431,9 +501,8 @@ void main(void) {
   }
 
   const char *hello = "hello world\r\n";
-  
+
   while (counter < 30) {
-    //uart_printf(&uart0, "Hello World\r\n");
     ll_write(&uart_drv, hello, strlen(hello));
     k_sleep(K_SECONDS(1));
     counter++;
@@ -447,19 +516,19 @@ void main(void) {
   start_bt();
 
   int led0_state = 1;
-  
+
   while(!discovered) {
     gpio_pin_set(d_led0, LED_PIN(led0), led0_state);
     led0_state = 1 - led0_state;
     k_sleep(K_SECONDS(1));
-    
+
     int c;
 
-    while ((c = uart_get_char(&uart0)) != -1 ) { 
+    while ((c = uart_get_char(&uart0)) != -1 ) {
        PRINT("%c", (char)c);
     }
 
-    
+
     //PRINT("have not discovered yet\n");
     PRINT("CLIENT: Have not discovered yet\r\n");
     uart_printf(&uart0,"CLIENT: Have not discovered yet\r\n");
@@ -469,13 +538,13 @@ void main(void) {
     gpio_pin_set(d_led1, LED_PIN(led1), led1_state);
     led1_state = 1 - led1_state;
     k_sleep(K_SECONDS(1));
-    
+
     int err = bt_gatt_write(remote->connection, &remote->handle);
     if(err) {
       //PRINT("error while writing (err %d)\n", err);
       usb_printf("CLIENT: error while writing (err %d)\r\n", err);
       uart_printf(&uart0, "CLIENT: error while writing (err %d)\r\n", err);
     }
-    
+
   }
 }

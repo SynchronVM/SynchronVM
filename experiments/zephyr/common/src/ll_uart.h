@@ -26,7 +26,6 @@
 #define LL_UART_H_
 
 
-
 // uart.h is currently Zephyr specific (uses zephyr ringbufs).
 // to make it run on for example ChibiOs a compatible reimplementation
 // of uart.h/uart.c is needed. But if that exists, it should just be about

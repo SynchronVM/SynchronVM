@@ -127,6 +127,13 @@ bool uart_data_available(uart_dev_t *dev) {
   return !ring_buf_is_empty(&dev->out_ringbuf);
 }
 
+int uart_ndata_available(uart_dev_t *dev) {
+  return
+    ring_buf_capacity_get(&dev->in_ringbuf) -
+    ring_buf_space_get(&dev->in_ringbuf);
+}
+
+
 
 /* ************************************* */ 
 /* Printing to and reading from the UART */
