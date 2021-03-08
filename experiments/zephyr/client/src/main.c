@@ -26,6 +26,7 @@
 #include "bme280.h"
 //#include "uart.h"
 #include "ll_uart.h"
+#include "powerman.h"
 
 
 struct remote_device* remote;
@@ -35,8 +36,8 @@ const struct bt_uuid * BT_UUID_MY_DEVICE           =   BT_UUID_DECLARE_16(0xffaa
 const struct bt_uuid * BT_UUID_MY_SERVICE          =   BT_UUID_DECLARE_16(0xffa1);
 const struct bt_uuid * BT_UUID_MY_CHARACTERISTIC   =   BT_UUID_DECLARE_16(0xffa2);
 
-#define PRINT usb_printf
-//#define PRINT printk
+//#define PRINT usb_printf
+#define PRINT printk
 
 /* LEDS */
 
@@ -381,13 +382,27 @@ void hw_tick(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_
 
 
 void main(void) {
+  
+  /* *************  */ 
+  /* Start USB_CDC  */
+  //  start_usb_cdc_thread();
 
-  /* Start USB_CDC and set up LEDs
-     LEDS depend on definitions in the devicetree (dts file)
-   */
+  //PRINT("USB_CDC: started\r\n"); 
+  k_sleep(K_SECONDS(5));
 
-  start_usb_cdc_thread();
+  
+  /* ***************** */
+  /* Register powerman */ 
+  powerman_init();
 
+  PRINT("POWERMAN: started\r\n");
+  
+  k_sleep(K_SECONDS(20));
+
+  
+  /* ******************* */
+  /* Configure some LEDs */
+  
   const struct device *d_led0;
   const struct device *d_led1;
 
@@ -397,12 +412,6 @@ void main(void) {
   gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
   gpio_pin_set(d_led0, LED_PIN(led0), 0);
   gpio_pin_set(d_led1, LED_PIN(led1), 0);
-
-
-  k_sleep(K_SECONDS(5));
-  PRINT("Starting up\r\n");
-
-
 
   /* ************************************* */
   /* System clock based timer "interrupts" */

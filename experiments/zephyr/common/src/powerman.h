@@ -25,8 +25,8 @@
 #ifndef POWERMAN_H_
 #define POWERMAN_H_
 
+#include <stdbool.h>
 
-
-
+extern bool powerman_init(void);
 
 #endif
