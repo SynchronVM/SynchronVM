@@ -251,13 +251,26 @@ void main(void) {
     counter++;
   }
 
+  volatile int values[100];
+  
   while (1) {
 
     k_sleep(K_SECONDS(30));
 
+    
+    
     for (int i = 0; i < 10; i ++) {
       gpio_pin_set(d_led1, LED_PIN(led1), i%2);
-      k_sleep(K_MSEC(500)); 
+
+      for (int j = 0; j < 100; j ++) {
+	values[j] = 0; 
+      }
+      
+      for (int j = 0; j < 100; j ++) {
+	for (int k = 0; k < 10000; k ++) {
+	  values[j] += k; 
+	}
+      }
     }
     gpio_pin_set(d_led1, LED_PIN(led1), 0);
   }
