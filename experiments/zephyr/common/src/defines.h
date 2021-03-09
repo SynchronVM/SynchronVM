@@ -1,6 +1,8 @@
 #ifndef DEFINES_H
-  #define DEFINES_h
-#endif
+#define DEFINES_H
+
+#ifdef CONFIG_BT
+
 
 #include <zephyr/types.h>
 #include <stddef.h>
@@ -81,3 +83,7 @@ int register_service(struct bt_uuid* service, struct bt_uuid* characteristic);
 
 /* The inverse of the above method. */
 int unregister_service(struct remote_device* device);
+
+
+#endif
+#endif

@@ -1,3 +1,6 @@
+
+#ifdef CONFIG_BT
+
 #include <zephyr/types.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -180,3 +183,5 @@ int register_service(struct bt_uuid* service, struct bt_uuid* characteristic) {
   printk("Registering communication service\n");
   return bt_gatt_service_register(custom_svc);
 }
+
+#endif
