@@ -35,7 +35,6 @@ bool bme_init(void) {
 }
 
 
-
 /* Trigger a sampling of the sensor */
 bool bme_sample(void) {
   /* returns value != 0 on failure */

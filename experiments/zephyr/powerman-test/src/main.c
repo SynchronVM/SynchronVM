@@ -76,7 +76,7 @@ void t_info_dump(const struct k_thread *cthread, void *user_data) {
 	thread->base.user_options,
 	thread->base.prio,
 	thread->base.timeout.dticks);
-  PRINT("\tstate: %s", k_thread_state_str(thread));
+  PRINT("\tstate: %s\r\n", k_thread_state_str(thread));
 
   t_counter++;
 
@@ -133,7 +133,9 @@ void main(void) {
 
   PRINT("t_info_dump called %d times\r\n", t_counter);
 
+  PRINT("Going to sleep 30 seconds\r\n");
   k_sleep(K_SECONDS(30));
+  PRINT("Woke up!\r\n");
 
   
   /* ******************* */
@@ -178,7 +180,6 @@ void main(void) {
   /* } else { */
   /*   PRINT("HWCounter: Error setting alarm\r\n"); */
   /* } */
-
 
 
   PRINT("Configuring sensors\r\n");
@@ -232,33 +233,34 @@ void main(void) {
     counter++;
   }
 
+  k_thread_foreach(t_info_dump, NULL);
+  k_sleep(K_SECONDS(5));
+  
   /* configure uart */
 
-  ll_driver_t uart_drv;
-  uart_dev_t uart0;
+  /* ll_driver_t uart_drv; */
+  /* uart_dev_t uart0; */
 
-  if (ll_uart_init(&uart_drv, UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
-    PRINT("LL_UART: OK!\r\n");
-  } else {
-    PRINT("LL_UART: Failed!\r\n");
-  }
+  /* if (ll_uart_init(&uart_drv, UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) { */
+  /*   PRINT("LL_UART: OK!\r\n"); */
+  /* } else { */
+  /*   PRINT("LL_UART: Failed!\r\n"); */
+  /* } */
 
-  const char *hello = "hello world\r\n";
-
-  while (counter < 15) {
-    ll_write(&uart_drv, hello, strlen(hello));
-    k_sleep(K_SECONDS(1));
-    counter++;
-  }
+  /* const char *hello = "hello world\r\n"; */
+  
+  /* while (counter < 5) { */
+  /*   ll_write(&uart_drv, hello, strlen(hello)); */
+  /*   k_sleep(K_SECONDS(1)); */
+  /*   counter++; */
+  /* } */
 
   volatile int values[100];
   
   while (1) {
 
-    k_sleep(K_SECONDS(30));
-
-    
-    
+    k_sleep(K_SECONDS(10));
+  
     for (int i = 0; i < 10; i ++) {
       gpio_pin_set(d_led1, LED_PIN(led1), i%2);
 
@@ -267,7 +269,7 @@ void main(void) {
       }
       
       for (int j = 0; j < 100; j ++) {
-	for (int k = 0; k < 10000; k ++) {
+	for (int k = 0; k < 100000; k ++) {
 	  values[j] += k; 
 	}
       }

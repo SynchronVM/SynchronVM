@@ -44,25 +44,28 @@ struct pm_notifier power_state_change;
 
 static void powerman_state_entry(enum pm_state s) {
 
-  printk("powerman(state entry): ARG = %s\r\n",power_states[s]);
+  
 }
 
 static void powerman_state_exit(enum pm_state s) {
 
-  printk("powerman(state exit): ARG = %s\r\n",power_states[s]);
+  
   
 }
 
 /* Should be possible to set pm_power_state_exit_post_ops 
    to replace the built in implementation. 
    I dont seem to have succeeded */ 
-__weak void pm_power_state_exit_post_ops(struct pm_state_info info)
-{
+__weak void pm_power_state_exit_post_ops(struct pm_state_info info) {
   /* pm_system_suspend is entered with irq locked
    * unlock irq before leave pm_system_suspend
    */
   irq_unlock(0);
-  printk("powerman: exit post ops actually runs...\r\n");
+  /*printk("powerman: exit post ops actually runs...\r\n");*/
+}
+
+__weak void pm_power_state_set(struct pm_state_info info) {
+  printk("powerman: set power state\r\n");
 }
 
 struct pm_state_info pm_policy_next_state(int ticks)
@@ -80,9 +83,10 @@ struct pm_state_info pm_policy_next_state(int ticks)
   
   //printk("ticks: %d\r\n", ticks);
   //zassert_true(ticks == _kernel.idle, NULL);
-  if (ticks > 200000) {
-    info.state = PM_STATE_STANDBY;
+  if (ticks > 20000) {
+    //info.state = PM_STATE_STANDBY;
     //info.state = PM_STATE_RUNTIME_IDLE;
+    info.state = PM_STATE_SOFT_OFF;
     //info.state = PM_STATE_ACTIVE; // always stay active as a test
   } else {
     info.state = PM_STATE_ACTIVE;
