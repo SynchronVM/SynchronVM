@@ -86,8 +86,8 @@ struct pm_state_info pm_policy_next_state(int ticks)
   if (ticks > 20000) {
     //info.state = PM_STATE_STANDBY;
     //info.state = PM_STATE_RUNTIME_IDLE;
-    info.state = PM_STATE_SOFT_OFF;
-    //info.state = PM_STATE_ACTIVE; // always stay active as a test
+    //info.state = PM_STATE_SOFT_OFF;
+    info.state = PM_STATE_ACTIVE; // always stay active as a test
   } else {
     info.state = PM_STATE_ACTIVE;
   }
