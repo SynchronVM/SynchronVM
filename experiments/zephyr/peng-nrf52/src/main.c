@@ -297,8 +297,10 @@ void hw_tick(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_
   send_msg.size = 0;
   send_msg.tx_data = NULL;
   send_msg.tx_target_thread = K_ANY;
-  
-  k_mbox_put(&tick_mbox, &send_msg, K_FOREVER);
+
+  /* third argument in async put is a semaphore  
+     that can be set to NULL if not "needed" _*/
+  k_mbox_async_put(&tick_mbox, &send_msg, NULL);
 
   config->ticks = counter_us_to_ticks(dev, 100000);
   
@@ -336,8 +338,8 @@ void tick_thread_main(void * a, void* b, void *c) {
     recv_msg.rx_source_thread = K_ANY;
 
     PRINT("step[%d]: r = %d\n", i, r.value);
-    //PRINT("now: %12lu\n", (uint32_t)now);
-    //PRINT("Events queued: %d\n", event_queue_len);
+    PRINT("now: %12lu\n", (uint32_t)now);
+    PRINT("Events queued: %d\n", event_queue_len);
     
     /* get a data item, waiting as long as needed */
     k_mbox_get(&tick_mbox, &recv_msg, NULL, K_FOREVER);
