@@ -116,7 +116,7 @@ void step_myfib(act_t *gen_act) {
             initialize_int(&act->r2);
             assign_int(&act->r2, act->priority, 0);
             if (!((act->n.value) < (2))) goto L0;
-            later_int(act->r, now + 1, 1);
+            later_int(act->r, now + 1000, 1);
             goto L1;
 
         L0:
