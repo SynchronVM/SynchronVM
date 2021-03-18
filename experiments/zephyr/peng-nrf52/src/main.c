@@ -14,6 +14,7 @@
 #include <drivers/counter.h>
 
 #include "fib.h"
+#include "blinky.h"
 
 /* Our own library of stuff! */
 //#include "defines.h"
@@ -23,24 +24,10 @@
 #include "uart.h"
 #include "ll_uart.h"
 //#include "powerman.h"
+#include "led.h"
 
 //#define PRINT usb_printf
 #define PRINT printk
-
-/* LEDS */
-
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-#else
-#error "NO LED0"
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
-#else
-#error "NO LED1"
-#endif
-
-#define LED_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
-#define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
-#define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
 /* ********** */
 /*   TIMER    */
@@ -59,16 +46,12 @@ uart_dev_t uart0;
 uint8_t uart0_in_buffer[1024];
 uint8_t uart0_out_buffer[1024];
 
-
-
 void top_return(act_t *act)
 {
   return;
 }
 
 act_t top = { .step = top_return };
-
-
 
 /* ************************************************************ */
 /* hw_tick                                                      */
@@ -108,20 +91,34 @@ void tick_thread_main(void * a, void* b, void *c) {
   initialize_int(&r);
   r.value = 0;
   now = 0; 
+  sv_int_t led;
+  initialize_int(&led);
+  led.value = 0;
+  
+  //PRINT("forking myfib\r\n");
+  //fork_routine( (act_t *) enter_myfib(&top, PRIORITY_AT_ROOT, DEPTH_AT_ROOT, 4, &r) );
 
-  PRINT("forking myfib\r\n");
-  fork_routine( (act_t *) enter_myfib(&top, PRIORITY_AT_ROOT, DEPTH_AT_ROOT, 4, &r) );
+  PRINT("forking blinky\r\n");
+  fork_routine( (act_t *) enter_main(&top, PRIORITY_AT_ROOT, DEPTH_AT_ROOT, &led) );
+  
 
+  
   PRINT("Waiting for ticks\r\n");
   int i = 0; 
   while (1) {
     recv_msg.size = 0;
     recv_msg.rx_source_thread = K_ANY;
 
-    PRINT("step[%d]: r = %d\r\n", i, r.value);
-    PRINT("now: %llu\r\n", now);
-    PRINT("next: %llu\r\n",next_event_time());
-    PRINT("Events queued: %d\r\n", event_queue_len);
+    //PRINT("step[%d]: r = %d\r\n", i, r.value); 
+    /* PRINT("now: %llu\r\n", now); */
+    /* PRINT("next: %llu\r\n",next_event_time()); */
+    /* PRINT("Events queued: %d\r\n", event_queue_len); */
+
+    /* PRINT("step[%d]: led = %d\r\n", i, led.value); */
+    /* PRINT("now: %llu\r\n", now); */
+    /* PRINT("next: %llu\r\n",next_event_time()); */
+    /* PRINT("Events queued: %d\r\n", event_queue_len); */
+  
     
     /* get a data item, waiting as long as needed */
     k_mbox_get(&tick_mbox, &recv_msg, NULL, K_FOREVER);
@@ -131,8 +128,7 @@ void tick_thread_main(void * a, void* b, void *c) {
 
     uint64_t sleep_time = next_event_time() - now; /* in milliseconds */
 
-    PRINT("sleep_time = %d\r\n", sleep_time);
-    
+    //PRINT("sleep_time = %lld\r\n", sleep_time);
     
     alarm_cfg.ticks = counter_us_to_ticks(counter_dev, 1000*(uint32_t)sleep_time); /* ms */
   
@@ -169,19 +165,15 @@ void main(void) {
   PRINT("Sleeping 1 seconds\r\n");
   k_sleep(K_SECONDS(1)); // Wait enough for starting up a terminal.
   PRINT("WOKE UP\r\n");
-  /* ******************* */
-  /* Configure some LEDs */
+
+  PRINT("Init LEDs\r\n");
+  if (!led_init()) {
+    PRINT("ERROR INIT LEDs\r\n");
+    return;
+  }
+
+
   
-  const struct device *d_led0;
-  const struct device *d_led1;
-
-  d_led0 = device_get_binding(LED_DEVICE_LABEL(led0));
-  d_led1 = device_get_binding(LED_DEVICE_LABEL(led1));
-  gpio_pin_configure(d_led0, LED_PIN(led0), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led0));
-  gpio_pin_configure(d_led1, LED_PIN(led1), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led1));
-  gpio_pin_set(d_led0, LED_PIN(led0), 0);
-  gpio_pin_set(d_led1, LED_PIN(led1), 0);
-
   /* ********** */
   /* MESSAGEBOX */
   PRINT("Creating messagebox\n");
@@ -223,16 +215,11 @@ void main(void) {
   PRINT("Starting Tick-Thread\r\n");
   start_tick_thread();
 
-
-  
-  int led0_state = 1;
   int led1_state = 0;
   
   while(1) {
-    gpio_pin_set(d_led0, LED_PIN(led0), led0_state);
-    gpio_pin_set(d_led1, LED_PIN(led1), led1_state);
-    led0_state = 1 - led0_state;
+    set_led(1,led1_state);
     led1_state = 1 - led1_state;
-    k_sleep(K_MSEC(500));
+    k_sleep(K_SECONDS(1));
   }
 }
