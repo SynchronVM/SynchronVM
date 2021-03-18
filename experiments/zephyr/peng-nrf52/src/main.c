@@ -118,10 +118,10 @@ void tick_thread_main(void * a, void* b, void *c) {
     recv_msg.size = 0;
     recv_msg.rx_source_thread = K_ANY;
 
-    PRINT("step[%d]: r = %d\n", i, r.value);
-    PRINT("now: %llu\n", now);
-    PRINT("next: %llu\n",next_event_time());
-    PRINT("Events queued: %d\n", event_queue_len);
+    PRINT("step[%d]: r = %d\r\n", i, r.value);
+    PRINT("now: %llu\r\n", now);
+    PRINT("next: %llu\r\n",next_event_time());
+    PRINT("Events queued: %d\r\n", event_queue_len);
     
     /* get a data item, waiting as long as needed */
     k_mbox_get(&tick_mbox, &recv_msg, NULL, K_FOREVER);
@@ -131,6 +131,7 @@ void tick_thread_main(void * a, void* b, void *c) {
 
     uint64_t sleep_time = next_event_time() - now; /* in milliseconds */
 
+    PRINT("sleep_time = %d\r\n", sleep_time);
     
     
     alarm_cfg.ticks = counter_us_to_ticks(counter_dev, 1000*(uint32_t)sleep_time); /* ms */
