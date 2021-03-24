@@ -25,9 +25,12 @@
 #ifndef LED_H_
 #define LED_H_
 
+#include <stdbool.h>
+#include <stdint.h>
 
+extern uint32_t led_num(void);
 extern bool led_init(void);
-extern void set_led(int led, int value);
+extern void led_set(int led, int value);
 
 
 #endif

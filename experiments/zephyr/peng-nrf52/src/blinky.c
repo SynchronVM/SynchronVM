@@ -20,7 +20,7 @@ void step_main(act_t *bare_act)
   case 0: ;
 
   L0: ;
-    set_led(0, act->led->value);
+    led_set(0, act->led->value);
     later_int(act->led, now + 5000000L, 1);
     sensitize((sv_t *) act->led, &act->trigger1);
     act->pc = 1;
@@ -28,7 +28,7 @@ void step_main(act_t *bare_act)
 
   case 1: ;
     desensitize(&act->trigger1);
-    set_led(0, act->led->value);
+    led_set(0, act->led->value);
     later_int(act->led, now + 5000000L, 0);
     sensitize((sv_t *) act->led, &act->trigger1);
     act->pc = 2;

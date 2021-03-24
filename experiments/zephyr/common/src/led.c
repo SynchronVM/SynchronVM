@@ -22,20 +22,9 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <stdbool.h>
-#include <string.h>
 #include <led.h>
 
 #include <drivers/gpio.h>
-
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-#else
-#error "NO LED0"
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
-#else
-#error "NO LED1"
-#endif
 
 #define LED_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
@@ -55,12 +44,14 @@
   gpio_pin_set(led_devices[(X)], LED_PIN(led##X), led_states[(X)]);	\
   break;\
   
-
-
 const struct device *led_devices[10];
 static int led_states[10];
 
 static uint32_t num_leds; 
+
+uint32_t led_num(void) {
+  return num_leds;
+}
 
 bool led_init(void) {
 
@@ -108,7 +99,7 @@ bool led_init(void) {
   return true;
 }
 
-void set_led(int led, int value) {
+void led_set(int led, int value) {
   switch(led) {
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
     LED_SET_CASE(0,value);
