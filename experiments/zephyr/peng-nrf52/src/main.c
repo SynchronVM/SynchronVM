@@ -218,6 +218,9 @@ void main(void) {
     PRINT("HWCounter: Device not found error\r\n");
   }
 
+  PRINT("HWCounter: Running at %uMHz\r\n",
+	  counter_get_frequency(counter_dev) / 1000000);
+  
   alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
   alarm_cfg.ticks = 10; //counter_us_to_ticks(counter_dev, 0);
   alarm_cfg.callback = hw_tick;
