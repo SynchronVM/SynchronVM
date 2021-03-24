@@ -1,0 +1,9 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+fromMaybe : Maybe a -> a -> a
+fromMaybe m a = case m of
+                  (Just x) -> x
+                  Nothing  -> a

@@ -1,0 +1,5 @@
+I imagine we will create pairs of files such as `test1.cam` & `test1.out`, where the file suffixed with
+`out` will contain the stdout of the program in `test1.cam`. The test program will then just
+read in all the pairs, compile & run the `.cam` and compare the output against that in `.out`.
+
+Simple enough!

@@ -1,0 +1,7 @@
+
+toInt : Bool -> Int
+toInt True  = 1
+toInt False = 0
+
+f : (Int, Bool) -> Int
+f (k as (x,y)) = x + toInt y

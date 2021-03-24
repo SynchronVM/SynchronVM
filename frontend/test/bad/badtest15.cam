@@ -1,0 +1,9 @@
+
+data Either a b where
+  Left  : a -> Either a b
+  Right : b -> Either a b
+
+f : Either Int Bool -> Bool
+f e = case e of
+        True  -> True
+        False -> False

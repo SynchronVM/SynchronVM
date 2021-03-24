@@ -1,0 +1,13 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+data Test a where
+  Test : (a, Int) -> Test a
+
+good : Test Int -> Int
+good (Test (a, b)) = a + b
+
+bad : Test Int -> Int
+bad (Test Nothing) = 2

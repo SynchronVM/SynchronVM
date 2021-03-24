@@ -1,0 +1,18 @@
+
+data Proxy a where
+  Proxy : Proxy a
+
+intProxy : Proxy Int
+intProxy = Proxy
+
+boolProxy : Proxy Bool
+boolProxy = Proxy
+
+swapProxy : Proxy Int -> Proxy Bool -> (Proxy Bool, Proxy Int)
+swapProxy x y = (y, x)
+
+swapProxyPM : Proxy Int -> Proxy Bool -> (Proxy Bool, Proxy Int)
+swapProxyPM Proxy Proxy = (Proxy, Proxy)
+
+funProxy : Proxy a -> Proxy b -> Proxy (a -> b)
+funProxy Proxy Proxy = Proxy

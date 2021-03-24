@@ -1,0 +1,10 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+fromMaybe : Maybe a -> a -> a
+fromMaybe m a = case m of
+                  -- bad, because we expect parentheses around n-ary ADTs
+                  Just x  -> x
+                  Nothing -> a

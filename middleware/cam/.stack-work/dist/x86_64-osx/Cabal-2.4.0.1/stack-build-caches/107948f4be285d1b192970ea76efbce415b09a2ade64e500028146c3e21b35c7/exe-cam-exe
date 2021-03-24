@@ -1,0 +1,40 @@
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Main.hs:
+  hash: 76b6ff5a6856b39392800f564d81a7fd1496c8e13ac7941036946f0b5757272b
+  size: 61
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/package.yaml:
+  hash: 02fe2e82a504f8629fe9944753c2c01f88d07938d9a0721c771b87556811ac94
+  size: 1390
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Assembler.hs:
+  hash: 2ff0cd5c7a145e194f81d6fca7e7ce1116c8e4993542f944485a1a58ac96c435
+  size: 12821
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Bytecode/Interpreter.hs:
+  hash: 58a2e14d547e27c52e8d6a1040f25473ed9b8935cc6bf51b6f9e4edb783deb5e
+  size: 1242
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Bytecode/InterpreterModel.hs:
+  hash: fa985f038c4a50925d596d64ac45670bc78feacdbf5693c8d474a81e8f989a18
+  size: 13110
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Examples.hs:
+  hash: a68dff0a296ee54e98e4f5e9f4d8477845aca854801080ace17471f4b8bc3abb
+  size: 5437
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/ChangeLog.md:
+  hash: ae6baa6d2bc62b98722ad4e51967c08ba6132071bdb3c772e193af505b155fd6
+  size: 43
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/README.md:
+  hash: 45a5d87f9ad40467de6129a1a02009ded219a6dc600c5ddced75b689dbba52c8
+  size: 6
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/cam.cabal:
+  hash: 281ac11ca1ea381e48f99947f82599f85e4b276e4de54727835b0a604b282e93
+  size: 1760
+  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/CAM.hs:
+  hash: 5c86c74c02cf30685a5e80ddd7e78498ed476103834e4cbdd91e16c1497ec136
+  size: 10277
+  modtime: 1599734670
