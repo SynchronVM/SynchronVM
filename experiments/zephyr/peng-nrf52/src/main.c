@@ -131,7 +131,6 @@ void tick_thread_main(void * a, void* b, void *c) {
     PRINT("ctr: %u\r\n", count);
     PRINT("now: %llu\r\n", now);
     PRINT("next: %llu\r\n", next_event_time());
-    PRINT("max: %llu\r\n", ULLONG_MAX);
     
     now = next_event_time();
     tick();
@@ -141,11 +140,11 @@ void tick_thread_main(void * a, void* b, void *c) {
 
     if (next == ULLONG_MAX) {
       /* This just means that there are no events in the queue (or a remarkable coincidence) */
-      /* What to do in this case ?*/ 
+      /* What to do in this case ?*/
+      /*  - Go to sleep and await being woken from outside source */
+      
       PRINT("NOTHING IN THE QUEUE\r\n");
     }
-    
-    
     
     uint64_t wake_time = next_event_time(); /* Absolute time */
 
