@@ -12,14 +12,14 @@
 
 # Haskell
 *.hi
-language/tiny_camiot/CamIoT/.stack-work/
+frontend/CamIoT/.stack-work/
 
-language/tiny_camiot/grammar/
-!language/tiny_camiot/grammar/tiny_camiot.cf
+frontend/grammar/
+!frontend/grammar/tiny_camiot.cf
 
-language/tiny_camiot/CamIoT/src/Frontend/
-!language/tiny_camiot/CamIoT/src/Frontend/tiny_camiot.cf
-!language/tiny_camiot/CamIoT/src/Frontend/ParseTinyCamiot.hs
+frontend/CamIoT/src/Frontend/
+!frontend/CamIoT/src/Frontend/tiny_camiot.cf
+!frontend/CamIoT/src/Frontend/ParseTinyCamiot.hs
 
 
 # Directories
@@ -34,25 +34,27 @@ spec/plantuml-images
 *.exe
 
 # tiny_camiot specific
-language/tiny_camiot/build/
-language/tiny_camiot/camiotc
-language/tiny_camiot/grammar/Absyn.c
-language/tiny_camiot/grammar/Absyn.h
-language/tiny_camiot/grammar/Absyn.o
-language/tiny_camiot/grammar/Lexer.c
-language/tiny_camiot/grammar/Lexer.o
-language/tiny_camiot/grammar/Makefile
-language/tiny_camiot/grammar/Makefile~
-language/tiny_camiot/grammar/Parser.c
-language/tiny_camiot/grammar/Parser.h
-language/tiny_camiot/grammar/Parser.o
-language/tiny_camiot/grammar/Printer.c
-language/tiny_camiot/grammar/Printer.h
-language/tiny_camiot/grammar/Printer.o
-language/tiny_camiot/grammar/Skeleton.c
-language/tiny_camiot/grammar/Skeleton.h
-language/tiny_camiot/grammar/Test.c
-language/tiny_camiot/grammar/Test.o
-language/tiny_camiot/grammar/Testtiny_camiot
-language/tiny_camiot/grammar/tiny_camiot.l
-language/tiny_camiot/grammar/tiny_camiot.y
+frontend/grammar/Absyn.c
+frontend/grammar/Absyn.h
+frontend/grammar/Absyn.o
+frontend/grammar/Lexer.c
+frontend/grammar/Lexer.o
+frontend/grammar/Makefile
+frontend/grammar/Makefile~
+frontend/grammar/Parser.c
+frontend/grammar/Parser.h
+frontend/grammar/Parser.o
+frontend/grammar/Printer.c
+frontend/grammar/Printer.h
+frontend/grammar/Printer.o
+frontend/grammar/Skeleton.c
+frontend/grammar/Skeleton.h
+frontend/grammar/Test.c
+frontend/grammar/Test.o
+frontend/grammar/Testtiny_camiot
+frontend/grammar/tiny_camiot.l
+frontend/grammar/tiny_camiot.y
+
+#stack specific
+frontend/CamIoT/.stack-work/
+frontend/CamIoT/stack.yaml.lock
