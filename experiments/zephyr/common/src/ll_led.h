@@ -22,45 +22,13 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef LL_DRIVER_H_
-#define LL_DRIVER_H_
+#ifndef LL_LED_H_
+#define LL_LED_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-
-#define LL_DRIVER_CONTROL_FAILURE 0x0
-#define LL_DRIVER_CONTROL_SUCCESS 0x1
-
-/* Potentially register a hook with a driver.     
-   If the driver is interrupt based it may be used 
-   to kickstart some other part of the rts? perhaps... 
-   Maybe this should be an argument to the init 
-   routine of the driver in question?
-*/ 
-typedef bool (*ll_driver_hook_fun)(uint32_t *arg);
+#include <led.h>
+#include <ll_driver.h>
 
 
-/* Driver interface */ 
-typedef struct ll_driver_s{
-  void *driver_info;
-  int (*ll_read_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
-  int (*ll_write_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
-  uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
-  bool (*ll_data_available_fun)(struct ll_driver_s *this);
-} ll_driver_t;
 
-inline int ll_read(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
-  return drv->ll_read_fun((struct ll_driver_s*)drv, data, data_size);
-}
-
-inline int ll_write(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
-  return drv->ll_write_fun((struct ll_driver_s*)drv, data, data_size);
-}
-
-inline bool ll_data_avaliable(ll_driver_t *drv) { /* bytes available */
-  return drv->ll_data_available_fun((struct ll_driver_s*)drv);
-}
-
-// inline uint32_t ll_control(struct ll_driver_s *this, uint8_t *, uint32_t);
 
 #endif

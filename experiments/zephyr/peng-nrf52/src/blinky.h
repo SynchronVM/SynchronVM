@@ -13,4 +13,7 @@ extern act_main_t *enter_main( act_t *parent
 			       , priority_t priority
 			       , depth_t depth
 			       , sv_int_t *led );
+
+
+extern void init_blinky(void);
 #endif

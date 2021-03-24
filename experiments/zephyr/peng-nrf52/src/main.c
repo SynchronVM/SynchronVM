@@ -197,11 +197,15 @@ void main(void) {
   PRINT("WOKE UP\r\n");
 
   PRINT("Init LEDs\r\n");
-  if (!led_init()) {
+  led_driver_t *led0 = led_init(0);
+  if (!led0) {
     PRINT("ERROR INIT LEDs\r\n");
     return;
   }
-  
+
+  PRINT("Init Blinky\r\n");
+  init_blinky();
+
   /* ********** */
   /* MESSAGEBOX */
   PRINT("Creating messagebox\n");
@@ -248,16 +252,14 @@ void main(void) {
     PRINT("LL_UART: Failed!\r\n");
   }
 
-
   PRINT("Starting Tick-Thread\r\n");
   start_tick_thread();
 
-  int led1_state = 0;
+  int led0_state = 0;
   
   while(1) {
-    //set_led(1,led1_state);
-    //led1_state = 1 - led1_state;
-    k_sleep(K_SECONDS(2));
-    return;
+    led_set(led0,led0_state);
+    led0_state = 1 - led0_state;
+    k_sleep(K_SECONDS(4));
   }
 }

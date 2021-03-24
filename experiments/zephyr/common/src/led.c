@@ -30,6 +30,7 @@
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
+/*
 #define CONFIG_LED(X) \
   led_devices[(X)] = device_get_binding(LED_DEVICE_LABEL(led##X));	\
   if (led_devices[(X)]) {\
@@ -37,101 +38,151 @@
     gpio_pin_set(led_devices[(X)], LED_PIN(led##X), 0);		\
     num_leds++;\
   }
+*/
 
+#define CONFIG_LED_CASE(X) \
+  case X: \
+  led_drivers[(X)].pin = LED_PIN(led##X);	\
+  led_drivers[(X)].id  = (X); \
+  led_drivers[(X)].state = false; \
+  gpio_pin_configure(led_device, led_drivers[(X)].pin, GPIO_OUTPUT_ACTIVE | LED_FLAGS(led##X)); \
+  gpio_pin_set(led_device, led_drivers[(X)].pin, 0); \
+  break;
+
+/*
 #define LED_SET_CASE(X,V)			\
   case X:\
   led_states[(X)] = (V);						\
   gpio_pin_set(led_devices[(X)], LED_PIN(led##X), led_states[(X)]);	\
   break;\
-  
-const struct device *led_devices[10];
-static int led_states[10];
+*/
 
-static uint32_t num_leds; 
+led_driver_t led_drivers[10];
+const struct device *led_device;
 
 uint32_t led_num(void) {
-  return num_leds;
+  uint32_t num_leds = 0;
+  
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
+  num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
+  num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led2), okay)
+  num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led3), okay)
+  num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led4), okay)
+   num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led5), okay)
+   num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led6), okay)
+   num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led7), okay)
+   num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led8), okay)
+   num_leds = num_leds + 1;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led9), okay)
+   num_leds = num_leds + 1;
+#endif
+  return num_leds;  
 }
 
-bool led_init(void) {
+uint32_t led_identifiers(void) {
+  uint32_t id_mask = 0;
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
+  id_mask = id_mask | (1 << 0);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
+  id_mask = id_mask | (1 << 1);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led2), okay)
+  id_mask = id_mask | (1 << 2);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led3), okay)
+  id_mask = id_mask | (1 << 3);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led4), okay)
+  id_mask = id_mask | (1 << 4);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led5), okay)
+  id_mask = id_mask | (1 << 5);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led6), okay)
+  id_mask = id_mask | (1 << 6);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led7), okay)
+  id_mask = id_mask | (1 << 7);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led8), okay)
+  id_mask = id_mask | (1 << 8);
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led9), okay)
+  id_mask = id_mask | (1 << 9);
+#endif
+   return id_mask;  
+}
 
-  num_leds = 0;
-  /* all led_devices NULL 
-     and all states 0 */ 
-  for (int i = 0; i < 10; i++) { 
-    led_devices[i] = NULL;
-    led_states[i] = 0;
+led_driver_t* led_init(uint32_t identifier) {
+
+  if (!led_device) {
+    /* assumption all leds will have the same device label */
+    led_device = device_get_binding(LED_DEVICE_LABEL(led0)); 
   }
 
+  if (!led_device) return false;
+
+  switch(identifier) {
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-  CONFIG_LED(0);
+  CONFIG_LED_CASE(0);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
-  CONFIG_LED(1);
+  CONFIG_LED_CASE(1);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led2), okay)
-  CONFIG_LED(2);
+  CONFIG_LED_CASE(2);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led3), okay)
-  CONFIG_LED(3);
+  CONFIG_LED_CASE(3);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led4), okay)
-  CONFIG_LED(4); 
+  CONFIG_LED_CASE(4); 
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led5), okay)
-  CONFIG_LED(5);
+  CONFIG_LED_CASE(5);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led6), okay)
-  CONFIG_LED(6);
+  CONFIG_LED_CASE(6);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led7), okay)
-  CONFIG_LED(7);
+  CONFIG_LED_CASE(7);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led8), okay)
-  CONFIG_LED(8);
+  CONFIG_LED_CASE(8);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led9), okay)
-  CONFIG_LED(9);
+  CONFIG_LED_CASE(9);
 #endif
-
-  if (num_leds == 0) return false;
-
-  return true;
-}
-
-void led_set(int led, int value) {
-  switch(led) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-    LED_SET_CASE(0,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led1), okay)
-    LED_SET_CASE(1,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led2), okay)
-    LED_SET_CASE(2,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led3), okay)
-    LED_SET_CASE(3,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led4), okay)
-    LED_SET_CASE(4,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led5), okay)
-    LED_SET_CASE(5,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led6), okay)
-    LED_SET_CASE(6,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led7), okay)
-    LED_SET_CASE(7,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led8), okay)
-    LED_SET_CASE(8,value);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led9), okay)
-    LED_SET_CASE(9,value);
-#endif    
   default:
-    break;
+    return NULL;
   }
+  return &led_drivers[identifier];
 }
+
+void led_set(led_driver_t *led, bool value) {
+
+  if (!led) return;
+
+  led->state = value;
+  gpio_pin_set(led_device, led->pin, led->state);
+ 
+}
+

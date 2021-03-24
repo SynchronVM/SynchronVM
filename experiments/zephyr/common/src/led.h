@@ -28,9 +28,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef struct {
+  uint32_t pin;
+  uint32_t id;
+  bool state;
+} led_driver_t;
+
 extern uint32_t led_num(void);
-extern bool led_init(void);
-extern void led_set(int led, int value);
+extern led_driver_t* led_init(uint32_t identifier);
+extern void led_set(led_driver_t *led, bool value);
 
 
 #endif
