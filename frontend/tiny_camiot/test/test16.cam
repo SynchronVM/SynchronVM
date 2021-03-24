@@ -1,0 +1,16 @@
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+bind2 : Maybe a -> (a -> Maybe b) -> Maybe b
+bind2 ma k = case ma of
+        (Just a)  -> k a
+        Nothing -> Nothing
+
+bind : Maybe a -> (a -> Maybe b) -> Maybe b
+bind (Just a) k = k a
+bind Nothing _ = Nothing
+
+try_add : Maybe Int -> Maybe Int -> Maybe Int
+try_add m1 m2 = bind m1 (\a -> 
+                  bind m2 (\b -> Just (a + b)))

@@ -1,0 +1,137 @@
+
+comment "--" ;
+comment "{-" "-}" ;
+
+token UIdent (upper (letter | digit | '_')*) ;
+
+-- Layout
+
+layout "where", "of";
+layout toplevel ;
+
+-- Programs
+
+-- commenting this out removes 1 shift reduce
+separator    Def   ";" ; -- Moving this here changes the behavior
+
+DEquation.   Def ::= Ident [Pat] "=" Exp ; -- List so that we can have f a b = ...
+DTypeSig.    Def ::= Ident ":" Type ;
+DDataDec.    Def ::= "data" UIdent [Ident] "where" "{" [ConstructorDec] "}" ;
+
+ConstDec. ConstructorDec ::= UIdent ":" Type ;
+separator ConstructorDec ";" ;
+
+separator    Ident "" ;
+
+
+-- types
+
+-- This gives some shift/reduce conflicts (7), but it seems to parse
+-- as we want it to anyway! If you remove the [Type] after UIdent
+-- it will remove all shift/reduce conflicts.
+TLam.	Type  ::= Type1 "->" Type ;
+TVar.   Type1 ::= Ident ;
+TNil.   Type2 ::= "()" ;
+TAdt.   Type2 ::= UIdent [Type1] ;
+TTup.   Type1 ::= "(" [TupType] ")" ;
+TBool. Type2  ::= "Bool" ;
+TInt. Type2   ::= "Int" ;
+TFloat. Type2 ::= "Float" ;
+
+TTupType. TupType ::= Type ;
+separator TupType "," ;
+
+separator Type1 "" ;
+--separator Type "" ;
+coercions Type 2 ;
+
+-- Expressions
+
+-- We want a different separator for these than for ordinary Exp
+ETupExp. TupExp ::= Exp ;
+separator nonempty TupExp "," ;
+
+ECase.  Exp  ::= "case" Exp "of" "{" [PatMatch] "}";
+ELet.   Exp  ::= "let"    Pat "=" Exp "in" Exp ;
+ELetR.  Exp  ::= "letrec" Pat "=" Exp "in" Exp ;
+ELam.   Exp  ::= "\\" Pat "->" Exp ;
+EIf.    Exp  ::= "if" Exp "then" Exp "else" Exp ;
+EApp.   Exp6 ::= Exp6 Exp7 ; 
+EOr.    Exp1 ::= Exp2 "||" Exp1 ;
+EAnd.   Exp2 ::= Exp3 "&&" Exp2 ;
+ERel.   Exp3 ::= Exp3 RelOp Exp4 ;
+EAdd.   Exp4 ::= Exp4 AddOp Exp5 ;
+EMul.   Exp5 ::= Exp5 MulOp Exp6 ;
+ETup.   Exp7  ::= "(" [TupExp] ")" ;
+ENot.   Exp6 ::= "!" Exp7 ;
+EVar.   Exp7 ::= Ident ;
+EUVar.  Exp7 ::= UIdent ;
+EConst. Exp7 ::= Const ;
+internal ETyped. Exp ::= "(" Exp ":" Type ")" ;
+
+Plus.   AddOp ::= "+" ;
+FPlus.  AddOp ::= "+." ;
+Minus.  AddOp ::= "-" ;
+FMinus. AddOp ::= "-." ;
+internal AddOpTyped. AddOp ::= "(" AddOp ":" Type ")" ;
+
+Times.  MulOp ::= "*" ;
+FTImes. MulOp ::= "*." ;
+Div.    MulOp ::= "/" ;
+FDiv.   MulOp ::= "/." ;
+internal MulOpTyped. MulOp ::= "(" MulOp ":" Type ")" ;
+
+LTC.  RelOp ::= "<" ;
+FLTC. RelOp ::= "<." ;
+LEC.  RelOp ::= "<=" ;
+FLEC. RelOp ::= "<=." ;
+GTC.  RelOp ::= ">" ;
+FGTC. RelOp ::= ">." ;
+GEC.  RelOp ::= ">=" ;
+FGEC. RelOp ::= ">=." ;
+EQC.  RelOp ::= "==" ;
+internal RelOpTyped. RelOp ::= "(" RelOp ":" Type ")" ;
+
+coercions Exp 7 ;
+separator Exp "" ;
+
+-- Constructor
+
+Constructor. Con ::= UIdent ;
+
+-- Constants
+
+CInt.     Const ::= Integer ;
+CFloat.   Const ::= Double ;
+CTrue.    Const ::= "True" ;
+CFalse.   Const ::= "False" ;
+CNil.     Const ::= "()" ;
+
+-- Patterns
+
+PConst. Pat  ::= Const ;
+PVar.   Pat  ::= Ident ;
+PZAdt.  Pat  ::= UIdent ;
+PNAdt.  Pat  ::= "(" UIdent [AdtPat] ")" ;
+PWild.  Pat  ::= "_" ;
+PNil.   Pat  ::= "(" ")" ;
+PTup.   Pat1 ::= "(" [TupPat] ")" ;
+PLay.   Pat2 ::= Ident "as" Pat ;
+
+-- for annotating the AST
+internal PTyped. Pat ::= "(" Pat ":" Type ")" ;
+
+PAdtPat. AdtPat ::= Pat ;
+separator nonempty AdtPat "" ;
+
+PTupPat. TupPat ::= Pat ;
+separator TupPat "," ;
+
+separator Pat "" ;
+coercions Pat 2 ;
+
+-- Pattern matching
+
+PM. PatMatch ::= Pat "->" Exp ;
+
+separator nonempty PatMatch ";"; 

@@ -1,0 +1,9 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+-- cannot have constructors that use the same name
+data Tree a where
+  Node : Tree a -> a -> Tree a -> Tree a
+  Leaf : a -> Tree a
+  Nil  : Tree a

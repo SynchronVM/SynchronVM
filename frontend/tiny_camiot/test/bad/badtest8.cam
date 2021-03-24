@@ -1,0 +1,24 @@
+data Either a b where
+  Left  : a -> Either a b
+  Right : b -> Either a b
+
+bimap : (a -> c) -> (b -> d) -> Either a b -> Either c d
+bimap f g (Left a) = Left (f a)
+bimap f g (Right b) = Right (g b)
+
+test : Either Int Bool
+test = Left 5
+
+f : Int -> Bool
+f 0 = False
+f _ = True
+
+g : Bool -> Int
+g True = 1
+g False = 0
+
+-- here it SHOULD complain that it could infer a stricter type - it is not actually polymorphic
+apply : Either a b -> Either b a
+apply e = bimap f g e
+
+main = apply test

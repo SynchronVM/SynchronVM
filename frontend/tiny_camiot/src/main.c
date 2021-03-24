@@ -26,13 +26,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Parser.h"
-#include "Printer.h"
-#include "Absyn.h"
+#include <Parser.h>
+#include <Printer.h>
+#include <Absyn.h>
 
+#include <formal_env.h>
+#include <CAM.h>
+
+typedef struct {
+  uint8_t opcode;
+  uint32_t immediate;  
+} CAM_instr_t;
+
+typedef struct CAM_ll_s {
+  struct CAM_ll_s *prev;
+  CAM_instr_t instr;
+} CAM_ll_t;
 
 int main(int argc, char **argv) {
-
 
   FILE *fp;
   Exp ast;
@@ -42,7 +53,7 @@ int main(int argc, char **argv) {
     printf("Error: specify exactly one argument (file to compile)\n");
     return 1;
   }
-  
+
   fn = argv[1];
 
   if (fn) {

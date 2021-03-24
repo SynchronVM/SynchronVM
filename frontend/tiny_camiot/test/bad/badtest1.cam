@@ -1,0 +1,4 @@
+
+data Maybe a where
+  Just    : a -> Either a a
+  Nothing : Maybe a

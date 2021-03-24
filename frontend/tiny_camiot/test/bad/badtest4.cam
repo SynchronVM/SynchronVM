@@ -1,0 +1,6 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+f = \(Just a b) -> 3

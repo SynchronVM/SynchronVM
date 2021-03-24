@@ -1,0 +1,8 @@
+
+twice : (a -> a) -> a -> a
+twice f a = f (f a)
+
+quadruple : (a -> a) -> a -> a
+quadruple f a = twice f (twice f a)
+
+main = quadruple (\x -> 10 + x) 10

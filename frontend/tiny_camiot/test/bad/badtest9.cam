@@ -1,0 +1,26 @@
+data Either a b where
+  Left  : a -> Either a b
+  Right : b -> Either a b
+
+bimap : (a -> c) -> (b -> d) -> Either a b -> Either c d
+bimap f g (Left a) = Left (f a)
+bimap f g (Right b) = Right (g b)
+
+test : Either Int Bool
+test = Left 5
+
+f : Int -> Bool
+f 0 = False
+f _ = True
+
+g : Bool -> Int
+g True = 1
+g False = 0
+
+apply : Either Int Bool -> Either Bool Int
+apply e = bimap f g e
+
+main = apply test
+
+-- It should complain the Either True b is not correct!
+main2 = apply (Left True)

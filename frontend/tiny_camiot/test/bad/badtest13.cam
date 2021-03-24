@@ -1,0 +1,10 @@
+
+
+data Test a where
+  Test : (a, Int) -> Test a
+
+good : Test Int -> Int
+good (Test (a, b)) = a + b
+
+bad : Test Int -> Int
+bad (Test (a,b,c)) = a+b

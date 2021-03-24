@@ -1,0 +1,7 @@
+id1 : a -> a
+id1 x = x
+
+id2 : a -> a
+id2 x = x
+
+main = id1 id2 5

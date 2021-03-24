@@ -1,0 +1,23 @@
+Todo items
+
+* (manual work, not difficult) Write more detailed error messages! The machinery is there already, it is just a matter of writing them.
+* (manual work, might be tricky, I guess) make most of the TC functions polymorphic in the monad
+  that does the typechecking. Create constraints instead! Say that it must be a monadState etc. This
+  way we can reuse some of the utility functions!
+* typechecking patterns, in ADT's, make sure that it throws the custom error message instead of
+  throwing the one in the unifyer first. The test for the error is written now, but it isn't invoked.
+  The unifier can use `catchError` _if_ there is a custom error message given, otherwise it can throw
+  the one it seems fit (like the very non-descriptive unification errors etc).
+* case checking on line 374, the error is rendered incorrectly..
+* We should try to be more correct about the way types are handled right now. Checking that ADTs and type constructors
+  are correctly applied etc is very crude. We should perhaps try to do it in terms of kinds and stuff, like it is done in Haskell.
+* Basically I believe the typechecker could benefit from a rewrite now that I know how it should work. Right now it's an initial attempt that has been quickfixed a few times too many.
+
+* some notion of function (entity that holds a list of definitions) should be added, instead of passing
+  around a list of `[Def a]` in the compiler.
+
+* move `renameExp` from `LambdaLifting` and generalise. It can probably be reused in a lot of places.
+
+* The monomorphizer needs a runover. Some of the code does a little too much and it can be structured nicer.
+
+* add a `main` to the pipeline. The typechecker should check for its presence and for its type.
