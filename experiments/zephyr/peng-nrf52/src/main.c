@@ -122,20 +122,51 @@ void tick_thread_main(void * a, void* b, void *c) {
     
     /* get a data item, waiting as long as needed */
     k_mbox_get(&tick_mbox, &recv_msg, NULL, K_FOREVER);
- 
+
+    uint32_t count;
+    counter_get_value(counter_dev, &count);
+
+
+    PRINT("*** *** *** *** *** ***\r\n");
+    PRINT("ctr: %u\r\n", count);
+    PRINT("now: %llu\r\n", now);
+    PRINT("next: %llu\r\n", next_event_time());
+    PRINT("max: %llu\r\n", ULLONG_MAX);
+    
     now = next_event_time();
     tick();
 
-    uint64_t sleep_time = next_event_time() - now; /* in milliseconds */
+    uint64_t next = next_event_time();
+    PRINT("next after tick: %llu\r\n", next);
+
+    if (next == ULLONG_MAX) {
+      /* This just means that there are no events in the queue (or a remarkable coincidence) */
+      /* What to do in this case ?*/ 
+      PRINT("NOTHING IN THE QUEUE\r\n");
+    }
+    
+    
+    
+    uint64_t wake_time = next_event_time(); /* Absolute time */
 
     //PRINT("sleep_time = %lld\r\n", sleep_time);
-    
-    alarm_cfg.ticks = counter_us_to_ticks(counter_dev, 1000*(uint32_t)sleep_time); /* ms */
-  
-    if (!counter_set_channel_alarm(counter_dev, 0, &alarm_cfg)) {
+
+    alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
+    alarm_cfg.ticks = wake_time; 
+
+    int r = counter_set_channel_alarm(counter_dev, 0, &alarm_cfg);
+    if (!r) {
       //PRINT("hw_tick: Alarm set\r\n");
     } else {
-      PRINT("hw_tick: Error setting alarm\r\n");
+      if (r == - ENOTSUP ) {
+	PRINT("hw_tick: Error setting alarm (ENOTSUP)\r\n");
+      } else if ( r == - EINVAL ) {
+	PRINT("hw_tick: Error setting alarm (EINVAL)\r\n");
+      } else if ( r == - ETIME ) {
+	PRINT("hw_tick: Error setting alarm (ETIME)\r\n");
+      } else {
+	PRINT("hw_tick: Error setting alarm\r\n");
+      }
     }
         
     i++;
@@ -180,7 +211,6 @@ void main(void) {
   k_mbox_init(&tick_mbox);
   
 
-  
   /* ************************* */
   /* Hardware timer experiment */
   PRINT("Configuring hardware timer \r\n");
@@ -189,19 +219,26 @@ void main(void) {
     PRINT("HWCounter: Device not found error\r\n");
   }
 
-  counter_start(counter_dev);
-
-  alarm_cfg.flags = 0;
-  alarm_cfg.ticks = counter_us_to_ticks(counter_dev, 10000);
+  alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
+  alarm_cfg.ticks = 10; //counter_us_to_ticks(counter_dev, 0);
   alarm_cfg.callback = hw_tick;
   alarm_cfg.user_data = &alarm_cfg;
 
+  
   if (!counter_set_channel_alarm(counter_dev, 0, &alarm_cfg)) {
     PRINT("HWCounter: Alarm set\r\n");
   } else {
     PRINT("HWCounter: Error setting alarm\r\n");
   }
+  if (!counter_set_guard_period(counter_dev, UINT_MAX/2, COUNTER_GUARD_PERIOD_LATE_TO_SET)) {
+    PRINT("HWCounter: Guard period set\r\n");
+  } else {
+    PRINT("HWCounter: Error setting guard period\r\n");
+  }
+  
+  counter_start(counter_dev);
 
+  
   /* configure uart */
 
  
@@ -218,8 +255,9 @@ void main(void) {
   int led1_state = 0;
   
   while(1) {
-    set_led(1,led1_state);
-    led1_state = 1 - led1_state;
-    k_sleep(K_SECONDS(1));
+    //set_led(1,led1_state);
+    //led1_state = 1 - led1_state;
+    k_sleep(K_SECONDS(2));
+    return;
   }
 }
