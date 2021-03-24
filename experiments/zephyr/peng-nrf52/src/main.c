@@ -201,8 +201,6 @@ void main(void) {
     PRINT("ERROR INIT LEDs\r\n");
     return;
   }
-
-
   
   /* ********** */
   /* MESSAGEBOX */
