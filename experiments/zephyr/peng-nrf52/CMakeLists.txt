@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
-project(central_hr)
+project(peng)
 
 FILE(GLOB app_sources src/*.c)
 FILE(GLOB extra_sources
