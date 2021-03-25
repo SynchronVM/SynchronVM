@@ -179,10 +179,9 @@ led_driver_t* led_init(uint32_t identifier) {
 
 void led_set(led_driver_t *led, bool value) {
 
-  if (!led) return;
-
-  led->state = value;
-  gpio_pin_set(led_device, led->pin, led->state);
- 
+  if (led) {
+    led->state = value;
+    gpio_pin_set(led_device, led->pin, led->state);
+  }
 }
 
