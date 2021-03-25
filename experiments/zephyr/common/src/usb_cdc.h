@@ -34,4 +34,4 @@ extern int usb_readl(char *buffer, int size);
 extern void start_usb_cdc_thread(void);
 
 
-#endif 
+#endif

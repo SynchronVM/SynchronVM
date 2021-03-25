@@ -31,16 +31,16 @@
 #define LL_DRIVER_CONTROL_FAILURE 0x0
 #define LL_DRIVER_CONTROL_SUCCESS 0x1
 
-/* Potentially register a hook with a driver.     
-   If the driver is interrupt based it may be used 
-   to kickstart some other part of the rts? perhaps... 
-   Maybe this should be an argument to the init 
+/* Potentially register a hook with a driver.
+   If the driver is interrupt based it may be used
+   to kickstart some other part of the rts? perhaps...
+   Maybe this should be an argument to the init
    routine of the driver in question?
-*/ 
+*/
 typedef bool (*ll_driver_hook_fun)(uint32_t *arg);
 
 
-/* Driver interface */ 
+/* Driver interface */
 typedef struct ll_driver_s{
   void *driver_info;
   int (*ll_read_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);

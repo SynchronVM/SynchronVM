@@ -44,18 +44,18 @@ struct pm_notifier power_state_change;
 
 static void powerman_state_entry(enum pm_state s) {
 
-  
+
 }
 
 static void powerman_state_exit(enum pm_state s) {
 
-  
-  
+
+
 }
 
-/* Should be possible to set pm_power_state_exit_post_ops 
-   to replace the built in implementation. 
-   I dont seem to have succeeded */ 
+/* Should be possible to set pm_power_state_exit_post_ops
+   to replace the built in implementation.
+   I dont seem to have succeeded */
 __weak void pm_power_state_exit_post_ops(struct pm_state_info info) {
   /* pm_system_suspend is entered with irq locked
    * unlock irq before leave pm_system_suspend
@@ -80,7 +80,7 @@ struct pm_state_info pm_policy_next_state(int ticks)
     info.state = curr_state;
     return info;
   }
-  
+
   //printk("ticks: %d\r\n", ticks);
   //zassert_true(ticks == _kernel.idle, NULL);
   if (ticks > 20000) {
@@ -91,7 +91,7 @@ struct pm_state_info pm_policy_next_state(int ticks)
   } else {
     info.state = PM_STATE_ACTIVE;
   }
-  
+
   return info;
 }
 
@@ -102,10 +102,7 @@ bool powerman_init(void) {
   power_state_change.state_exit  = powerman_state_exit;
 
   pm_notifier_register(&power_state_change);
-		      
-  return true; 
+
+  return true;
 }
 
-  
-
-  

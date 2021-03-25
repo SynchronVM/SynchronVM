@@ -61,15 +61,15 @@ struct k_mbox tick_mbox;
 
 void hw_tick(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_data) {
 
-  /* Put a tick on the messagebox */ 
+  /* Put a tick on the messagebox */
   struct k_mbox_msg send_msg;
-  
+
   send_msg.info = 101;
   send_msg.size = 0;
   send_msg.tx_data = NULL;
   send_msg.tx_target_thread = K_ANY;
 
-  /* third argument in async put is a semaphore  
+  /* third argument in async put is a semaphore
      that can be set to NULL if not "needed" _*/
   k_mbox_async_put(&tick_mbox, &send_msg, NULL);
 }
@@ -90,26 +90,26 @@ void tick_thread_main(void * a, void* b, void *c) {
   //sv_int_t r;
   initialize_int(&r);
   r.value = 0;
-  now = 0; 
+  now = 0;
   sv_int_t led;
   initialize_int(&led);
   led.value = 0;
-  
+
   //PRINT("forking myfib\r\n");
   //fork_routine( (act_t *) enter_myfib(&top, PRIORITY_AT_ROOT, DEPTH_AT_ROOT, 4, &r) );
 
   PRINT("forking blinky\r\n");
   fork_routine( (act_t *) enter_main(&top, PRIORITY_AT_ROOT, DEPTH_AT_ROOT, &led) );
-  
 
-  
+
+
   PRINT("Waiting for ticks\r\n");
-  int i = 0; 
+  int i = 0;
   while (1) {
     recv_msg.size = 0;
     recv_msg.rx_source_thread = K_ANY;
 
-    //PRINT("step[%d]: r = %d\r\n", i, r.value); 
+    //PRINT("step[%d]: r = %d\r\n", i, r.value);
     /* PRINT("now: %llu\r\n", now); */
     /* PRINT("next: %llu\r\n",next_event_time()); */
     /* PRINT("Events queued: %d\r\n", event_queue_len); */
@@ -118,8 +118,8 @@ void tick_thread_main(void * a, void* b, void *c) {
     /* PRINT("now: %llu\r\n", now); */
     /* PRINT("next: %llu\r\n",next_event_time()); */
     /* PRINT("Events queued: %d\r\n", event_queue_len); */
-  
-    
+
+
     /* get a data item, waiting as long as needed */
     k_mbox_get(&tick_mbox, &recv_msg, NULL, K_FOREVER);
 
@@ -131,7 +131,7 @@ void tick_thread_main(void * a, void* b, void *c) {
     PRINT("ctr: %u\r\n", count);
     PRINT("now: %llu\r\n", now);
     PRINT("next: %llu\r\n", next_event_time());
-    
+
     now = next_event_time();
     tick();
 
@@ -142,16 +142,16 @@ void tick_thread_main(void * a, void* b, void *c) {
       /* This just means that there are no events in the queue (or a remarkable coincidence) */
       /* What to do in this case ?*/
       /*  - Go to sleep and await being woken from outside source */
-      
+
       PRINT("NOTHING IN THE QUEUE\r\n");
     }
-    
+
     uint64_t wake_time = next_event_time(); /* Absolute time */
 
     //PRINT("sleep_time = %lld\r\n", sleep_time);
 
     alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
-    alarm_cfg.ticks = wake_time; 
+    alarm_cfg.ticks = wake_time;
 
     int r = counter_set_channel_alarm(counter_dev, 0, &alarm_cfg);
     if (!r) {
@@ -167,7 +167,7 @@ void tick_thread_main(void * a, void* b, void *c) {
 	PRINT("hw_tick: Error setting alarm\r\n");
       }
     }
-        
+
     i++;
   }
 }
@@ -186,8 +186,8 @@ void start_tick_thread(void) {
 /* ************************************************************ */
 
 void main(void) {
-  
-  /* *************  */ 
+
+  /* *************  */
   /* Start USB_CDC  */
   //  start_usb_cdc_thread();
 
@@ -210,7 +210,7 @@ void main(void) {
   /* MESSAGEBOX */
   PRINT("Creating messagebox\n");
   k_mbox_init(&tick_mbox);
-  
+
 
   /* ************************* */
   /* Hardware timer experiment */
@@ -222,13 +222,13 @@ void main(void) {
 
   PRINT("HWCounter: Running at %uMHz\r\n",
 	  counter_get_frequency(counter_dev) / 1000000);
-  
+
   alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
   alarm_cfg.ticks = 10; //counter_us_to_ticks(counter_dev, 0);
   alarm_cfg.callback = hw_tick;
   alarm_cfg.user_data = &alarm_cfg;
 
-  
+
   if (!counter_set_channel_alarm(counter_dev, 0, &alarm_cfg)) {
     PRINT("HWCounter: Alarm set\r\n");
   } else {
@@ -239,13 +239,13 @@ void main(void) {
   } else {
     PRINT("HWCounter: Error setting guard period\r\n");
   }
-  
+
   counter_start(counter_dev);
 
-  
+
   /* configure uart */
 
- 
+
   if (ll_uart_init(&uart_drv, UART0, &uart0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
     PRINT("LL_UART: OK!\r\n");
   } else {
@@ -256,7 +256,7 @@ void main(void) {
   start_tick_thread();
 
   int led0_state = 0;
-  
+
   while(1) {
     led_set(led0,led0_state);
     led0_state = 1 - led0_state;

@@ -30,16 +30,6 @@
 #define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
 
-/*
-#define CONFIG_LED(X) \
-  led_devices[(X)] = device_get_binding(LED_DEVICE_LABEL(led##X));	\
-  if (led_devices[(X)]) {\
-    gpio_pin_configure(led_devices[(X)], LED_PIN(led##X), GPIO_OUTPUT_ACTIVE | LED_FLAGS(led##X));\
-    gpio_pin_set(led_devices[(X)], LED_PIN(led##X), 0);		\
-    num_leds++;\
-  }
-*/
-
 #define CONFIG_LED_CASE(X) \
   case X: \
   led_drivers[(X)].pin = LED_PIN(led##X);	\
@@ -49,20 +39,12 @@
   gpio_pin_set(led_device, led_drivers[(X)].pin, 0); \
   break;
 
-/*
-#define LED_SET_CASE(X,V)			\
-  case X:\
-  led_states[(X)] = (V);						\
-  gpio_pin_set(led_devices[(X)], LED_PIN(led##X), led_states[(X)]);	\
-  break;\
-*/
-
 led_driver_t led_drivers[10];
 const struct device *led_device;
 
 uint32_t led_num(void) {
   uint32_t num_leds = 0;
-  
+
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
   num_leds = num_leds + 1;
 #endif
@@ -93,7 +75,7 @@ uint32_t led_num(void) {
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led9), okay)
    num_leds = num_leds + 1;
 #endif
-  return num_leds;  
+  return num_leds;
 }
 
 uint32_t led_identifiers(void) {
@@ -128,14 +110,14 @@ uint32_t led_identifiers(void) {
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led9), okay)
   id_mask = id_mask | (1 << 9);
 #endif
-   return id_mask;  
+   return id_mask;
 }
 
 led_driver_t* led_init(uint32_t identifier) {
 
   if (!led_device) {
     /* assumption all leds will have the same device label */
-    led_device = device_get_binding(LED_DEVICE_LABEL(led0)); 
+    led_device = device_get_binding(LED_DEVICE_LABEL(led0));
   }
 
   if (!led_device) return false;
@@ -154,7 +136,7 @@ led_driver_t* led_init(uint32_t identifier) {
   CONFIG_LED_CASE(3);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led4), okay)
-  CONFIG_LED_CASE(4); 
+  CONFIG_LED_CASE(4);
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(led5), okay)
   CONFIG_LED_CASE(5);
