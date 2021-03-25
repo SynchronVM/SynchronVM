@@ -28,7 +28,6 @@
 #include <led.h>
 #include <ll_driver.h>
 
-
-
+extern bool ll_led_init(ll_driver_t* lld, uint32_t led_id, bool initial_state);
 
 #endif

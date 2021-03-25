@@ -7,6 +7,7 @@ project(central_hr)
 FILE(GLOB app_sources src/*.c)
 FILE(GLOB extra_sources
   ../common/src/*.c
+  ../common/src/abstraction/zephyr/*.c
   ./peng/runtime/src/*.c
   )
 
@@ -14,6 +15,7 @@ FILE(GLOB extra_sources
 target_sources(app PRIVATE ${app_sources} ${extra_sources})
 target_include_directories(app PRIVATE
   ../common/src
+  ../common/src/abstraction/zephyr
   ./peng/runtime/include
   ./peng-platform/nrf52/include
   ${ZEPHYR_BASE}/kernel/include
