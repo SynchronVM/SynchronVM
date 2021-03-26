@@ -224,6 +224,63 @@ example16 =
     nplusmplusr = (Sys $ Sys2 PlusI (Var "n") mplusr)
 
 
+{-
+let foo = let m = 11
+           in \x -> x + m
+  in let r = 2
+      in let baz_1 = foo
+          in let baz = baz_1 r
+              in (baz + 4)
+-}
+
+example17 =
+  Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11)
+                      (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "m"))))
+  (Let (PatVar "r") (Sys $ LInt 2)
+   (Let (PatVar "baz_1") (Var "foo")
+    (Let (PatVar "baz") (App (Var "baz_1") (Var "r"))
+      (Sys $ Sys2 PlusI (Var "baz") (Sys $ LInt 4)))
+   )
+  )
+
+
+{-
+let foo = \x ->
+              let y = \k -> k+3 -- memory allocation; should be deallocated once the stack unfolds
+               in let y_1 = y 11
+                   in (x + y_1)
+ in let r = 2
+     in let baz = foo r -- deallocate at this point as well
+         in (baz + 4)
+-}
+
+example18 =
+  Let (PatVar "foo") (Lam (PatVar "x")
+                      (Let (PatVar "y") (Lam (PatVar "k") (Sys $ Sys2 PlusI (Var "k") three))
+                       (Let (PatVar "y_1") (App (Var "y") eleven)
+                        (Sys $ Sys2 PlusI (Var "x") (Var "y_1")))))
+   (Let (PatVar "r") two
+    (Let (PatVar "baz") (App (Var "foo") (Var "r"))
+      (Sys $ Sys2 PlusI (Var "baz") four)
+    )
+   )
+  where
+    four = Sys $ LInt 4
+    two  = Sys $ LInt 2
+    three  = Sys $ LInt 3
+    eleven = Sys $ LInt 11
+
+{-
+let y = \k -> k + 3
+ in y 11
+-}
+
+example19 =
+  Let (PatVar "y") (Lam (PatVar "k") (Sys $ Sys2 PlusI (Var "k") three))
+  (App (Var "y") eleven)
+  where
+    three  = Sys $ LInt 3
+    eleven = Sys $ LInt 11
 
 run :: Exp -> Val
 run = evaluate . interpret
