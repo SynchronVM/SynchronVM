@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Bytecode
       Lib
       Interpreter.Interpreter
   other-modules:
@@ -54,6 +55,7 @@ library
   build-depends:
       base >=4.7 && <5
     , array
+    , cam
     , mtl
     , containers
     , transformers
