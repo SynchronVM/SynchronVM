@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 447473933b63b02ad9b955561510fc60fd2e17754ec2f85395d9c50e8b0107b6
+-- hash: b559b81c42acbf8ef6d28f564d53f74d2182b76ed68729eff7b969839b9f94d7
 
 name:           cam
 version:        0.1.0.0
@@ -27,13 +27,24 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Assembler
+      Bytecode.Interpreter
+      Bytecode.InterpreterModel
+      CAM
+      Examples
+      Main
   other-modules:
       Paths_cam
   hs-source-dirs:
-      src
+      app
+  default-extensions: GeneralizedNewtypeDeriving
+  ghc-options: -fwarn-incomplete-patterns
   build-depends:
       base >=4.7 && <5
+    , binary
+    , bytestring
+    , mtl
+    , projectroot
   default-language: Haskell2010
 
 executable cam-exe

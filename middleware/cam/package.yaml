@@ -23,7 +23,16 @@ dependencies:
 - base >= 4.7 && < 5
 
 library:
-  source-dirs: src
+  source-dirs: app
+  ghc-options:
+    - -fwarn-incomplete-patterns
+  dependencies:
+    - binary
+    - bytestring
+    - mtl
+    - projectroot
+  default-extensions:
+    - GeneralizedNewtypeDeriving
 
 executables:
   cam-exe:

@@ -1,20 +1,40 @@
-/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/src/Lib.hs:
-  hash: 11d6d255cb397fa45980eb516ea685146565d9de2108c4eea356ea41db8364be
-  size: 88
-  modtime: 1599734670
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Main.hs:
+  hash: c816d7360fde8620a4b75922da0411646681e2861382ca239b9161d799837c44
+  size: 55
+  modtime: 1617026704
 /Users/abhiroopsarkar/C/Sense-VM/middleware/cam/package.yaml:
-  hash: 02fe2e82a504f8629fe9944753c2c01f88d07938d9a0721c771b87556811ac94
-  size: 1390
-  modtime: 1599734670
+  hash: 4beb2b0e5b2fd37ced1f1d686571345a753477ae110a160b2e1c028816569239
+  size: 1567
+  modtime: 1617026753
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Assembler.hs:
+  hash: 60622233607b798f58d8b03c416256829dc88d8f37468d3cbe39aa5aaef3600b
+  size: 19035
+  modtime: 1616577171
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Bytecode/Interpreter.hs:
+  hash: 58a2e14d547e27c52e8d6a1040f25473ed9b8935cc6bf51b6f9e4edb783deb5e
+  size: 1242
+  modtime: 1616577171
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Bytecode/InterpreterModel.hs:
+  hash: e01a17145b0bcff139d6750f61432afaddd4b554276edb5d66d4b70796d1528f
+  size: 13515
+  modtime: 1616577171
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/Examples.hs:
+  hash: fefbdd778ea69e989d3744a18ac18a1ce38042938aaa119429049866fd136904
+  size: 7391
+  modtime: 1616761488
 /Users/abhiroopsarkar/C/Sense-VM/middleware/cam/ChangeLog.md:
   hash: ae6baa6d2bc62b98722ad4e51967c08ba6132071bdb3c772e193af505b155fd6
   size: 43
-  modtime: 1599734670
+  modtime: 1616577171
 /Users/abhiroopsarkar/C/Sense-VM/middleware/cam/README.md:
   hash: 45a5d87f9ad40467de6129a1a02009ded219a6dc600c5ddced75b689dbba52c8
   size: 6
-  modtime: 1599734670
+  modtime: 1616577171
 /Users/abhiroopsarkar/C/Sense-VM/middleware/cam/cam.cabal:
-  hash: 281ac11ca1ea381e48f99947f82599f85e4b276e4de54727835b0a604b282e93
-  size: 1760
-  modtime: 1599734670
+  hash: 2546551ed1de16b9967ebdf4d503a851333e4b859c03a1037b314fe939953c9d
+  size: 2010
+  modtime: 1617026758
+/Users/abhiroopsarkar/C/Sense-VM/middleware/cam/app/CAM.hs:
+  hash: a6ff36a5033c375669a7116bcf9f0f23e9d9bb3b7b21c11afc34e668ccd626a6
+  size: 10392
+  modtime: 1617010294
