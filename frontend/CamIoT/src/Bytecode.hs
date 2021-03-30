@@ -32,18 +32,32 @@ import Lib
 import qualified CAM as C
 import qualified Assembler as A
 import qualified Parser.AbsTinyCamiot as AST
-
+import qualified Parser.PrintTinyCamiot as PP
 
 translate :: SExp SType -> C.Exp
+translate (SELet _ pat e1 e2) =
+  C.Let (translatePat pat) (translate e1) (translate e2)
+translate (SELam _ pat exp) =
+  C.Lam (translatePat pat) (translate exp)
 translate (SEAdd ty e1 _ e2) =
   let e1' = translate e1
       e2' = translate e2
    in C.Sys $ C.Sys2 addOp e1' e2'
    where
      addOp = case ty of
-               STInt -> C.PlusI
+               STInt   -> C.PlusI
                STFloat -> C.PlusF
                _ -> error "Adding non int or float operation"
+translate (SEMul ty e1 _ e2) =
+  let e1' = translate e1
+      e2' = translate e2
+   in C.Sys $ C.Sys2 mulOp e1' e2'
+   where
+     mulOp = case ty of
+               STInt   -> C.MultiplyI
+               STFloat -> C.MultiplyF
+               _ -> error "Multiplying non int or float operation"
+
 translate (SEConst ty const) =
   case const of
     AST.CInt arbitraryPrecisionInt ->
@@ -52,9 +66,17 @@ translate (SEConst ty const) =
       C.Sys (C.LFloat (double2Float double)) -- only single precision floats supported in CAM currently
     AST.CTrue  -> C.Sys (C.LBool True)
     AST.CFalse -> C.Sys (C.LBool False)
-    AST.CNil   -> C.Void -- XXX: Unsure of this translation
+    AST.CNil   -> C.Void
 
-path = "testcases/good1.cam"
+
+translatePat :: SPat SType -> C.Pat
+translatePat (SPNil _ ) = C.Empty
+translatePat (SPVar _ (AST.Ident str))     = C.PatVar str
+translatePat (SPLay _ (AST.Ident str) pat) = C.As str (translatePat pat)
+translatePat (SPTup _ p1 p2)
+  = C.PatPair (translatePat p1) (translatePat p2)
+
+path = "testcases/good2.cam"
 
 test :: IO ()
 test = do
@@ -62,8 +84,14 @@ test = do
   case compiled of
     Left err -> putStrLn err
     Right desugaredIr -> do
+      putStrLn $ PP.printTree desugaredIr
+      --putStrLn $ show desugaredIr
       -- let camir = translate desugaredIr
       -- let cam   = C.interpret camir
       -- A.genbytecode cam
-      putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
+      -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
 
+foo =
+  let v0 = \ v2 -> case v2 of
+                     v1 -> v1 * 2
+  in v0 5
