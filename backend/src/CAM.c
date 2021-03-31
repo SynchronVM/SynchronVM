@@ -449,7 +449,7 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
       (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
 
 
-    if(tag_heap.value == (UINT)tag){
+    if(tag_heap.value == (UINT)tag){ //XXX: wildcard check goes here
       label_to_jump = label;
       break;
     }
@@ -471,21 +471,7 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = env_pointer;
   heap_set(&vmc->heap, hi, hold_reg, val);
 
-
-  //jump to label
-  INT shift_pc_by =
-    1 + //switch op_code
-    1 + // size parameter 1 byte
-    (4 * switch_size); // 4 bytes (2 for label and 2 for tag)
-
-  INT jump_address = (*pc_idx) + shift_pc_by; // see Jump convention at the top
-  cam_value_t j_add = { .value = (UINT)jump_address };
-  int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
-  if(j == 0){
-    DEBUG_PRINT(("Stack push has failed"));
-    *pc_idx = -1;
-    return;
-  }
+  //goto label
   *pc_idx = (INT)label_to_jump;
 }
 

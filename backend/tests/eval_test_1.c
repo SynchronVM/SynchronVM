@@ -1929,7 +1929,8 @@ bool eval_pack_test(){
 bool eval_switch_test(){
 
   //Initializing a mock stack
-  cam_value_t st_v = { .value = 3, .flags = 0 };
+  cam_value_t st_v_1 = { .value = 7, .flags = 0 };
+  cam_value_t st_v_2 = { .value = 3, .flags = 0 };
   cam_stack_t s = { .size = 0 };
   uint8_t *m = malloc(256);
   int w = stack_init(&s, m, 256);
@@ -1938,8 +1939,15 @@ bool eval_switch_test(){
     free(m);
     return false;
   }
-  int y = stack_push(&s, st_v);
+  int y = stack_push(&s, st_v_1);
   if (y == 0){
+    printf("Stack push has failed");
+    free(m);
+    return false;
+  }
+
+  int z = stack_push(&s, st_v_2);
+  if (z == 0){
     printf("Stack push has failed");
     free(m);
     return false;
@@ -1974,7 +1982,15 @@ bool eval_switch_test(){
    x00, x02, x00, x0b,    // tag2(2 bytes), label2(2 bytes)
    stop, skip }           // next opcodes
   */
-  uint8_t code [] = { 19, 2, 0, 1, 0, 15, 0, 2, 0, 11, 13, 12 };
+  uint8_t code [] = {  19     //switch
+                      , 2     //size
+                      , 0,  1 //tag1
+                      , 0, 15 //label1
+                      , 0,  2 //tag2
+                      , 0, 11 //label2
+                      , 13    //stop
+                      , 12 }; //skip
+
   Context_t mock_context = { .stack = s, .env = env_pointer };
   vmc_t vmc;
   vmc.current_running_context_id = 0;
@@ -1986,7 +2002,7 @@ bool eval_switch_test(){
   // Mock Machine state before eval_switch
   /*****************************************************************************/
   /*  env   =  (Ptr 0)                                                         */
-  /*  stack =  3 -> Empty                                                      */
+  /*  stack =  3 -> 7 -> Empty                                                 */
   /*  heap  =  | (2, VEmpty) | -> HEAP_END                                     */
   /*  code  =  switch, x02, x00, x01, x00, x0f, x00, x02, x00, x0b, stop, skip */
   /*           ^                                                               */
@@ -1999,7 +2015,7 @@ bool eval_switch_test(){
   // Machine state post eval_app
   /******************************************************************************/
   /*  env   =  (Ptr 1)                                                          */
-  /*  stack =  (JAdd 10) -> Empty                                               */
+  /*  stack =  7 -> Empty                                                       */
   /*  heap  =  | (2, VEmpty) | -> |(3, VEmpty)| -> HEAP_END                     */
   /*  code  =  switch, x02, x00, x01, x00, x0f, x00, x02, x00, x0b, stop, skip  */
   /*                                                                      ^     */
@@ -2030,8 +2046,8 @@ bool eval_switch_test(){
   free(m);
   free(hm);
   if(pc_idx == 11 &&  // Test PC // label associated with tag 2
-     (INT)dummyreg.value == 10 && // initial pc_idx + 1 + 1 + 2 * 4; Test stack top
-     fst.value == st_v.value && snd.value == vempty.value){ // Test heap
+     dummyreg.value == st_v_1.value && // Test stack top
+     fst.value == st_v_2.value && snd.value == vempty.value){ // Test heap
     return true;
   } else {
     return false;
