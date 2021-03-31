@@ -133,6 +133,8 @@ LE                             0x22                        1
 -}
 -- NOTE: Whenever adding an instruction which uses labels remember to rectifyLabelOffset
 -- NOTE: Modify originalBytecodeOffset if adding any new pools etc
+-- NOTE: A SenseVM program can support a maximum of 65534 tags(and not 65535) because
+--       tag id 65535 is reserved for the "??WILDCARD??" tag.
 
 {- NOTE: INSTRUCTIONS TO BE ADDED
 
@@ -326,17 +328,19 @@ modifyStringPool s = do
   pure $! serializeToBytes $ byte2 (sum $ map length spool)
 
 getTagIdBytes :: Tag -> Assembler [Word8]
-getTagIdBytes tag = do
-  tt <- gets tagTable
-  tagId <- case tt `getIdx` tag of
-             Nothing -> do
-               tid <- gets tagIdx
-               modify $ \s -> s { tagIdx = tid + 1 }
-               modify $ \s -> s { tagTable = (tag,tid) `putIdx` tt }
-               pure tid
-             Just tid -> pure tid
-  let word8X2 = serializeToBytes tagId
-  pure word8X2
+getTagIdBytes tag
+  | tag == "??WILDCARD??" = pure $ serializeToBytes (maxBound :: Word16)
+  | otherwise = do
+      tt <- gets tagTable
+      tagId <- case tt `getIdx` tag of
+                 Nothing -> do
+                   tid <- gets tagIdx
+                   modify $ \s -> s { tagIdx = tid + 1 }
+                   modify $ \s -> s { tagTable = (tag,tid) `putIdx` tt }
+                   pure tid
+                 Just tid -> pure tid
+      let word8X2 = serializeToBytes tagId
+      pure word8X2
 
 type NumBytes = Int
 -- rectifies the offset of the labels after int pool,
@@ -600,5 +604,11 @@ and increment the "tagIdx" state variable
 Either you have seen this tag before or it is new. If new
 add it to TagTable or else get the TagIdx from the TagTable
 and return that index. The "getTagIdBytes"" does exactly that.
+
+3. Caveat: When encountered the tag "??WILDCARD??" the tag
+value of 65535 is emitted at all times. This means across the
+whole program you can have a maximum of 65534 tags(numbering
+starts from 1). This restriction might be relaxed by using
+Word32 or higher.
 
 -}
