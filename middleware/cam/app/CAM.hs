@@ -310,12 +310,15 @@ lookupPat x (As y p)
   | x == y = Ins SKIP
   | otherwise = lookupPat x p
 
--- non-deterministic search; partial function
+-- non-deterministic search;
+-- not partial anymore but a FAIL meta instruction
+-- in the final CAM data type indicates an incorrect IR
+-- generation for which there should be a sanity check
 (<?>) :: CAM -> CAM -> CAM
 (<?>) x y
   | nofail x = x
   | nofail y = y
-  | otherwise = error "Variable not found"
+  | otherwise = Ins FAIL
 
 nofail :: CAM -> Bool
 nofail (Ins FAIL) = False

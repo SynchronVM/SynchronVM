@@ -181,7 +181,7 @@ example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x
 {-
 letrec not = \b -> if b == True then False else True
        even = \n -> if (n == 0) then true else not (even (n - 1))
-in even 56
+in even 53
 -}
 
 example14 =
@@ -316,5 +316,106 @@ example21 = App example21helper (Con "Nil" Void)
 
 
 
+
+
+{-
+(\ s ->
+case s of
+   x:y:_ -> 10) (5:3:Nil)
+
+
+(\ s ->
+case s of
+   Cons x xs ->
+     case xs of
+       Cons y ys ->
+         case ys of
+            _ -> 10) (Cons 5 (Cons 3 Nil))
+-}
+
+example22helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Cons", (PatPair (PatVar "x") (PatVar "xs")))
+                       , (Case (Var "xs") [(("Cons", (PatPair (PatVar "y") (PatVar "ys")))
+                                           ,(Case (Var "ys") [(("??WILDCARD??", Empty)
+                                                              , Sys $ LInt 10
+                                                              )]))]))
+                     ]
+example22 =
+  App example22helper (Con "Cons" (Pair (Sys $ LInt 5)
+                                    (Con "Cons" (Pair (Sys $ LInt 3)
+                                                  (Con "Nil" Void))
+                                    )
+                                  )
+                      )
+
+{-
+(\ s ->
+case s of
+   x:y:_ -> (x + y)) (5:3:Nil)
+
+
+(\ s ->
+case s of
+   Cons x xs ->
+     case xs of
+       Cons y ys ->
+         case ys of
+            _ -> x + y) (Cons 5 (Cons 3 Nil))
+-}
+
+example23helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Cons", (PatPair (PatVar "x") (PatVar "xs")))
+                       , (Case (Var "xs") [(("Cons", (PatPair (PatVar "y") (PatVar "ys")))
+                                           ,(Case (Var "ys") [(("??WILDCARD??", Empty)
+                                                              , Sys $ Sys2 PlusI (Var "x") (Var "y")
+                                                              )]))]))
+                     ]
+
+example23 =
+  App example23helper (Con "Cons" (Pair (Sys $ LInt 5)
+                                    (Con "Cons" (Pair (Sys $ LInt 3)
+                                                  (Con "Nil" Void))
+                                    )
+                                  )
+                      )
+
+
+{-
+(\ s ->
+case s of
+   Cons x xs -> case xs of
+                    Cons y ys -> x + y) (Cons 2 (Cons 1 Nil))
+-}
+
+example24helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [(("Cons", (PatPair (PatVar "x") (PatVar "xs")))
+                      ,(Case (Var "xs") [(("Cons", (PatPair (PatVar "y") (PatVar "ys"))
+                                           ), (Sys $ Sys2 PlusI (Var "x") (Var "y")))])
+                       )
+                     ]
+example24 = App example24helper (Con "Cons" (Pair (Sys $ LInt 2) (Con "Cons" (Pair (Sys $ LInt 1) (Con "Nil" Void)))))
+
 run :: Exp -> Val
 run = evaluate . interpret
+
+runAllTests =
+  if all (== True) (zipWith (==) (map run examples) results)
+  then print "All tests passed"
+  else print "There are some errors"
+  where
+    examples =
+      [  example0,  example2,  example5,  example6,  example7
+      ,  example9, example10, example11, example12, example13
+      , example14, example15, example16, example17, example18
+      , example19, example20, example21, example22, example23
+      , example24
+      ]
+    results =
+      [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
+      , VInt 5, VInt 5, VInt 9, VInt 9 , VInt 6
+      , VBool False,    VInt 7, VInt 6,  VInt 17
+      , VInt 20, VInt 14, VInt 10, VInt 3
+      , VInt 10, VInt 8, VInt 3]
