@@ -354,7 +354,6 @@ example22 =
 case s of
    x:y:_ -> (x + y)) (5:3:Nil)
 
-
 (\ s ->
 case s of
    Cons x xs ->
@@ -398,6 +397,13 @@ example24helper =
                      ]
 example24 = App example24helper (Con "Cons" (Pair (Sys $ LInt 2) (Con "Cons" (Pair (Sys $ LInt 1) (Con "Nil" Void)))))
 
+
+
+example25 =
+  Let (PatPair (PatVar "x") (PatVar "y")) (Pair (Sys $ LInt 2) (Sys $ LInt 3))
+  (Sys $ Sys2 PlusI (Var "x") (Var "y"))
+
+
 run :: Exp -> Val
 run = evaluate . interpret
 
@@ -411,11 +417,11 @@ runAllTests =
       ,  example9, example10, example11, example12, example13
       , example14, example15, example16, example17, example18
       , example19, example20, example21, example22, example23
-      , example24
+      , example24, example25
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
       , VInt 5, VInt 5, VInt 9, VInt 9 , VInt 6
       , VBool False,    VInt 7, VInt 6,  VInt 17
       , VInt 20, VInt 14, VInt 10, VInt 3
-      , VInt 10, VInt 8, VInt 3]
+      , VInt 10, VInt 8,  VInt 3 , VInt 5]
