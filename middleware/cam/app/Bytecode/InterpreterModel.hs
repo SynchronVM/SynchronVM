@@ -195,6 +195,8 @@ incPC  = do
   pc <- S.gets programCounter
   S.modify $ \s -> s {programCounter = pc + 1}
 
+-- jumpTo stores the jump point in the
+-- prevJump field unlike goto
 jumpTo :: Label -> Evaluate ()
 jumpTo l = do
   pc <- S.gets programCounter
@@ -420,6 +422,8 @@ app = do
                      }
   jumpTo label
 
+-- goto doesn't store the previous jump
+-- point into prevJump unlike jumpTo
 goto :: Label -> Evaluate ()
 goto l = do
   pc <- S.gets programCounter
@@ -450,13 +454,13 @@ switch conds = do
   (h, t) <- popAndRest
   let VCon ci v1 = e
   let (_, label) =
-        case find (\(c,_) -> c == ci) conds of
+        case find (\(c,_) -> c == ci || c == "??WILDCARD??") conds of
           Just (cf, lf) -> (cf, lf)
-          Nothing -> error $ "Missing constructor" <> show ci
+          Nothing -> error $ "Missing constructor " <> show ci
   S.modify $ \s -> s { environment = VPair h v1
                      , stack = t
                      }
-  jumpTo label
+  goto label
 
 
 dummyLabel = Label (-1)

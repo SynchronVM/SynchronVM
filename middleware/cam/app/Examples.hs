@@ -282,5 +282,39 @@ example19 =
     three  = Sys $ LInt 3
     eleven = Sys $ LInt 11
 
+
+
+
+{-
+(\ s ->
+case s of
+   Cons x xs -> 10) (Cons 5 Nil)
+-}
+
+example20helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Cons", (PatPair (PatVar "x") (PatVar "xs")))
+                       , (Sys $ LInt 10))
+                     ]
+example20 = App example20helper (Con "Cons" (Pair (Sys $ LInt 5) (Con "Nil" Void)))
+
+
+{-
+(\ s ->
+case s of
+   Cons x xs -> 10
+   _ -> 3) Nil
+-}
+
+example21helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Cons", (PatPair (PatVar "x") (PatVar "xs")))
+                       , (Sys $ LInt 10))
+                     , (("??WILDCARD??", Empty), Sys $ LInt 3)
+                     ]
+example21 = App example21helper (Con "Nil" Void)
+
+
+
 run :: Exp -> Val
 run = evaluate . interpret
