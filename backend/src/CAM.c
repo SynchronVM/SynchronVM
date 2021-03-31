@@ -449,7 +449,8 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
       (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
 
 
-    if(tag_heap.value == (UINT)tag){ //XXX: wildcard check goes here
+    if(tag_heap.value == (UINT)tag ||
+       (UINT)tag == 65535){ //wildcard check; wildcard tag = max(uint16_t) = 65535
       label_to_jump = label;
       break;
     }
