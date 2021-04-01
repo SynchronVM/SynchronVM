@@ -403,6 +403,11 @@ example25 =
   Let (PatPair (PatVar "x") (PatVar "y")) (Pair (Sys $ LInt 2) (Sys $ LInt 3))
   (Sys $ Sys2 PlusI (Var "x") (Var "y"))
 
+example26 =
+  Let (PatPair (PatPair (PatVar "x") (PatVar "y")) (PatVar "z"))
+  (Pair (Pair (Sys $ LInt 2) (Sys $ LInt 3)) (Sys $ LInt 5))
+  (Sys $ Sys2 PlusI (Var "x") (Sys $ Sys2 PlusI (Var "y") (Var "z")))
+
 
 run :: Exp -> Val
 run = evaluate . interpret
@@ -417,11 +422,13 @@ runAllTests =
       ,  example9, example10, example11, example12, example13
       , example14, example15, example16, example17, example18
       , example19, example20, example21, example22, example23
-      , example24, example25
+      , example24, example25, example26
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
       , VInt 5, VInt 5, VInt 9, VInt 9 , VInt 6
       , VBool False,    VInt 7, VInt 6,  VInt 17
       , VInt 20, VInt 14, VInt 10, VInt 3
-      , VInt 10, VInt 8,  VInt 3 , VInt 5]
+      , VInt 10, VInt 8,  VInt 3 , VInt 5
+      , VInt 10
+      ]
