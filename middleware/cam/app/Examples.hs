@@ -434,7 +434,13 @@ example27 =
                                     )
                                   )
                       )
+{-
 
+(\ _ -> 2) 1
+
+-}
+example28 =
+  App (Lam Empty (Sys $ LInt 2)) (Sys $ LInt 1)
 
 run :: Exp -> Val
 run = evaluate . interpret
@@ -449,7 +455,7 @@ runAllTests =
       ,  example9, example10, example11, example12, example13
       , example14, example15, example16, example17, example18
       , example19, example20, example21, example22, example23
-      , example24, example25, example26, example27
+      , example24, example25, example26, example27, example28
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
@@ -457,5 +463,5 @@ runAllTests =
       , VBool False,    VInt 7, VInt 6,  VInt 17
       , VInt 20, VInt 14, VInt 10, VInt 3
       , VInt 10, VInt 8,  VInt 3 , VInt 5
-      , VInt 10, VInt 8
+      , VInt 10, VInt 8,  VInt 2
       ]
