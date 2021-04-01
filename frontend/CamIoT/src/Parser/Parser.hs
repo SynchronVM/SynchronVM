@@ -20,7 +20,7 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 {-# LANGUAGE OverloadedStrings #-}
-module Parser.Parser (pProgram, Parser, pType) where
+module Parser.Parser (pProgram, Parser, pType, pPat) where
 
 import Prelude hiding (unlines)
 import Parser.AbsTinyCamiot
@@ -135,7 +135,7 @@ pExpOr = foldr1 (EOr ()) <$> sepBy1 pExpAnd (pSymbol "||")
 pExpVerbose :: Parser (Exp ())
 pExpVerbose = choice [
     do pSymbol "let"
-       p <- pPat False False
+       p <- pPat False True
        pSymbol "="
        e1 <- pExpVerbose
        pSymbol "in"
@@ -205,10 +205,12 @@ pEquation = do
 
 -- parse patterns
 
+-- \1 -> flsfgg
 pPatClosed :: Bool -> Bool -> Parser (Pat ())
 pPatClosed allowConstants allowNAry = choice $ maybe ++ always
   where maybe  = [PConst () <$> pConst | allowConstants]
         always = [ PVar  () <$> pIdent
+                 , PZAdt () <$> pUIdent
                  , PWild () <$ pChar '_'
                  , do pChar '('
                       ps <- sepBy (pPatAs allowConstants allowNAry) (pChar ',') <* pChar ')'
@@ -223,19 +225,16 @@ pPatApp allowConstants allowNAry = choice $ adt' ++ [pPatClosed allowConstants a
                 then [adt]
                 else [try (pChar '(' >> adt <* pChar ')'), PZAdt () <$> pUIdent]
         adt = do con <- pUIdent
-                 vars <- many (pPatClosed allowConstants False)
+                 vars <- many (pPatClosed allowConstants allowNAry)
                  case vars of
                    [] -> return $ PZAdt () con
-                   _ -> return $ PNAdt () con vars
-
---pPatApp allowConstants = choice [ PAdt () <$> pUIdent <*> many (pPatClosed allowConstants)
---                                , pPatClosed allowConstants]
+                   _  -> return  $ PNAdt () con vars
 
 pPatAs :: Bool -> Bool -> Parser (Pat ())
 pPatAs allowConstants allowNAry = choice [try $ do
     x <- pIdent
     pSymbol "as"
-    p <- pPatApp allowConstants False
+    p <- pPatApp allowConstants allowNAry
     return $ PLay () x p,
 
     pPatApp allowConstants allowNAry]
