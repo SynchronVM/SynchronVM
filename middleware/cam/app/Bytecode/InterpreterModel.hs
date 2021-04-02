@@ -452,15 +452,29 @@ switch :: [(Tag, Label)] -> Evaluate ()
 switch conds = do
   e      <- getEnv
   (h, t) <- popAndRest
-  let VCon ci v1 = e
-  let (_, label) =
-        case find (\(c,_) -> c == ci || c == "??WILDCARD??") conds of
-          Just (cf, lf) -> (cf, lf)
-          Nothing -> error $ "Missing constructor " <> show ci
-  S.modify $ \s -> s { environment = VPair h v1
-                     , stack = t
-                     }
-  goto label
+  case e of
+    VCon ci v1 -> do
+      let (_, label) =
+            case find (\(c,_) -> c == ci || c == wildcardtag) conds of
+              Just (cf, lf) -> (cf, lf)
+              Nothing -> error $ "Missing constructor " <> show ci
+      S.modify $ \s -> s { environment = VPair h v1
+                         , stack = t
+                         }
+      goto label
+
+    -- switch on wildcard; no constructors
+    x -> do
+      let (_, label) =
+            case find (\(c,_) -> c == wildcardtag) conds of
+              Just (cf, lf) -> (cf, lf)
+              Nothing -> error $ "No wildcards in case"
+      S.modify $ \s -> s { environment = VPair h x
+                         , stack = t
+                         }
+      goto label
+    where
+      wildcardtag = "??WILDCARD??"
 
 
 dummyLabel = Label (-1)
