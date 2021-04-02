@@ -30,6 +30,7 @@ module CAM ( Exp (..)
            , Instruction (..)
            , CAM (..)
            , Pat (..)
+           , TaggedField
            , interpret
            )where
 
