@@ -447,6 +447,14 @@ example28 =
 (\ s ->
 case s of
    x -> x) 5
+
+
+-- REWRITE --
+
+(\ s ->
+   let x = s
+    in x) 5
+
 -}
 
 example29 =
@@ -465,6 +473,14 @@ example29' =
 (\ s ->
 case s of
    _ -> s) 5
+
+-- REWRITE --
+
+(\ s ->
+   let _ = s
+    in s) 5
+
+
 -}
 
 example30 =
@@ -483,6 +499,13 @@ example30' =
 (\ s ->
 case s of
    (x,y) -> x + y) (5,6)
+
+-- REWRITE --
+
+(\ s ->
+   let (x,y) = s
+    in x + y) (5,6)
+
 -}
 
 example31 =
@@ -492,6 +515,47 @@ example31 =
         ,Sys $ Sys2 PlusI (Var "x") (Var "y"))
        ])
       ) (Pair (Sys $ LInt 5) (Sys $ LInt 6))
+
+example31' =
+  App (Lam (PatVar "s")
+       (Let (PatPair (PatVar "x") (PatVar "y")) (Var "s")
+        (Sys $ Sys2 PlusI (Var "x") (Var "y"))))
+  (Pair (Sys $ LInt 5) (Sys $ LInt 6))
+
+{-
+(\ s ->
+case s of
+   (1,2) -> 2
+   (2,3) -> 4
+   (x,y) -> x + y) (5,6)
+
+-- REWRITE --
+
+(\ s ->
+   let (x,y) = s
+    in (if (x == 1) and (y == 2)
+        then 2
+        else if (x == 2) and (y == 3)
+             then 4
+             else x + y
+       )) (5,6)
+
+-- REWRITE --
+
+(\ s ->
+   let (x,y) = s
+    in (if (x == 1)
+        then if (y == 2)
+             then 2
+             else Nil
+        else if (x == 2)
+             then if (y == 3)
+                  then 4
+                  else Nil
+             else x + y
+       )) (5,6)
+
+-}
 
 
 
@@ -509,7 +573,7 @@ runAllTests =
       , example14, example15, example16, example17, example18
       , example19, example20, example21, example22, example23
       , example24, example25, example26, example27, example28
-      , example29', example30'
+      , example29', example30', example31'
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
@@ -518,6 +582,6 @@ runAllTests =
       , VInt 20, VInt 14, VInt 10, VInt 3
       , VInt 10, VInt 8,  VInt 3 , VInt 5
       , VInt 10, VInt 8,  VInt 2 , VInt 5
-      , VInt 5
+      , VInt 5,  VInt 11
       ]
 
