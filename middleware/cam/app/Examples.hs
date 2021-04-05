@@ -455,6 +455,12 @@ example29 =
        [(("??WILDCARD??",(PatVar "x")), (Var "x"))])
       ) (Sys $ LInt 5)
 
+-- REWRITE --
+example29' =
+  App (Lam (PatVar "s")
+       (Let (PatVar "x") (Var "s") (Var "x"))
+      ) (Sys $ LInt 5)
+
 {-
 (\ s ->
 case s of
@@ -466,6 +472,26 @@ example30 =
        (Case (Var "s")
        [(("??WILDCARD??",Empty), (Var "s"))])
       ) (Sys $ LInt 5)
+
+-- REWRITE --
+example30' =
+  App (Lam (PatVar "s")
+       (Let Empty (Var "s") (Var "s"))
+      ) (Sys $ LInt 5)
+
+{-
+(\ s ->
+case s of
+   (x,y) -> x + y) (5,6)
+-}
+
+example31 =
+  App (Lam (PatVar "s")
+       (Case (Var "s")
+       [(("??WILDCARD??", PatPair (PatVar "x") (PatVar "y"))
+        ,Sys $ Sys2 PlusI (Var "x") (Var "y"))
+       ])
+      ) (Pair (Sys $ LInt 5) (Sys $ LInt 6))
 
 
 
@@ -483,7 +509,7 @@ runAllTests =
       , example14, example15, example16, example17, example18
       , example19, example20, example21, example22, example23
       , example24, example25, example26, example27, example28
-      , example29, example30
+      , example29', example30'
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
@@ -494,3 +520,4 @@ runAllTests =
       , VInt 10, VInt 8,  VInt 2 , VInt 5
       , VInt 5
       ]
+

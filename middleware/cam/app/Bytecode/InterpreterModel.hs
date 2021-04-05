@@ -462,17 +462,18 @@ switch conds = do
                          , stack = t
                          }
       goto label
+    _ -> error "Non constructor patterns should be rewritten"
 
     -- switch on wildcard; no constructors
-    x -> do
-      let (_, label) =
-            case find (\(c,_) -> c == wildcardtag) conds of
-              Just (cf, lf) -> (cf, lf)
-              Nothing -> error $ "No wildcards in case"
-      S.modify $ \s -> s { environment = VPair h x
-                         , stack = t
-                         }
-      goto label
+    -- x -> do
+    --   let (_, label) =
+    --         case find (\(c,_) -> c == wildcardtag) conds of
+    --           Just (cf, lf) -> (cf, lf)
+    --           Nothing -> error $ "No wildcards in case"
+    --   S.modify $ \s -> s { environment = VPair h x
+    --                      , stack = t
+    --                      }
+    --   goto label
     where
       wildcardtag = "??WILDCARD??"
 
