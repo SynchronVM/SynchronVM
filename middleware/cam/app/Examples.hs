@@ -556,7 +556,24 @@ case s of
        )) (5,6)
 
 -}
-
+-- example32 cannot be expressed
+example32' =
+  App (Lam (PatVar "s")
+       (Let (PatPair (PatVar "x") (PatVar "y")) (Var "s")
+        (If (Sys $ Sys2 BEQ (Var "x") (Sys $ LInt 1))
+         (If (Sys $ Sys2 BEQ (Var "y") (Sys $ LInt 2))
+          (Sys $ LInt 2)
+          Void
+         )
+         (If (Sys $ Sys2 BEQ (Var "x") (Sys $ LInt 2))
+          (If (Sys $ Sys2 BEQ (Var "y") (Sys $ LInt 3))
+           (Sys $ LInt 4)
+           Void)
+          (Sys $ Sys2 PlusI (Var "x") (Var "y"))
+         )
+        )
+       )
+      ) (Pair (Sys $ LInt 5) (Sys $ LInt 6))
 
 
 run :: Exp -> Val
