@@ -175,6 +175,7 @@ translate expr@(SECase _ cond [(SPM p@(SPTup _ p1 p2) exp)])
   | rewriteRequired p = rewriteTupleCases expr
   | otherwise = C.Let (translatePat p) (translate cond) (translate exp)
 
+
 {-
 
 More than one pattern match expression where
@@ -206,30 +207,24 @@ translatePatMats (SPM (SPNAdt _ (AST.UIdent tag) rest) expr) =
   case rest of
     Nothing -> ((tag, C.Empty), translate expr)
     Just x
-      | rewriteRequired x -> undefined--  case cond of
-                                      --       m:n:ys -> e;
-                                      --  you are passed m:n:ys -> e part here
-                                      --  m:n:ys is stored as
-                                      --  (":"  Just  (Pair (PV m) (":" Just (Pair (PV n) (PV ys)))))
-                                      --  tag   Just                   x
-                                      --
-                                      --  Hence rewritten to
-                                      --  case cond of
-                                      --        m:temp1 -> case temp1 of
-                                      --                         n:ys -> e
-                                      --  APPROACH1 frontend
-                                      --   do
-                                      --   temp1 <- genfresh
-                                      --   let pat = (":" Just (Pair (PV m) (PV temp1)))
-                                      --   let newExpr = SECase (typeof expr) (SEVar temp1)
-                                      --                      [SPM (SPNAdt ":" (Just (Pair "n" "ys"))) expr] -- recursion here
-                                      --   translatePatMats (SPM pat newExpr)
-                                      --
-                                      -- APPROACH2 middleware
-                                      -- do
-                                      -- temp1 <- genfresh
-                                      -- ((tag = ":", C.Pair (PatVar "m") (PatVar "temp1")),
-                                      --  (Case (Var "temp1") [((":", (C.Pair (PatVar n) (PatVar ys))), expr)]))
+      | rewriteRequired x ->
+        case x of
+          -- Just x like cases
+          SPVar _ (AST.Ident var) -> ((tag, C.PatVar var), translate expr)
+          SPWild _                -> ((tag, C.Empty), translate expr)
+          SPNil  _                -> ((tag, C.Empty), translate expr)
+          SPTup _ p1 p2           ->
+            let computation = do
+                  tempVar <- fresh
+                  pure $ ((tag, C.PatPair (translatePat p1) (C.PatVar tempVar))
+                         , translate
+                           (SECase
+                             (typeofpat p2)
+                             (SEVar (typeofpat p2) (AST.Ident tempVar))
+                             [(SPM p2 expr)]))
+             in evalState (runCodegen computation) (initState 0)
+          _ -> error "Const, ADT, @ patterns not handled at this level"
+
       | otherwise -> ((tag, translatePat x), translate expr)
 translatePatMats p =
   error $ "Constants, tuples and @ expression should be rewritten. Error: "
@@ -332,31 +327,6 @@ rewriteLet _ = error "Let not rewritten"
 
 
 
-
--- let (x:ys) = e1
--- in e2
-
-
--- let (m:n:ys) = e1
--- in e2
-
--- case e1 of
---   m:temp -> case temp of
---                 n:ys -> e2
-
--- let (SPNAdt ":" (Just (SPTup
---                        (SPVar m)
---                        (SPNAdt ":" (Just (SPTup
---                                           (SPVar n)
---                                           (SPVar ys)
---                                          )))))) = e1
--- in e2
-
--- case e1 of
---   [(":", PatPair m temp), case temp [((":", PatPair n ys), e2)]
--- ]
-
-
 data CodegenState =
   CodegenState
     { count :: Word }
@@ -378,6 +348,14 @@ fresh = do
 
 
 typeof = getSExpVar
+
+typeofpat (SPVar ty _)     = ty
+typeofpat (SPConst ty _)   = ty
+typeofpat (SPNAdt  ty _ _) = ty
+typeofpat (SPWild  ty)     = ty
+typeofpat (SPNil   ty)     = ty
+typeofpat (SPTup ty _ _)   = ty
+typeofpat (SPLay ty _ _)   = ty
 
 
 {- NOTE 1
@@ -413,7 +391,7 @@ of let expressions.
 
 
 -- Experiments --
-path = "testcases/good8.cam"
+path = "testcases/good7.cam"
 
 test :: IO ()
 test = do
