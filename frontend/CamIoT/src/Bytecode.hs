@@ -39,6 +39,9 @@ import qualified Parser.AbsTinyCamiot as AST
 import qualified Parser.PrintTinyCamiot as PP
 import qualified Bytecode.InterpreterModel as IM
 
+
+import Debug.Trace
+
 translate :: SExp SType -> C.Exp
 translate (SEIf _ cond thn els) =
   C.If (translate cond) (translate thn) (translate els)
@@ -172,7 +175,7 @@ case s of
 -}
 
 translate expr@(SECase _ cond [(SPM p@(SPTup _ p1 p2) exp)])
-  | rewriteRequired p = rewriteTupleCases expr
+  | rewriteRequired p = translate (rewriteTuplesCase expr)
   | otherwise = C.Let (translatePat p) (translate cond) (translate exp)
 
 
@@ -184,7 +187,7 @@ or case or a combination
 
 -}
 translate expr@(SECase _ _ ((SPM (SPTup _ _ _) _):_)) =
-  rewriteTupleCases expr
+  translate (rewriteTuplesCase expr)
 
 -----------------REWRITES FOR CASE EXPRESSION ENDS-----------------
 
@@ -253,11 +256,6 @@ translatePat (SPNAdt _ _ _)    = error "Rewrite constructors has failed"
 
 
 
-rewriteTupleCases :: SExp SType -> C.Exp
--- rewriteTupleCases (SECase _ cond ((SPM (SPTup _ (SPNAdt _ (AST.UIdent constr) rest) p2) expr):_)) = undefined
-rewriteTupleCases (SECase _ _ ((SPM (SPTup _ _ _) _):_)) = error "Unhandled tuple case"
-rewriteTupleCases _ = error "Not a tuple case"
-
 rewriteLet :: SExp SType -> Codegen C.Exp
 
 {-
@@ -288,18 +286,16 @@ rewriteLet (SELet ty1 (SPNAdt _
                                (AST.UIdent constr2) -- :
                                (Just pat))))) ebound ein) = do-- (n,ns)
   tempVar <- fresh
-  currentCount <- gets count
   let newLetExpr = SELet
                    ty1
                    (SPNAdt ty2 (AST.UIdent constr2) (Just pat))
                    (SEVar ty2 (AST.Ident tempVar))
                    ein
+  expr' <- rewriteLet newLetExpr
   pure $
     C.Case
     (translate ebound)
-    [((constr1, (C.PatPair (C.PatVar var1) (C.PatVar tempVar)))
-     , evalState (runCodegen $ rewriteLet newLetExpr) (initState currentCount)
-     )
+    [((constr1, (C.PatPair (C.PatVar var1) (C.PatVar tempVar))), expr')
     ]
 
 
@@ -402,7 +398,7 @@ test = do
       putStrLn $ PP.printTree desugaredIr
       --putStrLn $ show desugaredIr
       let camir = translate desugaredIr
-      let cam   = C.interpret camir
+      -- let cam   = C.interpret camir
       -- putStrLn $ show cam
       let val = IM.evaluate $ C.interpret camir
       putStrLn $ show val
@@ -468,6 +464,76 @@ grault' x = case x of
              (2, (_, g@_)) -> g
              m             -> 5
 
+-- grault'' x = let (temp1, temp2, temp3) = x
+--               in case temp1 of
+--                    1 -> case temp2 of
+--                           _ -> case temp3 of
+--                                  3 -> 1
+--                    1 -> case temp2 of
+--                           m:ms -> case temp3 of
+--                                     _ -> m
+--                    2 -> case temp2 of
+--                           _ -> case temp3 of
+--                                  g@_ -> g
+--                    _ -> case temp2 of
+--                           _ -> case temp3 of
+--                                  _ -> 5
+
+-- grault'' x = let (temp1, temp2, temp3) = x
+--               in case temp1 of
+--                    1 -> case temp2 of
+--                           _ -> case temp3 of
+--                                  3 -> 1
+--                    1 -> case temp2 of
+--                           m:ms -> case temp3 of
+--                                     _ -> m
+--                    2 -> case temp2 of
+--                           _ -> case temp3 of
+--                                  g@_ -> g
+--                    _ -> case temp2 of
+--                           _ -> case temp3 of
+--                                  _ -> 5
+
+
+-- Step 1
+-- Check if it is an ADT or a tuple
+-- IF ADT apply ADT transform and then tupleTransform
+-- Otherwise apply tupleTransform and then ADTTransform
+
+
+-- Exhibit 1
+-- case x of
+--   1:2:3:Nil ->e
+-- case x of
+--   1:temp -> case temp of
+--               2:temp2 -> case temp2 of
+--                                3:Nil -> e
+-- case x of
+--   1:temp -> case temp of
+--               2:temp2 -> case temp2 of
+--                                3:Nil -> e
+
+
+
+-- Exhibit 2
+-- case x of
+--   (1,2):(3,4): ms -> e
+
+
+-- case x of
+--   (1,2) : temp -> case temp of
+--                    (3,4):ms -> e
+
+-- case x of
+--   t:temp -> let (t1,t2) = t
+--              in case t1 of
+--                   1 -> case t2 of
+--                           2 -> case temp of
+--                                  t3:ms -> let (t4,t5) = t3
+--                                            in case t4 of
+--                                                 3 -> case t5 of
+--                                                        4 -> e
+
 -- grault'' x = let temp = x
 --              in let (temp1, (temp2, temp3)) = temp
 --                 in if temp1 == 1
@@ -486,6 +552,10 @@ grault' x = case x of
 --                                               _ -> g
 --                              else let m = temp
 --                                   in 5
+
+
+
+
 -- (\ s ->
 -- case s of
 --    (x,y) -> x + y) (5,6)
@@ -517,5 +587,180 @@ Var lead to let
 ADT lead to case
 wildcards,nil lead to let
 tuple leads to a combination of the above
+
+-}
+
+-- test1 a =
+--   case a of
+--     (b:bc, (d,e), _     ) -> 1
+--     (f   , g    , Just h) -> 2
+
+-- test1' a =
+--   let (t1, (t2, t3), t4) = a
+--    in let (t5, t6, t7)   = a
+--       in case t1 of
+--            b:bc -> case t2 of
+--                   d -> case t3 of
+--                          e -> case t4 of
+--                                 temp -> 1
+--            _    -> case t5 of
+--                      f    -> case t6 of
+--                                g -> case t7 of
+--                                       Just h -> 2
+
+
+-- case a of
+--   ((x,y), z) ->
+--   (m, n)     ->
+
+-- let ((t1, t2), t3) = a
+--  in let (t5, t6)   = a
+--      in case t1 of
+--           x -> case t2 of
+--                  y -> case t3 of
+--                         z -> e1
+--           _ -> case t5 of
+--                  m -> case t6 of
+--                         n -> e2
+
+-- let (t1, (t2, t3), t4) = a
+--  in case t1 of
+--       b:bc -> 
+--       f    ->
+
+-- test2 x =
+--   case x of
+--     ((m:ms),(n:ns)):rf -> 1
+
+--   case x of
+--     t1:rf -> case t1 of
+--                ((m:ms),(n:ns)) -> 1
+
+--  case x of
+--     t1:rf -> let (m1,m2) = t1
+--               in case m1 of
+--                    m:ms -> case m2 of
+--                              n:ns -> 1
+
+-- Considering this subset of patterns
+-- data SPat a
+--     = SPVar a AST.Ident
+--     | SPNAdt a AST.UIdent (Maybe (SPat a))
+--     | SPTup a (SPat a) (SPat a)
+--   deriving (Eq, Ord, Show, Read)
+
+{-
+case (x,y) of
+  (ST49 v64, v50) -> e1
+  (ST50 m, ST52 y) -> e1
+
+[t1,t2]
+[ST49 v64, v50]
+[ST50 m, ST52 y]
+let (t1, t2) = (x,y) in
+
+case t1 of
+  ST49 v64 ->
+  ST40 m ->
+
+-}
+
+rewriteTuplesCase :: SExp SType -> SExp SType
+rewriteTuplesCase expr@(SECase _ _ (SPM (SPTup _ _ _) _ :_)) =
+  evalState (runCodegen $ rewriteCasePair expr) (initState 0)
+rewriteTuplesCase _ = error "Not a pair case"
+
+rewriteCasePair :: SExp SType -> Codegen (SExp SType)
+rewriteCasePair (SECase ty1 econd pm@(SPM tup@(SPTup ty2 p1 p2) e :_)) = do
+  allTrees <- mapM (\(SPM p _) -> genTree p) pm
+  let hs = map heightOfTree allTrees
+  -- assume allEqual for now
+  let finalTree = head allTrees
+  let exprs = map (\(SPM _ e) -> e) pm
+  let caseExpr = genCase ty1 (flattenTree finalTree) (map (\(SPM p _) -> flattenTree p) pm) exprs
+  pure $ SELet ty1 finalTree econd caseExpr
+  where
+    genTree (SPNAdt aty _ _) = do
+      tempVar <- fresh
+      pure $ SPVar aty (AST.Ident tempVar)
+    genTree (SPVar vty _) = do
+      tempVar <- fresh
+      pure $ SPVar vty (AST.Ident tempVar)
+    genTree (SPTup tty p1 p2) = do
+      p1' <- genTree p1
+      p2' <- genTree p2
+      pure $ SPTup tty p1' p2'
+    genTree _ = error "Other patterns not covered"
+
+    heightOfTree (SPTup _ p1 p2) =
+      1 + max (heightOfTree p1) (heightOfTree p2)
+    heightOfTree (SPVar _ _) = 1
+    heightOfTree _ = error "Other patterns eliminated"
+
+    flattenTree (SPTup _ p1 p2) = flattenTree p1 ++ flattenTree p2
+    flattenTree x = [x]
+
+    allEqual xs = length (nub xs) == 1
+rewriteCasePair _ = error "Other case patterns not applied here"
+
+
+{-
+case (x,y) of
+  (ST49 v64, v50) -> e1
+  (ST50 m, ST52 y) -> e1
+
+[t1,t2]
+[[ST49 v64, v50]
+,
+ [ST50 m, ST52 y]]
+let (t1, t2) = (x,y) in
+
+case t1 of
+  ST49 v64 ->
+  ST40 m ->
+-}
+
+patToVar (SPVar vty ident) = SEVar vty ident
+patToVar _ = error "Other patterns not allowed"
+
+genCase :: SType -> [SPat SType] -> [[SPat SType]] -> [SExp SType] -> (SExp SType)
+genCase _ [] _ _ = error "Such cases do not occur"
+genCase ty (p:pats) clauses finalEs =
+  -- XXX: Here we take the first clause as the distinct clause
+  -- Need an algorithm to distinguish the special distinct clause
+  -- See EXAMPLE 1 below
+  let distinctClauses = map (\(c1:_) -> c1) clauses
+      restClauses     = map (\(_:cs) -> cs) clauses
+      repPats = replicate (length restClauses) pats
+      newCondClause = zipWith zip repPats restClauses
+      basecases = map SPM distinctClauses
+      allExprs = zipWith (gen ty) newCondClause finalEs
+   in SECase ty (patToVar p) (zipWith (\f a -> f a) basecases allExprs)
+
+
+gen :: SType -> [(SPat SType, SPat SType)] -> SExp SType -> SExp SType
+gen _ [] _ = error "Because of being a pair such case would never arise"
+gen sty [(t, b)] finalExpr =
+  SECase sty (patToVar t) [SPM b finalExpr]
+gen sty ((t, b):xs) finalExpr =
+  SECase sty (patToVar t) [SPM b (gen sty xs finalExpr)]
+
+
+
+
+
+
+{- EXAMPLE 1
+argh x = case x of
+           (t, Just m)  -> t
+           (k, Nothing) -> k
+argh' x =
+  let (y,z) = x
+  in case y of
+       t -> case z of
+              Just m -> t
+       k -> case z of
+              Nothing -> k
+
 
 -}
