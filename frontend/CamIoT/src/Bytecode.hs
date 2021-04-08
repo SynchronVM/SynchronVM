@@ -625,7 +625,7 @@ tuple leads to a combination of the above
 
 -- let (t1, (t2, t3), t4) = a
 --  in case t1 of
---       b:bc -> 
+--       b:bc ->
 --       f    ->
 
 -- test2 x =
@@ -642,6 +642,7 @@ tuple leads to a combination of the above
 --                    m:ms -> case m2 of
 --                              n:ns -> 1
 
+
 -- Considering this subset of patterns
 -- data SPat a
 --     = SPVar a AST.Ident
@@ -651,18 +652,17 @@ tuple leads to a combination of the above
 
 {-
 case (x,y) of
-  (ST49 v64, v50) -> e1
-  (ST50 m, ST52 y) -> e1
+  (ST49 v64, v50)  -> e1
+  (ST50 m, ST52 y) -> e2
 
-[t1,t2]
-[ST49 v64, v50]
-[ST50 m, ST52 y]
-let (t1, t2) = (x,y) in
+-- REWRITTEN TO --
 
-case t1 of
-  ST49 v64 ->
-  ST40 m ->
-
+let (temp1, temp2) = (x, y) in
+case temp1 of
+   ST49 v64 -> case temp2 of
+                    v50 -> e1
+   ST50 m   -> case temp2 of
+                    ST52 y -> e2
 -}
 
 rewriteTuplesCase :: SExp SType -> SExp SType
@@ -721,21 +721,40 @@ case t1 of
 -}
 
 patToVar (SPVar vty ident) = SEVar vty ident
-patToVar _ = error "Other patterns not allowed"
+patToVar _ = error "Non var patterns not allowed"
 
 genCase :: SType -> [SPat SType] -> [[SPat SType]] -> [SExp SType] -> (SExp SType)
 genCase _ [] _ _ = error "Such cases do not occur"
-genCase ty (p:pats) clauses finalEs =
-  -- XXX: Here we take the first clause as the distinct clause
-  -- Need an algorithm to distinguish the special distinct clause
-  -- See EXAMPLE 1 below
-  let distinctClauses = map (\(c1:_) -> c1) clauses
-      restClauses     = map (\(_:cs) -> cs) clauses
-      repPats = replicate (length restClauses) pats
+genCase ty pats clauses finalEs =
+  let (p, restPats, distinctClauses, restClauses) = chooseDistinctPatClause -- See Example 1 to understand why this was added
+      repPats = replicate (length restClauses) restPats
       newCondClause = zipWith zip repPats restClauses
       basecases = map SPM distinctClauses
       allExprs = zipWith (gen ty) newCondClause finalEs
    in SECase ty (patToVar p) (zipWith (\f a -> f a) basecases allExprs)
+   where
+     chooseDistinctPatClause
+       | length clauses == 1 =
+           ( head pats
+           , tail pats
+           , map head clauses
+           , map tail clauses)
+
+       | otherwise = -- we know length of clauses is >1 so atleast 2
+         let c1:c2:_ = clauses
+             dcn      = distinctClauseNumber c1 c2 0
+          in ( pats !! dcn
+             , deleteN dcn pats
+             , map (!! dcn) clauses
+             , map (deleteN dcn) clauses
+             )
+          where
+            distinctClauseNumber [] [] _ = 0
+            distinctClauseNumber [] _ _  = 0 -- XXX: Assuming pairs are equally branched so this case doesn't arise
+            distinctClauseNumber _ [] _  = 0 -- XXX: Assuming pairs are equally branched so this case doesn't arise
+            distinctClauseNumber ((SPVar _ _):c1s) ((SPVar _ _):c2s) i =
+              distinctClauseNumber c1s c2s (i + 1)
+            distinctClauseNumber (_:c1s) (_:c2s) i = i
 
 
 gen :: SType -> [(SPat SType, SPat SType)] -> SExp SType -> SExp SType
@@ -747,10 +766,14 @@ gen sty ((t, b):xs) finalExpr =
 
 
 
-
-
+deleteN :: Int -> [a] -> [a]
+deleteN _ []     = []
+deleteN i (a:as)
+   | i == 0    = as
+   | otherwise = a : deleteN (i-1) as
 
 {- EXAMPLE 1
+
 argh x = case x of
            (t, Just m)  -> t
            (k, Nothing) -> k
@@ -762,5 +785,13 @@ argh' x =
        k -> case z of
               Nothing -> k
 
+-- AFTER ADDING chooseDistinctPatClause
+argh'' x =
+ let (y,z) = x
+  in case z of
+       Just m -> case y of
+                   t -> t
+      Nothing -> case y of
+                   k -> k
 
 -}
