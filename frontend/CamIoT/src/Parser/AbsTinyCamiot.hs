@@ -79,7 +79,7 @@ instance C.Functor Exp where
         EUVar a uident -> EUVar (f a) uident
         EConst a const -> EConst (f a) const
 
-data AddOp a = Plus a | Minus a | AddOpTyped a (AddOp a) Type
+data AddOp a = Plus a | Minus a
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 instance C.Functor AddOp where
