@@ -1,0 +1,8 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+baz = let (Cons x (Cons y ys)) = (Cons 1 (Cons 2 Nil))
+       in (x + y)
+
+main = baz
