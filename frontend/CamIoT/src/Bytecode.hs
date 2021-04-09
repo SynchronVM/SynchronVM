@@ -430,10 +430,14 @@ test = do
       -- putStrLn $ show camir
 
       putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
-      let cam   = C.interpret camir
-      putStrLn $ show cam
-      --let val = IM.evaluate $ C.interpret camir
-      --putStrLn $ show val
+      -- let cam   = C.interpret camir
+      -- putStrLn $ show cam
+
+      putStrLn $ "\n\n CAM HS Interpreter \n\n"
+      let val = IM.evaluate $ C.interpret camir
+      putStrLn $ show val
+
+      putStrLn $ "\n\n CAM Assembler and true bytecode generator \n\n"
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
 
