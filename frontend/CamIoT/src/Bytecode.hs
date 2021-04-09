@@ -141,7 +141,7 @@ case s of
     in x) 5
 
 -}
-translate (SECase _ cond [(SPM (SPVar _ (AST.Ident var)) exp)]) =
+translate (SECase _ cond [zzz@(SPM (SPVar _ (AST.Ident var)) exp)]) =
   C.Let (C.PatVar var) (translate cond) (translate exp)
 
 {-
@@ -188,6 +188,31 @@ or case or a combination
 -}
 translate expr@(SECase _ _ ((SPM (SPTup _ _ _) _):_)) =
   translate (rewriteTuplesCase expr)
+
+
+{-
+case x of
+  1 -> e1
+  2 -> e2
+
+-- REWRITE TO --
+
+if x == 1
+then  e1
+else case x of
+         2 -> e2
+-- REWRITE TO --
+
+if x == 1
+then  1 ->
+else if x == 2
+     then e2
+     else Nil
+-}
+
+
+translate expr@(SECase casety econd ((SPM (SPConst cty const) e):_)) =
+  translate $ rewriteCaseConstants expr
 
 -----------------REWRITES FOR CASE EXPRESSION ENDS-----------------
 
@@ -387,7 +412,7 @@ of let expressions.
 
 
 -- Experiments --
-path = "testcases/good7.cam"
+path = "testcases/good8.cam"
 
 test :: IO ()
 test = do
@@ -396,12 +421,19 @@ test = do
     Left err -> putStrLn err
     Right desugaredIr -> do
       putStrLn $ PP.printTree desugaredIr
-      --putStrLn $ show desugaredIr
+      putStrLn $ "\n\n Debug Follows \n\n"
+      -- putStrLn $ show desugaredIr
+      putStrLn $ "\n\n Debug Follows \n\n"
+
+      putStrLn $ "\n\n CAM IR (no pp) \n\n"
       let camir = translate desugaredIr
-      -- let cam   = C.interpret camir
-      -- putStrLn $ show cam
-      let val = IM.evaluate $ C.interpret camir
-      putStrLn $ show val
+      -- putStrLn $ show camir
+
+      putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
+      let cam   = C.interpret camir
+      putStrLn $ show cam
+      --let val = IM.evaluate $ C.interpret camir
+      --putStrLn $ show val
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
 
@@ -668,6 +700,8 @@ case temp1 of
 rewriteTuplesCase :: SExp SType -> SExp SType
 rewriteTuplesCase expr@(SECase _ _ (SPM (SPTup _ _ _) _ :_)) =
   evalState (runCodegen $ rewriteCasePair expr) (initState 0)
+  -- let foo = trace ("abhi " <> (PP.printTree expr)) evalState (runCodegen $ rewriteCasePair expr) (initState 0)
+  --  in trace ("roop " <> (PP.printTree foo)) foo
 rewriteTuplesCase _ = error "Not a pair case"
 
 rewriteCasePair :: SExp SType -> Codegen (SExp SType)
@@ -795,3 +829,27 @@ argh'' x =
                    k -> k
 
 -}
+
+
+
+-- ex =
+--   SECase STBool (SEVar STInt (AST.Ident "v115"))
+--   [SPM (SPConst STInt (AST.CInt 0)) (SEConst STBool AST.CTrue)
+--   ,SPM (SPConst STInt (AST.CInt 1)) (SEConst STBool AST.CFalse)
+--   ,SPM (SPVar STInt (AST.Ident "v18")) (SEApp STBool
+--                                         (SEVar (STLam STInt STBool) (AST.Ident "v17"))
+--                                         (SEAdd STInt (SEVar STInt (AST.Ident "v18"))
+--                                          (AST.Minus (STLam STInt (STLam STInt STInt))) (SEConst STInt (AST.CInt 2))))
+--   ]
+
+rewriteCaseConstants :: SExp SType -> SExp SType
+rewriteCaseConstants expr@(SECase casety econd [(SPM (SPConst cty const) e)]) =
+  SEIf casety condcheck e (SEConst casety AST.CNil)
+  where
+    condcheck = SERel STBool econd (AST.EQC (STLam (typeof econd) (STLam cty STBool))) (SEConst cty const)
+
+rewriteCaseConstants expr@(SECase casety econd ((SPM (SPConst cty const) e):erest)) =
+  SEIf casety condcheck e (rewriteCaseConstants (SECase casety econd erest))
+  where
+    condcheck = SERel STBool econd (AST.EQC (STLam (typeof econd) (STLam cty STBool))) (SEConst cty const)
+rewriteCaseConstants e = e
