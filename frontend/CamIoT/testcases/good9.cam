@@ -28,16 +28,4 @@ program1 = local (\s -> s + 1) (
            local (\s -> s + 1) (
            bind ask (\x -> return (isEven x))))
 
-data MyState where
-  MS : Int -> Float -> MyState
-
-test : Reader MyState MyState
-test = ask
-
-program2 : Reader MyState MyState
-program2 = local (\(MS x d) -> MS (x + 1) (d + 1.0)) (
-           local (\(MS x d) -> MS (x + 1) (d + 1.0)) (
-           bind ask return
-           ))
-
 main = runReader program1 5

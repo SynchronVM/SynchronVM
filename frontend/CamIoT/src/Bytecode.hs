@@ -77,17 +77,20 @@ translate (SERel _ e1 relop e2) =
     gengt _     = error "GT for other types not yet supported"
     genge STInt = C.BGE
     genge _     = error "GE for other types not yet supported"
-    geneq STInt = C.BEQ
-    geneq _     = error "EQ for other types not yet supported"
+    geneq STInt  = C.BEQ
+    geneq STBool = C.BEQ
+    geneq _      = error "EQ for other types not yet supported"
 
-translate (SEAdd ty e1 _ e2) =
+translate (SEAdd ty e1 aop e2) =
   let e1' = translate e1
       e2' = translate e2
    in C.Sys $ C.Sys2 addOp e1' e2'
    where
-     addOp = case ty of
-               STInt   -> C.PlusI
-               STFloat -> C.PlusF
+     addOp = case (ty, aop) of
+               (STInt, AST.Plus _)    -> C.PlusI
+               (STInt, AST.Minus _)   -> C.MinusI
+               (STFloat, AST.Plus _)  -> C.PlusF
+               (STFloat, AST.Minus _) -> C.MinusF
                _ -> error "Adding non int or float operation"
 translate (SEMul ty e1 _ e2) =
   let e1' = translate e1
@@ -412,7 +415,7 @@ of let expressions.
 
 
 -- Experiments --
-path = "testcases/good8.cam"
+path = "testcases/good9.cam"
 
 test :: IO ()
 test = do
@@ -423,7 +426,7 @@ test = do
       putStrLn $ PP.printTree desugaredIr
       putStrLn $ "\n\n Debug Follows \n\n"
       -- putStrLn $ show desugaredIr
-      putStrLn $ "\n\n Debug Follows \n\n"
+
 
       putStrLn $ "\n\n CAM IR (no pp) \n\n"
       let camir = translate desugaredIr
