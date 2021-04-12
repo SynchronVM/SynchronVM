@@ -42,6 +42,9 @@ import qualified Bytecode.InterpreterModel as IM
 
 import Debug.Trace
 
+
+
+{- See NOTE 2 for missing rewrites -}
 translate :: SExp SType -> C.Exp
 translate (SEIf _ cond thn els) =
   C.If (translate cond) (translate thn) (translate els)
@@ -254,7 +257,7 @@ translatePatMats (SPM (SPNAdt _ (AST.UIdent tag) rest) expr) =
                              (SEVar (typeofpat p2) (AST.Ident tempVar))
                              [(SPM p2 expr)]))
              in evalState (runCodegen computation) (initState 0)
-          _ -> error "Const, ADT, @ patterns not handled at this level"
+          _ -> error "Const, ADT, @ patterns not handled at this level" -- ADTs wont occur. A pattern like x:y:ys encoded using Tuples which is handled already
 
       | otherwise -> ((tag, translatePat x), translate expr)
 translatePatMats p =
@@ -275,7 +278,7 @@ translatePat :: SPat SType -> C.Pat
 translatePat (SPNil _ ) = C.Empty
 translatePat (SPVar _ (AST.Ident str)) = C.PatVar str
 translatePat (SPWild _) = C.Empty
--- Tricky cases--
+-- Problematic cases--
 translatePat (SPLay _ (AST.Ident str) pat) = C.As str (translatePat pat)
 translatePat (SPTup _ p1 p2)
   = C.PatPair (translatePat p1) (translatePat p2)
@@ -411,6 +414,21 @@ And CAM doesn't support constants in the left side
 of let expressions.
 -}
 
+{- NOTE 2
+
+Unhandled patterns:
+
+1. The one given in NOTE 1 above
+2. case x of
+     (a, b) -> e1
+     (c, (d, e)) -> e2
+   Unevenly nested pairs. The nesting of the second
+   clause is more than the nesting of the first.
+
+
+
+-}
+
 
 
 
@@ -444,51 +462,6 @@ test = do
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
 
-foo =
-  let v0 = \ v2 -> case v2 of
-                     v1 -> v1 * 2
-  in v0 5
-
-bar = (\(x:xs) -> x) [1,2]
-bar' = case [1,2] of
-         (x:xs) -> x
-
-baz = let (x:y:_, m:n:_) = ([1,2], [3,4])
-       in (x + y + m + n)
-
-baz' = case ([1,2], [3,4]) of
-         (x:xs,m:ms) ->
-           case (xs,ms) of
-             (y:_, n:_) -> x + y + m + n
-
-foo' = (\1 -> 1) 1
-
-zoo :: Maybe [a] -> Maybe [a]
-zoo x = case x of
-          Nothing -> Nothing
-          g@(Just [])     -> g
-          f@(Just (x:xs)) -> f
-
-quux x = case x of
-           f@(1,2) -> fst f + snd f
-           g@_     -> fst g * snd g
-quux' x = let f = x
-          in let g = x
-             in let (temp1, temp2) = f
-                in if temp1 == 1
-                   then if temp2 == 2
-                        then fst f + snd f
-                        else undefined
-                   else fst g * snd g
-
--- r x = case x of
---         (m:ms,2) -> m
--- r' x = let temp = x
---        in let (temp1, temp2) = temp
---           in case temp1 of
---                m:ms -> if temp2 == 2
---                        then m
---                        else undefined
 
 grault x = case x of
              (1, _, 3)   -> 1
@@ -533,11 +506,6 @@ grault' x = case x of
 --                           _ -> case temp3 of
 --                                  _ -> 5
 
-
--- Step 1
--- Check if it is an ADT or a tuple
--- IF ADT apply ADT transform and then tupleTransform
--- Otherwise apply tupleTransform and then ADTTransform
 
 
 -- Exhibit 1
@@ -682,6 +650,12 @@ tuple leads to a combination of the above
 --                              n:ns -> 1
 
 
+
+
+
+
+
+-- We will translate a subset of patterns
 -- Considering this subset of patterns
 -- data SPat a
 --     = SPVar a AST.Ident
@@ -704,11 +678,10 @@ case temp1 of
                     ST52 y -> e2
 -}
 
+-- See NOTE 3 to understand what is happening here
 rewriteTuplesCase :: SExp SType -> SExp SType
 rewriteTuplesCase expr@(SECase _ _ (SPM (SPTup _ _ _) _ :_)) =
   evalState (runCodegen $ rewriteCasePair expr) (initState 0)
-  -- let foo = trace ("abhi " <> (PP.printTree expr)) evalState (runCodegen $ rewriteCasePair expr) (initState 0)
-  --  in trace ("roop " <> (PP.printTree foo)) foo
 rewriteTuplesCase _ = error "Not a pair case"
 
 rewriteCasePair :: SExp SType -> Codegen (SExp SType)
@@ -761,9 +734,7 @@ case t1 of
   ST40 m ->
 -}
 
-patToVar (SPVar vty ident) = SEVar vty ident
-patToVar _ = error "Non var patterns not allowed"
-
+-- NOTE 3 Step 4 onwards
 genCase :: SType -> [SPat SType] -> [[SPat SType]] -> [SExp SType] -> (SExp SType)
 genCase _ [] _ _ = error "Such cases do not occur"
 genCase ty pats clauses finalEs =
@@ -813,6 +784,10 @@ deleteN i (a:as)
    | i == 0    = as
    | otherwise = a : deleteN (i-1) as
 
+patToVar (SPVar vty ident) = SEVar vty ident
+patToVar _ = error "Non var patterns not allowed"
+
+
 {- EXAMPLE 1
 
 argh x = case x of
@@ -839,15 +814,91 @@ argh'' x =
 
 
 
--- ex =
---   SECase STBool (SEVar STInt (AST.Ident "v115"))
---   [SPM (SPConst STInt (AST.CInt 0)) (SEConst STBool AST.CTrue)
---   ,SPM (SPConst STInt (AST.CInt 1)) (SEConst STBool AST.CFalse)
---   ,SPM (SPVar STInt (AST.Ident "v18")) (SEApp STBool
---                                         (SEVar (STLam STInt STBool) (AST.Ident "v17"))
---                                         (SEAdd STInt (SEVar STInt (AST.Ident "v18"))
---                                          (AST.Minus (STLam STInt (STLam STInt STInt))) (SEConst STInt (AST.CInt 2))))
---   ]
+{- NOTE 3
+
+Given:
+case (x,y) of
+  (ST49 v64, v50)  -> e1
+  (ST50 m, ST52 y) -> e2
+
+Step 1:
+
+map genTree on all clauses
+
+[(temp1, temp2), (temp3, temp4)]
+
+Assume all clauses are equally nested for now;
+XXX: For supporting arbitrarily nested clauses
+we need to do something here;
+
+Step 2:
+
+let (temp1, temp2) = (x,y)
+ in ..rewrite_here..
+
+Step 3:
+
+Flatten all the trees:
+
+Something like (a,(b,(c,d))) => [a,b,c,d] and the same for the clauses
+
+Step 4 :
+
+Step4 onwards happens in genCase:
+
+Choose distinct Clause
+
+Eg:
+
+case x of
+   (t, Just m)  -> t
+   (k, Nothing) -> k
+
+Here we need to choose the clause which will dictate the choice.
+In this case it is the second column -> [Just m, Nothing]
+
+Also it is sufficient to look at the first 2 clauses.
+If all the entities are simply variables the 2nd clause (and onwards)
+would never be hit. It will be always be limited to the first clause
+
+Also if all the clauses are variables simply choose the first one.
+Eg:
+
+case x of
+  (a,b,c) -> .... - Here a will be the distinct clause
+
+See distinctClauseNumber
+
+Step 5
+
+After getting the distinct clause we do
+
+let (temp1, temp2) = (x,y)
+ in case temp1 of
+        ST49 v64 -> case temp2 of
+                         v50    -> e1
+        ST50 m   -> case temp2 of
+                         ST52 y -> e2
+^ the original case
+
+This one:
+case x of
+   (t, Just m)  -> t
+   (k, Nothing) -> k
+
+becomes
+
+let (temp1, temp2) = x
+ in case temp2 of
+         Just m  -> case temp1 of
+                          t -> t
+         Nothing -> case temp2 of
+                          k -> k
+
+
+Step 6 : Other bookkeeping follows
+-}
+
 
 rewriteCaseConstants :: SExp SType -> SExp SType
 rewriteCaseConstants expr@(SECase casety econd [(SPM (SPConst cty const) e)]) =
