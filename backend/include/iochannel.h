@@ -30,9 +30,10 @@
 #include <stdbool.h>
 #include <typedefs.h>
 
+#include <ll/ll_driver.h>
 
 typedef struct {
-  //ll_driver_t goes here
+  ll_driver_t *io_driver;
   chan_send_queue_t sendq;
   chan_recv_queue_t recvq;
   bool         in_use;

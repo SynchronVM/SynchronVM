@@ -30,5 +30,6 @@ int io_channel_init(IOChannel_t *c, chan_send_queue_t sq, chan_recv_queue_t rq){
   c->sendq = sq;
   c->recvq = rq;
   c->in_use = false;
+  //c->io_driver initialized when iochannel is called
   return 1;
 }
