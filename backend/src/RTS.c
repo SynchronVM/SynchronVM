@@ -424,3 +424,11 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
 }
 
+
+static UUID get_io_channel_id(UUID io_cid){
+  return MAX_CHANNELS - io_cid;
+}
+
+static UUID set_io_channel_id(UUID io_cid){
+  return MAX_CHANNELS + io_cid;
+}
