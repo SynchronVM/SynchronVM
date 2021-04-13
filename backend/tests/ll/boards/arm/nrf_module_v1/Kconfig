@@ -1,0 +1,12 @@
+# Kconfig - NRF_MODULE_V1 board configuration
+#
+# Copyright (c) 2021 Joel Svensson
+#
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_ENABLE_DCDC
+        bool "Enable DCDC mode"
+        select SOC_DCDC_NRF52X
+        default y
+	depends on BOARD_NRF_MODULE_V1
+

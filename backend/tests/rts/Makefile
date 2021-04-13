@@ -1,7 +1,7 @@
 
 # Tests
 
-SENSEVM_DIR = ../
+SENSEVM_DIR = ../../
 
 include $(SENSEVM_DIR)sense-vm.mk
 
