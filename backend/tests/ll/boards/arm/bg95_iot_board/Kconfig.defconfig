@@ -1,0 +1,11 @@
+# STM32F4DISCOVERY board configuration
+
+# Copyright (c) 2016 Linaro Limited.
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_BG95_IOT_BOARD
+
+config BOARD
+	default "bg95_iot_board"
+
+endif # BOARD_BG95_IOT_BOARD
