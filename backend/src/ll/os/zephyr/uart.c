@@ -83,35 +83,35 @@ uart_dev_t* uart_init(uart_if_t uif,
 	       uint32_t out_size) {
   int uart_id = -1;
   switch(uif) {
-  case UART0:
+  case UART_IF0:
     uarts[0].dev = device_get_binding("UART_0");
     uart_id = 0;
     break;
-  case UART1:
+  case UART_IF1:
     uarts[1].dev = device_get_binding("UART_1");
     uart_id = 1;
     break;
-  case UART2:
+  case UART_IF2:
     uarts[2].dev = device_get_binding("UART_2");
     uart_id = 2;
     break;
-  case UART3:
+  case UART_IF3:
     uarts[3].dev = device_get_binding("UART_3");
     uart_id = 3;
     break;
-  case UART4:
+  case UART_IF4:
     uarts[4].dev = device_get_binding("UART_4");
     uart_id = 4;
     break;
-  case UART5:
+  case UART_IF5:
     uarts[5].dev = device_get_binding("UART_5");
     uart_id = 5;
     break;
-  case UART6:
+  case UART_IF6:
     uarts[6].dev = device_get_binding("UART_6");
     uart_id = 6;
     break;
-  case UART7:
+  case UART_IF7:
     uarts[7].dev = device_get_binding("UART_7");
     uart_id = 7;
     break;

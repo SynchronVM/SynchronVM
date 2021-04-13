@@ -28,7 +28,7 @@
 #include <sys/ring_buffer.h>
 #include <drivers/uart.h>
 
-typedef enum { UART0 = 0, UART1, UART2, UART3, UART4, UART5, UART6, UART7 } uart_if_t;
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } uart_if_t;
 
 typedef struct {
   struct ring_buf in_ringbuf;
