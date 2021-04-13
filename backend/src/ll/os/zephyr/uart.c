@@ -83,50 +83,71 @@ uart_dev_t* uart_init(uart_if_t uif,
 	       uint32_t out_size) {
   int uart_id = -1;
   switch(uif) {
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart0), okay)    
   case UART_IF0:
     uarts[0].dev = device_get_binding("UART_0");
     uart_id = 0;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart1), okay)
   case UART_IF1:
     uarts[1].dev = device_get_binding("UART_1");
     uart_id = 1;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart2), okay)
   case UART_IF2:
     uarts[2].dev = device_get_binding("UART_2");
     uart_id = 2;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart3), okay)
   case UART_IF3:
     uarts[3].dev = device_get_binding("UART_3");
     uart_id = 3;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart4), okay)
   case UART_IF4:
     uarts[4].dev = device_get_binding("UART_4");
     uart_id = 4;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart5), okay)
   case UART_IF5:
     uarts[5].dev = device_get_binding("UART_5");
     uart_id = 5;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart6), okay)
   case UART_IF6:
     uarts[6].dev = device_get_binding("UART_6");
     uart_id = 6;
     break;
+#endif
+#if DT_NODE_HAS_STATUS(DT_ALIAS(uart7), okay)
   case UART_IF7:
     uarts[7].dev = device_get_binding("UART_7");
     uart_id = 7;
     break;
+#endif
   default:
     uart_id = -1;
     break;
   }
 
+
+  printk("Uart id %u  initialized\r\n", uart_id);
+  
   if (uart_id >= 0 && uart_id <= 7) {
 
     ring_buf_init(&uarts[uart_id].in_ringbuf, in_size, in_buffer);
     ring_buf_init(&uarts[uart_id].out_ringbuf, out_size, out_buffer);
+    printk("Ringbuffers created\r\n");
 
-
+    
     uart_irq_callback_user_data_set(uarts[uart_id].dev, uart_isr, (void*)&uarts[uart_id]);
+    printk("UART isr set!\r\n");
     uart_irq_rx_enable(uarts[uart_id].dev);
     
     return &uarts[uart_id];
