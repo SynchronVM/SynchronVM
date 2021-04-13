@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Abhiroop Sarkar                            		  */
+/* Copyright (c) 2020 Abhiroop Sarkar             		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,39 +22,29 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __RTS_H_
-#define __RTS_H_
+#ifndef __IOCHANNEL_H_
+#define __IOCHANNEL_H_
 
-#include <VMC.h>
-#include <event.h>
-
-extern int channel(vmc_t *container, UUID    *chan_id);
-extern int spawn  (vmc_t *container, uint16_t label  );
-
-extern int sync   (  vmc_t       *container, event_t   *evts);
-
-extern int sendEvt(  vmc_t       *container
-                   , UUID        *chan_id
-                   , cam_value_t  msg
-                   , event_t     *sevt);
-
-extern int recvEvt(  vmc_t   *container
-                   , UUID    *chan_id
-                   , event_t *revt);
+#include <chan_send_queue.h>
+#include <chan_recv_queue.h>
+#include <stdbool.h>
+#include <typedefs.h>
 
 
-/*******************IO**********************/
+typedef struct {
+  //ll_driver_t goes here
+  chan_send_queue_t sendq;
+  chan_recv_queue_t recvq;
+  bool         in_use;
+} IOChannel_t;
 
-extern int iochannel(vmc_t *container, UUID  *io_chan_id);
+extern int io_channel_init( IOChannel_t *c
+                          , chan_send_queue_t sq
+                          , chan_recv_queue_t rq);
 
-extern int sendIOEvt(  vmc_t       *container
-                     , UUID        *chan_id
-                     , cam_value_t  msg
-                     , event_t     *sevt);
 
-extern int recvIOEvt(  vmc_t   *container
-                     , UUID    *chan_id
-                     , event_t *revt);
+
+
 
 
 #endif
