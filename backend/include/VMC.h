@@ -31,6 +31,7 @@
 #include <heap.h>
 #include <queue.h>
 #include <channel.h>
+#include <iochannel.h>
 #include <Context.h>
 
 #include <stdint.h>
@@ -41,6 +42,7 @@
 #define VMC_MAX_CONTEXTS 16
 
 #define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
+#define MAX_IO_CHANNELS 100
 #define MAX_WAIT_PARTICIPANTS 3
 
 typedef struct {
@@ -52,6 +54,7 @@ typedef struct {
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
+  IOChannel_t   iochannels[MAX_IO_CHANNELS];
   Queue_t       rdyQ;
 } vmc_t;
 

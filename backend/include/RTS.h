@@ -45,7 +45,9 @@ extern int recvEvt(  vmc_t   *container
 
 /*******************IO**********************/
 
-extern int iochannel(vmc_t *container, UUID  *io_chan_id);
+extern int iochannel(  vmc_t       *container
+                     , ll_driver_t *driver_io
+                     , UUID        *io_chan_id);
 
 extern int sendIOEvt(  vmc_t       *container
                      , UUID        *chan_id
