@@ -136,18 +136,13 @@ uart_dev_t* uart_init(uart_if_t uif,
     break;
   }
 
-
-  printk("Uart id %u  initialized\r\n", uart_id);
   
   if (uart_id >= 0 && uart_id <= 7) {
 
     ring_buf_init(&uarts[uart_id].in_ringbuf, in_size, in_buffer);
     ring_buf_init(&uarts[uart_id].out_ringbuf, out_size, out_buffer);
-    printk("Ringbuffers created\r\n");
-
     
     uart_irq_callback_user_data_set(uarts[uart_id].dev, uart_isr, (void*)&uarts[uart_id]);
-    printk("UART isr set!\r\n");
     uart_irq_rx_enable(uarts[uart_id].dev);
     
     return &uarts[uart_id];
