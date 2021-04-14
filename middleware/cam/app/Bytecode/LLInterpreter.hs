@@ -38,15 +38,20 @@ The low level interpreter with an explicit heap
 
 type Pointer = Int
 
-data CellContent = V Val | P Pointer deriving (Show, Eq)
+data CellContent = V Val
+                 | P Pointer
+                 | L Label
+                 | T Tag
+                 deriving (Show, Eq)
 
 type HeapCell = (CellContent, CellContent)
 
 nullPointer = -1
-emptyCell   = (V VEmpty, P nullPointer)
+emptyCell   = (P nullPointer, P nullPointer)
 heapSize    = 2000 --heap cells
 
-type Heap  = Array Index HeapCell
+
+type Heap  = Array Pointer HeapCell
 
 data StackContent = SV Val | SP Pointer deriving (Show, Eq)
 
@@ -66,6 +71,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , environment :: Environment
                  , stack       :: Stack
                  , heap        :: Heap
+                 , lastAllocIdx   :: Pointer
                  , programCounter :: Index
                  } deriving Show
 
@@ -117,6 +123,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , environment = EV VEmpty
                     , stack       = []
                     , heap        = listArray (1, heapSize) initHeap
+                    , lastAllocIdx = 1
                     , programCounter = 1
                     }
   where
@@ -259,6 +266,8 @@ fstEnv = do
                    in case fstHeap of
                         V val -> S.modify $ \s -> s { environment = EV val }
                         P ptr -> S.modify $ \s -> s { environment = EP ptr }
+                        L _   -> error "first cant be applied on a label"
+                        T _   -> error "first cant be applied on a tag"
     _ -> error "first operation on incorrect value type"
 
 sndEnv :: Evaluate ()
@@ -272,6 +281,8 @@ sndEnv = do
                    in case sndHeap of
                         V val -> S.modify $ \s -> s { environment = EV val }
                         P ptr -> S.modify $ \s -> s { environment = EP ptr }
+                        L _   -> error "second cant be applied on a label"
+                        T _   -> error "second cant be applied on a tag"
     _ -> error "second operation on incorrect value type"
 
 
@@ -425,32 +436,38 @@ binaryop bop = do
 {-  HEAP growth and manipulation functions -}
 
 cons :: Evaluate ()
-cons = undefined-- do
-  -- e      <- getEnv
-  -- (h, t) <- popAndRest
-  -- S.modify $ \s -> s { environment = VPair h e
-  --                    , stack = t
-  --                    }
+cons = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  ptr    <- malloc
+  allocOnHeap ptr (envHeapTag e, stackHeapTag h)
+  S.modify $ \s -> s { environment = EP ptr
+                     , stack = t
+                     }
 
 cur :: Label -> Evaluate ()
-cur l = undefined -- do
-  -- e <- getEnv
-  -- S.modify $ \s -> s { environment = VClosure e l }
+cur l = do
+  e   <- getEnv
+  ptr <- malloc
+  allocOnHeap ptr (envHeapTag e, L l)
+  S.modify $ \s -> s { environment = EP ptr }
 
 pack :: Tag -> Evaluate ()
-pack t = undefined -- do
-  -- e <- getEnv
-  -- S.modify $ \s -> s { environment = VCon t e }
+pack t = do
+  e   <- getEnv
+  ptr <- malloc
+  allocOnHeap ptr (envHeapTag e, T t)
+  S.modify $ \s -> s { environment = EP ptr }
 
 app :: Evaluate ()
 app = undefined -- do
-  -- e      <- getEnv
-  -- (h, t) <- popAndRest
-  -- let (VClosure val label) = e -- XXX: Partial
-  -- S.modify $ \s -> s { environment = VPair val h
+  -- e      <- getenv
+  -- (h, t) <- popandrest
+  -- let (vclosure val label) = e -- xxx: partial
+  -- s.modify $ \s -> s { environment = vpair val h
   --                    , stack = t
   --                    }
-  -- jumpTo label
+  -- jumpto label
 
 switch :: [(Tag, Label)] -> Evaluate ()
 switch conds = undefined -- do
@@ -461,21 +478,21 @@ switch conds = undefined -- do
   --     let (_, label) =
   --           case find (\(c,_) -> c == ci || c == wildcardtag) conds of
   --             Just (cf, lf) -> (cf, lf)
-  --             Nothing -> error $ "Missing constructor " <> show ci
+  --             Nothing -> error $ "missing constructor " <> show ci
   --     S.modify $ \s -> s { environment = VPair h v1
   --                        , stack = t
   --                        }
   --     goto label
-  --   _ -> error "Non constructor patterns should be rewritten"
+  --   _ -> error "non constructor patterns should be rewritten"
   --   where
-  --     wildcardtag = "??WILDCARD??"
+  --     wildcardtag = "??wildcard??"
 
 
-{-  HEAP growth and manipulation functions -}
+{-  heap growth and manipulation functions -}
 
 
 -- goto doesn't store the previous jump
--- point into prevJump unlike jumpTo
+-- point into prevjump unlike jumpto
 goto :: Label -> Evaluate ()
 goto l = do
   pc <- S.gets programCounter
@@ -501,9 +518,46 @@ gotofalse l = do
   case e of
     EV (VBool True)  -> incPC
     EV (VBool False) -> goto l
-    _ -> error "GOTOFALSE instuction applied to incorrect operand"
+    _ -> do
+      -- revert environment and stack back to the original state
+      S.modify $ \s -> s { environment = e
+                         , stack       = h : t
+                         }
+      error "gotofalse instuction applied to incorrect operand"
 
 dummyLabel = Label (-1)
+
+
+malloc :: Evaluate Pointer
+malloc = do
+  h   <- getHeap
+  i   <- S.gets lastAllocIdx
+  let idx = findFreeIdx h i
+  pure idx
+  where
+    findFreeIdx h_ i
+      | i > heapSize = error "Heap overflow! GC!! GC!! GC!!"
+      | (h_ ! i) == emptyCell = i
+      | otherwise  = findFreeIdx h_ (i + 1)
+
+findFreeIdx :: Evaluate Pointer
+findFreeIdx = undefined
+
+allocOnHeap :: Pointer -> HeapCell -> Evaluate ()
+allocOnHeap ptr hc = do
+  h <- getHeap
+  S.modify $ \s -> s { heap = mutHeap h hc ptr }
+
+mutHeap :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
+mutHeap arr hc i = arr // [(i,hc)]
+
+envHeapTag :: EnvContent -> CellContent
+envHeapTag (EV val) = V val
+envHeapTag (EP ptr) = P ptr
+
+stackHeapTag :: StackContent -> CellContent
+stackHeapTag (SV val) = V val
+stackHeapTag (SP ptr) = P ptr
 
 -- NOTE:
 {-
