@@ -424,7 +424,12 @@ Unhandled patterns:
      (c, (d, e)) -> e2
    Unevenly nested pairs. The nesting of the second
    clause is more than the nesting of the first.
-
+3. case x of
+    m:n:ys -> e1
+    p:q:rs -> e2
+   Case expressions with more than one clause which
+   hase 2 or more constructors. Can be easily rewritten
+   using a combination of rewrite-let and case
 
 
 -}
