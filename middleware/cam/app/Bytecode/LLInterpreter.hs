@@ -21,6 +21,7 @@
 -- SOFTWARE.
 
 module Bytecode.LLInterpreter ( Val (..)
+                              , EnvContent (..)
                               , evaluate) where
 
 import CAM
@@ -35,9 +36,25 @@ The low level interpreter with an explicit heap
 
 -}
 
-type Stack = [Val]
+type Pointer = Int
 
-type Environment = Val -- the environment register
+data CellContent = V Val | P Pointer deriving (Show, Eq)
+
+type HeapCell = (CellContent, CellContent)
+
+nullPointer = -1
+emptyCell   = (V VEmpty, P nullPointer)
+heapSize    = 2000 --heap cells
+
+type Heap  = Array Index HeapCell
+
+data StackContent = SV Val | SP Pointer deriving (Show, Eq)
+
+type Stack = [StackContent]
+
+data EnvContent  = EV Val | EP Pointer deriving (Show, Eq)
+
+type Environment = EnvContent
 
 type Index = Int
 
@@ -48,6 +65,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , prevJump    :: [Index]
                  , environment :: Environment
                  , stack       :: Stack
+                 , heap        :: Heap
                  , programCounter :: Index
                  } deriving Show
 
@@ -86,7 +104,7 @@ instance Show Val where
 
 -- Take a sequence of stack machine instructions
 -- and evaluate them to their normal form
-evaluate :: CAM -> Val
+evaluate :: CAM -> EnvContent
 evaluate cam = val
   where
     code = initCode cam
@@ -96,8 +114,9 @@ initCode :: CAM -> Code
 initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , symbolTable = filteredEntries
                     , prevJump    = []
-                    , environment = VEmpty
+                    , environment = EV VEmpty
                     , stack       = []
+                    , heap        = listArray (1, heapSize) initHeap
                     , programCounter = 1
                     }
   where
@@ -107,13 +126,14 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
     entries   = map (\((_,l),idx) -> (l,idx)) indexedinstrsLabs
     filteredEntries = filter (\(l,_) -> l /= dummyLabel) entries
     totalInstrs     = length caminstrs
+    initHeap        = replicate heapSize emptyCell
 
 genInstrs :: CAM -> Label -> [(Instruction, Label)]
 genInstrs (Ins i) l = [(i, l)]
 genInstrs (Seq c1 c2) l = genInstrs c1 l ++ genInstrs c2 dummyLabel
 genInstrs (Lab l c) _   = genInstrs c l
 
-eval :: Evaluate Val
+eval :: Evaluate EnvContent
 eval = do
   currentInstr <- readCurrent
   case currentInstr of
@@ -219,7 +239,10 @@ getEnv = S.gets environment
 getStack :: Evaluate Stack
 getStack = S.gets stack
 
-popAndRest :: Evaluate (Val, Stack)
+getHeap :: Evaluate Heap
+getHeap = S.gets heap
+
+popAndRest :: Evaluate (StackContent, Stack)
 popAndRest = do
   st <- getStack
   let (h:t) = st
@@ -228,16 +251,29 @@ popAndRest = do
 fstEnv :: Evaluate ()
 fstEnv = do
   e <- getEnv
+  h <- getHeap
   case e of
-    VPair v _ -> S.modify $ \s -> s { environment = v }
+    EV (VPair v _) -> S.modify $ \s -> s { environment = EV v }
+    EP pointer -> let heapcell = h ! pointer
+                      fstHeap  = fst heapcell
+                   in case fstHeap of
+                        V val -> S.modify $ \s -> s { environment = EV val }
+                        P ptr -> S.modify $ \s -> s { environment = EP ptr }
     _ -> error "first operation on incorrect value type"
 
 sndEnv :: Evaluate ()
 sndEnv = do
   e <- getEnv
+  h <- getHeap
   case e of
-    VPair _ v -> S.modify $ \s -> s { environment = v }
+    EV (VPair _ v) -> S.modify $ \s -> s { environment = EV v }
+    EP pointer -> let heapcell = h ! pointer
+                      sndHeap  = snd heapcell
+                   in case sndHeap of
+                        V val -> S.modify $ \s -> s { environment = EV val }
+                        P ptr -> S.modify $ \s -> s { environment = EP ptr }
     _ -> error "second operation on incorrect value type"
+
 
 accessnth :: Int -> Evaluate ()
 accessnth 0 = sndEnv
@@ -257,44 +293,49 @@ push :: Evaluate ()
 push = do
   e  <- getEnv
   st <- getStack
-  S.modify $ \s -> s { stack = e : st }
+  case e of
+    EV val -> S.modify $ \s -> s { stack = (SV val) : st }
+    EP ptr -> S.modify $ \s -> s { stack = (SP ptr) : st }
 
 swap :: Evaluate ()
 swap = do
   e      <- getEnv
-  (h, t) <- popAndRest
-  S.modify $ \s -> s { stack = e : t
-                     , environment = h
-                     }
+  (sc, t) <- popAndRest
+  case e of
+    EV val -> S.modify $ \s -> s { stack = (SV val) : t }
+    EP ptr -> S.modify $ \s -> s { stack = (SP ptr) : t }
+  case sc of
+    SV val -> S.modify $ \s -> s { environment = EV val }
+    SP ptr -> S.modify $ \s -> s { environment = EP ptr }
 
 loadi :: Int32 -> Evaluate ()
-loadi i = S.modify $ \s -> s { environment = VInt i }
+loadi i = S.modify $ \s -> s { environment = EV (VInt i) }
 
 loadf :: Float -> Evaluate ()
-loadf f = S.modify $ \s -> s { environment = VFloat f }
+loadf f = S.modify $ \s -> s { environment = EV (VFloat f) }
 
 loadb :: Bool -> Evaluate ()
-loadb b = S.modify $ \s -> s { environment = VBool b }
+loadb b = S.modify $ \s -> s { environment = EV (VBool b) }
 
 clear :: Evaluate ()
-clear = S.modify $ \s -> s { environment = VEmpty }
+clear = S.modify $ \s -> s { environment = EV VEmpty }
 
 unaryop :: UnaryOp -> Evaluate ()
 unaryop uop = do
   e <- getEnv
   case uop of
     Abs -> do
-      let (VInt i) = e -- XXX: Partial
-      S.modify $ \s -> s { environment = VInt (abs i) }
+      let EV (VInt i) = e -- XXX: Partial
+      S.modify $ \s -> s { environment = EV $ VInt (abs i) }
     Neg -> do
-      let (VInt i) = e
-      S.modify $ \s -> s { environment = VInt (negate i) }
+      let EV (VInt i) = e
+      S.modify $ \s -> s { environment = EV $ VInt (negate i) }
     NOT -> do
-      let (VBool b) = e
-      S.modify $ \s -> s { environment = VBool (not b) }
+      let EV (VBool b) = e
+      S.modify $ \s -> s { environment = EV $ VBool (not b) }
     DEC -> do
-      let (VInt i) = e
-      S.modify $ \s -> s { environment = VInt (i - 1) }
+      let EV (VInt i) = e
+      S.modify $ \s -> s { environment = EV $ VInt (i - 1) }
 
 binaryop :: BinOp -> Evaluate ()
 binaryop bop = do
@@ -302,122 +343,136 @@ binaryop bop = do
   (h, t) <- popAndRest
   case bop of
     PlusI -> do
-      let (VInt i1) = e -- XXX: Partial
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VInt (i2 + i1)
+      let EV (VInt i1) = e -- XXX: Partial
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VInt (i2 + i1)
                          , stack = t
                          }
     MultiplyI -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VInt (i2 * i1)
+      let EV (VInt i1) = e
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VInt (i2 * i1)
                          , stack = t
                          }
     MinusI -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VInt (i2 - i1)
+      let EV (VInt i1) = e
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VInt (i2 - i1)
                          , stack = t
                          }
     PlusF -> do
-      let (VFloat f1) = e -- XXX: Partial
-      let (VFloat f2) = h
-      S.modify $ \s -> s { environment = VFloat (f2 + f1)
+      let EV (VFloat f1) = e -- XXX: Partial
+      let SV (VFloat f2) = h
+      S.modify $ \s -> s { environment = EV $ VFloat (f2 + f1)
                          , stack = t
                          }
     MultiplyF -> do
-      let (VFloat f1) = e
-      let (VFloat f2) = h
-      S.modify $ \s -> s { environment = VFloat (f2 * f1)
+      let EV (VFloat f1) = e
+      let SV (VFloat f2) = h
+      S.modify $ \s -> s { environment = EV $ VFloat (f2 * f1)
                          , stack = t
                          }
     MinusF -> do
-      let (VFloat f1) = e
-      let (VFloat f2) = h
-      S.modify $ \s -> s { environment = VFloat (f2 - f1)
+      let EV (VFloat f1) = e
+      let SV (VFloat f2) = h
+      S.modify $ \s -> s { environment = EV $ VFloat (f2 - f1)
                          , stack = t
                          }
     BGT -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VBool (i2 > i1)
+      let EV (VInt i1) = e
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VBool (i2 > i1)
                          , stack = t
                          }
     BLT -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VBool (i2 < i1)
+      let EV (VInt i1) = e
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VBool (i2 < i1)
                          , stack = t
                          }
     BGE -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VBool (i2 >= i1)
+      let EV (VInt i1) = e
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VBool (i2 >= i1)
                          , stack = t
                          }
     BLE -> do
-      let (VInt i1) = e
-      let (VInt i2) = h
-      S.modify $ \s -> s { environment = VBool (i2 <= i1)
+      let EV (VInt i1) = e
+      let SV (VInt i2) = h
+      S.modify $ \s -> s { environment = EV $ VBool (i2 <= i1)
                          , stack = t
                          }
     BEQ -> do
       case (e,h) of
-        (VInt i1, VInt i2) ->
-          S.modify $ \s -> s { environment = VBool (i2 == i1)
+        (EV (VInt i1), SV (VInt i2)) ->
+          S.modify $ \s -> s { environment = EV $ VBool (i2 == i1)
                              , stack = t
                              }
-        (VFloat f1, VFloat f2) ->
-          S.modify $ \s -> s { environment = VBool (f2 == f1)
+        (EV (VFloat f1), SV (VFloat f2)) ->
+          S.modify $ \s -> s { environment = EV $ VBool (f2 == f1)
                              , stack = t
                              }
-        (VBool b1, VBool b2) ->
-          S.modify $ \s -> s { environment = VBool (b2 == b1)
+        (EV (VBool b1), SV (VBool b2)) ->
+          S.modify $ \s -> s { environment = EV $ VBool (b2 == b1)
                              , stack = t
                              }
-        (VEmpty, VEmpty) ->
-          S.modify $ \s -> s { environment = VBool True
-                             , stack = t
-                             }
-        (VPair v1 v2, VPair v3 v4) ->
-          S.modify $ \s -> s { environment = VBool (v1 == v3 &&
-                                                    v2 == v4)
-                             , stack = t
-                             }
-        (VCon t1 v1, VCon t2 v2) ->
-          S.modify $ \s -> s { environment = VBool (t1 == t2 &&
-                                                    v1 == v2)
+        (EV VEmpty, SV VEmpty) ->
+          S.modify $ \s -> s { environment = EV $ VBool True
                              , stack = t
                              }
         _ -> error "Equality not supported for other whnf types"
 
+{-  HEAP growth and manipulation functions -}
+
 cons :: Evaluate ()
-cons = do
-  e      <- getEnv
-  (h, t) <- popAndRest
-  S.modify $ \s -> s { environment = VPair h e
-                     , stack = t
-                     }
+cons = undefined-- do
+  -- e      <- getEnv
+  -- (h, t) <- popAndRest
+  -- S.modify $ \s -> s { environment = VPair h e
+  --                    , stack = t
+  --                    }
 
 cur :: Label -> Evaluate ()
-cur l = do
-  e <- getEnv
-  S.modify $ \s -> s { environment = VClosure e l }
+cur l = undefined -- do
+  -- e <- getEnv
+  -- S.modify $ \s -> s { environment = VClosure e l }
 
 pack :: Tag -> Evaluate ()
-pack t = do
-  e <- getEnv
-  S.modify $ \s -> s { environment = VCon t e }
+pack t = undefined -- do
+  -- e <- getEnv
+  -- S.modify $ \s -> s { environment = VCon t e }
 
 app :: Evaluate ()
-app = do
-  e      <- getEnv
-  (h, t) <- popAndRest
-  let (VClosure val label) = e -- XXX: Partial
-  S.modify $ \s -> s { environment = VPair val h
-                     , stack = t
-                     }
-  jumpTo label
+app = undefined -- do
+  -- e      <- getEnv
+  -- (h, t) <- popAndRest
+  -- let (VClosure val label) = e -- XXX: Partial
+  -- S.modify $ \s -> s { environment = VPair val h
+  --                    , stack = t
+  --                    }
+  -- jumpTo label
+
+switch :: [(Tag, Label)] -> Evaluate ()
+switch conds = undefined -- do
+  -- e      <- getEnv
+  -- (h, t) <- popAndRest
+  -- case e of
+  --   VCon ci v1 -> do
+  --     let (_, label) =
+  --           case find (\(c,_) -> c == ci || c == wildcardtag) conds of
+  --             Just (cf, lf) -> (cf, lf)
+  --             Nothing -> error $ "Missing constructor " <> show ci
+  --     S.modify $ \s -> s { environment = VPair h v1
+  --                        , stack = t
+  --                        }
+  --     goto label
+  --   _ -> error "Non constructor patterns should be rewritten"
+  --   where
+  --     wildcardtag = "??WILDCARD??"
+
+
+{-  HEAP growth and manipulation functions -}
+
 
 -- goto doesn't store the previous jump
 -- point into prevJump unlike jumpTo
@@ -428,52 +483,25 @@ goto l = do
   let ix = st ~> l
   S.modify $ \s -> s { programCounter = ix }
 
+
 gotofalse :: Label -> Evaluate ()
 gotofalse l = do
   e      <- getEnv
   (h, t) <- popAndRest
+  case h of
+    SV val ->
+      S.modify $ \s -> s { environment = EV val
+                         , stack = t
+                         }
+    SP ptr ->
+      S.modify $ \s -> s { environment = EP ptr
+                         , stack = t
+                         }
+
   case e of
-    VBool True -> do
-      incPC
-      S.modify $ \s -> s { environment = h
-                         , stack = t
-                         }
-    VBool False -> do
-      S.modify $ \s -> s { environment = h
-                         , stack = t
-                         }
-      goto l
+    EV (VBool True)  -> incPC
+    EV (VBool False) -> goto l
     _ -> error "GOTOFALSE instuction applied to incorrect operand"
-
-switch :: [(Tag, Label)] -> Evaluate ()
-switch conds = do
-  e      <- getEnv
-  (h, t) <- popAndRest
-  case e of
-    VCon ci v1 -> do
-      let (_, label) =
-            case find (\(c,_) -> c == ci || c == wildcardtag) conds of
-              Just (cf, lf) -> (cf, lf)
-              Nothing -> error $ "Missing constructor " <> show ci
-      S.modify $ \s -> s { environment = VPair h v1
-                         , stack = t
-                         }
-      goto label
-    _ -> error "Non constructor patterns should be rewritten"
-
-    -- switch on wildcard; no constructors
-    -- x -> do
-    --   let (_, label) =
-    --         case find (\(c,_) -> c == wildcardtag) conds of
-    --           Just (cf, lf) -> (cf, lf)
-    --           Nothing -> error $ "No wildcards in case"
-    --   S.modify $ \s -> s { environment = VPair h x
-    --                      , stack = t
-    --                      }
-    --   goto label
-    where
-      wildcardtag = "??WILDCARD??"
-
 
 dummyLabel = Label (-1)
 
