@@ -260,7 +260,6 @@ fstEnv = do
   e <- getEnv
   h <- getHeap
   case e of
-    EV (VPair v _) -> S.modify $ \s -> s { environment = EV v }
     EP pointer -> let heapcell = h ! pointer
                       fstHeap  = fst heapcell
                    in case fstHeap of
@@ -268,14 +267,14 @@ fstEnv = do
                         P ptr -> S.modify $ \s -> s { environment = EP ptr }
                         L _   -> error "first cant be applied on a label"
                         T _   -> error "first cant be applied on a tag"
-    _ -> error "first operation on incorrect value type"
+    EV _ -> error "EV constructor should not arise here"
+
 
 sndEnv :: Evaluate ()
 sndEnv = do
   e <- getEnv
   h <- getHeap
   case e of
-    EV (VPair _ v) -> S.modify $ \s -> s { environment = EV v }
     EP pointer -> let heapcell = h ! pointer
                       sndHeap  = snd heapcell
                    in case sndHeap of
@@ -283,7 +282,7 @@ sndEnv = do
                         P ptr -> S.modify $ \s -> s { environment = EP ptr }
                         L _   -> error "second cant be applied on a label"
                         T _   -> error "second cant be applied on a tag"
-    _ -> error "second operation on incorrect value type"
+    EV _ -> error "EV constructor should not arise here"
 
 
 accessnth :: Int -> Evaluate ()
@@ -460,35 +459,55 @@ pack t = do
   S.modify $ \s -> s { environment = EP ptr }
 
 app :: Evaluate ()
-app = undefined -- do
-  -- e      <- getenv
-  -- (h, t) <- popandrest
-  -- let (vclosure val label) = e -- xxx: partial
-  -- s.modify $ \s -> s { environment = vpair val h
-  --                    , stack = t
-  --                    }
-  -- jumpto label
+app = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  h_     <- getHeap
+  case e of
+    EP ptr -> do
+      newPtr <- malloc
+      allocOnHeap newPtr (fstHeap, stackHeapTag h)
+      S.modify $ \s -> s { environment = EP newPtr
+                         , stack       = t
+                         }
+      let (L label) = sndHeap -- XXX: Partial
+      jumpTo label
+      where
+        heapcell = h_ ! ptr
+        fstHeap  = fst heapcell
+        sndHeap  = snd heapcell
+    EV _   -> error "EV constructor should not arise here"
 
 switch :: [(Tag, Label)] -> Evaluate ()
-switch conds = undefined -- do
-  -- e      <- getEnv
-  -- (h, t) <- popAndRest
-  -- case e of
-  --   VCon ci v1 -> do
-  --     let (_, label) =
-  --           case find (\(c,_) -> c == ci || c == wildcardtag) conds of
-  --             Just (cf, lf) -> (cf, lf)
-  --             Nothing -> error $ "missing constructor " <> show ci
-  --     S.modify $ \s -> s { environment = VPair h v1
-  --                        , stack = t
-  --                        }
-  --     goto label
-  --   _ -> error "non constructor patterns should be rewritten"
-  --   where
-  --     wildcardtag = "??wildcard??"
+switch conds = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  h_     <- getHeap
+  case e of
+    EP ptr -> do
+      let (_, label) =
+            case find (\(c,_) -> c == contag || c == wildcardtag) conds of
+              Just (cf, lf) -> (cf, lf)
+              Nothing -> error $ "missing constructor " <> show contag
+      newPtr <- malloc
+      allocOnHeap newPtr (stackHeapTag h, sndHeap)
+      S.modify $ \s -> s { environment = EP newPtr
+                         , stack       = t
+                         }
+      goto label
+      undefined
+      where
+        heapcell = h_ ! ptr
+        fstHeap  = fst heapcell
+        sndHeap  = snd heapcell
+        contag   = case fstHeap of
+                     T t -> t
+                     _   -> error "non constructor patterns should be rewritten"
+        wildcardtag = "??WILDCARD??"
+    EV _   -> error "EV constructor should not arise here"
 
 
-{-  heap growth and manipulation functions -}
+{-  HEAP growth and manipulation functions -}
 
 
 -- goto doesn't store the previous jump
