@@ -87,10 +87,6 @@ data Val = VInt  Int32   -- constants s(0)
          | VFloat Float  -- constants s(0)
          | VBool Bool    -- constants s(0)
          | VEmpty        -- empty tuple
-         | VPair Val Val -- Pair
-         | VCon Tag Val  -- first arg is the tag second is value with tag
-         | VClosure Val Label -- closure; Val is the environment
-         | VComb Label        -- closure of a combinator; no free variables
          deriving (Ord, Eq)
 
 -- using Hinze's notation
@@ -99,15 +95,6 @@ instance Show Val where
   show (VFloat f) = show f
   show (VBool b)  = show b
   show  VEmpty    = "()"
-  show (VPair v1 v2) =
-    "(" <> show v1 <> ", " <> show v2 <> ")"
-  show (VCon t v) =
-    "(" <> show t <> " : " <> show v  <> ")"
-  show (VClosure v l) =
-    "[" <> show v <> " : " <> show l  <> "]"
-  show (VComb l) =
-    "[" <> show l <> "]"
-
 -- Take a sequence of stack machine instructions
 -- and evaluate them to their normal form
 evaluate :: CAM -> EnvContent
@@ -439,7 +426,7 @@ cons = do
   e      <- getEnv
   (h, t) <- popAndRest
   ptr    <- malloc
-  allocOnHeap ptr (envHeapTag e, stackHeapTag h)
+  allocOnHeap ptr (stackHeapTag h, envHeapTag e)
   S.modify $ \s -> s { environment = EP ptr
                      , stack = t
                      }
@@ -455,7 +442,7 @@ pack :: Tag -> Evaluate ()
 pack t = do
   e   <- getEnv
   ptr <- malloc
-  allocOnHeap ptr (envHeapTag e, T t)
+  allocOnHeap ptr (T t, envHeapTag e)
   S.modify $ \s -> s { environment = EP ptr }
 
 app :: Evaluate ()
