@@ -65,6 +65,10 @@ static inline UUID set_io_channel_id(UUID io_cid){
   return MAX_CHANNELS + io_cid;
 }
 
+static inline bool isIOChannel(UUID cid){
+  return (cid > MAX_CHANNELS);
+}
+
 
 static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev){
   heap_index index = *evts;
@@ -453,19 +457,4 @@ int iochannel(vmc_t *container, ll_driver_t *driver_io, UUID *io_chan_id){
   DEBUG_PRINT(("All IO channels in current container in use \n"));
   return -1;
 
-}
-
-int sendIOEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
-  (void)container;
-  (void)chan_id;
-  (void)msg;
-  (void)sevt;
-  return 1;
-}
-
-int recvIOEvt(vmc_t *container, UUID *chan_id, event_t *revt){
-  (void)container;
-  (void)chan_id;
-  (void)revt;
-  return 1;
 }
