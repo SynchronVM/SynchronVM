@@ -179,6 +179,15 @@ example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x
                 )
 
 {-
+
+Example14
+With GC can be evaluated with 64 heap cells
+Without GC requires 214 heap cells
+
+-}
+
+
+{-
 letrec not = \b -> if b == True then False else True
        even = \n -> if (n == 0) then true else not (even (n - 1))
 in even 53
