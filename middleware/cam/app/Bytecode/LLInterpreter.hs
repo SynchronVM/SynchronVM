@@ -20,8 +20,8 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-module Bytecode.LLInterpreter ( Val (..)
-                              , EnvContent (..)
+module Bytecode.LLInterpreter ( EnvContent (..)
+                              , Val (..)
                               , evaluate) where
 
 import CAM
@@ -42,7 +42,13 @@ data CellContent = V Val
                  | P Pointer
                  | L Label
                  | T Tag
-                 deriving (Show, Eq)
+                 deriving Eq
+
+instance Show CellContent where
+  show (V val) = show val
+  show (P _) = "**"
+  show (L l) = "l:" <> show l
+  show (T t) = "T:" <> show t
 
 type HeapCell = (CellContent, CellContent)
 
@@ -57,7 +63,11 @@ data StackContent = SV Val | SP Pointer deriving (Show, Eq)
 
 type Stack = [StackContent]
 
-data EnvContent  = EV Val | EP Pointer deriving (Show, Eq)
+data EnvContent  = EV Val | EP Pointer deriving Eq
+
+instance Show EnvContent where
+  show (EV val) = show val
+  show (EP _)   = "**"
 
 type Environment = EnvContent
 
@@ -482,7 +492,6 @@ switch conds = do
                          , stack       = t
                          }
       goto label
-      undefined
       where
         heapcell = h_ ! ptr
         fstHeap  = fst heapcell
@@ -545,9 +554,6 @@ malloc = do
       | i > heapSize = error "Heap overflow! GC!! GC!! GC!!"
       | (h_ ! i) == emptyCell = i
       | otherwise  = findFreeIdx h_ (i + 1)
-
-findFreeIdx :: Evaluate Pointer
-findFreeIdx = undefined
 
 allocOnHeap :: Pointer -> HeapCell -> Evaluate ()
 allocOnHeap ptr hc = do
