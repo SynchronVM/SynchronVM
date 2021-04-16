@@ -90,7 +90,8 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
 
     } else if (bevt.e_type == SENDIO) {
 
-      //XXX: blocking for sent data
+      //XXX: check if driver is ready to accept
+      //     sent data goes here
 
     } else if (bevt.e_type == RECVIO) {
       if(ll_data_available(container->iochannels[bevt.channel_id].io_driver)){
@@ -159,6 +160,42 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
       int j =
         chan_recv_q_enqueue(  &container->channels[bevt.channel_id].recvq
                             , recv_data);
+      if(j == -1){
+        DEBUG_PRINT((" Cannot enqueue in channel %u 's recv queue \n"
+                     , bevt.channel_id));
+        return -1;
+      }
+
+    } else if (bevt.e_type == SENDIO){ // sendIOEvt
+
+      bool dirty = false;
+
+      send_data_t sender_data =
+        {     .context_id = container->current_running_context_id
+            , .message = msg
+            , .dirty_flag = &dirty };
+
+      int j =
+        chan_send_q_enqueue(  &container->iochannels[bevt.channel_id].sendq
+                            , sender_data);
+
+      if(j == -1){
+        DEBUG_PRINT(( "Cannot enqueue in channel %u 's send queue \n"
+                      , bevt.channel_id));
+        return -1;
+      }
+
+    } else if (bevt.e_type == RECVIO){ // recvIOEvt
+
+      bool dirty = false;
+
+      recv_data_t recv_data =
+        {     .context_id = container->current_running_context_id
+            , .dirty_flag = &dirty };
+
+      int j =
+        chan_recv_q_enqueue(  &container->iochannels[bevt.channel_id].recvq
+                              , recv_data);
       if(j == -1){
         DEBUG_PRINT((" Cannot enqueue in channel %u 's recv queue \n"
                      , bevt.channel_id));
