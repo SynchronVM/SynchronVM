@@ -81,7 +81,7 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
         return 1;
       } // else continue the do-while loop
 
-    } else { // recvEvt
+    } else if (bevt.e_type == RECV) { // recvEvt
 
       if(poll_sendq(&container->channels[bevt.channel_id].sendq)){
         *cev = cevt;
@@ -138,7 +138,7 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
         return -1;
       }
 
-    } else { // recvEvt
+    } else if (bevt.e_type == RECV){ // recvEvt
 
       bool dirty = false;
 
@@ -283,7 +283,7 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     return 1;
 
-  } else {
+  } else if(bevt.e_type == RECV) {
 
     send_data_t sender_data;
     int deq_status =
@@ -330,6 +330,8 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
     return 1;
 
   }
+
+  return -1; // neither SEND or RECV or SENDIO or RECVIO
 }
 
 int sync(vmc_t *container, event_t *evts){
@@ -436,5 +438,72 @@ int iochannel(vmc_t *container, ll_driver_t *driver_io, UUID *io_chan_id){
   }
   DEBUG_PRINT(("All IO channels in current container in use \n"));
   return -1;
+
+}
+
+
+/* Exactly the same as sendEvt and recvEvt except the different event_type_t */
+
+int sendIOEvt(vmc_t *container, UUID *io_chan_id, cam_value_t msg, event_t *sevt){
+
+  UINT data = set_first_16_bits(SENDIO, *io_chan_id); // wrap_label not set
+  cam_value_t event = {.value = data, .flags = 0};
+
+  heap_index cev_idx = heap_alloc_withGC(container);
+
+  if(cev_idx == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation for cam_event_t has failed"));
+    return -1;
+  }
+  heap_set(&container->heap, cev_idx, event, msg);
+
+  cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
+  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
+
+  heap_index hi = heap_alloc_withGC(container);
+
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation for event_t has failed"));
+    return -1;
+  }
+
+  heap_set(&container->heap, hi, heap_cell, null);
+
+  *sevt = hi;
+
+  return 1;
+
+}
+
+int recvIOEvt(vmc_t *container, UUID *io_chan_id, event_t *revt){
+
+
+  UINT data = set_first_16_bits(RECVIO, *io_chan_id); // wrap_label not set
+  cam_value_t event = {.value = data, .flags = 0};
+  cam_value_t null_msg  = {.value = (UINT)HEAP_NULL, .flags = 0};
+
+  heap_index cev_idx = heap_alloc_withGC(container);
+
+  if(cev_idx == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation for cam_event_t has failed"));
+    return -1;
+  }
+  heap_set(&container->heap, cev_idx, event, null_msg);
+
+  cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
+  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
+
+  heap_index hi = heap_alloc_withGC(container);
+
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation for event_t has failed"));
+    return -1;
+  }
+
+  heap_set(&container->heap, hi, heap_cell, null);
+
+  *revt = hi;
+
+  return 1;
 
 }

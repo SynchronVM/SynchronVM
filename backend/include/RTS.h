@@ -49,5 +49,14 @@ extern int iochannel(  vmc_t       *container
                      , ll_driver_t *driver_io
                      , UUID        *io_chan_id);
 
+extern int sendIOEvt(  vmc_t       *container
+                     , UUID        *io_chan_id
+                     , cam_value_t  msg
+                     , event_t     *sevt);
+
+extern int recvIOEvt(  vmc_t   *container
+                     , UUID    *io_chan_id
+                     , event_t *revt);
+
 
 #endif

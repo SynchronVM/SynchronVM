@@ -32,7 +32,9 @@
 
 typedef enum {
    SEND,
-   RECV
+   RECV,
+   SENDIO,
+   RECVIO
 } event_type_t;
 
 typedef struct {
