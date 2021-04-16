@@ -63,7 +63,7 @@ inline int ll_write(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
   return drv->ll_write_fun((struct ll_driver_s*)drv, data, data_size);
 }
 
-inline bool ll_data_avaliable(ll_driver_t *drv) { /* bytes available */
+inline bool ll_data_available(ll_driver_t *drv) { /* bytes available */
   return drv->ll_data_available_fun((struct ll_driver_s*)drv);
 }
 

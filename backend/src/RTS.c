@@ -86,10 +86,20 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
       if(poll_sendq(&container->channels[bevt.channel_id].sendq)){
         *cev = cevt;
         return 1;
-      } // else continue the do-while loop
+      }
 
+    } else if (bevt.e_type == SENDIO) {
+
+      //XXX: blocking for sent data
+
+    } else if (bevt.e_type == RECVIO) {
+      if(ll_data_available(container->iochannels[bevt.channel_id].io_driver)){
+        *cev = cevt;
+        return 1;
+      }
     }
 
+    // else continue the do-while loop
 
     cam_value_t pointer_to_next = heap_snd(&container->heap, index);
     index = (heap_index)pointer_to_next.value;
