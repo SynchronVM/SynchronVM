@@ -32,11 +32,6 @@
 #include <RTS.h>
 #include <stdbool.h>
 
-/* NOTE: Convention.
- * IOChannel UUID distinguished from Channel UUID by encoding
- * IOChannel idx as (MAX_CHANNEL + idx). Remember to use the
- * helper get_io_channel_id and set_io_channel_id
- */
 static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
   // counting begins with 0
   //  Bit pattern -> 0 1 0 0 1 1
@@ -55,18 +50,6 @@ static inline UINT set_first_16_bits(uint8_t first8bits, uint8_t second8bits){
 
   return value;
 
-}
-
-static inline UUID get_io_channel_id(UUID io_cid){
-  return MAX_CHANNELS - io_cid;
-}
-
-static inline UUID set_io_channel_id(UUID io_cid){
-  return MAX_CHANNELS + io_cid;
-}
-
-static inline bool isIOChannel(UUID cid){
-  return (cid > MAX_CHANNELS);
 }
 
 
@@ -446,10 +429,7 @@ int iochannel(vmc_t *container, ll_driver_t *driver_io, UUID *io_chan_id){
   for(int i = 0; i < MAX_IO_CHANNELS; i++){
     if(container->iochannels[i].in_use == false){
       container->iochannels[i].in_use = true;
-      //NOTE: Instead of returning the actual index - idx - we return
-      // (MAX_CHANNEL + idx) which will be used in the Event type
-      // to distinguish between IOChannels and normal channels
-      *io_chan_id = set_io_channel_id((UUID)i);
+      *io_chan_id = (UUID)i;
       container->iochannels[i].io_driver = driver_io;
       return 1;
     }
