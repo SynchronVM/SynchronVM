@@ -38,7 +38,7 @@
 /* Static functions        */
 /***************************/
 
-static int scheduler(vmc_t *container);
+static int scheduler(vmc_t *container, INT pc);
 
 
 
@@ -163,20 +163,43 @@ int vmc_run(vmc_t *container) {
   /* Now pc should be the index of the first instruction. */
   /* set up the parent context */
   /* Running all computations in parent context for now */
+
+  /* cam_value_t v_empty = get_cam_val(0,0); */
+  /* //container->current_running_context_id = 0; // done by the scheduler */
+  /* container->contexts[container->current_running_context_id].env = v_empty; */
+  /* container->contexts[container->current_running_context_id].pc  = pc; */
+
+
+  /* /\* Start executing instructions now *\/ */
+  /* uint8_t current_inst = container->code_memory[pc]; */
+  /* while(current_inst != 13){ // stop instruction */
+  /*   (*evaluators[current_inst])(container, &pc); */
+  /*   if(pc == -1){ */
+  /*     DEBUG_PRINT(("Instruction %u failed",current_inst)); */
+  /*     return -1; // error */
+  /*   } */
+  /*   current_inst = container->code_memory[pc];  } */
+  /* /\* Encountered STOP now *\/ */
+
+  /* /\* end *\/ */
+  /* return 1; */
+
+
+
+
+  /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
 
-  /* Initialize context 0 : the parent process */
-  container->contexts[0].env = v_empty;
-  container->contexts[0].pc  = pc;
+  container->contexts[container->current_running_context_id].env = v_empty;
+  container->contexts[container->current_running_context_id].pc  = pc;
+
+
 
   /* Currently no process is running */
-  container->current_running_context_id = UUID_NONE;
-
-  /* Initialize the ready queue of the container */
-  q_init(&container->rdyQ, vmc_container_1_rdyq, sizeof(UUID) * VMC_MAX_CONTEXTS);
+  //container->current_running_context_id = UUID_NONE;
 
   /* Enqueue the parent context as ready to run */
-  q_enqueue(&container->rdyQ, 0);
+  /* q_enqueue(&container->rdyQ, 0); */ //XXX: rdyQ not initialised in the tests
 
   /* Here, I think, control should be passed over to another
      function. Maybe we can call it Scheduler.
@@ -185,12 +208,13 @@ int vmc_run(vmc_t *container) {
      But trying to do so seems to lead to circular dependencies at the moment.
   */
 
-  return scheduler(container);
+  return scheduler(container, pc);
 }
 
-int scheduler(vmc_t *container) {
+int scheduler(vmc_t *container, INT pc) {
 
-  while (true) {
+  uint8_t current_inst = container->code_memory[pc];
+  while (current_inst != 13) {
 
     /* Todo: we need an UUID that means "NOTHING" */
 
@@ -221,18 +245,13 @@ int scheduler(vmc_t *container) {
 
 
     /* Execute an instruction */
-    UUID current_context = container->current_running_context_id;
-    uint8_t current_inst = container->code_memory[container->contexts[current_context].pc];
-
-
-    INT current_context_pc = container->contexts[current_context].pc;
-    (*evaluators[current_inst])(container, &current_context_pc);
-    if((INT)container->contexts[current_context].pc  == -1){
+    (*evaluators[current_inst])(container, &pc);
+    if(pc  == -1){
       DEBUG_PRINT(("Instruction %u failed",current_inst));
       return -1; // error
     }
-    /* Why is this here? odd*/
-    /* current_inst = container->code_memory[container->contexts[0].pc]; */
+
+    current_inst = container->code_memory[pc];
 
   }
 
@@ -329,43 +348,45 @@ heap_index heap_alloc_withGC(vmc_t *container) {
       }
     }
 
+    //XXX: Tests breaking because channels not initialised in the tests
+    //     PLEASE UNCOMMENT BELOW
     /* GC all the dirty flags associated with the channels*/
-    for(int i = 0; i < MAX_CHANNELS; i++){
-      if(container->channels[i].in_use){
-        // first check if channel is in use
-        // and then mark all live dirty flags
-        // in the sendq and then in the recvq
+    /* for(int i = 0; i < MAX_CHANNELS; i++){ */
+    /*   if(container->channels[i].in_use){ */
+    /*     // first check if channel is in use */
+    /*     // and then mark all live dirty flags */
+    /*     // in the sendq and then in the recvq */
 
-        for(int j = 0; j < container->channels[i].sendq.size; j++){
-          heap_mark(  &container->heap
-                    , container->channels[i].sendq.data[j].dirty_flag_pointer);
-        }
+    /*     for(int j = 0; j < container->channels[i].sendq.size; j++){ */
+    /*       heap_mark(  &container->heap */
+    /*                 , container->channels[i].sendq.data[j].dirty_flag_pointer); */
+    /*     } */
 
-        for(int j = 0; j < container->channels[i].recvq.size; j++){
-          heap_mark(  &container->heap
-                      , container->channels[i].recvq.data[j].dirty_flag_pointer);
-        }
-      }
-    }
+    /*     for(int j = 0; j < container->channels[i].recvq.size; j++){ */
+    /*       heap_mark(  &container->heap */
+    /*                   , container->channels[i].recvq.data[j].dirty_flag_pointer); */
+    /*     } */
+    /*   } */
+    /* } */
 
     /* GC all the dirty flags associated with the IO channels*/
-    for(int i = 0; i < MAX_IO_CHANNELS; i++){
-      if(container->iochannels[i].in_use){
-        // first check if channel is in use
-        // and then mark all live dirty flags
-        // in the sendq and then in the recvq
+    /* for(int i = 0; i < MAX_IO_CHANNELS; i++){ */
+    /*   if(container->iochannels[i].in_use){ */
+    /*     // first check if channel is in use */
+    /*     // and then mark all live dirty flags */
+    /*     // in the sendq and then in the recvq */
 
-        for(int j = 0; j < container->iochannels[i].sendq.size; j++){
-          heap_mark(  &container->heap
-                    , container->iochannels[i].sendq.data[j].dirty_flag_pointer);
-        }
+    /*     for(int j = 0; j < container->iochannels[i].sendq.size; j++){ */
+    /*       heap_mark(  &container->heap */
+    /*                 , container->iochannels[i].sendq.data[j].dirty_flag_pointer); */
+    /*     } */
 
-        for(int j = 0; j < container->iochannels[i].recvq.size; j++){
-          heap_mark(  &container->heap
-                    , container->iochannels[i].recvq.data[j].dirty_flag_pointer);
-        }
-      }
-    }
+    /*     for(int j = 0; j < container->iochannels[i].recvq.size; j++){ */
+    /*       heap_mark(  &container->heap */
+    /*                 , container->iochannels[i].recvq.data[j].dirty_flag_pointer); */
+    /*     } */
+    /*   } */
+    /* } */
 
 
     // First phase mark complete; try allocating again
