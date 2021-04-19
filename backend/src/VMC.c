@@ -270,12 +270,12 @@ heap_index heap_alloc_withGC(vmc_t *container) {
         // and then mark all live dirty flags
         // in the sendq and then in the recvq
 
-        for(int j = 0; j < container->channels[i].sendq.size; i++){
+        for(int j = 0; j < container->channels[i].sendq.size; j++){
           heap_mark(  &container->heap
                     , container->channels[i].sendq.data[j].dirty_flag_pointer);
         }
 
-        for(int j = 0; j < container->channels[i].recvq.size; i++){
+        for(int j = 0; j < container->channels[i].recvq.size; j++){
           heap_mark(  &container->heap
                       , container->channels[i].recvq.data[j].dirty_flag_pointer);
         }
@@ -289,12 +289,12 @@ heap_index heap_alloc_withGC(vmc_t *container) {
         // and then mark all live dirty flags
         // in the sendq and then in the recvq
 
-        for(int j = 0; j < container->iochannels[i].sendq.size; i++){
+        for(int j = 0; j < container->iochannels[i].sendq.size; j++){
           heap_mark(  &container->heap
                     , container->iochannels[i].sendq.data[j].dirty_flag_pointer);
         }
 
-        for(int j = 0; j < container->iochannels[i].recvq.size; i++){
+        for(int j = 0; j < container->iochannels[i].recvq.size; j++){
           heap_mark(  &container->heap
                     , container->iochannels[i].recvq.data[j].dirty_flag_pointer);
         }
