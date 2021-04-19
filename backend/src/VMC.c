@@ -173,7 +173,7 @@ int vmc_run(vmc_t *container) {
   container->current_running_context_id = UUID_NONE;
 
   /* Initialize the ready queue of the container */
-  q_init(&container->rdyQ, &vmc_container_1_rdyq, sizeof(UUID) * VMC_MAX_CONTEXTS);
+  q_init(&container->rdyQ, vmc_container_1_rdyq, sizeof(UUID) * VMC_MAX_CONTEXTS);
 
   /* Enqueue the parent context as ready to run */
   q_enqueue(&container->rdyQ, 0);
@@ -185,7 +185,7 @@ int vmc_run(vmc_t *container) {
      But trying to do so seems to lead to circular dependencies at the moment.
   */
 
-  return scheduler(vmc_t *container);
+  return scheduler(container);
 }
 
 int scheduler(vmc_t *container) {
@@ -194,7 +194,7 @@ int scheduler(vmc_t *container) {
 
     /* Todo: we need an UUID that means "NOTHING" */
 
-    if (container-current_running_context_id == UUID_NONE) {
+    if (container->current_running_context_id == UUID_NONE) {
 
       /* Check if there is something in the rdyQ */
 
@@ -221,10 +221,12 @@ int scheduler(vmc_t *container) {
 
 
     /* Execute an instruction */
-    uint8_t current_inst = container->code_memory[container->contexts[0].pc];
-    
-    (*evaluators[current_inst])(container, &container->contexts[0].pc);
-    if(container->contexts[0].pc  == -1){
+    UUID current_context = container->current_running_context_id;
+    uint8_t current_inst = container->code_memory[container->contexts[current_context].pc];
+
+    /* there is an UINT/INT mismatch here.. I think in the PC */
+    (*evaluators[current_inst])(container, &container->contexts[current_context].pc);
+    if(container->contexts[current_context].pc  == -1){
       DEBUG_PRINT(("Instruction %u failed",current_inst));
       return -1; // error
     }

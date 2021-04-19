@@ -32,7 +32,7 @@ typedef uint32_t UINT;
 typedef int32_t  INT;
 typedef uint8_t  UUID;
 
-#define UUID_NONE 0xFFFF
+#define UUID_NONE 0xFF
 
 typedef struct {
   value_flags_t flags;
