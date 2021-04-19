@@ -31,14 +31,17 @@
 
 #include <event.h>
 
-bool poll_sendq(chan_send_queue_t *q){
+bool poll_sendq(vmc_t *container, chan_send_queue_t *q){
   while(true){
     send_data_t send_data;
     int op_status = chan_send_q_front(q, &send_data);
     if(op_status == -1){ //empty queue
       return false;
     } else {
-      if(*send_data.dirty_flag){
+      cam_value_t dirty_flag =
+        heap_fst(  &container->heap
+                 , (heap_index)send_data.dirty_flag_pointer.value);
+      if((dirty_flag.value & 1) == 1){ // if dirty flag is SET
         send_data_t temp;
         chan_send_q_dequeue(q, &temp); // no need to check status we know there is data
       } else {
@@ -48,14 +51,18 @@ bool poll_sendq(chan_send_queue_t *q){
   }
 }
 
-bool poll_recvq(chan_recv_queue_t *q){
+bool poll_recvq(vmc_t *container, chan_recv_queue_t *q){
   while(true){
     recv_data_t recv_data;
     int op_status = chan_recv_q_front(q, &recv_data);
     if(op_status == -1){ //empty queue
       return false;
     } else {
-      if(*recv_data.dirty_flag){
+      cam_value_t dirty_flag =
+        heap_fst(  &container->heap
+                 , (heap_index)recv_data.dirty_flag_pointer.value);
+
+      if((dirty_flag.value & 1) == 1){ // if dirty flag is SET
         recv_data_t temp;
         chan_recv_q_dequeue(q, &temp); // no need to check status
                                        // we know there is data

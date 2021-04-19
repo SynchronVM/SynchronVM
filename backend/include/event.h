@@ -25,10 +25,7 @@
 #ifndef __EVENT_H_
 #define __EVENT_H_
 
-#include <chan_send_queue.h>
-#include <chan_recv_queue.h>
-#include <heap.h>
-#include <queue.h>
+#include <VMC.h>
 
 typedef enum {
    SEND,
@@ -51,8 +48,8 @@ typedef struct {
 
 typedef heap_index event_t;
 
-extern bool poll_sendq(chan_send_queue_t *q);
-extern bool poll_recvq(chan_recv_queue_t *q);
+extern bool poll_sendq(vmc_t *container, chan_send_queue_t *q);
+extern bool poll_recvq(vmc_t *container, chan_recv_queue_t *q);
 
 /*
  *  Proposed heap structure
