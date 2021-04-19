@@ -284,15 +284,6 @@ static int dispatch(vmc_t *container){
   }
   container->current_running_context_id = context_id;
   return 1;
-
-
-  /* Before current_running_context_id was introduced */
-  /* container->context = container->contexts[context_id]; // This will overwrite the parent context; */
-  /*                                                       // Do we want to store it somewhere? */
-  /* container->context.env = container->contexts[context_id].env; */
-  /* container->context.pc = container->contexts[context_id].pc; */
-  //hopefully stack is set by the first container->context = ....
-
 }
 
 static int synchronizeNow(vmc_t *container, cam_event_t cev){

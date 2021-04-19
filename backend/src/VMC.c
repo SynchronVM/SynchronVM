@@ -224,15 +224,16 @@ int scheduler(vmc_t *container) {
     UUID current_context = container->current_running_context_id;
     uint8_t current_inst = container->code_memory[container->contexts[current_context].pc];
 
-    /* there is an UINT/INT mismatch here.. I think in the PC */
-    (*evaluators[current_inst])(container, &container->contexts[current_context].pc);
-    if(container->contexts[current_context].pc  == -1){
+
+    INT current_context_pc = container->contexts[current_context].pc;
+    (*evaluators[current_inst])(container, &current_context_pc);
+    if((INT)container->contexts[current_context].pc  == -1){
       DEBUG_PRINT(("Instruction %u failed",current_inst));
       return -1; // error
     }
     /* Why is this here? odd*/
-    /* current_inst = container->code_memory[container->contexts[0].pc]; */ 
-     
+    /* current_inst = container->code_memory[container->contexts[0].pc]; */
+
   }
 
   /* end */
