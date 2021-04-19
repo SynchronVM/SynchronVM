@@ -32,6 +32,15 @@
 #include <VMC.h>
 #include <heap.h>
 #include <CAM.h>
+#include <queue.h>
+
+/***************************/
+/* Static functions        */
+/***************************/
+
+static int scheduler(vmc_t *container);
+
+
 
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
@@ -155,25 +164,79 @@ int vmc_run(vmc_t *container) {
   /* set up the parent context */
   /* Running all computations in parent context for now */
   cam_value_t v_empty = get_cam_val(0,0);
-  //container->current_running_context_id = 0; // done by the scheduler
-  container->contexts[container->current_running_context_id].env = v_empty;
-  container->contexts[container->current_running_context_id].pc  = pc;
+
+  /* Initialize context 0 : the parent process */
+  container->contexts[0].env = v_empty;
+  container->contexts[0].pc  = pc;
+
+  /* Currently no process is running */
+  container->current_running_context_id = UUID_NONE;
+
+  /* Initialize the ready queue of the container */
+  q_init(&container->rdyQ, &vmc_container_1_rdyq, sizeof(UUID) * VMC_MAX_CONTEXTS);
+
+  /* Enqueue the parent context as ready to run */
+  q_enqueue(&container->rdyQ, 0);
+
+  /* Here, I think, control should be passed over to another
+     function. Maybe we can call it Scheduler.
+
+     It may be nice if that function is in the RTS.c file.
+     But trying to do so seems to lead to circular dependencies at the moment.
+  */
+
+  return scheduler(vmc_t *container);
+}
+
+int scheduler(vmc_t *container) {
+
+  while (true) {
+
+    /* Todo: we need an UUID that means "NOTHING" */
+
+    if (container-current_running_context_id == UUID_NONE) {
+
+      /* Check if there is something in the rdyQ */
 
 
-  /* Start executing instructions now */
-  uint8_t current_inst = container->code_memory[pc];
-  while(current_inst != 13){ // stop instruction
-    (*evaluators[current_inst])(container, &pc);
-    if(pc == -1){
+      /* If nothing in the rdyQ what to do?
+	 - check if something is blocked on a timer (wake up at time X)
+	 - go to sleep for a certain amount of time or indefinitely.
+	 (await being woken by some peripheral interrupt. */
+
+
+      /* After waking up code should resume here */
+
+      /* Check if there are things to do or repeat sleep procedure */
+
+      /* We arrive here when there is something to do.
+	 Set current_running_context_id to "something"
+	 exit the conditional.
+       */
+
+
+    }
+
+    /* If we arrive here there is a current_running_context. */
+
+
+    /* Execute an instruction */
+    uint8_t current_inst = container->code_memory[container->contexts[0].pc];
+    
+    (*evaluators[current_inst])(container, &container->contexts[0].pc);
+    if(container->contexts[0].pc  == -1){
       DEBUG_PRINT(("Instruction %u failed",current_inst));
       return -1; // error
     }
-    current_inst = container->code_memory[pc];  }
-  /* Encountered STOP now */
+    /* Why is this here? odd*/
+    /* current_inst = container->code_memory[container->contexts[0].pc]; */ 
+     
+  }
 
   /* end */
   return 1;
 }
+
 
 int init_all_chans(Channel_t *c, uint8_t *mem){
 

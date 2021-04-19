@@ -36,6 +36,7 @@ typedef struct {
   cam_stack_t    stack;
 } Context_t;
 
+/* TODO: There is no implementation of this */
 extern int context_init(uint8_t *code);
 
 #endif
