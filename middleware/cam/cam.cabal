@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b559b81c42acbf8ef6d28f564d53f74d2182b76ed68729eff7b969839b9f94d7
+-- hash: 3a1f323e896be26388f853f55abc459766560b76b6f45b1c0182b31b45144418
 
 name:           cam
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/cam#readme>
 homepage:       https://github.com/githubuser/cam#readme
 bug-reports:    https://github.com/githubuser/cam/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2020 Author name here
+author:         Abhiroop Sarkar
+maintainer:     asiamgenius@gmail.com
+copyright:      2020 Abhiroop Sarkar
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -30,8 +30,10 @@ library
       Assembler
       Bytecode.Interpreter
       Bytecode.InterpreterModel
+      Bytecode.LLInterpreter
       CAM
       Examples
+      LLExample
       Main
   other-modules:
       Paths_cam
@@ -53,8 +55,10 @@ executable cam-exe
       Assembler
       Bytecode.Interpreter
       Bytecode.InterpreterModel
+      Bytecode.LLInterpreter
       CAM
       Examples
+      LLExample
       Paths_cam
   hs-source-dirs:
       app
