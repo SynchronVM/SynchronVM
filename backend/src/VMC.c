@@ -46,7 +46,9 @@ static int scheduler(vmc_t *container, INT pc);
    range of numbers can be extended */
 #if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 2
 
-vmc_t vm_containers[VMC_NUM_CONTAINERS];
+/* vmc_t vm_containers[VMC_NUM_CONTAINERS]; */
+/* Removing the containers from here and letting the lower level system 
+   take care of organising storage space for these */ 
 
 #else
 #error "VMC_NUM_CONTAINERS must be set to an integer value from 1 to 2"
@@ -79,10 +81,14 @@ const uint8_t vmc_container_2_code[] = {
 #endif
 
 
-int vmc_init(void) {
+int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int r = 0;
   int rl = 0;
+
+  if (VMC_NUM_CONTAINERS > max_num_containers) {
+    return -1; /* error! */
+  }
 
   #if VMC_NUM_CONTAINERS >= 1
   rl = heap_init(&vm_containers[VMC_CONTAINER_1].heap, vmc_container_1_heap, VMC_CONTAINER_1_HEAP_SIZE_BYTES);

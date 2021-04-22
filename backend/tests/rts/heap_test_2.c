@@ -25,6 +25,7 @@
 #include <VMC.h>
 
 #include <vm-conf.h>
+#include <VMC.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,8 +33,11 @@
 int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
+
+  vmc_t vm_containers[1];
+
   
-  if (!vmc_init()) {
+  if (vmc_init(vm_containers, 1) < 1) {
     return 0;
   }
 

@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Abhiroop Sarkar, Joel Svensson             		  */
+/* Copyright (c) 2021 Joel Svensson, Abhiroop Sarkar             		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,53 +22,10 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __VMC_H_
-#define __VMC_H_
+#ifndef SVM_ZEPHYR_H_
+#define SVM_ZEPHYR_H_
 
-#include <vm-conf.h>
-#include <typedefs.h>
-#include <register.h>
-#include <heap.h>
-#include <queue.h>
-#include <channel.h>
-#include <iochannel.h>
-#include <Context.h>
+extern void zephyr_start_container_threads(void);
+extern void zephyr_sensevm_init(void);
 
-#include <stdint.h>
-
-#define VMC_CONTAINER_1 0
-#define VMC_CONTAINER_2 1
-
-#define VMC_MAX_CONTEXTS 16
-
-#define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
-#define MAX_IO_CHANNELS 100
-#define MAX_WAIT_PARTICIPANTS 3
-
-typedef struct {
-  heap_t        heap;
-  uint8_t       *stack_memory;
-  uint8_t       *arrays_memory;
-  const uint8_t *code_memory;
-  UUID          current_running_context_id;
-  Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
-  bool          context_used[VMC_MAX_CONTEXTS];
-  Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
-  IOChannel_t   iochannels[MAX_IO_CHANNELS];
-  Queue_t       rdyQ;
-} vmc_t;
-
-/**********************/
-/* External Interface */
-/**********************/
-
-extern int vmc_init(vmc_t *vm_containers, int max_num_containers);
-
-// These need to run within some lower level thread abstractions
-extern int vmc_run(vmc_t *container);
-
-extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
-
-extern heap_index heap_alloc_withGC(vmc_t *container);
-
-#endif
+#endif 

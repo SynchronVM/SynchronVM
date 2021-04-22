@@ -33,7 +33,9 @@ int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
 
-  if (!vmc_init()) {
+  vmc_t vm_containers[1];
+  
+  if (vmc_init(vm_containers, 1) < 0) {
     return 0;
   }
 
