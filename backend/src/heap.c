@@ -29,7 +29,7 @@
 #endif
 
 #include <heap.h>
-#include <platform.h>
+
 
 /*****************************/
 /* Smaller Utility Functions */

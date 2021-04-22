@@ -53,39 +53,41 @@
 #define STACK_SIZE 512
 
 struct k_thread vmc_zephyr_thread[4];
-k_thread_stack_t vmc_zephyr_stack[4];
+k_thread_stack_t *vmc_zephyr_stack[4];
 struct k_mbox zephyr_thread_mbox[4];
 
 vmc_t vm_containers[4]; /* SenseVM containers */
-
+static const int   vm_id[4] = {0,1,2,3};
 
 #if VMC_NUM_CONTAINERS >= 1
 K_THREAD_STACK_DEFINE(vmc_zephyr_stack_0, STACK_SIZE);
-vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
+#else
+k_thread_stack_t *vmc_zephyr_stack_0 = NULL;
 #endif
 #if VMC_NUM_CONTAINERS >= 2
 K_THREAD_STACK_DEFINE(vmc_zephyr_stack_1, STACK_SIZE);
-vmc_zephyr_stack[0] = vmc_zephyr_stack_1;
+#else
+k_thread_stack_t *vmc_zephyr_stack_1 = NULL;
 #endif
 #if VMC_NUM_CONTAINERS >= 3
 K_THREAD_STACK_DEFINE(vmc_zephyr_stack_2, STACK_SIZE);
-vmc_zephyr_stack[0] = vmc_zephyr_stack_2;
+#else
+k_thread_stack_t *vmc_zephyr_stack_2 = NULL;
 #endif
 #if VMC_NUM_CONTAINERS >= 4
 K_THREAD_STACK_DEFINE(vmc_zephyr_stack_3, STACK_SIZE);
-vmc_zephyr_stack[0] = vmc_zephyr_stack_3;
+#else
+k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 #endif
-
 
 /***********************************************/
 /* Zephyr thread for containing a VM container */
 
-void zephyr_container_thread(void* vmc, void* b, void* c) {
-  (void)b;
+void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   (void)c;  /* These are unused so far. otherwise a way to pass arguments to the thread */ 
 
   vmc_t *container = vmc;
-
+  int id = *(int*)vm_id;
 
   struct k_mbox_msg recv_msg;
 
@@ -104,7 +106,7 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
        there is something else to do). If there is nothing
        else to do, we could then call the blocking
        mbox_get. */
-    k_mbox_get(&tick_mbox, &recv_msg, NULL, K_FOREVER);
+    k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
 
     /* use the messages from the mbox to add tasts to the
        queue for the next launch of the scheduler */
@@ -128,13 +130,21 @@ void zephyr_start_container_threads(void) {
     k_thread_create(&vmc_zephyr_thread[i], vmc_zephyr_stack[i],
 		    K_THREAD_STACK_SIZEOF(vmc_zephyr_stack[i]),
 		    zephyr_container_thread,
-		    (void*)&(vm_containers[i]), NULL, NULL,
+		    (void*)&(vm_containers[i]), (void*)&vm_id[i], NULL,
 		    5, 0, K_NO_WAIT);
   }
 }
 
 void zephyr_sensevm_init(void) {
 
+
+  vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
+  vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
+  vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
+  vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
+
+  
+  
   /* Initialize all message boxes */
 
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
