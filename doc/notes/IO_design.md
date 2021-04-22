@@ -120,10 +120,22 @@ The lower level Zephyr can consistently keep the following
 logic in both scenarios
 
 ```
-
   zephyr receives interrupt
   queues on GlobalQueue <- isr
   call gq_logic
 
 ```
+
+In case 2 we might do
+
+```
+  zephyr receives interrupt
+  queues on GlobalQueue <- isr
+  finish bytecode execution
+  call gq_logic
+  proceed with the remanining bytecode
+    execution until blocked
+
+```
+
 
