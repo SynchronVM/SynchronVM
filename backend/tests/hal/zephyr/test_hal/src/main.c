@@ -15,12 +15,17 @@
 
 #include <kernel.h>
 
+
+/* SenseVM include */
+#include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
+
+
 /* Our own library of stuff! */
 #include "ll_uart.h"
 #include "ll_led.h"
 
-#include "powerman.h"
-#include "timerman.h"
+//#include "powerman.h"
+//#include "timerman.h"
 
 //#define PRINT usb_printf
 #define PRINT printk
@@ -35,9 +40,9 @@ uint8_t uart0_out_buffer[1024];
 /* ****************** */
 /* Thread info dumper */
 
-static int t_counter = 0; 
+static int t_counter = 0;
 
-void t_info_dump(const struct k_thread *cthread, void *user_data) { 
+void t_info_dump(const struct k_thread *cthread, void *user_data) {
   struct k_thread *thread = (struct k_thread *)cthread;
   const char *tname;
 
@@ -60,20 +65,29 @@ void t_info_dump(const struct k_thread *cthread, void *user_data) {
 void main(void) {
 
   PRINT("Pause 5 seconds\r\n");
-  //k_sleep(K_SECONDS(5));
+  k_sleep(K_SECONDS(5));
 
-  /* ***************** */
-  /* Register powerman */ 
-  //powerman_init();
+  PRINT("Initializing SenseVM Runtime System\r\n");
+  zephyr_sensevm_init();
 
-  PRINT("POWERMAN: started\r\n");
-  
-  //k_sleep(K_SECONDS(5));
 
+  PRINT("Starting SenseVM Containers Threads\r\n");
+  if (!zephyr_start_container_threads()) {
+    PRINT("FAILED! Could not start container threads\r\n");
+  }
+
+  k_sleep(K_SECONDS(1));
+
+
+  PRINT("Currently running threads:\r\n");
   k_thread_foreach(t_info_dump, NULL);
 
-  PRINT("t_info_dump called %d times\r\n", t_counter);
-  
+
+  /* All the stuff below should move into zephyr_sensevm_init   *
+   * Potentially the main "thread" can just die here or go      *
+   * into an infinite loop that monitors the progress of the    *
+   * container threads.                                         */
+
   /* ******************* */
   /* Configure some LEDs */
 
@@ -91,7 +105,7 @@ void main(void) {
   } else {
     PRINT("LL_LED: FAILED init led1\r\n");
   }
-  
+
   /* configure uart */
 
   ll_driver_t uart_drv;
@@ -103,9 +117,9 @@ void main(void) {
     PRINT("LL_UART: Failed!\r\n");
   }
   PRINT("UARTS STARTED\r\n");
-  
-  const char *hello = "hello world\r\n"; 
- 
+
+  const char *hello = "hello world\r\n";
+
   while (1) {
 
     ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
@@ -117,10 +131,10 @@ void main(void) {
 
     led0_state = 1 - led0_state;
     led1_state = 1 - led1_state;
-    
+
     ll_write(&led0, &led0_state, 1);
     ll_write(&led1, &led1_state, 1);
-    
+
     k_sleep(K_SECONDS(1));
   }
 
