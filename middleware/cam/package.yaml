@@ -29,6 +29,7 @@ library:
   dependencies:
     - binary
     - bytestring
+    - containers
     - mtl
     - projectroot
   default-extensions:
@@ -46,6 +47,7 @@ executables:
     dependencies:
     - binary
     - bytestring
+    - containers
     - cam
     - mtl
     - projectroot

@@ -39,6 +39,7 @@ import Data.Foldable (fold)
 import Data.Int (Int32)
 import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
+import qualified Data.Set as Set
 
 type Var = String
 type Tag = String
