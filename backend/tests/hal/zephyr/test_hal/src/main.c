@@ -64,8 +64,8 @@ void t_info_dump(const struct k_thread *cthread, void *user_data) {
 
 void main(void) {
 
-  PRINT("Pause 5 seconds\r\n");
-  k_sleep(K_SECONDS(5));
+  PRINT("Pause 2 seconds\r\n");
+  k_sleep(K_SECONDS(2));
 
   PRINT("Initializing SenseVM Runtime System\r\n");
   zephyr_sensevm_init();
@@ -111,13 +111,12 @@ void main(void) {
   ll_driver_t uart_drv;
 
   PRINT("STARTING UARTS\r\n");
-  if (ll_uart_init(&uart_drv, UART_IF1, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
+  if (ll_uart_init(&uart_drv, UART_IF0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
     PRINT("LL_UART: OK!\r\n");
   } else {
     PRINT("LL_UART: Failed!\r\n");
   }
-  PRINT("UARTS STARTED\r\n");
-
+  
   const char *hello = "hello world\r\n";
 
   while (1) {
