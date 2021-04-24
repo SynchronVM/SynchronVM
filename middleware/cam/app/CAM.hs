@@ -358,3 +358,55 @@ Data constructors:
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
 
 -}
+
+
+
+------- r-free and r-closed expressions--------
+
+type PSet = Set.Set -- synonym for powerset
+
+data EtaEnv = EtaEmpty
+            | EtaPair EtaEnv Pat
+            | EtaAnn  EtaEnv (Pat, PSet Var)
+            deriving (Ord, Show, Eq)
+
+
+vars :: Pat -> PSet Var
+vars (PatVar v) = Set.singleton v
+vars Empty      = Set.empty
+vars (PatPair p1 p2) = vars p1 `Set.union` vars p2
+vars (As v p)        = Set.singleton v `Set.union` vars p
+
+
+rFree :: Exp -> EtaEnv -> PSet Var
+rFree (Var _) EtaEmpty = Set.empty -- XXX: This case is not in Hinze's paper
+rFree (Var x) (EtaPair eta p)
+  | x `Set.member` (vars p) = Set.singleton x
+  | otherwise               = rFree (Var x) eta
+rFree (Var x) (EtaAnn eta (p, v))
+  | x `Set.member` (vars p) = v
+  | otherwise               = rFree (Var x) eta
+rFree (Sys sys) etaenv = rFreeSys sys etaenv
+rFree Void _           = Set.empty
+rFree (Pair e1 e2) etaenv = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Con _ e) etaenv    = rFree e  etaenv
+rFree (App e1 e2) etaenv  = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Lam p e) etaenv = rFree e (EtaPair etaenv p) `Set.difference` vars p
+rFree (If e1 e2 e3) etaenv =
+  rFree e1 etaenv `Set.union`
+  rFree e2 etaenv `Set.union`
+  rFree e3 etaenv
+rFree (Case e clauses) etaenv =
+  rFree e etaenv `Set.union`
+  foldr Set.union Set.empty (map rFreeCond clauses)
+  where
+    rFreeCond ((_,p), exp) =
+      rFree exp (EtaPair etaenv p) `Set.difference` vars p
+
+
+
+rFreeSys :: Sys -> EtaEnv -> PSet Var
+rFreeSys (Sys2 _ e1 e2) etaenv =
+  rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFreeSys (Sys1 _ e) etaenv = rFree e etaenv
+rFreeSys _ _ = Set.empty
