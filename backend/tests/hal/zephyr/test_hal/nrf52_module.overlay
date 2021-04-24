@@ -1,0 +1,5 @@
+/ {
+     aliases {
+     	     uart0 = &uart0;
+     };
+};

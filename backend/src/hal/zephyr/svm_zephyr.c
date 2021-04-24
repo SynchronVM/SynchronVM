@@ -25,13 +25,16 @@
 /*******************/
 /* Zephyr includes */
 #include <zephyr/types.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <errno.h>
 #include <zephyr.h>
 #include <sys/printk.h>
 #include <sys/byteorder.h>
 #include <sys/ring_buffer.h>
+
+/*********************/
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <errno.h>
 
 /********************/
 /* SenseVM Includes */
@@ -58,6 +61,9 @@ struct k_mbox zephyr_thread_mbox[4];
 
 vmc_t vm_containers[4]; /* SenseVM containers */
 static const int   vm_id[4] = {0,1,2,3};
+
+const char* container_names[4] = { "C0", "C1", "C2", "C3" };
+
 
 #if VMC_NUM_CONTAINERS >= 1
 K_THREAD_STACK_DEFINE(vmc_zephyr_stack_0, STACK_SIZE);
@@ -116,23 +122,37 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
        back and forth from the zephyr thread and the
        scheduler in the container */
 
+    /* This thread may need to yield to allow other threads 
+       (containers) to run.
+       If blocking on the mailbox this yield will happen automativally. 
+       In other cases it may need some coercion ;)
+    */
 
   }
 }
 
-void zephyr_start_container_threads(void) {
+bool zephyr_start_container_threads(void) {
 
+  bool r = true;
+  
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
 
     /* We can set different priorities on
        different containers */
 
-    k_thread_create(&vmc_zephyr_thread[i], vmc_zephyr_stack[i],
-		    K_THREAD_STACK_SIZEOF(vmc_zephyr_stack[i]),
-		    zephyr_container_thread,
-		    (void*)&(vm_containers[i]), (void*)&vm_id[i], NULL,
-		    5, 0, K_NO_WAIT);
+    k_tid_t t = k_thread_create(&vmc_zephyr_thread[i], vmc_zephyr_stack[i],
+				K_THREAD_STACK_SIZEOF(vmc_zephyr_stack[i]),
+				zephyr_container_thread,
+				(void*)&(vm_containers[i]), (void*)&vm_id[i], NULL,
+				5, 0, K_NO_WAIT);
+    if (t) {
+      k_thread_name_set(t, container_names[i]);
+    }
+    
+    if (!t) r = false;
   }
+
+  return r;
 }
 
 void zephyr_sensevm_init(void) {

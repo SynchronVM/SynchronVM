@@ -25,7 +25,7 @@
 #ifndef SVM_ZEPHYR_H_
 #define SVM_ZEPHYR_H_
 
-extern void zephyr_start_container_threads(void);
+extern bool zephyr_start_container_threads(void);
 extern void zephyr_sensevm_init(void);
 
 #endif 
