@@ -87,6 +87,27 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 #endif
 
 /***********************************************/
+/*  Thoughts                                   */
+/*
+ *  The nrf52 boards run at 80MHz. 80 000 000 cycles per second
+ *   - IPC is definitely over 1.
+ *   - 80000 clock cycles per ms. < 80000 instructions per ms
+ *   - How many arm instructions per CAM instruction ?
+ *   - What would be a good time length to run the CAM interpreter
+ *     between returns to the container thread.
+ *
+ *  The stm32f407 runs at 168MHz. 168 000 000 cycles per second
+ *   - 168000 clock cycles per ms.
+ *
+ *
+ *  * How much time does it take to poll the mbox?
+ *  * How much time does it take to affix work onto the work queue?
+ *  * If we have more than one container, how often does it make
+ *    sense to allow for a container "switch".
+ *
+ */
+
+/***********************************************/
 /* Zephyr thread for containing a VM container */
 
 void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
@@ -122,9 +143,9 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
        back and forth from the zephyr thread and the
        scheduler in the container */
 
-    /* This thread may need to yield to allow other threads 
+    /* This thread may need to yield to allow other threads
        (containers) to run.
-       If blocking on the mailbox this yield will happen automativally. 
+       If blocking on the mailbox this yield will happen automativally.
        In other cases it may need some coercion ;)
     */
 
@@ -134,7 +155,7 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
 bool zephyr_start_container_threads(void) {
 
   bool r = true;
-  
+
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
 
     /* We can set different priorities on
@@ -148,7 +169,7 @@ bool zephyr_start_container_threads(void) {
     if (t) {
       k_thread_name_set(t, container_names[i]);
     }
-    
+
     if (!t) r = false;
   }
 
@@ -163,8 +184,8 @@ void zephyr_sensevm_init(void) {
   vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
   vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
 
-  
-  
+
+
   /* Initialize all message boxes */
 
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
