@@ -128,15 +128,8 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
     /* Do stuff */
     /* Like run the scheduler */
 
+    /*scheduler(datastructure of info on what happened); */
 
-
-    /* This is a blocking call that waits until
-       there is something in the messagebox.
-       Maybe here it is better to have a non-blocking
-       peek at the mbox and then do something else (if
-       there is something else to do). If there is nothing
-       else to do, we could then call the blocking
-       mbox_get. */
     if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_NO_WAIT) == 0) {
       /* There was a message */
 
