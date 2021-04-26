@@ -105,6 +105,10 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
  *  * If we have more than one container, how often does it make
  *    sense to allow for a container "switch".
  *
+ *  Negative thread priority is non-preemtable thread. (Cooperative threads)
+ *  Positive are preemtable.
+ *  
+ * 
  */
 
 /***********************************************/
