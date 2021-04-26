@@ -133,8 +133,19 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
        there is something else to do). If there is nothing
        else to do, we could then call the blocking
        mbox_get. */
-    k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
+    if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER) == 0) {
+      /* There was a message */
 
+      /* Maybe loop here to receive all messages */
+
+      /* enqueue on shared datastructure with scheduler */
+      
+    } else { 
+      /* block until there is a message */
+      
+      k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
+    }
+    
     /* use the messages from the mbox to add tasts to the
        queue for the next launch of the scheduler */
 
