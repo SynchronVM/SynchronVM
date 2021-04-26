@@ -15,10 +15,8 @@
 
 #include <kernel.h>
 
-
 /* SenseVM include */
 #include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
-
 
 /* Our own library of stuff! */
 #include "ll_uart.h"
@@ -116,7 +114,7 @@ void main(void) {
   } else {
     PRINT("LL_UART: Failed!\r\n");
   }
-  
+
   const char *hello = "hello world\r\n";
 
   while (1) {
