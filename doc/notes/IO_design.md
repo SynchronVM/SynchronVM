@@ -38,11 +38,11 @@ led_process led_ioc c = forever $    -- C2
 ```
 RTS layer
 ---------
-rdyQ ->
+rdyQ -> 
 
 b_ioc
   sendq     ->
-  recvq     ->
+  recvq     -> 
   io_driver -> button_gpio
 
 l_ioc
@@ -52,15 +52,21 @@ l_ioc
   
 c
   sendq    ->
-  recvq    ->
+  recvq    -> 
 
 
-Global_Queue ->
+Global_Queue -> 
 
 Zephyr layer
 ------------
 Container
-  - mailbox ->
+  - mailbox -> 
+
+Drivers
+-------
+UART
+ - 1000 chars
+
 ```
 
 #### Scheduler interaction with global queue
@@ -81,7 +87,7 @@ scheduler =
       let ctx = deque container.rdyQ
       execute ctx
 
-type GlobalQueue = Queue (Driver, Message)
+type GlobalQueue = Queue (Driver, Message) - 5 bytes
 
 -- globalQueue to RTS conversation
 gq_logic =
@@ -92,6 +98,7 @@ gq_logic =
      then do
        let (context, bool_ref) = deque ioc.recvq
            _ = mark bool_ref true
+           _ = convert msg to cam_value
            _ = place `msg` in `context.env`
         in do -- set the receiver id to run
           context.pc++
