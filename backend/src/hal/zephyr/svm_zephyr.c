@@ -137,7 +137,7 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
        there is something else to do). If there is nothing
        else to do, we could then call the blocking
        mbox_get. */
-    if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER) == 0) {
+    if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_NO_WAIT) == 0) {
       /* There was a message */
 
       /* Maybe loop here to receive all messages */

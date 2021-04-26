@@ -17,6 +17,7 @@
 
 /* SenseVM include */
 #include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
+#include <vm-conf.h>
 
 /* Our own library of stuff! */
 #include "ll_uart.h"
@@ -68,6 +69,7 @@ void main(void) {
   PRINT("Initializing SenseVM Runtime System\r\n");
   zephyr_sensevm_init();
 
+  PRINT("Number of containers: %d\r\n", VMC_NUM_CONTAINERS);
 
   PRINT("Starting SenseVM Containers Threads\r\n");
   if (!zephyr_start_container_threads()) {
