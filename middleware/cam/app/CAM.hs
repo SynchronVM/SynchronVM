@@ -377,6 +377,8 @@ vars Empty      = Set.empty
 vars (PatPair p1 p2) = vars p1 `Set.union` vars p2
 vars (As v p)        = Set.singleton v `Set.union` vars p
 
+rClosed :: Exp -> EtaEnv -> Bool
+rClosed e eta = null (rFree e eta)
 
 rFree :: Exp -> EtaEnv -> PSet Var
 rFree (Var _) EtaEmpty = Set.empty -- XXX: This case is not in Hinze's paper
@@ -402,7 +404,19 @@ rFree (Case e clauses) etaenv =
   where
     rFreeCond ((_,p), exp) =
       rFree exp (EtaPair etaenv p) `Set.difference` vars p
+rFree (Let p1 e1 e) etaenv =
+  (rFree e (EtaPair etaenv p1) `Set.difference` vars p1) `Set.union`
+  rFree e1 etaenv
+rFree (Letrec recpats e) etaenv = rFree e eta'
+  where
+    eta0 = foldr (\(pat, _) eta -> EtaAnn eta (pat, Set.empty)) etaenv recpats
+    eta' = fixpoint recpats eta0
 
+    fixpoint recpats envPrevIter
+      | envPrevIter == envNew = envNew
+      | otherwise = fixpoint recpats envNew
+      where
+        envNew = foldr (\(pat, e) eta -> EtaAnn eta (pat, rFree e envPrevIter)) etaenv recpats
 
 
 rFreeSys :: Sys -> EtaEnv -> PSet Var
@@ -410,3 +424,8 @@ rFreeSys (Sys2 _ e1 e2) etaenv =
   rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFreeSys (Sys1 _ e) etaenv = rFree e etaenv
 rFreeSys _ _ = Set.empty
+
+env2Eta :: Env -> EtaEnv
+env2Eta EnvEmpty = EtaEmpty
+env2Eta (EnvPair env  pat)     = EtaPair (env2Eta env)  pat
+env2Eta (EnvAnn  env (pat, _)) = EtaAnn  (env2Eta env) (pat, vars pat)
