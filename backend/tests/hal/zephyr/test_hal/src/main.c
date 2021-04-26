@@ -15,10 +15,9 @@
 
 #include <kernel.h>
 
-
 /* SenseVM include */
 #include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
-
+#include <vm-conf.h>
 
 /* Our own library of stuff! */
 #include "ll_uart.h"
@@ -70,6 +69,7 @@ void main(void) {
   PRINT("Initializing SenseVM Runtime System\r\n");
   zephyr_sensevm_init();
 
+  PRINT("Number of containers: %d\r\n", VMC_NUM_CONTAINERS);
 
   PRINT("Starting SenseVM Containers Threads\r\n");
   if (!zephyr_start_container_threads()) {
@@ -116,9 +116,10 @@ void main(void) {
   } else {
     PRINT("LL_UART: Failed!\r\n");
   }
-  
+
   const char *hello = "hello world\r\n";
 
+  int i = 0; 
   while (1) {
 
     ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
@@ -134,7 +135,14 @@ void main(void) {
     ll_write(&led0, &led0_state, 1);
     ll_write(&led1, &led1_state, 1);
 
+    if (i % 5 == 0) {
+      k_sleep(K_MSEC(100));
+      PRINT("Currently running threads:\r\n");
+      k_thread_foreach(t_info_dump, NULL);
+    }
+    
     k_sleep(K_SECONDS(1));
+    i++;
   }
 
 }

@@ -105,6 +105,10 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
  *  * If we have more than one container, how often does it make
  *    sense to allow for a container "switch".
  *
+ *  Negative thread priority is non-preemtable thread. (Cooperative threads)
+ *  Positive are preemtable.
+ *  
+ * 
  */
 
 /***********************************************/
@@ -124,17 +128,21 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
     /* Do stuff */
     /* Like run the scheduler */
 
+    /*scheduler(datastructure of info on what happened); */
 
+    if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_NO_WAIT) == 0) {
+      /* There was a message */
 
-    /* This is a blocking call that waits until
-       there is something in the messagebox.
-       Maybe here it is better to have a non-blocking
-       peek at the mbox and then do something else (if
-       there is something else to do). If there is nothing
-       else to do, we could then call the blocking
-       mbox_get. */
-    k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
+      /* Maybe loop here to receive all messages */
 
+      /* enqueue on shared datastructure with scheduler */
+      
+    } else { 
+      /* block until there is a message */
+      
+      k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
+    }
+    
     /* use the messages from the mbox to add tasts to the
        queue for the next launch of the scheduler */
 
