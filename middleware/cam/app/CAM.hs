@@ -145,11 +145,21 @@ newtype Label =
 instance Show Label where
   show (Label i) = show i
 
+data EnvMark = Star
+             | Normal
+             deriving (Ord, Show, Eq)
+
+
 -- compile time environment
-data Env = EnvEmpty                 -- empty environment
-         | EnvPair Env Pat          -- constructed environment
-         | EnvAnn  Env (Pat, Label) -- annotated environment
+data Env = EnvEmpty EnvMark                  -- empty environment
+         | EnvPair  EnvMark Env Pat          -- constructed environment
+         | EnvAnn   EnvMark Env (Pat, Label) -- annotated environment
            deriving (Ord, Show, Eq)
+
+markEnv :: Env -> Env
+markEnv (EnvEmpty _)     = EnvEmpty Star
+markEnv (EnvPair _ e p)  = EnvPair  Star e p
+markEnv (EnvAnn  _ e pl) = EnvAnn   Star e pl
 
 data CAM = Ins Instruction  -- instructions
          | Seq CAM CAM      -- sequence
@@ -196,7 +206,7 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
-        (runCodegen $! codegen e EnvEmpty)
+        (runCodegen $! codegen e (EnvEmpty Normal))
         initState
 
 codegen :: Exp -> Env -> Codegen CAM
@@ -206,141 +216,141 @@ codegen v@(Var var) env
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
-codegen (Sys (Sys1 uop e)) env = do
-  i1 <- codegen e env
-  pure $! i1 <+> (Ins (PRIM1 uop))
+-- codegen (Sys (Sys1 uop e)) env = do
+--   i1 <- codegen e env
+--   pure $! i1 <+> (Ins (PRIM1 uop))
 codegen (Sys (Sys2 bop e1 e2)) env = do
   is <- codegen2 e1 e2 env
   pure $! is <+> (Ins (PRIM2 bop))
-codegen Void _ = pure $! Ins CLEAR
-codegen (Pair e1 e2) env = do
-  is <- codegen2 e1 e2 env
-  pure $! is <+> (Ins CONS)
-codegen (Con tag e) env = do
-  i1 <- codegen e env
-  pure $! i1 <+> (Ins $ PACK tag)
-codegen (App e1 e2) env
-  | rClosed e1 (env2Eta env) = do
-      i1 <- codegen e2 env
-      i2 <- codegen e1 env'
-      pure $! i1
-          <+> (Ins MOVE)
-          <+> i2
-          <+> (Ins APP)
-  | rClosed e2 (env2Eta env) = do
-      i1 <- codegen e2 env'
-      i2 <- codegen e1 env
-      pure $! (Ins MOVE)
-          <+> i1
-          <+> (Ins SWAP)
-          <+> i2
-          <+> (Ins APP)
-  | otherwise = do
-      is <- codegen2 e2 e1 env
-      pure $! is <+> (Ins APP)
-  where
-    env' = simplifyEnv env
-codegen expr@(Lam pat e) env
-  | rClosed expr (env2Eta env) = do
-      l <- freshLabel
-      is <- codegenR e (EnvPair env' pat)
-      ts <- S.gets thunks
-      S.modify $ \s -> s {thunks = (Lab l is) : ts}
-      pure (Ins $ COMB l)
-  | otherwise = do
-      l <- freshLabel
-      is <- codegenR e (EnvPair env pat)
-      ts <- S.gets thunks
-      S.modify $ \s -> s {thunks = (Lab l is) : ts}
-      pure (Ins $ CUR l)
-  where
-    env' = simplifyEnv env
-codegen (If e1 e2 e3) env
-  | rClosed e2 (env2Eta env) && rClosed e3 (env2Eta env) = do
-      l1  <- freshLabel
-      l2  <- freshLabel
-      is1 <- codegen e1 env
-      is2 <- codegen e2 env'
-      is3 <- codegen e3 env'
-      pure $! is1
-          <+> (Ins $ GOTOIFALSE l1)
-          <+> is2
-          <+> (Ins $ GOTO l2)
-          <+> Lab l1 is3
-          <+> Lab l2 (Ins SKIP)
-  | otherwise = do
-      l1 <- freshLabel
-      l2 <- freshLabel
-      is1 <- codegen e1 env
-      is2 <- codegen e2 env
-      is3 <- codegen e3 env
-      pure $! Ins PUSH
-          <+> is1
-          <+> Ins (GOTOFALSE l1)
-          <+> is2
-          <+> Ins (GOTO l2)
-          <+> Lab l1 is3
-          <+> Lab l2 (Ins SKIP)
-  where
-    env' = simplifyEnv env
-codegen (Case cond clauses) env = do
-  labels    <- replicateM (length clauses) freshLabel
-  skiplabel <- freshLabel
-  cond'     <- codegen cond env
-  let tagandlabel = zipWith extractTL clauses labels
-  instrs <- zipWith3A (genStackClauses skiplabel) labels exps pats
-  pure $! Ins PUSH
-      <+> cond'
-      <+> Ins (SWITCH tagandlabel)
-      <+> fold instrs
-      <+> Lab skiplabel (Ins SKIP)
-  where
-    extractTL ((t,_),_) l = (t, l)
-    genStackClauses skipl label exp pat = do
-      e <- codegen exp (EnvPair env pat)
-      pure $! Lab label e
-          <+> Ins (GOTO skipl)
-    exps = map snd clauses
-    pats = map (snd . fst) clauses
+-- codegen Void _ = pure $! Ins CLEAR
+-- codegen (Pair e1 e2) env = do
+--   is <- codegen2 e1 e2 env
+--   pure $! is <+> (Ins CONS)
+-- codegen (Con tag e) env = do
+--   i1 <- codegen e env
+--   pure $! i1 <+> (Ins $ PACK tag)
+-- codegen (App e1 e2) env
+--   | rClosed e1 (env2Eta env) = do
+--       i1 <- codegen e2 env
+--       i2 <- codegen e1 env'
+--       pure $! i1
+--           <+> (Ins MOVE)
+--           <+> i2
+--           <+> (Ins APP)
+--   | rClosed e2 (env2Eta env) = do
+--       i1 <- codegen e2 env'
+--       i2 <- codegen e1 env
+--       pure $! (Ins MOVE)
+--           <+> i1
+--           <+> (Ins SWAP)
+--           <+> i2
+--           <+> (Ins APP)
+--   | otherwise = do
+--       is <- codegen2 e2 e1 env
+--       pure $! is <+> (Ins APP)
+--   where
+--     env' = simplifyEnv env
+-- codegen expr@(Lam pat e) env
+--   | rClosed expr (env2Eta env) = do
+--       l <- freshLabel
+--       is <- codegenR e (EnvPair env' pat)
+--       ts <- S.gets thunks
+--       S.modify $ \s -> s {thunks = (Lab l is) : ts}
+--       pure (Ins $ COMB l)
+--   | otherwise = do
+--       l <- freshLabel
+--       is <- codegenR e (EnvPair env pat)
+--       ts <- S.gets thunks
+--       S.modify $ \s -> s {thunks = (Lab l is) : ts}
+--       pure (Ins $ CUR l)
+--   where
+--     env' = simplifyEnv env
+-- codegen (If e1 e2 e3) env
+--   | rClosed e2 (env2Eta env) && rClosed e3 (env2Eta env) = do
+--       l1  <- freshLabel
+--       l2  <- freshLabel
+--       is1 <- codegen e1 env
+--       is2 <- codegen e2 env'
+--       is3 <- codegen e3 env'
+--       pure $! is1
+--           <+> (Ins $ GOTOIFALSE l1)
+--           <+> is2
+--           <+> (Ins $ GOTO l2)
+--           <+> Lab l1 is3
+--           <+> Lab l2 (Ins SKIP)
+--   | otherwise = do
+--       l1 <- freshLabel
+--       l2 <- freshLabel
+--       is1 <- codegen e1 env
+--       is2 <- codegen e2 env
+--       is3 <- codegen e3 env
+--       pure $! Ins PUSH
+--           <+> is1
+--           <+> Ins (GOTOFALSE l1)
+--           <+> is2
+--           <+> Ins (GOTO l2)
+--           <+> Lab l1 is3
+--           <+> Lab l2 (Ins SKIP)
+--   where
+--     env' = simplifyEnv env
+-- codegen (Case cond clauses) env = do
+--   labels    <- replicateM (length clauses) freshLabel
+--   skiplabel <- freshLabel
+--   cond'     <- codegen cond env
+--   let tagandlabel = zipWith extractTL clauses labels
+--   instrs <- zipWith3A (genStackClauses skiplabel) labels exps pats
+--   pure $! Ins PUSH
+--       <+> cond'
+--       <+> Ins (SWITCH tagandlabel)
+--       <+> fold instrs
+--       <+> Lab skiplabel (Ins SKIP)
+--   where
+--     extractTL ((t,_),_) l = (t, l)
+--     genStackClauses skipl label exp pat = do
+--       e <- codegen exp (EnvPair env pat)
+--       pure $! Lab label e
+--           <+> Ins (GOTO skipl)
+--     exps = map snd clauses
+--     pats = map (snd . fst) clauses
 codegen (Let pat e1 e) env
   | rClosed (Lam pat e1) (env2Eta env) = do
       i1 <- codegen e1 env
-      i2 <- codegen e (EnvPair env' pat)
+      i2 <- codegen e (EnvPair Normal env' pat)
       pure $! i1
           <+> i2
   | rClosed e1 (env2Eta env) = do
       i1 <- codegen e1 env'
-      i2 <- codegen e  (EnvPair env pat)
+      i2 <- codegen e  (EnvPair Normal env pat)
       pure $! (Ins MOVE)
           <+> i1
           <+> (Ins CONS)
           <+> i2
   | otherwise = do
       i1 <- codegen e1 env
-      i  <- codegen e  (EnvPair env pat)
+      i  <- codegen e  (EnvPair Normal env pat)
       pure $! Ins PUSH
           <+> i1
           <+> Ins CONS
           <+> i
   where
-    env' = simplifyEnv env
-codegen (Letrec recpats e) env = do
-  labels  <- replicateM (length recpats) freshLabel
-  let evalEnv = growEnv env (zip pats labels)
-  instr  <- codegen e evalEnv
-  instrs <- zipWithA codegenR exps (repeat evalEnv)
-  let labeledInstrs = zipWith Lab labels instrs
-  ts <- S.gets thunks
-  S.modify $ \s -> s {thunks = labeledInstrs ++ ts}
-  pure instr
-  where
-    growEnv :: Env -> [(Pat,Label)] -> Env
-    growEnv finalEnv [] = finalEnv
-    growEnv initEnv ((pat,label):xs) =
-      growEnv (EnvAnn initEnv (pat, label)) xs
+    env' = markEnv env
+-- codegen (Letrec recpats e) env = do
+--   labels  <- replicateM (length recpats) freshLabel
+--   let evalEnv = growEnv env (zip pats labels)
+--   instr  <- codegen e evalEnv
+--   instrs <- zipWithA codegenR exps (repeat evalEnv)
+--   let labeledInstrs = zipWith Lab labels instrs
+--   ts <- S.gets thunks
+--   S.modify $ \s -> s {thunks = labeledInstrs ++ ts}
+--   pure instr
+--   where
+--     growEnv :: Env -> [(Pat,Label)] -> Env
+--     growEnv finalEnv [] = finalEnv
+--     growEnv initEnv ((pat,label):xs) =
+--       growEnv (EnvAnn initEnv (pat, label)) xs
 
-    pats = map fst recpats
-    exps = map snd recpats
+--     pats = map fst recpats
+--     exps = map snd recpats
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e env = do
@@ -370,24 +380,25 @@ codegen2 e1 e2 env
           <+> Ins SWAP
           <+> i2
   where
-    env' = simplifyEnv env
+    env' = markEnv env
+
 
 lookup :: Var -> Env -> Int -> CAM
-lookup var EnvEmpty _ = Ins FAIL
-lookup var (EnvPair env pat) n
-  | isSimple env pat = (Ins (REST n) <+> (lookupPat var pat))
-  | otherwise =
-    (Ins (ACC n) <+> (lookupPat var pat)) <?>
-    (lookup var env (n + 1))
-lookup var (EnvAnn env (pat, l)) n =
+lookup var (EnvEmpty _ ) _ = Ins FAIL
+lookup var (EnvPair Normal env pat) n =
+  (Ins (ACC n) <+> (lookupPat var pat)) <?>
+  (lookup var env (n + 1))
+lookup var (EnvPair Star env pat) n =
+  (Ins (REST n) <+> (lookupPat var pat))
+lookup var (EnvAnn _ env (pat, l)) n =
   (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
 
 -- lookup for r-closed expressions
 lookupRC :: Var -> Env -> CAM
-lookupRC var EnvEmpty = Ins FAIL
-lookupRC var (EnvPair env _) = lookupRC var env
-lookupRC var (EnvAnn  env (p, l)) =
+lookupRC var (EnvEmpty _) = Ins FAIL
+lookupRC var (EnvPair _ env _) = lookupRC var env
+lookupRC var (EnvAnn  _ env (p, l)) =
   (Ins (CALL l) <+> lookupPat var p) <?>
   lookupRC var env
 
@@ -517,21 +528,16 @@ rFreeSys (Sys1 _ e) etaenv = rFree e etaenv
 rFreeSys _ _ = Set.empty
 
 env2Eta :: Env -> EtaEnv
-env2Eta EnvEmpty = EtaEmpty
-env2Eta (EnvPair env  pat)     = EtaPair (env2Eta env)  pat
-env2Eta (EnvAnn  env (pat, _)) = EtaAnn  (env2Eta env) (pat, vars pat)
+env2Eta (EnvEmpty _ ) = EtaEmpty
+env2Eta (EnvPair  _ env  pat) = EtaPair (env2Eta env)  pat
+env2Eta (EnvAnn   _ env (pat, _)) =
+  EtaAnn  (env2Eta env) (pat, vars pat)
 
-isSimple :: Env -> Pat -> Bool
-isSimple EnvEmpty p = False
-isSimple (EnvPair env pat) p = isSimple env p
-isSimple (EnvAnn env (pat, label)) p
-  | p == pat = True
-  | otherwise = isSimple env p
 
-simplifyEnv :: Env -> Env
-simplifyEnv EnvEmpty = EnvEmpty
-simplifyEnv (EnvPair env _) = simplifyEnv env
-simplifyEnv (EnvAnn env (p, l)) = EnvAnn (simplifyEnv env) (p, l)
+-- simplifyEnv :: Env -> Env
+-- simplifyEnv EnvEmpty = EnvEmpty
+-- simplifyEnv (EnvPair env _) = simplifyEnv env
+-- simplifyEnv (EnvAnn env (p, l)) = EnvAnn (simplifyEnv env) (p, l)
 
 foo = Let (PatVar "a") (Sys $ LInt 5) (Sys $ Sys2 MultiplyI (Var "a") (Var "a"))
 
