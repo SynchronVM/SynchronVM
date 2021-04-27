@@ -194,7 +194,7 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
         initState
 
 codegen :: Exp -> Env -> Codegen CAM
-codegen (Var var) env = pure $! lookup var env 0
+codegen (Var var) env     = pure $! lookup var env 0
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
@@ -299,6 +299,14 @@ lookup var (EnvPair env pat) n =
 lookup var (EnvAnn env (pat, l)) n =
   (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
+
+-- lookup for r-closed expressions
+lookupRC :: Var -> Env -> CAM
+lookupRC var EnvEmpty = Ins FAIL
+lookupRC var (EnvPair env _) = lookupRC var env
+lookupRC var (EnvAnn  env (p, l)) =
+  (Ins (CALL l) <+> lookupPat var p) <?>
+  lookupRC var env
 
 lookupPat :: Var -> Pat -> CAM
 lookupPat _ Empty = Ins FAIL
@@ -413,7 +421,7 @@ rFree (Letrec recpats e) etaenv = rFree e eta'
     eta' = fixpoint recpats eta0
 
     fixpoint recpats envPrevIter
-      | envPrevIter == envNew = envNew
+      | envPrevIter == envNew = envNew -- fixpoint reached
       | otherwise = fixpoint recpats envNew
       where
         envNew = foldr (\(pat, e) eta -> EtaAnn eta (pat, rFree e envPrevIter)) etaenv recpats
@@ -429,3 +437,10 @@ env2Eta :: Env -> EtaEnv
 env2Eta EnvEmpty = EtaEmpty
 env2Eta (EnvPair env  pat)     = EtaPair (env2Eta env)  pat
 env2Eta (EnvAnn  env (pat, _)) = EtaAnn  (env2Eta env) (pat, vars pat)
+
+isSimple :: Env -> Pat -> Bool
+isSimple EnvEmpty p = False
+isSimple (EnvPair env pat) p = isSimple env p
+isSimple (EnvAnn env (pat, label)) p
+  | p == pat = True
+  | otherwise = isSimple env p
