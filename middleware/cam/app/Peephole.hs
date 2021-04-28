@@ -23,11 +23,45 @@
 module Peephole (optimise) where
 
 import CamOpt
+import qualified Control.Monad.State.Strict as S
+
+data Code = Code { instrs :: [FlatCAM]
+                 , programcounter :: Int
+                 } deriving Show
+
+newtype Optimise a =
+  Optimise
+    { runOptimise :: S.State Code a
+    }
+  deriving (Functor, Applicative, Monad, S.MonadState Code)
 
 optimise :: CAM -> CAM
 optimise c = undefined
   where
     flatcam = flattenCAM c
+
+optimiser :: Optimise ()
+optimiser = do
+  pc     <- S.gets programcounter
+  is     <- S.gets instrs
+  if (pc == length is - 1)
+  then pure ()
+  else do
+    let i = is !! pc
+    case i of
+      (Plain (Ins i_)) -> do
+          let (is_, offset) = oneOPRule i_
+          let instrs_ = take pc is ++ map flatcaminst is_ ++ drop pc is
+          S.modify $ \s -> s {instrs = instrs_}
+          S.modify $ \s -> s {programcounter = pc + offset}
+          optimiser
+      _ -> do
+        S.modify $ \s -> s {programcounter = pc + 1}
+        optimiser
+   where
+     flatcaminst :: Instruction -> FlatCAM
+     flatcaminst i = Plain (Ins i)
+
 
 type Offset = Int
 
