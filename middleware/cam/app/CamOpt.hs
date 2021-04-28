@@ -20,19 +20,19 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-module CAM ( Exp (..)
-           , Var
-           , Tag
-           , Sys (..)
-           , BinOp (..)
-           , UnaryOp (..)
-           , Label (..)
-           , Instruction (..)
-           , CAM (..)
-           , Pat (..)
-           , TaggedField
-           , interpret
-           )where
+module CamOpt ( Exp (..)
+              , Var
+              , Tag
+              , Sys (..)
+              , BinOp (..)
+              , UnaryOp (..)
+              , Label (..)
+              , Instruction (..)
+              , CAM (..)
+              , Pat (..)
+              , TaggedField
+              , interpret
+              )where
 
 import Control.Monad (replicateM)
 import Data.Foldable (fold)
@@ -108,6 +108,8 @@ data Instruction
      -- STACK OPERATIONS
    | PUSH       -- copy content of register to stack
    | SWAP       -- interchange between register and topmost element of stack
+   | MOVE
+   | POP
 
      -- REGISTER OPERATIONS
    | QUOTE Sys  -- QUOTE S(0) load immediate i.e `li` from the code area to environment
@@ -117,6 +119,8 @@ data Instruction
    | CONS       -- join (stack_top, env_reg) and place it on environment register
    | CUR Label  -- build a closure with labeled exp and the environment register
    | PACK Tag   -- create tagged value with (VCon pack_val env_reg) and place on env_reg
+   | SNOC
+   | COMB Label
 
      -- CONTROL INSTRUCTIONS
    | SKIP   -- NoOp
@@ -127,6 +131,8 @@ data Instruction
    | GOTOFALSE Label
    | SWITCH [(Tag, Label)] -- case expression for constructors
    | GOTO Label
+   | GOTOIFALSE Label
+   | SWITCHI [(Tag, Label)]
 
    | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
@@ -139,11 +145,22 @@ newtype Label =
 instance Show Label where
   show (Label i) = show i
 
+-- See NOTE 1 to undersand the notion of marking
+data EnvMark = Star
+             | Normal
+             deriving (Ord, Show, Eq)
+
+
 -- compile time environment
-data Env = EnvEmpty                 -- empty environment
-         | EnvPair Env Pat          -- constructed environment
-         | EnvAnn  Env (Pat, Label) -- annotated environment
+data Env = EnvEmpty EnvMark                  -- empty environment
+         | EnvPair  EnvMark Env Pat          -- constructed environment
+         | EnvAnn   EnvMark Env (Pat, Label) -- annotated environment
            deriving (Ord, Show, Eq)
+
+markEnv :: Env -> Env
+markEnv (EnvEmpty _)     = EnvEmpty Star
+markEnv (EnvPair _ e p)  = EnvPair  Star e p
+markEnv (EnvAnn  _ e pl) = EnvAnn   Star e pl
 
 data CAM = Ins Instruction  -- instructions
          | Seq CAM CAM      -- sequence
@@ -190,11 +207,13 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
-        (runCodegen $! codegen e EnvEmpty)
+        (runCodegen $! codegen e (EnvEmpty Normal))
         initState
 
 codegen :: Exp -> Env -> Codegen CAM
-codegen (Var var) env     = pure $! lookup var env 0
+codegen v@(Var var) env
+  | rClosed v (env2Eta env) = pure $! lookupRC var env
+  | otherwise = pure $! lookup var env 0
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
@@ -211,54 +230,127 @@ codegen (Pair e1 e2) env = do
 codegen (Con tag e) env = do
   i1 <- codegen e env
   pure $! i1 <+> (Ins $ PACK tag)
-codegen (App e1 e2) env = do
-  is <- codegen2 e2 e1 env
-  pure $! is <+> (Ins APP)
-codegen (Lam pat e) env = do
-  l <- freshLabel
-  is <- codegenR e (EnvPair env pat)
-  ts <- S.gets thunks
-  S.modify $ \s -> s {thunks = (Lab l is) : ts}
-  pure (Ins $ CUR l)
-codegen (If e1 e2 e3) env = do
-  l1 <- freshLabel
-  l2 <- freshLabel
-  is1 <- codegen e1 env
-  is2 <- codegen e2 env
-  is3 <- codegen e3 env
-  pure $! Ins PUSH
-      <+> is1
-      <+> Ins (GOTOFALSE l1)
-      <+> is2
-      <+> Ins (GOTO l2)
-      <+> Lab l1 is3
-      <+> Lab l2 (Ins SKIP)
-codegen (Case cond clauses) env = do
-  labels    <- replicateM (length clauses) freshLabel
-  skiplabel <- freshLabel
-  cond'     <- codegen cond env
-  let tagandlabel = zipWith extractTL clauses labels
-  instrs <- zipWith3A (genStackClauses skiplabel) labels exps pats
-  pure $! Ins PUSH
-      <+> cond'
-      <+> Ins (SWITCH tagandlabel)
-      <+> fold instrs
-      <+> Lab skiplabel (Ins SKIP)
+codegen (App e1 e2) env
+  | rClosed e1 (env2Eta env) = do
+      i1 <- codegen e2 env
+      i2 <- codegen e1 env'
+      pure $! i1
+          <+> (Ins MOVE)
+          <+> i2
+          <+> (Ins APP)
+  | rClosed e2 (env2Eta env) = do
+      i1 <- codegen e2 env'
+      i2 <- codegen e1 env
+      pure $! (Ins MOVE)
+          <+> i1
+          <+> (Ins SWAP)
+          <+> i2
+          <+> (Ins APP)
+  | otherwise = do
+      is <- codegen2 e2 e1 env
+      pure $! is <+> (Ins APP)
+  where
+    env' = markEnv env
+codegen expr@(Lam pat e) env
+  | rClosed expr (env2Eta env) = do
+      l <- freshLabel
+      is <- codegenR e (EnvPair Star env' pat)
+      ts <- S.gets thunks
+      S.modify $ \s -> s {thunks = (Lab l is) : ts}
+      pure (Ins $ COMB l)
+  | otherwise = do
+      l <- freshLabel
+      is <- codegenR e (EnvPair Normal env pat)
+      ts <- S.gets thunks
+      S.modify $ \s -> s {thunks = (Lab l is) : ts}
+      pure (Ins $ CUR l)
+  where
+    env' = markEnv env
+codegen (If e1 e2 e3) env
+  | rClosed e2 (env2Eta env) && rClosed e3 (env2Eta env) = do
+      l1  <- freshLabel
+      l2  <- freshLabel
+      is1 <- codegen e1 env
+      is2 <- codegen e2 env'
+      is3 <- codegen e3 env'
+      pure $! is1
+          <+> (Ins $ GOTOIFALSE l1)
+          <+> is2
+          <+> (Ins $ GOTO l2)
+          <+> Lab l1 is3
+          <+> Lab l2 (Ins SKIP)
+  | otherwise = do
+      l1 <- freshLabel
+      l2 <- freshLabel
+      is1 <- codegen e1 env
+      is2 <- codegen e2 env
+      is3 <- codegen e3 env
+      pure $! Ins PUSH
+          <+> is1
+          <+> Ins (GOTOFALSE l1)
+          <+> is2
+          <+> Ins (GOTO l2)
+          <+> Lab l1 is3
+          <+> Lab l2 (Ins SKIP)
+  where
+    env' = markEnv env
+codegen (Case cond clauses) env
+  | allClausesFree = do
+      labels    <- replicateM (length clauses) freshLabel
+      skiplabel <- freshLabel
+      cond'     <- codegen cond env
+      let tagandlabel = zipWith extractTL clauses labels
+      instrs <- zipWith3A (genStackClauses Star skiplabel) labels exps pats
+      pure $! cond'
+          <+> Ins (SWITCHI tagandlabel)
+          <+> fold instrs
+          <+> Lab skiplabel (Ins SKIP)
+  | otherwise = do
+      labels    <- replicateM (length clauses) freshLabel
+      skiplabel <- freshLabel
+      cond'     <- codegen cond env
+      let tagandlabel = zipWith extractTL clauses labels
+      instrs <- zipWith3A (genStackClauses Normal skiplabel) labels exps pats
+      pure $! Ins PUSH
+          <+> cond'
+          <+> Ins (SWITCH tagandlabel)
+          <+> fold instrs
+          <+> Lab skiplabel (Ins SKIP)
   where
     extractTL ((t,_),_) l = (t, l)
-    genStackClauses skipl label exp pat = do
-      e <- codegen exp (EnvPair env pat)
+    genStackClauses envmark skipl label exp pat = do
+      e <- codegen exp (EnvPair envmark env pat)
       pure $! Lab label e
           <+> Ins (GOTO skipl)
     exps = map snd clauses
     pats = map (snd . fst) clauses
-codegen (Let pat e1 e) env = do
-  i1 <- codegen e1 env
-  i  <- codegen e  (EnvPair env pat)
-  pure $! Ins PUSH
-      <+> i1
-      <+> Ins CONS
-      <+> i
+
+    allClausesFree =
+      all (== True)
+      $ map (\((_,p), e) -> rClosed (Lam p e) (env2Eta env)) clauses
+
+codegen (Let pat e1 e) env
+  | rClosed (Lam pat e1) (env2Eta env) = do
+      i1 <- codegen e1 env
+      i2 <- codegen e (EnvPair Star env' pat)
+      pure $! i1
+          <+> i2
+  | rClosed e1 (env2Eta env) = do
+      i1 <- codegen e1 env'
+      i2 <- codegen e  (EnvPair Star env pat)
+      pure $! (Ins MOVE)
+          <+> i1
+          <+> (Ins CONS)
+          <+> i2
+  | otherwise = do
+      i1 <- codegen e1 env
+      i  <- codegen e  (EnvPair Normal env pat)
+      pure $! Ins PUSH
+          <+> i1
+          <+> Ins CONS
+          <+> i
+  where
+    env' = markEnv env
 codegen (Letrec recpats e) env = do
   labels  <- replicateM (length recpats) freshLabel
   let evalEnv = growEnv env (zip pats labels)
@@ -272,7 +364,7 @@ codegen (Letrec recpats e) env = do
     growEnv :: Env -> [(Pat,Label)] -> Env
     growEnv finalEnv [] = finalEnv
     growEnv initEnv ((pat,label):xs) =
-      growEnv (EnvAnn initEnv (pat, label)) xs
+      growEnv (EnvAnn Normal initEnv (pat, label)) xs
 
     pats = map fst recpats
     exps = map snd recpats
@@ -283,28 +375,47 @@ codegenR e env = do
   pure $! i <+> (Ins RETURN)
 
 codegen2 :: Exp -> Exp -> Env -> Codegen CAM
-codegen2 e1 e2 env = do
-  i1 <- codegen e1 env
-  i2 <- codegen e2 env
-  pure $! Ins PUSH
-      <+> i1
-      <+> Ins SWAP
-      <+> i2
+codegen2 e1 e2 env
+  | rClosed e2 (env2Eta env) = do
+      i1 <- codegen e1 env
+      i2 <- codegen e2 env'
+      pure $! i1
+          <+> (Ins MOVE)
+          <+> i2
+  | rClosed e1 (env2Eta env) = do
+      i1 <- codegen e2 env
+      i2 <- codegen e1 env'
+      pure $! i1
+          <+> (Ins MOVE)
+          <+> i2
+          <+> (Ins SWAP)
+  | otherwise = do
+      i1 <- codegen e1 env
+      i2 <- codegen e2 env
+      pure $! Ins PUSH
+          <+> i1
+          <+> Ins SWAP
+          <+> i2
+  where
+    env' = markEnv env
+
 
 lookup :: Var -> Env -> Int -> CAM
-lookup var EnvEmpty _ = Ins FAIL
-lookup var (EnvPair env pat) n =
+lookup var (EnvEmpty _ ) _ = Ins FAIL
+lookup var (EnvPair Normal env pat) n =
   (Ins (ACC n) <+> (lookupPat var pat)) <?>
   (lookup var env (n + 1))
-lookup var (EnvAnn env (pat, l)) n =
+lookup var (EnvPair Star env pat) n =
+  (Ins (REST n) <+> (lookupPat var pat))
+lookup var (EnvAnn _ env (pat, l)) n =
   (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
 
 -- lookup for r-closed expressions
 lookupRC :: Var -> Env -> CAM
-lookupRC var EnvEmpty = Ins FAIL
-lookupRC var (EnvPair env _) = lookupRC var env
-lookupRC var (EnvAnn  env (p, l)) =
+lookupRC var (EnvEmpty _) = Ins FAIL
+lookupRC var (EnvPair _ env _) = lookupRC var env
+lookupRC var (EnvAnn  _ env (p, l)) =
   (Ins (CALL l) <+> lookupPat var p) <?>
   lookupRC var env
 
@@ -355,12 +466,108 @@ zipWith3A ::   Applicative t
           -> t [d]
 zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
 
+
+
+------- r-free and r-closed expressions--------
+
+type PSet = Set.Set -- synonym for powerset
+
+data EtaEnv = EtaEmpty
+            | EtaPair EtaEnv Pat
+            | EtaAnn  EtaEnv (Pat, PSet Var)
+            deriving (Ord, Show, Eq)
+
+
+vars :: Pat -> PSet Var
+vars (PatVar v) = Set.singleton v
+vars Empty      = Set.empty
+vars (PatPair p1 p2) = vars p1 `Set.union` vars p2
+vars (As v p)        = Set.singleton v `Set.union` vars p
+
+rClosed :: Exp -> EtaEnv -> Bool
+rClosed e eta = null (rFree e eta)
+
+rFree :: Exp -> EtaEnv -> PSet Var
+rFree (Var _) EtaEmpty = Set.empty -- XXX: This case is not in Hinze's paper
+rFree (Var x) (EtaPair eta p)
+  | x `Set.member` (vars p) = Set.singleton x
+  | otherwise               = rFree (Var x) eta
+rFree (Var x) (EtaAnn eta (p, v))
+  | x `Set.member` (vars p) = v
+  | otherwise               = rFree (Var x) eta
+rFree (Sys sys) etaenv = rFreeSys sys etaenv
+rFree Void _           = Set.empty
+rFree (Pair e1 e2) etaenv = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Con _ e) etaenv    = rFree e  etaenv
+rFree (App e1 e2) etaenv  = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Lam p e) etaenv = rFree e (EtaPair etaenv p) `Set.difference` vars p
+rFree (If e1 e2 e3) etaenv =
+  rFree e1 etaenv `Set.union`
+  rFree e2 etaenv `Set.union`
+  rFree e3 etaenv
+rFree (Case e clauses) etaenv =
+  rFree e etaenv `Set.union`
+  foldr Set.union Set.empty (map rFreeCond clauses)
+  where
+    rFreeCond ((_,p), exp) =
+      rFree exp (EtaPair etaenv p) `Set.difference` vars p
+rFree (Let p1 e1 e) etaenv =
+  (rFree e (EtaPair etaenv p1) `Set.difference` vars p1) `Set.union`
+  rFree e1 etaenv
+rFree (Letrec recpats e) etaenv = rFree e eta'
+  where
+    eta0 = foldr (\(pat, _) eta -> EtaAnn eta (pat, Set.empty)) etaenv recpats
+    eta' = fixpoint recpats eta0
+
+    fixpoint recpats envPrevIter
+      | envPrevIter == envNew = envNew -- fixpoint reached
+      | otherwise = fixpoint recpats envNew
+      where
+        envNew = foldr (\(pat, e) eta -> EtaAnn eta (pat, rFree e envPrevIter)) etaenv recpats
+
+
+rFreeSys :: Sys -> EtaEnv -> PSet Var
+rFreeSys (Sys2 _ e1 e2) etaenv =
+  rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFreeSys (Sys1 _ e) etaenv = rFree e etaenv
+rFreeSys _ _ = Set.empty
+
+env2Eta :: Env -> EtaEnv
+env2Eta (EnvEmpty _ ) = EtaEmpty
+env2Eta (EnvPair  _ env  pat) = EtaPair (env2Eta env)  pat
+env2Eta (EnvAnn   _ env (pat, _)) =
+  EtaAnn  (env2Eta env) (pat, vars pat)
+
+
+
+
 -- NOTE:
 {-
 Data constructors:
+
    1 :: (2 :: Empty)
        |
        |  compiled to
        V
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
+
+-}
+
+
+-- NOTE 1:
+{-
+
+The EnvMark data type is used to distinguish
+between ρ and ρ* as defined by Hinze. The
+environment that we originally work with is ρ.
+We use ρ* to `taint` a ρ environment so that the
+future functions know that the lookup is to be
+done in a special way.
+
+The difference occurs in the type
+
+<ρ*, p> represented as (EnvPair Star eta p).
+The `lookup` function has a special case for this
+pattern.
+
 -}
