@@ -582,12 +582,3 @@ pattern.
 
 The tainting is done using the function `markEnv`
 -}
-
-exampleFoo' =
-  Let (PatVar "foo") eleven
-  (Let (PatVar "r") two
-   (Var "foo")
-  )
-  where
-    two  = Sys $ LInt 2
-    eleven = Sys $ LInt 11
