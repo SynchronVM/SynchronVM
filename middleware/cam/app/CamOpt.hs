@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2020 Abhiroop Sarkar
+-- Copyright (c) 2021 Abhiroop Sarkar
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -574,11 +574,11 @@ We use ρ* to `taint` a ρ environment so that the
 future functions know that the lookup is to be
 done in a special way.
 
+The tainting is done using the function `markEnv`
+
 The difference occurs in the type
 
 <ρ*, p> represented as (EnvPair Normal (markEnv) p).
 The `lookup` function has a special case for this
 pattern.
-
-The tainting is done using the function `markEnv`
 -}
