@@ -108,8 +108,8 @@ data Instruction
      -- STACK OPERATIONS
    | PUSH       -- copy content of register to stack
    | SWAP       -- interchange between register and topmost element of stack
-   | MOVE
-   | POP
+   | MOVE       -- move register content to stack
+   | POP        -- pop the first entry of the stack and place it on the stack
 
      -- REGISTER OPERATIONS
    | QUOTE Sys  -- QUOTE S(0) load immediate i.e `li` from the code area to environment
@@ -119,8 +119,8 @@ data Instruction
    | CONS       -- join (stack_top, env_reg) and place it on environment register
    | CUR Label  -- build a closure with labeled exp and the environment register
    | PACK Tag   -- create tagged value with (VCon pack_val env_reg) and place on env_reg
-   | SNOC
-   | COMB Label
+   | SNOC       -- join (env_reg, stack_top) and place it on environment register
+   | COMB Label -- place label address on the register
 
      -- CONTROL INSTRUCTIONS
    | SKIP   -- NoOp
@@ -254,7 +254,7 @@ codegen (App e1 e2) env
 codegen expr@(Lam pat e) env
   | rClosed expr (env2Eta env) = do
       l <- freshLabel
-      is <- codegenR e (EnvPair Star env' pat)
+      is <- codegenR e (EnvPair Normal env' pat)
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = (Lab l is) : ts}
       pure (Ins $ COMB l)
@@ -318,8 +318,12 @@ codegen (Case cond clauses) env
           <+> Lab skiplabel (Ins SKIP)
   where
     extractTL ((t,_),_) l = (t, l)
-    genStackClauses envmark skipl label exp pat = do
-      e <- codegen exp (EnvPair envmark env pat)
+    genStackClauses Star skipl label exp pat = do
+      e <- codegen exp (EnvPair Normal (markEnv env) pat)
+      pure $! Lab label e
+          <+> Ins (GOTO skipl)
+    genStackClauses Normal skipl label exp pat = do
+      e <- codegen exp (EnvPair Normal env pat)
       pure $! Lab label e
           <+> Ins (GOTO skipl)
     exps = map snd clauses
@@ -330,14 +334,14 @@ codegen (Case cond clauses) env
       $ map (\((_,p), e) -> rClosed (Lam p e) (env2Eta env)) clauses
 
 codegen (Let pat e1 e) env
-  | rClosed (Lam pat e1) (env2Eta env) = do
+  | rClosed (Lam pat e) (env2Eta env) = do
       i1 <- codegen e1 env
-      i2 <- codegen e (EnvPair Star env' pat)
+      i2 <- codegen e (EnvPair Normal env' pat)
       pure $! i1
           <+> i2
   | rClosed e1 (env2Eta env) = do
       i1 <- codegen e1 env'
-      i2 <- codegen e  (EnvPair Star env pat)
+      i2 <- codegen e  (EnvPair Normal env pat)
       pure $! (Ins MOVE)
           <+> i1
           <+> (Ins CONS)
@@ -402,14 +406,20 @@ codegen2 e1 e2 env
 
 lookup :: Var -> Env -> Int -> CAM
 lookup var (EnvEmpty _ ) _ = Ins FAIL
-lookup var (EnvPair Normal env pat) n =
-  (Ins (ACC n) <+> (lookupPat var pat)) <?>
-  (lookup var env (n + 1))
-lookup var (EnvPair Star env pat) n =
-  (Ins (REST n) <+> (lookupPat var pat))
+lookup var (EnvPair _ env pat) n
+  | isStar env = (Ins (REST n) <+> (lookupPat var pat))
+  | otherwise  =
+    (Ins (ACC n) <+> (lookupPat var pat)) <?>
+    (lookup var env (n + 1))
 lookup var (EnvAnn _ env (pat, l)) n =
   (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
+
+isStar :: Env -> Bool
+isStar (EnvEmpty Star)     = True
+isStar (EnvPair  Star _ _) = True
+isStar (EnvAnn   Star _ _) = True
+isStar _                   = False
 
 -- lookup for r-closed expressions
 lookupRC :: Var -> Env -> CAM
@@ -566,8 +576,18 @@ done in a special way.
 
 The difference occurs in the type
 
-<ρ*, p> represented as (EnvPair Star eta p).
+<ρ*, p> represented as (EnvPair Normal (markEnv) p).
 The `lookup` function has a special case for this
 pattern.
 
+The tainting is done using the function `markEnv`
 -}
+
+exampleFoo' =
+  Let (PatVar "foo") eleven
+  (Let (PatVar "r") two
+   (Var "foo")
+  )
+  where
+    two  = Sys $ LInt 2
+    eleven = Sys $ LInt 11

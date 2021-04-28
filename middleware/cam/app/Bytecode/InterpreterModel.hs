@@ -23,7 +23,7 @@
 module Bytecode.InterpreterModel ( Val (..)
                                  , evaluate) where
 
-import CAM
+import CamOpt
 import Data.Int (Int32)
 import Data.List (find)
 import GHC.Arr
@@ -132,6 +132,10 @@ eval = do
       do { incPC; push; eval }
     SWAP ->
       do { incPC; swap; eval }
+    MOVE ->
+      do { incPC; move; eval }
+    POP ->
+      do { incPC; pop; eval }
     QUOTE (LInt i)  ->
       do { incPC; loadi i; eval }
     QUOTE (LFloat f)  ->
@@ -150,6 +154,10 @@ eval = do
       do { incPC; cur l; eval }
     PACK c ->
       do { incPC; pack c; eval }
+    SNOC   ->
+      do { incPC; snoc; eval }
+    COMB l ->
+      do { incPC; comb l; eval }
     SKIP ->
       do { incPC; eval}
     STOP -> getEnv -- base case
@@ -161,6 +169,11 @@ eval = do
       do { gotofalse l; eval; }
     SWITCH conds ->
       do { switch conds; eval; }
+    GOTOIFALSE l ->
+      do { gotoifalse l; eval; }
+    SWITCHI conds ->
+      do { switchi conds; eval; }
+
     i ->
       error $! "Unsupported Instruction : " <> show i
 
@@ -267,6 +280,21 @@ swap = do
   e      <- getEnv
   (h, t) <- popAndRest
   S.modify $ \s -> s { stack = e : t
+                     , environment = h
+                     }
+
+move :: Evaluate ()
+move = do
+  e  <- getEnv
+  st <- getStack
+  S.modify $ \s -> s { stack = e : st
+                     , environment = VEmpty
+                     }
+
+pop :: Evaluate ()
+pop = do
+  (h, t) <- popAndRest
+  S.modify $ \s -> s { stack = t
                      , environment = h
                      }
 
@@ -412,15 +440,33 @@ pack t = do
   e <- getEnv
   S.modify $ \s -> s { environment = VCon t e }
 
+snoc :: Evaluate ()
+snoc = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  S.modify $ \s -> s { environment = VPair e h
+                     , stack = t
+                     }
+
+comb :: Label -> Evaluate ()
+comb l = S.modify $ \s -> s { environment = VComb l }
+
 app :: Evaluate ()
 app = do
   e      <- getEnv
   (h, t) <- popAndRest
-  let (VClosure val label) = e -- XXX: Partial
-  S.modify $ \s -> s { environment = VPair val h
-                     , stack = t
-                     }
-  jumpTo label
+  case e of
+    VClosure val label -> do
+      S.modify $ \s -> s { environment = VPair val h
+                         , stack = t
+                         }
+      jumpTo label
+    VComb label -> do
+      S.modify $ \s -> s { environment = h
+                         , stack = t
+                         }
+      jumpTo label
+    _ -> error "APP operation applied to wrong value type"
 
 -- goto doesn't store the previous jump
 -- point into prevJump unlike jumpTo
@@ -474,6 +520,31 @@ switch conds = do
     --                      , stack = t
     --                      }
     --   goto label
+    where
+      wildcardtag = "??WILDCARD??"
+
+gotoifalse :: Label -> Evaluate ()
+gotoifalse l = do
+  e      <- getEnv
+  case e of
+    VBool True -> do
+      incPC
+    VBool False -> do
+      goto l
+    _ -> error "GOTOFALSE instuction applied to incorrect operand"
+
+switchi :: [(Tag, Label)] -> Evaluate ()
+switchi conds = do
+  e      <- getEnv
+  case e of
+    VCon ci v1 -> do
+      let (_, label) =
+            case find (\(c,_) -> c == ci || c == wildcardtag) conds of
+              Just (cf, lf) -> (cf, lf)
+              Nothing -> error $ "Missing constructor " <> show ci
+      S.modify $ \s -> s { environment = v1 }
+      goto label
+    _ -> error "Non constructor patterns should be rewritten"
     where
       wildcardtag = "??WILDCARD??"
 

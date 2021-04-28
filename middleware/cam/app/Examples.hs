@@ -24,7 +24,8 @@ module Examples where
 
 import Assembler
 import Bytecode.InterpreterModel
-import CAM
+import CamOpt
+import qualified CamOpt as CO
 
 example0 = Sys $ Sys2 MinusI (Sys $ LInt 5) (Sys $ LInt 4)
 
@@ -269,6 +270,7 @@ example18 =
     two  = Sys $ LInt 2
     three  = Sys $ LInt 3
     eleven = Sys $ LInt 11
+
 
 {-
 let y = \k -> k + 3
@@ -575,9 +577,22 @@ example32' =
        )
       ) (Pair (Sys $ LInt 5) (Sys $ LInt 6))
 
+{-
+let foo = \x -> x + 11
+  in let r = 2
+      in foo r
+-}
+example33 =
+  Let (PatVar "foo") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") eleven))
+  (Let (PatVar "r") two
+   (App (Var "foo") (Var "r")))
+  where
+    two  = Sys $ LInt 2
+    four = Sys $ LInt 4
+    eleven = Sys $ LInt 11
 
 run :: Exp -> Val
-run = evaluate . interpret
+run = evaluate . CO.interpret
 
 runAllTests =
   if all (== True) (zipWith (==) (map run examples) results)
@@ -585,12 +600,12 @@ runAllTests =
   else print "There are some errors"
   where
     examples =
-      [  example0,  example2,  example5,  example6,  example7
-      ,  example9, example10, example11, example12, example13
-      , example14, example15, example16, example17, example18
-      , example19, example20, example21, example22, example23
-      , example24, example25, example26, example27, example28
-      , example29', example30', example31'
+      [  example0 ,  example2 ,  example5 ,  example6 ,  example7
+      ,  example9 , example10 , example11 , example12 , example13
+      , example14 , example15 , example16 , example17 , example18
+      , example19 , example20 , example21 , example22 , example23
+      , example24 , example25 , example26 , example27 , example28
+      , example29', example30', example31', example32', example33
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
@@ -599,6 +614,7 @@ runAllTests =
       , VInt 20, VInt 14, VInt 10, VInt 3
       , VInt 10, VInt 8,  VInt 3 , VInt 5
       , VInt 10, VInt 8,  VInt 2 , VInt 5
-      , VInt 5,  VInt 11
+      , VInt 5,  VInt 11, VInt 11, VInt 13
       ]
+
 
