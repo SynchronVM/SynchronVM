@@ -25,43 +25,123 @@ module Peephole (optimise) where
 import CamOpt
 import qualified Control.Monad.State.Strict as S
 
+import Debug.Trace
+
+optimise :: CAM -> CAM
+optimise cam = cam'
+  where
+    flatcam   = flattenCAM cam
+    initState = initCode flatcam 0
+    flatcam'  = S.evalState (runOptimise optimiser) initState
+    cam'      = rebuildCAM flatcam'
+
 data Code = Code { instrs :: [FlatCAM]
                  , programcounter :: Int
                  } deriving Show
 
+initCode :: [FlatCAM] -> Int -> Code
+initCode is pc = Code { instrs = is
+                      , programcounter = pc
+                      }
 newtype Optimise a =
   Optimise
     { runOptimise :: S.State Code a
     }
   deriving (Functor, Applicative, Monad, S.MonadState Code)
 
-optimise :: CAM -> CAM
-optimise c = undefined
-  where
-    flatcam = flattenCAM c
 
-optimiser :: Optimise ()
+
+optimiser :: Optimise [FlatCAM]
 optimiser = do
-  pc     <- S.gets programcounter
-  is     <- S.gets instrs
-  if (pc == length is - 1)
-  then pure ()
+  pc <- getPC
+  b  <- terminateNow
+  if b
+  then do
+    is <- getInstrs
+    pure is
   else do
-    let i = is !! pc
-    case i of
-      (Plain (Ins i_)) -> do
-          let (is_, offset) = oneOPRule i_
-          let instrs_ = take pc is ++ map flatcaminst is_ ++ drop pc is
-          S.modify $ \s -> s {instrs = instrs_}
-          S.modify $ \s -> s {programcounter = pc + offset}
-          optimiser
-      _ -> do
-        S.modify $ \s -> s {programcounter = pc + 1}
-        optimiser
-   where
-     flatcaminst :: Instruction -> FlatCAM
-     flatcaminst i = Plain (Ins i)
+    o <- applyTwoOPRule
+    incPCBy o
+    o'<- applyOneOPRule
+    incPCBy o'
+    optimiser
 
+applyOneOPRule :: Optimise Offset
+applyOneOPRule = do
+  is <- getInstrs
+  pc <- getPC
+  b  <- atleastNInstrs 1
+  if b
+  then do
+    let i1 = is !! pc
+    case i1 of
+      Plain (Ins i1_) -> do
+          let (is_, offset) = oneOPRule i1_
+          replaceNInstrs 1 is_
+          pure offset
+
+      _ -> pure 1 -- this is because the two op rule has already been applied
+
+  else pure 1 -- trigger `terminateNow`
+
+
+applyTwoOPRule :: Optimise Offset
+applyTwoOPRule = do
+  is <- getInstrs
+  pc <- getPC
+  b  <- atleastNInstrs 2
+  if b
+  then do
+    let i1 = is !! pc
+    let i2 = is !! (pc + 1) -- the if check makes sure that PC doesnt go out of bound
+    case (i1, i2) of
+      (Plain (Ins i1_), Plain (Ins i2_)) -> do
+          let (is_, offset) = twoOPRule i1_ i2_
+          replaceNInstrs 2 is_
+          pure offset
+
+      _ -> pure 0 -- maybe the OneOPRule applies so don't increment PC
+
+  else pure 0 -- if there is only one instruction and applyOneOPRule applies
+
+incPCBy :: Offset -> Optimise ()
+incPCBy offset = do
+  pc <- getPC
+  S.modify $ \s -> s {programcounter = pc + offset}
+
+replaceNInstrs :: Int -> [Instruction] -> Optimise ()
+replaceNInstrs n is_ = do
+  is <- getInstrs
+  pc <- getPC
+  let instrs_ = take pc is
+             ++ map flatcaminst is_
+             ++ drop (pc + n) is
+  S.modify $ \s -> s {instrs = instrs_}
+  where
+    flatcaminst :: Instruction -> FlatCAM
+    flatcaminst i = Plain (Ins i)
+
+terminateNow :: Optimise Bool
+terminateNow = do
+  pc <- getPC
+  is <- getInstrs
+  pure $ (pc > (length is - 1))
+
+atleastNInstrs :: Int -> Optimise Bool
+atleastNInstrs n = do
+  pc <- getPC
+  is <- getInstrs
+  pure $ (pc + n <= length is)
+
+getPC :: Optimise Int
+getPC = do
+  pc <- S.gets programcounter
+  pure pc
+
+getInstrs :: Optimise [FlatCAM]
+getInstrs = do
+  is <- S.gets instrs
+  pure is
 
 type Offset = Int
 
@@ -89,7 +169,7 @@ twoOPRule SWAP SNOC = ([CONS]   , -1)
 twoOPRule (CUR l)  APP = ([SNOC, CALL l], -1)
 twoOPRule (COMB l) APP = ([POP , CALL l], -1)
 twoOPRule (CALL l) RETURN = ([GOTO l], 1)
-twoOPRule i1       i2     = ([i1, i2], 1)
+twoOPRule i1       i2     = ([i1, i2], 0) -- try oneOPRules now
 
 
 
@@ -124,16 +204,3 @@ rebuildCAM (x:xs) =
 -- CAM data type might have had some more complex structure.
 verify :: CAM -> Bool
 verify c = (show . rebuildCAM . flattenCAM) c == (show c)
-
-
-
-
-
-example33 =
-  Let (PatVar "foo") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") eleven))
-  (Let (PatVar "r") two
-   (App (Var "foo") (Var "r")))
-  where
-    two  = Sys $ LInt 2
-    four = Sys $ LInt 4
-    eleven = Sys $ LInt 11
