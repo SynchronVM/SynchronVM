@@ -25,6 +25,7 @@ module Examples where
 import Assembler
 import Bytecode.InterpreterModel
 import CamOpt
+import Peephole
 import qualified CamOpt as CO
 
 example0 = Sys $ Sys2 MinusI (Sys $ LInt 5) (Sys $ LInt 4)
@@ -594,8 +595,11 @@ example33 =
 run :: Exp -> Val
 run = evaluate . CO.interpret
 
+run' :: Exp -> Val
+run' = evaluate . optimise . CO.interpret
+
 runAllTests =
-  if all (== True) (zipWith (==) (map run examples) results)
+  if all (== True) (zipWith (==) (map run' examples) results)
   then print "All tests passed"
   else print "There are some errors"
   where

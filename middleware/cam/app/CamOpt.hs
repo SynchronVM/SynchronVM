@@ -295,7 +295,7 @@ codegen (If e1 e2 e3) env
   where
     env' = markEnv env
 codegen (Case cond clauses) env
-  | allClausesFree = do
+  | allClausesClosed = do
       labels    <- replicateM (length clauses) freshLabel
       skiplabel <- freshLabel
       cond'     <- codegen cond env
@@ -329,7 +329,7 @@ codegen (Case cond clauses) env
     exps = map snd clauses
     pats = map (snd . fst) clauses
 
-    allClausesFree =
+    allClausesClosed =
       all (== True)
       $ map (\((_,p), e) -> rClosed (Lam p e) (env2Eta env)) clauses
 
@@ -374,6 +374,61 @@ codegen (Letrec recpats e) env = do
     exps = map snd recpats
 
 codegenR :: Exp -> Env -> Codegen CAM
+codegenR e@(If e1 e2 e3) env
+  | rClosed e2 (env2Eta env) && rClosed e3 (env2Eta env) = do
+      l  <- freshLabel
+      i1 <- codegen  e1 env
+      i2 <- codegenR e2 (markEnv env)
+      i3 <- codegenR e3 (markEnv env)
+      pure $! i1
+          <+> (Ins $ GOTOIFALSE l)
+          <+> i2
+          <+> (Lab l i3)
+  | otherwise = do
+      l  <- freshLabel
+      i1 <- codegen  e1 env
+      i2 <- codegenR e2 env
+      i3 <- codegenR e3 env
+      pure $! (Ins PUSH)
+          <+> i1
+          <+> (Ins $ GOTOFALSE l)
+          <+> i2
+          <+> (Lab l i3)
+
+codegenR (Case cond clauses) env
+  | allClausesClosed = do
+      labels    <- replicateM (length clauses) freshLabel
+      cond'     <- codegen cond env
+      let tagandlabel = zipWith extractTL clauses labels
+      instrs <- zipWith3A (genStackClauses Star) labels exps pats
+      pure $! cond'
+          <+> Ins (SWITCHI tagandlabel)
+          <+> fold instrs
+  | otherwise = do
+      labels    <- replicateM (length clauses) freshLabel
+      cond'     <- codegen cond env
+      let tagandlabel = zipWith extractTL clauses labels
+      instrs <- zipWith3A (genStackClauses Normal) labels exps pats
+      pure $! Ins PUSH
+          <+> cond'
+          <+> Ins (SWITCH tagandlabel)
+          <+> fold instrs
+  where
+    extractTL ((t,_),_) l = (t, l)
+    genStackClauses Star label exp pat = do
+      e <- codegenR exp (EnvPair Normal (markEnv env) pat)
+      pure $! Lab label e
+    genStackClauses Normal label exp pat = do
+      e <- codegenR exp (EnvPair Normal env pat)
+      pure $! Lab label e
+    exps = map snd clauses
+    pats = map (snd . fst) clauses
+
+    allClausesClosed =
+      all (== True)
+      $ map (\((_,p), e) -> rClosed (Lam p e) (env2Eta env)) clauses
+
+
 codegenR e env = do
   i <- codegen e env
   pure $! i <+> (Ins RETURN)
