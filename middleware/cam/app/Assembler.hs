@@ -119,12 +119,12 @@ EQ                             0x20                        1
 GE                             0x21                        1
 LE                             0x22                        1
 
-MOVE                           0x23                        1
-POP                            0x24                        1
-SNOC                           0x25                        1
-COMB <l>                       0x26FFFF                    3
-GOTOIFALSE <l>                 0x27FFFF                    3
-SWITCHI <n> <t> <l> ...        0x28FF...                   1 + 1 + 1024
+MOVE                           0x31                        1
+POP                            0x32                        1
+SNOC                           0x33                        1
+COMB <l>                       0x34FFFF                    3
+GOTOIFALSE <l>                 0x35FFFF                    3
+SWITCHI <n> <t> <l> ...        0x36FF...                   1 + 1 + 1024
 
 
 
@@ -408,17 +408,17 @@ rectifyLabelOffset offset (w : ws) =
               then w : size : rectifyLabelOffset offset bs
               else w : size : fixSwitchOffsets sizeInt offset bs
 
-    38 -> let (b1 : b2 : bs) = ws -- COMB
+    52 -> let (b1 : b2 : bs) = ws -- COMB
               label   = word8X2ToInt (b1,b2)
               word8X2 = serializeToBytes $ byte2 (label + offset)
            in  w : word8X2 ++ rectifyLabelOffset offset bs
 
-    39 -> let (b1 : b2 : bs) = ws -- GOTOFALSE
+    53 -> let (b1 : b2 : bs) = ws -- GOTOFALSE
               label   = word8X2ToInt (b1,b2)
               word8X2 = serializeToBytes $ byte2 (label + offset)
            in  w : word8X2 ++ rectifyLabelOffset offset bs
 
-    40 -> let (size : bs) = ws -- SWITCHI
+    54 -> let (size : bs) = ws -- SWITCHI
               sizeInt = fromIntegral size :: Int
            in if sizeInt == 0
               then w : size : rectifyLabelOffset offset bs
@@ -563,14 +563,14 @@ ge = 33
 le = 34
 
 move, pop, snoc, comb :: Word8
-move = 35
-pop  = 36
-snoc = 37
-comb = 38
+move = 49
+pop  = 50
+snoc = 51
+comb = 52
 
 gotoifalse, switchi :: Word8
-gotoifalse = 39
-switchi    = 40
+gotoifalse = 53
+switchi    = 54
 
 byte :: Int -> Word8
 byte n
