@@ -95,6 +95,16 @@ void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_eq_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_eqf(vmc_t *vmc, INT *pc_idx);
 void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
+/* Optimised instructions */
+void eval_move(vmc_t *vmc, INT *pc_idx);
+void eval_pop (vmc_t *vmc, INT *pc_idx);
+void eval_snoc(vmc_t *vmc, INT *pc_idx);
+void eval_comb(vmc_t *vmc, INT *pc_idx);
+void eval_gotoifalse(vmc_t *vmc, INT *pc_idx);
+void eval_switchi   (vmc_t *vmc, INT *pc_idx);
+
+
+
 
 eval_fun evaluators[] =
   { eval_fst,
@@ -145,7 +155,13 @@ eval_fun evaluators[] =
     eval_eqf,
     eval_gef,
     eval_lef,
-    eval_eq_bool };
+    eval_eq_bool,
+    eval_move,
+    eval_pop,
+    eval_snoc,
+    eval_comb,
+    eval_gotoifalse,
+    eval_switchi };
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
@@ -992,3 +1008,89 @@ void eval_eq_bool(vmc_t *vmc, INT *pc_idx) {
     { .flags = 0, .value = hold_reg.value == e.value };
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
+
+void eval_move(vmc_t *vmc, INT *pc_idx){
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+  int i = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, e);
+  if(i == 0){
+    DEBUG_PRINT(("Stack push has failed"));
+    *pc_idx = -1;
+    return;
+  }
+
+  cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+  vmc->contexts[vmc->current_running_context_id].env = empty_tuple;
+
+  (*pc_idx)++;
+
+}
+
+void eval_pop (vmc_t *vmc, INT *pc_idx){
+  cam_register_t r;
+  int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &r);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+
+  (*pc_idx)++;
+}
+void eval_snoc(vmc_t *vmc, INT *pc_idx){
+  (*pc_idx)++;
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  heap_index hi = heap_alloc_withGC(vmc);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  } else {
+    // Assuming we have space for atleast one tuple
+    // Do we check this as well?
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->contexts[vmc->current_running_context_id].env = env_pointer;
+    heap_set(&vmc->heap, hi, e, hold_reg);
+  }
+
+}
+void eval_comb(vmc_t *vmc, INT *pc_idx){
+
+  uint16_t label = get_label(vmc, pc_idx);
+  cam_value_t cam_label =
+    { .value = (UINT)label, .flags = 0 };
+  heap_index hi = heap_alloc_withGC(vmc);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  } else {
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->contexts[vmc->current_running_context_id].env = env_pointer;
+    heap_set_fst(&vmc->heap, hi, cam_label);
+    //TODO: Set snd or first field in way such
+    // that APP can distinguish between a [v : l] and [l]
+    *pc_idx = (*pc_idx) + 3;
+  }
+
+}
+void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  if ((e.value & 1) == 0){ // NOT SET; FALSE
+    eval_goto(vmc, pc_idx);
+  } else { // TRUE
+    *pc_idx = (*pc_idx) + 3;
+  }
+
+}
+void eval_switchi   (vmc_t *vmc, INT *pc_idx){ }

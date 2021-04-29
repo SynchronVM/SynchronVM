@@ -31,6 +31,6 @@
 
 typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
 
-extern eval_fun evaluators[49]; // 49 instructions
+extern eval_fun evaluators[55]; // 55 instructions
 
 #endif
