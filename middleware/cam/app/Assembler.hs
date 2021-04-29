@@ -26,7 +26,7 @@ module Assembler ( translate
                  , genbytecode
                  , writeAssembly) where
 
-import CAM hiding (initState)
+import CamOpt hiding (initState)
 import Control.Monad.State.Strict hiding (put)
 import Data.Binary
 import Data.Bits
@@ -119,6 +119,13 @@ EQ                             0x20                        1
 GE                             0x21                        1
 LE                             0x22                        1
 
+MOVE                           0x23                        1
+POP                            0x24                        1
+SNOC                           0x25                        1
+COMB <l>                       0x26FFFF                    3
+GOTOIFALSE <l>                 0x27FFFF                    3
+SWITCHI <n> <t> <l> ...        0x28FF...                   1 + 1 + 1024
+
 
 
 * <n> - Positive ints - 1 byte long
@@ -132,6 +139,7 @@ LE                             0x22                        1
 
 -}
 -- NOTE: Whenever adding an instruction which uses labels remember to rectifyLabelOffset
+-- NOTE: Whenever adding an instruction which uses labels remember to fix `bytecounter`
 -- NOTE: Modify originalBytecodeOffset if adding any new pools etc
 -- NOTE: A SenseVM program can support a maximum of 65534 tags(and not 65535) because
 --       tag id 65535 is reserved for the "??WILDCARD??" tag.
@@ -293,6 +301,16 @@ assemble (i : is) =
     PRIM2 BEQ -> gen1 eq
     PRIM2 BGE -> gen1 ge
     PRIM2 BLE -> gen1 le
+    MOVE      -> gen1 move
+    POP       -> gen1 pop
+    SNOC      -> gen1 snoc
+    COMB l    -> genLabel comb l
+    GOTOIFALSE l -> genLabel gotoifalse l
+    SWITCHI tagsandlabels -> do
+      bytes <- mapM (\(t,l) -> genTagLabel t l) tagsandlabels
+      let size = byte (length tagsandlabels)
+      rs <- assemble is
+      pure $! switchi : size : join bytes ++ rs
     _ -> error $! "Impossible instruction : " <> show i
     where
       gen1 word = do
@@ -363,7 +381,7 @@ rectifyLabelOffset offset (w : ws) =
     11 -> let (b1 : b2 : bs) = ws -- PACK
            in   w : b1 : b2 : rectifyLabelOffset offset bs
 
-    ---- OFFSETTING HAPPENS IN THE FOLLOWING 5 INSTRUCTIONS ---
+    ---- OFFSETTING HAPPENS IN THE FOLLOWING 8 INSTRUCTIONS ---
     10 -> let (b1 : b2 : bs) = ws -- CUR
               label   = word8X2ToInt (b1,b2)
               word8X2 = serializeToBytes $ byte2 (label + offset)
@@ -390,9 +408,26 @@ rectifyLabelOffset offset (w : ws) =
               then w : size : rectifyLabelOffset offset bs
               else w : size : fixSwitchOffsets sizeInt offset bs
 
+    38 -> let (b1 : b2 : bs) = ws -- COMB
+              label   = word8X2ToInt (b1,b2)
+              word8X2 = serializeToBytes $ byte2 (label + offset)
+           in  w : word8X2 ++ rectifyLabelOffset offset bs
+
+    39 -> let (b1 : b2 : bs) = ws -- GOTOFALSE
+              label   = word8X2ToInt (b1,b2)
+              word8X2 = serializeToBytes $ byte2 (label + offset)
+           in  w : word8X2 ++ rectifyLabelOffset offset bs
+
+    40 -> let (size : bs) = ws -- SWITCHI
+              sizeInt = fromIntegral size :: Int
+           in if sizeInt == 0
+              then w : size : rectifyLabelOffset offset bs
+              else w : size : fixSwitchOffsets sizeInt offset bs
+
     -- 1 byte long
     _ -> w : rectifyLabelOffset offset ws
 
+-- Used for fixing the offset of switch and switchi
 fixSwitchOffsets :: Int -> NumBytes -> [Word8] -> [Word8]
 fixSwitchOffsets 0 offset bs = rectifyLabelOffset offset bs
 fixSwitchOffsets n offset (t1 : t2 : l1 : l2 : bs)
@@ -401,7 +436,8 @@ fixSwitchOffsets n offset (t1 : t2 : l1 : l2 : bs)
     label   = word8X2ToInt (l1,l2)
     word8X2 = serializeToBytes $ byte2 (label + offset)
 fixSwitchOffsets _ _ _ =
-  error "Impossible to reach pattern according to the switch bytecode specification"
+  error "Impossible to reach pattern according to the\
+        \ switch/switchi bytecode specification"
 
 word8X2ToInt :: (Word8, Word8) -> Int
 word8X2ToInt (b1,b2) = (shift i1 8) .|. i2
@@ -450,8 +486,12 @@ bytecounter i ((inst, label) : xs) =
     CALL _          -> (inst, label, i) : bytecounter (i + 3) xs
     GOTO _          -> (inst, label, i) : bytecounter (i + 3) xs
     GOTOFALSE _     -> (inst, label, i) : bytecounter (i + 3) xs
+    COMB _          -> (inst, label, i) : bytecounter (i + 3) xs
+    GOTOIFALSE _    -> (inst, label, i) : bytecounter (i + 3) xs
     -- max 1026 bytes long --
     SWITCH tls      ->
+      (inst, label, i) : bytecounter (i + 2 + 4 * length tls) xs
+    SWITCHI tls     ->
       (inst, label, i) : bytecounter (i + 2 + 4 * length tls) xs
     -- all others one byte long --
     _ -> (inst, label, i) : bytecounter (i + 1) xs
@@ -521,6 +561,16 @@ lt = 31
 eq = 32
 ge = 33
 le = 34
+
+move, pop, snoc, comb :: Word8
+move = 35
+pop  = 36
+snoc = 37
+comb = 38
+
+gotoifalse, switchi :: Word8
+gotoifalse = 39
+switchi    = 40
 
 byte :: Int -> Word8
 byte n
@@ -599,7 +649,7 @@ that value as the Word16 TagIdx. Before returning make
 sure you add this value and tag pair to the tag table
 and increment the "tagIdx" state variable
 
-2. In a case expression using SWITCH when pattern matching.
+2. In a case expression using SWITCH/SWITCHI when pattern matching.
 
 Either you have seen this tag before or it is new. If new
 add it to TagTable or else get the TagIdx from the TagTable
