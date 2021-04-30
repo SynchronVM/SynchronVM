@@ -1062,6 +1062,7 @@ void eval_pop (vmc_t *vmc, INT *pc_idx){
     *pc_idx = -1;
     return;
   }
+  vmc->contexts[vmc->current_running_context_id].env = r;
 
   (*pc_idx)++;
 }
@@ -1128,7 +1129,7 @@ void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){
   }
 
 }
-void eval_switchi   (vmc_t *vmc, INT *pc_idx){
+void eval_switchi(vmc_t *vmc, INT *pc_idx){
 
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
 

@@ -2055,6 +2055,85 @@ bool eval_switch_test(){
 }
 
 
+bool eval_move_test(){
+  cam_value_t cv = { .value = 10, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  Context_t mock_context = { .env = cv, .stack = s };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+
+  cam_register_t dummyreg = { .value = 0 };
+  INT pc_idx = 0;
+  (*evaluators[49])(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("move operation has failed");
+    free(m);
+    return false;
+  }
+  int j =
+    stack_pop(&vmc.contexts[vmc.current_running_context_id].stack, &dummyreg);
+  if (j == 0){
+    printf("Stack pop has failed");
+    free(m);
+    return false;
+  }
+  free(m);
+  if(dummyreg.value == cv.value &&
+     vmc.contexts[vmc.current_running_context_id].env.value == 0){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_pop_test(){
+  cam_value_t cv   = { .value = 10, .flags = 0 };
+  cam_value_t st_v = { .value = 20, .flags = 0 };
+  cam_stack_t s;
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    free(m);
+    return false;
+  }
+
+  Context_t mock_context = { .env = cv, .stack = s };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+
+  INT pc_idx = 0;
+  (*evaluators[50])(&vmc, &pc_idx);
+  if (pc_idx == -1){
+    printf("pop operation has failed");
+    free(m);
+    return false;
+  }
+
+  free(m);
+  if(vmc.contexts[vmc.current_running_context_id].env.value == st_v.value){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -2169,7 +2248,11 @@ int main(int argc, char **argv) {
   test_stat("eval_pack", &total, t48);
   bool t49 = eval_switch_test();
   test_stat("eval_switch", &total, t49);
+  bool t50 = eval_move_test();
+  test_stat("eval_move", &total, t50);
+  bool t51 = eval_pop_test();
+  test_stat("eval_pop", &total, t51);
 
-  printf("Passed total : %d/%d tests\n", total, 49);
+  printf("Passed total : %d/%d tests\n", total, 51);
   return 1;
 }
