@@ -362,31 +362,60 @@ void eval_app(vmc_t *vmc, INT *pc_idx) {
     *pc_idx = -1;
     return;
   }
+
   heap_index closure_address = e.value; // TODO: should we do a pointer check here?
-  cam_value_t val = heap_fst(&vmc->heap, closure_address);
-  cam_value_t label = heap_snd(&vmc->heap, closure_address);
-  heap_index hi = heap_alloc_withGC(vmc);
-  if(hi == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation has failed"));
-    *pc_idx = -1;
-    return;
-  }
-  heap_set(&vmc->heap, hi, val, hold_reg);
-  cam_value_t new_env_pointer =
-    { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
-  vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
+                                        // closure or combinator, the if checks that
+
+  cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
+  cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
+
+  if(heap_s.value == 4294967295){ // if combinator
+
+    cam_value_t label = heap_f;
+
+    vmc->contexts[vmc->current_running_context_id].env = hold_reg;
 
 
-  //jump to label
-  INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
-  cam_value_t j_add = { .value = (UINT)jump_address };
-  int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
-  if(j == 0){
-    DEBUG_PRINT(("Stack push has failed"));
-    *pc_idx = -1;
-    return;
+    //jump to label
+    INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
+    cam_value_t j_add = { .value = (UINT)jump_address };
+    int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
+    if(j == 0){
+      DEBUG_PRINT(("Stack push has failed"));
+      *pc_idx = -1;
+      return;
+    }
+    *pc_idx = (INT)label.value;
+
+  } else { // not a combinator but a closure
+
+    cam_value_t val = heap_f;
+    cam_value_t label = heap_s;
+
+    heap_index hi = heap_alloc_withGC(vmc);
+    if(hi == HEAP_NULL){
+      DEBUG_PRINT(("Heap allocation has failed"));
+      *pc_idx = -1;
+      return;
+    }
+    heap_set(&vmc->heap, hi, val, hold_reg);
+    cam_value_t new_env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
+
+
+    //jump to label
+    INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
+    cam_value_t j_add = { .value = (UINT)jump_address };
+    int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
+    if(j == 0){
+      DEBUG_PRINT(("Stack push has failed"));
+      *pc_idx = -1;
+      return;
+    }
+    *pc_idx = (INT)label.value;
+
   }
-  *pc_idx = (INT)label.value;
 
 }
 
@@ -1076,9 +1105,15 @@ void eval_comb(vmc_t *vmc, INT *pc_idx){
     cam_value_t env_pointer =
       { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
     vmc->contexts[vmc->current_running_context_id].env = env_pointer;
-    heap_set_fst(&vmc->heap, hi, cam_label);
-    //TODO: Set snd or first field in way such
-    // that APP can distinguish between a [v : l] and [l]
+
+
+    // This value is used to demarcate a heap cell as
+    // storing a combinator value rather than a closure
+    cam_value_t dummy_val = { .value = 4294967295 };
+
+
+    heap_set(&vmc->heap, hi, cam_label, dummy_val);
+
     *pc_idx = (*pc_idx) + 3;
   }
 
