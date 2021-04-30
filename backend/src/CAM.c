@@ -1128,4 +1128,45 @@ void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){
   }
 
 }
-void eval_switchi   (vmc_t *vmc, INT *pc_idx){ }
+void eval_switchi   (vmc_t *vmc, INT *pc_idx){
+
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  heap_index tag_val_pair = e.value;
+  cam_value_t tag_heap = heap_fst(&vmc->heap, tag_val_pair);
+  cam_value_t val      = heap_snd(&vmc->heap, tag_val_pair);
+  INT switch_size_idx = (*pc_idx) + 1;
+  uint8_t switch_size = vmc->code_memory[switch_size_idx];
+
+  int label_to_jump = -1;
+  for(uint8_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
+    INT tag_idx1 = i;
+    INT tag_idx2 = i + 1;
+    uint16_t tag =
+      (vmc->code_memory[tag_idx1] << 8) | vmc->code_memory[tag_idx2]; // merge 2 bytes
+
+    INT lab_idx1 = i + 2;
+    INT lab_idx2 = i + 3;
+    uint16_t label =
+      (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
+
+
+    if(tag_heap.value == (UINT)tag ||
+       (UINT)tag == 65535){ //wildcard check; wildcard tag = max(uint16_t) = 65535
+      label_to_jump = label;
+      break;
+    }
+  }
+  if(label_to_jump == -1){
+    DEBUG_PRINT(("Tag %u not found while switching", tag_heap.value));
+    *pc_idx = -1;
+    return;
+  }
+
+  vmc->contexts[vmc->current_running_context_id].env = val;
+
+
+  //goto label
+  *pc_idx = (INT)label_to_jump;
+
+}
