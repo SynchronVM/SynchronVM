@@ -297,6 +297,46 @@ bool vmc_run_6_test(){
   }
 }
 
+bool vmc_run_7_test(){
+
+  /*
+    let foo = \x -> x + 11
+    in let r = 2
+    in foo r
+
+  */
+  uint8_t code [] =
+    { 254,237,202,254,1,0,2,0,0,0,2,0,0,0,11,0,0,0,0,0,0,0,22,52,0,37,49,6,0,0,9,4,1,5,0,14,13,3,0,49,6,0,1,24,15 };
+
+  vmc_t container;
+  int stack_mem_size = 256;
+  int heap_mem_size = 1024;
+  uint8_t *sm = malloc(stack_mem_size);
+  uint8_t *hm = malloc(heap_mem_size);
+  bool p = prepare_container(&container, stack_mem_size, heap_mem_size, code, sm, hm);
+  if(!p){
+    return false;
+  }
+
+  int run = vmc_run(&container);
+
+  if (run == -1){
+    printf("vmc_run has failed");
+    free(sm);
+    free(hm);
+    return false;
+  }
+
+  free(sm);
+  free(hm);
+
+  if(container.contexts[container.current_running_context_id].env.value == 13){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void test_stat(char *s, int *tot, bool t){
   if (t) {
     (*tot)++;
@@ -324,9 +364,11 @@ int main(int argc, char **argv) {
   test_stat("vmc_run_5", &total, t5);
   bool t6 = vmc_run_6_test();
   test_stat("vmc_run_6", &total, t6);
+  bool t7 = vmc_run_7_test();
+  test_stat("vmc_run_7", &total, t7);
 
-  printf("Passed total : %d/%d tests\n", total, 6);
-  if (t1 && t2 && t3 && t4 && t5 && t6) {
+  if (t1 && t2 && t3 && t4 && t5 && t6 && t7) {
+    printf("Passed total : %d/%d tests\n", total, 7);
     return 0;
   }
   return -1;
