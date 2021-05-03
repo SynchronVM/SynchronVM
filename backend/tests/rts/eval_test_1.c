@@ -1969,8 +1969,9 @@ bool eval_switch_test(){
     free(hm);
     return false;
   }
-  cam_value_t vempty  = { .value = 0, .flags = 0};
+
   cam_value_t c_tag = { .value = 2, .flags = 0}; // imaginary tag with value 2
+  cam_value_t vempty  = { .value = 0, .flags = 0};
   heap_set_fst(&h, hi, c_tag);
   heap_set_snd(&h, hi, vempty);
   cam_value_t env_pointer =
@@ -2012,7 +2013,7 @@ bool eval_switch_test(){
 
   (*evaluators[19])(&vmc, &pc_idx);
 
-  // Machine state post eval_app
+  // Machine state post eval_switch
   /******************************************************************************/
   /*  env   =  (Ptr 1)                                                          */
   /*  stack =  7 -> Empty                                                       */
@@ -2134,6 +2135,351 @@ bool eval_pop_test(){
   }
 }
 
+bool eval_snoc_test(){
+
+  //Value to be held in the environment register
+  cam_value_t env_v = { .value = 10, .flags = 0 };
+
+  //Initializing a mock stack
+  cam_value_t st_v = { .value = 20, .flags = 0 };
+  cam_stack_t s;
+  uint8_t *m = malloc(256);
+  int s_init = stack_init(&s, m, 256);
+  if (s_init == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    free(m);
+    return false;
+  }
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+
+  Context_t mock_context = { .env = env_v, .stack = s };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+  vmc.heap = h;
+  INT pc_idx = 0;
+  (*evaluators[51])(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("snoc operation has failed\n");
+    return false;
+  }
+
+  /* heap_show(&vmc.heap, 3); */ //Debugging
+  cam_value_t fst =
+    heap_fst(  &vmc.heap
+             , (INT)vmc.contexts[vmc.current_running_context_id].env.value);
+  cam_value_t snd =
+    heap_snd(  &vmc.heap
+             , (INT)vmc.contexts[vmc.current_running_context_id].env.value);
+
+  free(m); free(hm);
+
+  if(fst.value == env_v.value && snd.value == st_v.value){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+bool eval_comb_test(){
+
+  //Value to be held in the environment register
+  cam_value_t v = { .value = 10 };
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    return false;
+  }
+
+  Context_t mock_context = { .env = v };
+  uint8_t code [] = { 52, 0, 1, 3}; // {opcode, label_byte_1, label_byte_2, next opcode}
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+  vmc.heap = h;
+  vmc.code_memory = code;
+
+  INT pc_idx = 0;
+  (*evaluators[52])(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("comb l operation has failed\n");
+    return false;
+  }
+
+  //heap_show(&vmc.heap, 3);
+  cam_value_t fst =
+    heap_fst(  &vmc.heap
+               , (INT)vmc.contexts[vmc.current_running_context_id].env.value);
+  cam_value_t snd =
+    heap_snd(  &vmc.heap
+               , (INT)vmc.contexts[vmc.current_running_context_id].env.value);
+
+  free(hm);
+
+  uint16_t merged_label = (code[1] << 8) | code[2];
+  if(fst.value == merged_label &&
+     snd.value == 4294967295){ // dummy value
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_gotoifalse_t_test(){
+  cam_value_t env_v = { .value = 1, .flags = 0 }; // TRUE
+
+
+  Context_t mock_context = { .env = env_v };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+
+  INT pc_idx = 0;
+  (*evaluators[53])(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("gotoifalse operation has failed\n");
+    return false;
+  }
+  if(pc_idx == 3){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_gotoifalse_f_test(){
+  cam_value_t env_v = { .value = 0, .flags = 0 }; // FALSE
+
+  uint8_t code [] = { 18, 0, 5 }; //{gotofalse, x00, x05 }
+  Context_t mock_context = { .env = env_v };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+  vmc.code_memory = code;
+
+  INT pc_idx = 0;
+  (*evaluators[53])(&vmc, &pc_idx);
+  if(pc_idx == -1){
+    printf("gotoifalse operation has failed\n");
+    return false;
+  }
+  uint16_t merged_label = (code[1] << 8) | code[2];
+  if(pc_idx == (INT)merged_label){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool eval_appcomb_test(){
+
+  //Initializing a mock stack
+  cam_value_t st_v = { .value = 3, .flags = 0 };
+  cam_stack_t s = { .size = 0 };
+  uint8_t *m = malloc(256);
+  int w = stack_init(&s, m, 256);
+  if (w == 0){
+    printf("Stack initialization has failed");
+    free(m);
+    return false;
+  }
+  int y = stack_push(&s, st_v);
+  if (y == 0){
+    printf("Stack push has failed");
+    free(m);
+    return false;
+  }
+
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    free(hm);
+    return false;
+  }
+  heap_index hi = heap_allocate(&h);
+  if(hi == HEAP_NULL){
+    printf("Heap allocation has failed");
+    free(hm);
+    return false;
+  }
+  cam_value_t v_label = { .value = 2, .flags = 0};
+  cam_value_t dummy_val = { .value = 4294967295 };
+  heap_set_fst(&h, hi, v_label);
+  heap_set_snd(&h, hi, dummy_val);
+  cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+
+
+  uint8_t code [] = { 14, 13, 2, 0 }; //{app, stop, acc, x00 }
+  Context_t mock_context = { .stack = s, .env = env_pointer };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+  vmc.heap = h;
+  vmc.code_memory = code;
+
+  INT pc_idx = 0;
+
+  // Mock Machine state before eval_app
+  /********************************************/
+  /*  env   =  (Ptr 0)                        */
+  /*  stack =  3 -> Empty                     */
+  /*  heap  =  | (2,4294967295) | -> HEAP_END */
+  /*  code  =  app, stop, acc, x00            */
+  /*           ^                              */
+  /*           |                              */
+  /*        PC = 0                            */
+  /********************************************/
+
+  (*evaluators[14])(&vmc, &pc_idx);
+
+  // Machine state post eval_app
+  /*********************************************/
+  /*  env   =  3                               */
+  /*  stack =  (JAdd 1) -> Empty               */
+  /*  heap  =  | (2, 4294967295) | -> HEAP_END */
+  /*  code  =  app, stop, acc, x00             */
+  /*                      ^                    */
+  /*                      |                    */
+  /*                   PC = 2                  */
+  /*********************************************/
+
+  if (pc_idx == -1){
+    printf("appcomb operation has failed");
+    free(m); free(hm);
+    return false;
+  }
+  cam_register_t dummyreg = { .value = 0 };
+  int j = stack_pop(  &vmc.contexts[vmc.current_running_context_id].stack
+                    , &dummyreg);
+  if (j == 0){
+    printf("Stack pop has failed");
+    free(m); free(hm);
+    return false;
+  }
+  cam_value_t environment = vmc.contexts[vmc.current_running_context_id].env;
+
+  free(m);
+  free(hm);
+  if(pc_idx == (INT)v_label.value &&  // Test PC
+     (INT)dummyreg.value == 1 && // initial pc_idx + 1; Test stack top
+     environment.value == st_v.value){ // Test env
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+bool eval_switchi_test(){
+
+  //Initializing a mock heap
+  heap_t h = { .size_bytes = 0 };
+  uint8_t *hm = malloc(1024);
+  int h_init = heap_init(&h, hm, 1024);
+  if (h_init == 0){
+    printf("Heap initialization has failed");
+    free(hm);
+    return false;
+  }
+  heap_index hi = heap_allocate(&h);
+  if(hi == HEAP_NULL){
+    printf("Heap allocation has failed");
+    free(hm);
+    return false;
+  }
+
+  cam_value_t c_tag = { .value = 2, .flags = 0}; // imaginary tag with value 2
+  cam_value_t vempty  = { .value = 0, .flags = 0};
+  heap_set_fst(&h, hi, c_tag);
+  heap_set_snd(&h, hi, vempty);
+  cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+
+  /*
+  {switchi, x02,          // opcode, size
+   x00, x01, x00, x0f,    // tag1(2 bytes), label1(2 bytes)
+   x00, x02, x00, x0b,    // tag2(2 bytes), label2(2 bytes)
+   stop, skip }           // next opcodes
+  */
+  uint8_t code [] = {  19     //switch
+                      , 2     //size
+                      , 0,  1 //tag1
+                      , 0, 15 //label1
+                      , 0,  2 //tag2
+                      , 0, 11 //label2
+                      , 13    //stop
+                      , 12 }; //skip
+
+  Context_t mock_context = { .env = env_pointer };
+  vmc_t vmc;
+  vmc.current_running_context_id = 0;
+  vmc.contexts[vmc.current_running_context_id] = mock_context;
+  vmc.heap = h;
+  vmc.code_memory = code;
+  INT pc_idx = 0;
+
+  // Mock Machine state before eval_switchi
+  /*****************************************************************************/
+  /*  env   =  (Ptr 0)                                                         */
+  /*  heap  =  | (2, VEmpty) | -> HEAP_END                                     */
+  /*  code  =  switch, x02, x00, x01, x00, x0f, x00, x02, x00, x0b, stop, skip */
+  /*           ^                                                               */
+  /*           |                                                               */
+  /*        PC = 0                                                             */
+  /*****************************************************************************/
+
+  (*evaluators[54])(&vmc, &pc_idx);
+
+  // Machine state post eval_switchi
+  /******************************************************************************/
+  /*  env   =  VEmpty                                                          */
+  /*  heap  =  | (2, VEmpty) | -> |(3, VEmpty)| -> HEAP_END                     */
+  /*  code  =  switch, x02, x00, x01, x00, x0f, x00, x02, x00, x0b, stop, skip  */
+  /*                                                                      ^     */
+  /*                                                                      |     */
+  /*                                                                    PC = 11 */
+  /******************************************************************************/
+
+  if (pc_idx == -1){
+    printf("switchi operation has failed");
+    free(hm);
+    return false;
+  }
+
+  cam_value_t environment = vmc.contexts[vmc.current_running_context_id].env;
+  free(hm);
+  if(pc_idx == 11 &&  // Test PC // label associated with tag 2
+     environment.value == vempty.value){ // Test env
+    return true;
+  } else {
+    return false;
+  }
+}
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -2252,7 +2598,19 @@ int main(int argc, char **argv) {
   test_stat("eval_move", &total, t50);
   bool t51 = eval_pop_test();
   test_stat("eval_pop", &total, t51);
+  bool t52 = eval_snoc_test();
+  test_stat("eval_snoc", &total, t52);
+  bool t53 = eval_comb_test();
+  test_stat("eval_comb", &total, t53);
+  bool t54 = eval_gotoifalse_t_test();
+  test_stat("eval_gotoifalse_t", &total, t54);
+  bool t55 = eval_gotoifalse_f_test();
+  test_stat("eval_gotoifalse_f", &total, t55);
+  bool t56 = eval_appcomb_test();
+  test_stat("eval_appcomb", &total, t56);
+  bool t57 = eval_switchi_test();
+  test_stat("eval_switchi", &total, t57);
 
-  printf("Passed total : %d/%d tests\n", total, 51);
+  printf("Passed total : %d/%d tests\n", total, 57);
   return 1;
 }
