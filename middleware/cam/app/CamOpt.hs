@@ -37,6 +37,7 @@ module CamOpt ( Exp (..)
 import Control.Monad (replicateM)
 import Data.Foldable (fold)
 import Data.Int (Int32)
+import Data.Word (Word8)
 import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
 import qualified Data.Set as Set
@@ -59,12 +60,21 @@ data Exp = Var Var  -- variable
          deriving (Ord, Show, Eq)
 
 data Sys = Sys2 BinOp Exp Exp -- BinOp
-         | Sys1 UnaryOp Exp     -- UnaryOp
+         | Sys1 UnaryOp Exp   -- UnaryOp
          | LInt Int32   -- Int s(0) in cam
          | LFloat Float -- Float s(0) in cam
          | LBool Bool   -- Bool s(0) in cam
+         | RTS2 RTS2 Exp Exp
+         | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
 
+data RTS2 = SEND | SYNC | SENDIO
+          deriving (Ord, Show, Eq)
+
+data RTS1 = CHANNEL | RECV
+          | SPAWN   | IOCHANNEL
+          | RECVIO  | CHOOSE
+          deriving (Ord, Show, Eq)
 
 data BinOp = PlusI | MultiplyI  | MinusI |
              PlusF | MultiplyF  | MinusF |
@@ -134,8 +144,43 @@ data Instruction
    | GOTOIFALSE Label
    | SWITCHI [(Tag, Label)]
 
+     -- Calling an RTS function
+   | CALLRTS OperationNumber
+
    | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
+
+-- Used to encode the operation number of the RTS
+
+{-
+
+spawn     - 0
+channel   - 1
+sendEvt   - 2
+recvEvt   - 3
+sync      - 4
+iochannel - 5
+sendIOEvt - 6
+recvIOEvt - 7
+choose    - 8
+-}
+type OperationNumber = Word8
+
+
+spawnop, channelop, sendevtop, recvevtop :: Word8
+syncop, iochannelop, sendioop, recvioop  :: Word8
+chooseop :: Word8
+
+spawnop   = 0
+channelop = 1
+sendevtop = 2
+recvevtop = 3
+syncop    = 4
+iochannelop = 5
+sendioop    = 6
+recvioop    = 7
+chooseop    = 8
+
 
 -- labels to identify a subroutine
 newtype Label =
@@ -223,6 +268,12 @@ codegen (Sys (Sys1 uop e)) env = do
 codegen (Sys (Sys2 bop e1 e2)) env = do
   is <- codegen2 e1 e2 env
   pure $! is <+> (Ins (PRIM2 bop))
+codegen (Sys (RTS1 rts1 e)) env = do
+  i1 <- codegen e env
+  pure $! i1 <+> genrts1 rts1
+codegen (Sys (RTS2 rts2 e1 e2)) env = do
+  is <- codegen2 e1 e2 env
+  pure $! is <+> genrts2 rts2
 codegen Void _ = pure $! Ins CLEAR
 codegen (Pair e1 e2) env = do
   is <- codegen2 e1 e2 env
@@ -514,6 +565,21 @@ nofail (Lab _ cam)  = nofail cam
 
 (<+>) :: CAM -> CAM -> CAM
 (<+>) cam1 cam2 = Seq cam1 cam2
+
+callrts = Ins . CALLRTS
+
+genrts2 :: RTS2 -> CAM
+genrts2 SEND   = callrts sendevtop
+genrts2 SYNC   = callrts syncop
+genrts2 SENDIO = callrts sendioop
+
+genrts1 :: RTS1 -> CAM
+genrts1 CHANNEL   = callrts channelop
+genrts1 RECV      = callrts recvevtop
+genrts1 SPAWN     = callrts spawnop
+genrts1 IOCHANNEL = callrts iochannelop
+genrts1 RECVIO    = callrts recvioop
+genrts1 CHOOSE    = callrts chooseop
 
 zipWithA ::   Applicative t
          =>   (a -> b -> t c)
