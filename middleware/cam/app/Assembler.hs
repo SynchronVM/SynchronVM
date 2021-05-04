@@ -125,7 +125,7 @@ SNOC                           0x33                        1
 COMB <l>                       0x34FFFF                    3
 GOTOIFALSE <l>                 0x35FFFF                    3
 SWITCHI <n> <t> <l> ...        0x36FF...                   1 + 1 + 1024
-
+CALLRTS                        0x37FF
 
 
 * <n> - Positive ints - 1 byte long
@@ -311,6 +311,8 @@ assemble (i : is) =
       let size = byte (length tagsandlabels)
       rs <- assemble is
       pure $! switchi : size : join bytes ++ rs
+
+    CALLRTS n -> gen2 callrts n -- no need to call `byte` n already Word8
     _ -> error $! "Impossible instruction : " <> show i
     where
       gen1 word = do
@@ -368,11 +370,13 @@ rectifyLabelOffset _ [] = []
 rectifyLabelOffset offset (w : ws) =
   case w of
     -- 2bytes long
-    2 -> let (n :ns)  = ws -- ACC
+    2  -> let (n :ns)  = ws -- ACC
           in  w : n : rectifyLabelOffset offset ns
-    3 -> let (n : ns) = ws -- REST
+    3  -> let (n : ns) = ws -- REST
           in  w : n : rectifyLabelOffset offset ns
-    7 -> let (n : ns) = ws -- LOADB
+    7  -> let (n : ns) = ws -- LOADB
+          in  w : n : rectifyLabelOffset offset ns
+    55 -> let (n :ns)  = ws -- CALLRTS
           in  w : n : rectifyLabelOffset offset ns
 
     -- 3bytes long
@@ -478,6 +482,7 @@ bytecounter i ((inst, label) : xs) =
     ACC _  -> (inst, label, i) : bytecounter (i + 2) xs
     REST _ -> (inst, label, i) : bytecounter (i + 2) xs
     QUOTE (LBool _) -> (inst, label, i) : bytecounter (i + 2) xs
+    CALLRTS _       -> (inst, label, i) : bytecounter (i + 2) xs
     -- 3 bytes long --
     -- TODO: Not handled Float
     QUOTE (LInt _)  -> (inst, label, i) : bytecounter (i + 3) xs
@@ -571,6 +576,9 @@ comb = 52
 gotoifalse, switchi :: Word8
 gotoifalse = 53
 switchi    = 54
+
+callrts :: Word8
+callrts = 55
 
 byte :: Int -> Word8
 byte n
