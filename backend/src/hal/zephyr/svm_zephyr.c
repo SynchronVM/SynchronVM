@@ -91,13 +91,13 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 
 typedef struct zephyr_interop_s {
   struct k_mbox *mbox;
-  
-  /* Send a message to associated vm container */ 
+
+  /* Send a message to associated vm container */
   void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
 
 } zephyr_interop_t;
 
-zephyr_interop_t zephyr_interop[4]; 
+zephyr_interop_t zephyr_interop[4];
 
 
 /*******************************/
@@ -193,9 +193,9 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   }
 }
 
-/* Must intialize before starting threads. 
+/* Must intialize before starting threads.
    run: zephyr_sensevm_init()
-*/ 
+*/
 bool zephyr_start_container_threads(void) {
 
   bool r = true;
@@ -236,13 +236,13 @@ bool zephyr_sensevm_init(void) {
 
     for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
       k_mbox_init(&zephyr_thread_mbox[i]);
-  
+
       zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
       zephyr_interop[i].send_message = send_message;
 
       /* add zephyr_interop field to vm container */
       vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
-      
+
     }
     r = true;
   }
