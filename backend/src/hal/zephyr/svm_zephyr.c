@@ -93,15 +93,34 @@ typedef struct zephyr_interop_s {
   struct k_mbox *mbox;
   
   /* Send a message to associated vm container */ 
-  int (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
+  void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
 
 } zephyr_interop_t;
 
 zephyr_interop_t zephyr_interop[4]; 
 
 
+/*******************************/
+/* Send_message implementation */
+
+static void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
+
+  /* Should it be a ll_driver_msg_t at this point? */
+
+  struct k_mbox_msg send_msg;
+
+  send_msg.info = 101;
+  send_msg.size = sizeof(ll_driver_msg_t);
+  send_msg.tx_data = &msg; /* is this copied into the mbox. I assume so */
+  send_msg.tx_target_thread = K_ANY; /* Only one thread will read this mbox */
+
+  /* void return type on async put */
+  k_mbox_async_put(this->mbox, &send_msg, NULL);
+}
+
+
 /***********************************************/
-/*  Thoughts                                   */
+/*  Thoughts on threads                        */
 /*
  *  The nrf52 boards run at 80MHz. 80 000 000 cycles per second
  *   - IPC is definitely over 1.
@@ -125,11 +144,6 @@ zephyr_interop_t zephyr_interop[4];
  *
  *
  */
-
-//int k_mbox_put(struct k_mbox *mbox, struct k_mbox_msg *tx_msg, k_timeout_t timeout)
-
-// int zephyr_send_message(
-
 
 /***********************************************/
 /* Zephyr thread for containing a VM container */
@@ -179,6 +193,9 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   }
 }
 
+/* Must intialize before starting threads. 
+   run: zephyr_sensevm_init()
+*/ 
 bool zephyr_start_container_threads(void) {
 
   bool r = true;
@@ -219,7 +236,13 @@ bool zephyr_sensevm_init(void) {
 
     for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
       k_mbox_init(&zephyr_thread_mbox[i]);
+  
       zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
+      zephyr_interop[i].send_message = send_message;
+
+      /* add zephyr_interop field to vm container */
+      vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
+      
     }
     r = true;
   }
