@@ -22,25 +22,27 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include <button.h>
 #include <drivers/gpio.h>
 #include <hal/zephyr/svm_zephyr.h>
 
-#define BUTTON_DEVICE_LAVEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
+#define BUTTON_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
 #define BUTTON_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
-#define BUTTON_FLAGS(X)        (GPIO_INPUT | DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
+#define BUTTON_FLAGS(X)        (GPIO_INPUT | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
 
 
 #define CONFIG_BUTTON_CASE(X) \
   case X: \
-  button_drivers[(X)].pin = BUTTON_PIN(button##X);	\
+  button_drivers[(X)].pin = BUTTON_PIN(button##X);\
   button_drivers[(X)].id  = (X); \
-  button_drivers[(X)].state = false; \
   button_data[(X)].interop = (zephyr_interop_t*)backend_custom;\
   gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(button##X)); \
-  gpio_pin_interrupt_configure(button_device, BUTTON0_GPIO_PIN, GPIO_INT_EDGE_TO_ACTIVE);\
+  gpio_pin_interrupt_configure(button_device, button_drivers[(X)].pin, GPIO_INT_EDGE_TO_ACTIVE); \
   gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(button##X))); \
-  gpio_add_callback(button, &button_data[X].cb_data);\
+  gpio_add_callback(button_device, &button_data[X].cb_data);\
   break;
 
 typedef struct {
@@ -53,7 +55,6 @@ static button_user_data_t button_data[10];
 button_driver_t button_drivers[10];
 const struct device *button_device;
 
-
 /* The callback routine */
 static void button_pressed(const struct device *dev,
 		    struct gpio_callback *cb,
@@ -62,18 +63,15 @@ static void button_pressed(const struct device *dev,
   /* This is so weird and backwards!!! */ 
   button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
   
-  zephyr_interop_t *interop = parent.interop;
+  zephyr_interop_t *interop = parent->interop;
 
   ll_driver_msg_t msg; /* nonsense message */ 
   msg.driver_id = 77; /* why not!? */
-  msg.driver_timestamp = 128;
+  msg.timestamp = 128;
   msg.data = 1;  /* button is pressed */
   
-  interop.send_message(interop, msg); 
+  interop->send_message(interop, msg); 
 }
-
-
-
 
 uint32_t button_num(void) {
   uint32_t num_buttons;
@@ -158,36 +156,3 @@ button_driver_t *button_init(void *backend_custom, uint32_t identifier){
   }
   return &button_drivers[identifier];
 }
-  
-}
-
-
-
-/*
-PRINT("Initializing button\r\n");
-button = device_get_binding(BUTTON0_GPIO_LABEL);
-if (button == NULL) {
-  printk("Error: didn't find %s device\n", BUTTON0_GPIO_LABEL);
-  return;
- }
-
-ret = gpio_pin_configure(button, BUTTON0_GPIO_PIN, BUTTON0_GPIO_FLAGS);
-if (ret != 0) {
-  printk("Error %d: failed to configure %s pin %d\n",
-	 ret, BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN);
-  return;
- }
-
-ret = gpio_pin_interrupt_configure(button,
-				   BUTTON0_GPIO_PIN,
-				   GPIO_INT_EDGE_TO_ACTIVE);
-if (ret != 0) {
-  printk("Error %d: failed to configure interrupt on %s pin %d\n",
-	 ret, BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN);
-  return;
- }
-
-gpio_init_callback(&button_cb_data, button_pressed, BIT(BUTTON0_GPIO_PIN));
-gpio_add_callback(button, &button_cb_data);
-printk("Set up button at %s pin %d\n", BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN);
-*/ 
