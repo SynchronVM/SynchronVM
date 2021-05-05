@@ -41,6 +41,7 @@
 
 #include <vm-conf.h>
 #include <VMC.h>
+#include <ll_driver.h>
 
 /***************************************************/
 /* Check for configurations that are not sensible. */
@@ -111,6 +112,11 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
  * 
  */
 
+//int k_mbox_put(struct k_mbox *mbox, struct k_mbox_msg *tx_msg, k_timeout_t timeout)
+
+// int zephyr_send_message(
+
+
 /***********************************************/
 /* Zephyr thread for containing a VM container */
 
@@ -121,8 +127,7 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   int id = *(int*)vm_id;
 
   struct k_mbox_msg recv_msg;
-
-
+ 
   while (1) {
 
     /* Do stuff */
@@ -184,20 +189,25 @@ bool zephyr_start_container_threads(void) {
   return r;
 }
 
-void zephyr_sensevm_init(void) {
+bool zephyr_sensevm_init(void) {
 
+  bool r = false;
+  
+  /* intialize the vm_containers. max 4 of them */ 
+  if (vmc_init(vm_containers, 4)) { 
 
-  vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
-  vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
-  vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
-  vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
+    vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
+    vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
+    vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
+    vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
 
-
-
-  /* Initialize all message boxes */
-
-  for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
-    k_mbox_init(&zephyr_thread_mbox[i]);
+    /* Initialize all message boxes */
+    
+    for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
+      k_mbox_init(&zephyr_thread_mbox[i]);
+    }
+    r = true;
   }
 
+  return r;
 }

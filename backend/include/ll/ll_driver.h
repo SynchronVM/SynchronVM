@@ -46,14 +46,6 @@ extern bool ll_driver_init(void (*sleep_ms)(uint32_t),
 extern void ll_driver_sleep_ms(uint32_t ms);
 extern uint64_t ll_driver_timestamp();
 
-/* Potentially register a hook with a driver.
-   If the driver is interrupt based it may be used
-   to kickstart some other part of the rts? perhaps...
-   Maybe this should be an argument to the init
-   routine of the driver in question?
-*/
-//typedef bool (*ll_driver_hook_fun)(uint32_t *arg);
-
 /* Driver interface */
 typedef struct ll_driver_s{
   void *driver_info;
@@ -75,10 +67,7 @@ inline bool ll_data_available(ll_driver_t *drv) { /* bytes available */
   return drv->ll_data_available_fun((struct ll_driver_s*)drv);
 }
 
-// inline uint32_t ll_control(struct ll_driver_s *this, uint8_t *, uint32_t);
-
-/* Message format, driver -> rts */
-
+/* Message format for messages from driver to RTS */
 typedef struct ll_driver_msg_s{
   uint8_t  driver_id;     // Index into an array of drivers maintained by "low-level" 
   uint8_t  message;       // Driver specific message
