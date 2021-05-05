@@ -32,10 +32,19 @@
 #define LL_DRIVER_CONTROL_SUCCESS 0x1
 
 extern void (*ll_driver_sleep_ms_fun)(uint32_t ms);
+extern uint64_t (*ll_driver_timestamp_fun)();
 
-extern bool ll_driver_init(void (*sleep_ms)(uint32_t));
 
+/* Initialize driver subsystem. 
+   sleep_ms  : pointer to sleep function or NULL 
+   timestamp : pointer to timestamp function of NULL 
+*/ 
+extern bool ll_driver_init(void (*sleep_ms)(uint32_t),
+			   uint64_t (*timestamp)());
+
+/* Sleep and timestamp functions for use in driver implementation */
 extern void ll_driver_sleep_ms(uint32_t ms);
+extern uint64_t ll_driver_timestamp();
 
 /* Potentially register a hook with a driver.
    If the driver is interrupt based it may be used
@@ -44,7 +53,6 @@ extern void ll_driver_sleep_ms(uint32_t ms);
    routine of the driver in question?
 */
 //typedef bool (*ll_driver_hook_fun)(uint32_t *arg);
-
 
 /* Driver interface */
 typedef struct ll_driver_s{
@@ -68,5 +76,14 @@ inline bool ll_data_available(ll_driver_t *drv) { /* bytes available */
 }
 
 // inline uint32_t ll_control(struct ll_driver_s *this, uint8_t *, uint32_t);
+
+/* Message format, driver -> rts */
+
+typedef struct ll_driver_msg_s{
+  uint8_t  driver_id;     // Index into an array of drivers maintained by "low-level" 
+  uint8_t  message;       // Driver specific message
+  uint64_t timestamp;  
+} ll_driver_msg_t;
+
 
 #endif

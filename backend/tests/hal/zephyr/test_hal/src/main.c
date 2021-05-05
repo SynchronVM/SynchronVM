@@ -18,6 +18,8 @@
 /* SenseVM include */
 #include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
 #include <vm-conf.h>
+//#include <VMC.h>
+//#include <CAM.h>
 
 /* Our own library of stuff! */
 #include "ll_uart.h"
