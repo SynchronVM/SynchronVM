@@ -43,6 +43,8 @@
 #include <VMC.h>
 #include <ll_driver.h>
 
+#include <hal/zephyr/svm_zephyr.h>
+
 /***************************************************/
 /* Check for configurations that are not sensible. */
 /* Compile time error stuff...                     */
@@ -86,16 +88,6 @@ K_THREAD_STACK_DEFINE(vmc_zephyr_stack_3, STACK_SIZE);
 #else
 k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 #endif
-
-/* backend_custom struct for zephyr integration */
-
-typedef struct zephyr_interop_s {
-  struct k_mbox *mbox;
-
-  /* Send a message to associated vm container */
-  void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
-
-} zephyr_interop_t;
 
 zephyr_interop_t zephyr_interop[4];
 
@@ -148,6 +140,8 @@ static void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
 /***********************************************/
 /* Zephyr thread for containing a VM container */
 
+
+/* Maybe this only runs Scheduler. */ 
 void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   (void)c;  /* These are unused so far. otherwise a way to pass arguments to the thread */ 
 
@@ -165,7 +159,7 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
 
     if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_NO_WAIT) == 0) {
       /* There was a message */
-
+      printk("Message arrived: Noticed by polling\r\n");
       /* Maybe loop here to receive all messages */
 
       /* enqueue on shared datastructure with scheduler */
@@ -174,6 +168,9 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
       /* block until there is a message */
 
       k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
+
+      printk("Message arrived: Noticed by blocking\r\n");
+      
     }
 
     /* use the messages from the mbox to add tasts to the

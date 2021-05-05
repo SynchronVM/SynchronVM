@@ -70,8 +70,10 @@ inline bool ll_data_available(ll_driver_t *drv) { /* bytes available */
 /* Message format for messages from driver to RTS */
 typedef struct ll_driver_msg_s{
   uint8_t  driver_id;     // Index into an array of drivers maintained by "low-level" 
-  uint8_t  message;       // Driver specific message
-  uint64_t timestamp;  
+  //uint8_t  message;     // Driver specific message
+  uint64_t timestamp;
+  uint8_t  data;          // Maybe allow data to continue after the struct.
+                          // (todo: figure our how to do that nicely)
 } ll_driver_msg_t;
 
 

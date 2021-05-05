@@ -246,8 +246,19 @@ int vmc_run(vmc_t *container) {
 int scheduler(vmc_t *container, INT pc) {
 
   uint8_t current_inst = container->code_memory[pc];
-  while (current_inst != 13) {
 
+  /* Use some low-level function to deque stuff from mailbox. 
+     ll_driver_msg_t messages. 
+     and check driver_id 
+         find corresponding IO Channel. 
+	 Enqueue message on channel 
+     and enqueue context associated with IO Channel. 
+     
+     Then run bytecode for some amount of time 
+     or until blocked. 
+  */ 
+
+  while (current_inst != 13) {
     /* Todo: we need an UUID that means "NOTHING" */
 
     if (container->current_running_context_id == UUID_NONE) {
