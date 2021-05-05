@@ -36,21 +36,44 @@
   button_drivers[(X)].pin = BUTTON_PIN(button##X);	\
   button_drivers[(X)].id  = (X); \
   button_drivers[(X)].state = false; \
+  button_data[(X)].interop = (zephyr_interop_t*)backend_custom;\
   gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(button##X)); \
   gpio_pin_interrupt_configure(button_device, BUTTON0_GPIO_PIN, GPIO_INT_EDGE_TO_ACTIVE);\
   gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(button##X))); \
   gpio_add_callback(button, &button_data[X].cb_data);\
   break;
 
-typedef struct button_user_data {
+typedef struct {
   struct gpio_callback cb_data;
+  zephyr_interop_t *interop;
+}  button_user_data_t;
+
+
+static button_user_data_t button_data[10];
+button_driver_t button_drivers[10];
+const struct device *button_device;
+
+
+/* The callback routine */
+static void button_pressed(const struct device *dev,
+		    struct gpio_callback *cb,
+		    uint32_t pins) {
+
+  /* This is so weird and backwards!!! */ 
+  button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
   
+  zephyr_interop_t *interop = parent.interop;
+
+  ll_driver_msg_t msg; /* nonsense message */ 
+  msg.driver_id = 77; /* why not!? */
+  msg.driver_timestamp = 128;
+  msg.data = 1;  /* button is pressed */
+  
+  interop.send_message(interop, msg); 
 }
 
 
-static button_user_data button_data[10];
-button_driver_t button_drivers[10];
-const struct device *button_device;
+
 
 uint32_t button_num(void) {
   uint32_t num_buttons;
