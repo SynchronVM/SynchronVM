@@ -106,10 +106,11 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
  *  * If we have more than one container, how often does it make
  *    sense to allow for a container "switch".
  *
- *  Negative thread priority is non-preemtable thread. (Cooperative threads)
- *  Positive are preemtable.
- *  
- * 
+ *  Thread Priority
+ *  * Negative thread priority is non-preemtable thread. (Cooperative threads)
+ *    Positive are preemtable.
+ *
+ *
  */
 
 //int k_mbox_put(struct k_mbox *mbox, struct k_mbox_msg *tx_msg, k_timeout_t timeout)
@@ -127,7 +128,7 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   int id = *(int*)vm_id;
 
   struct k_mbox_msg recv_msg;
- 
+
   while (1) {
 
     /* Do stuff */
@@ -141,13 +142,13 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
       /* Maybe loop here to receive all messages */
 
       /* enqueue on shared datastructure with scheduler */
-      
-    } else { 
+
+    } else {
       /* block until there is a message */
-      
+
       k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
     }
-    
+
     /* use the messages from the mbox to add tasts to the
        queue for the next launch of the scheduler */
 
@@ -192,8 +193,8 @@ bool zephyr_start_container_threads(void) {
 bool zephyr_sensevm_init(void) {
 
   bool r = false;
-  
-  /* intialize the vm_containers. max 4 of them */ 
+
+  /* intialize the vm_containers. max 4 of them */
   if (vmc_init(vm_containers, 4)) {
 
     vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
@@ -202,7 +203,7 @@ bool zephyr_sensevm_init(void) {
     vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
 
     /* Initialize all message boxes */
-    
+
     for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
       k_mbox_init(&zephyr_thread_mbox[i]);
     }
