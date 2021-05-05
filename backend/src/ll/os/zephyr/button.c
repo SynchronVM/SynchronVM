@@ -74,7 +74,7 @@ static void button_pressed(const struct device *dev,
 }
 
 uint32_t button_num(void) {
-  uint32_t num_buttons;
+  uint32_t num_buttons = 0;
 
 #if DT_NODE_HAS_STATUS(DT_ALIAS(button0), okay)
   num_buttons = num_buttons + 1;
