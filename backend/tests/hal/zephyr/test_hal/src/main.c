@@ -175,7 +175,7 @@ void main(void) {
   int i = 0; 
   while (1) {
 
-    ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
+    //ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
     uint8_t led0_state;
     uint8_t led1_state;
 
@@ -188,11 +188,11 @@ void main(void) {
     ll_write(&led0, &led0_state, 1);
     ll_write(&led1, &led1_state, 1);
 
-    if (i % 5 == 0) {
-      k_sleep(K_MSEC(100));
-      PRINT("Currently running threads:\r\n");
-      k_thread_foreach(t_info_dump, NULL);
-    }
+    /* if (i % 5 == 0) { */
+    /*   k_sleep(K_MSEC(100)); */
+    /*   PRINT("Currently running threads:\r\n"); */
+    /*   k_thread_foreach(t_info_dump, NULL); */
+    /* } */
     
     k_sleep(K_SECONDS(1));
     i++;

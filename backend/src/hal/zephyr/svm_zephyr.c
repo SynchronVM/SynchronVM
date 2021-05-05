@@ -95,10 +95,10 @@ zephyr_interop_t zephyr_interop[4];
 /*******************************/
 /* Send_message implementation */
 
-static void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
+
+void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
 
   /* Should it be a ll_driver_msg_t at this point? */
-
   struct k_mbox_msg send_msg;
 
   send_msg.info = 101;
@@ -161,7 +161,9 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
       /* There was a message */
       printk("Message arrived: Noticed by polling\r\n");
       /* Maybe loop here to receive all messages */
-
+      //ll_driver_msg_t drv_msg;
+      
+      //k_mbox_data_get(&recv_msg, &drv_msg);
       /* enqueue on shared datastructure with scheduler */
 
     } else {
@@ -221,28 +223,29 @@ bool zephyr_sensevm_init(void) {
 
   bool r = false;
 
-  /* intialize the vm_containers. max 4 of them */
-  if (vmc_init(vm_containers, 4)) {
+  /* Stacks are null if not initialized */ 
+  vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
+  vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
+  vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
+  vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
+  
+  for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
+    /* Initialize messageboxes */
+    k_mbox_init(&zephyr_thread_mbox[i]);
 
-    vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
-    vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
-    vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
-    vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
+    /* Initialize interop functionality */
+    zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
+    zephyr_interop[i].send_message = send_message;
 
-    /* Initialize all message boxes */
-
-    for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
-      k_mbox_init(&zephyr_thread_mbox[i]);
-
-      zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
-      zephyr_interop[i].send_message = send_message;
-
-      /* add zephyr_interop field to vm container */
-      vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
-
-    }
-    r = true;
+    /* add zephyr_interop field to vm container */
+    vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
+    printk("address of zephyr_interop[%d]: %u\r\n", i, (uint32_t)&zephyr_interop[i]);
+    
+    printk("address of send_message: %u\r\n", (uint32_t)send_message);
   }
 
+  /* Initialize VM containers */
+  r = vmc_init(vm_containers, 4);
+    
   return r;
 }

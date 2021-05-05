@@ -60,19 +60,18 @@ static void button_pressed(const struct device *dev,
 		    struct gpio_callback *cb,
 		    uint32_t pins) {
 
-  printk("entered callback\r\n");
-  
-  /* This is so weird and backwards!!! */ 
-  button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
-  
-  zephyr_interop_t *interop = parent->interop;
+  /* This is so weird and backwards!!! */
 
-  ll_driver_msg_t msg; /* nonsense message */ 
-  msg.driver_id = 77; /* why not!? */
-  msg.timestamp = 128;
-  msg.data = 1;  /* button is pressed */
+  button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
+
+  zephyr_interop_t *interop = parent->interop;
   
-  interop->send_message(interop, msg); 
+  ll_driver_msg_t msg; // nonsense message
+  msg.driver_id = 77;  // why not!?
+  msg.timestamp = 128;
+  msg.data = 1;  // button is pressed
+
+  interop->send_message(interop, msg);
 }
 
 uint32_t button_num(void) {
@@ -121,7 +120,7 @@ button_driver_t *button_init(void *backend_custom, uint32_t identifier){
   }
 
   if (!button_device) return false;
-  
+
   switch(identifier) {
 #if DT_NODE_HAS_STATUS(DT_ALIAS(button0), okay)
     CONFIG_BUTTON_CASE(0);
