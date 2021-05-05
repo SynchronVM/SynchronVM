@@ -126,6 +126,11 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_CONTAINER_1_USE_BUTTON_0
 
   #endif
+
+  #if VMC_CONTAINER_1_USE_LED_0
+
+  #endif
+  
   r++;
   #endif
 
