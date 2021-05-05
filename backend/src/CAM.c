@@ -102,7 +102,7 @@ void eval_snoc(vmc_t *vmc, INT *pc_idx);
 void eval_comb(vmc_t *vmc, INT *pc_idx);
 void eval_gotoifalse(vmc_t *vmc, INT *pc_idx);
 void eval_switchi   (vmc_t *vmc, INT *pc_idx);
-
+void eval_callrts   (vmc_t *vmc, INT *pc_idx);
 
 
 
@@ -161,7 +161,8 @@ eval_fun evaluators[] =
     eval_snoc,
     eval_comb,
     eval_gotoifalse,
-    eval_switchi };
+    eval_switchi,
+    eval_callrts };
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
@@ -1170,4 +1171,69 @@ void eval_switchi(vmc_t *vmc, INT *pc_idx){
   //goto label
   *pc_idx = (INT)label_to_jump;
 
+}
+
+int handle_spawn(vmc_t *vmc){
+
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  heap_index closure_address = e.value;
+
+
+  cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
+  cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
+
+  if(heap_s.value == 4294967295){ // if combinator
+
+    cam_value_t label = heap_f;
+
+    return spawn(vmc, (uint16_t)label.value);
+
+
+  } else { // not a combinator but a closure
+
+    cam_value_t val = heap_f;
+    cam_value_t label = heap_s;
+
+
+    // Put the v of [v:l] on the env register;
+    // spawn then copies the content of the env register to
+    // the `env` register of the new context
+    vmc->contexts[vmc->current_running_context_id].env = val;
+
+    return spawn(vmc, (uint16_t)label.value);
+
+  }
+
+}
+void eval_callrts(vmc_t *vmc, INT *pc_idx){
+  INT n_idx = (*pc_idx) + 1;
+  uint8_t rts_op_no = vmc->code_memory[n_idx];
+
+  // do all operations here
+    /* spawn     - 0 */
+    /* channel   - 1 */
+    /* sendEvt   - 2 */
+    /* recvEvt   - 3 */
+    /* sync      - 4 */
+    /* iochannel - 5 */
+    /* sendIOEvt - 6 */
+    /* recvIOEvt - 7 */
+    /* choose    - 8 */
+  int ret_code = -1;
+  switch(rts_op_no){
+    case 0:
+      ret_code = handle_spawn(vmc);
+      break;
+    default:
+      DEBUG_PRINT(("Invalid RTS op number"));
+      *pc_idx = -1;
+      return;
+  }
+  if(ret_code == -1){
+    DEBUG_PRINT(("Error in RTS function"));
+    *pc_idx = -1;
+  }
+
+  *pc_idx = (*pc_idx) + 2;
 }

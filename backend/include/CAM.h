@@ -27,10 +27,11 @@
 
 #include <stdint.h>
 #include <typedefs.h>
+#include <RTS.h>
 #include <VMC.h>
 
 typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
 
-extern eval_fun evaluators[55]; // 55 instructions
+extern eval_fun evaluators[56]; // 56 instructions
 
 #endif
