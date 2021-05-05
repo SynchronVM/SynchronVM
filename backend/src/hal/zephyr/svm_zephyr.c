@@ -87,6 +87,19 @@ K_THREAD_STACK_DEFINE(vmc_zephyr_stack_3, STACK_SIZE);
 k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 #endif
 
+/* backend_custom struct for zephyr integration */
+
+typedef struct zephyr_interop_s {
+  struct k_mbox *mbox;
+  
+  /* Send a message to associated vm container */ 
+  int (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
+
+} zephyr_interop_t;
+
+zephyr_interop_t zephyr_interop[4]; 
+
+
 /***********************************************/
 /*  Thoughts                                   */
 /*
@@ -206,6 +219,7 @@ bool zephyr_sensevm_init(void) {
 
     for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
       k_mbox_init(&zephyr_thread_mbox[i]);
+      zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
     }
     r = true;
   }
