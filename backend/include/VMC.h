@@ -56,6 +56,7 @@ typedef struct {
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
   IOChannel_t   iochannels[MAX_IO_CHANNELS];
   Queue_t       rdyQ;
+  void*         backend_custom; /* Can be used by a backend for low level integration */
 } vmc_t;
 
 /**********************/

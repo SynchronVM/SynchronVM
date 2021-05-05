@@ -41,7 +41,6 @@
 static int scheduler(vmc_t *container, INT pc);
 
 
-
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
 #if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 2

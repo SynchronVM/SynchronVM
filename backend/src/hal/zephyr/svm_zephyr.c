@@ -194,7 +194,7 @@ bool zephyr_sensevm_init(void) {
   bool r = false;
   
   /* intialize the vm_containers. max 4 of them */ 
-  if (vmc_init(vm_containers, 4)) { 
+  if (vmc_init(vm_containers, 4)) {
 
     vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
     vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
