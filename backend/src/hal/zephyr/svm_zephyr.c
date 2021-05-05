@@ -41,6 +41,9 @@
 
 #include <vm-conf.h>
 #include <VMC.h>
+#include <ll_driver.h>
+
+#include <hal/zephyr/svm_zephyr.h>
 
 /***************************************************/
 /* Check for configurations that are not sensible. */
@@ -86,8 +89,30 @@ K_THREAD_STACK_DEFINE(vmc_zephyr_stack_3, STACK_SIZE);
 k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 #endif
 
+zephyr_interop_t zephyr_interop[4];
+
+
+/*******************************/
+/* Send_message implementation */
+
+
+void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
+
+  /* Should it be a ll_driver_msg_t at this point? */
+  struct k_mbox_msg send_msg;
+
+  send_msg.info = 101;
+  send_msg.size = sizeof(ll_driver_msg_t);
+  send_msg.tx_data = &msg; /* is this copied into the mbox. I assume so */
+  send_msg.tx_target_thread = K_ANY; /* Only one thread will read this mbox */
+
+  /* void return type on async put */
+  k_mbox_async_put(this->mbox, &send_msg, NULL);
+}
+
+
 /***********************************************/
-/*  Thoughts                                   */
+/*  Thoughts on threads                        */
 /*
  *  The nrf52 boards run at 80MHz. 80 000 000 cycles per second
  *   - IPC is definitely over 1.
@@ -105,15 +130,18 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
  *  * If we have more than one container, how often does it make
  *    sense to allow for a container "switch".
  *
- *  Negative thread priority is non-preemtable thread. (Cooperative threads)
- *  Positive are preemtable.
- *  
- * 
+ *  Thread Priority
+ *  * Negative thread priority is non-preemtable thread. (Cooperative threads)
+ *    Positive are preemtable.
+ *
+ *
  */
 
 /***********************************************/
 /* Zephyr thread for containing a VM container */
 
+
+/* Maybe this only runs Scheduler. */ 
 void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   (void)c;  /* These are unused so far. otherwise a way to pass arguments to the thread */ 
 
@@ -121,7 +149,6 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   int id = *(int*)vm_id;
 
   struct k_mbox_msg recv_msg;
-
 
   while (1) {
 
@@ -132,17 +159,22 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
 
     if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_NO_WAIT) == 0) {
       /* There was a message */
-
+      printk("Message arrived: Noticed by polling\r\n");
       /* Maybe loop here to receive all messages */
-
+      //ll_driver_msg_t drv_msg;
+      
+      //k_mbox_data_get(&recv_msg, &drv_msg);
       /* enqueue on shared datastructure with scheduler */
-      
-    } else { 
+
+    } else {
       /* block until there is a message */
-      
+
       k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
+
+      printk("Message arrived: Noticed by blocking\r\n");
+      
     }
-    
+
     /* use the messages from the mbox to add tasts to the
        queue for the next launch of the scheduler */
 
@@ -160,6 +192,9 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   }
 }
 
+/* Must intialize before starting threads.
+   run: zephyr_sensevm_init()
+*/
 bool zephyr_start_container_threads(void) {
 
   bool r = true;
@@ -184,20 +219,33 @@ bool zephyr_start_container_threads(void) {
   return r;
 }
 
-void zephyr_sensevm_init(void) {
+bool zephyr_sensevm_init(void) {
 
+  bool r = false;
 
+  /* Stacks are null if not initialized */ 
   vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
   vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
   vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
   vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
-
-
-
-  /* Initialize all message boxes */
-
+  
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
+    /* Initialize messageboxes */
     k_mbox_init(&zephyr_thread_mbox[i]);
+
+    /* Initialize interop functionality */
+    zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
+    zephyr_interop[i].send_message = send_message;
+
+    /* add zephyr_interop field to vm container */
+    vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
+    printk("address of zephyr_interop[%d]: %u\r\n", i, (uint32_t)&zephyr_interop[i]);
+    
+    printk("address of send_message: %u\r\n", (uint32_t)send_message);
   }
 
+  /* Initialize VM containers */
+  r = vmc_init(vm_containers, 4);
+    
+  return r;
 }

@@ -18,6 +18,8 @@
 /* SenseVM include */
 #include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
 #include <vm-conf.h>
+//#include <VMC.h>
+//#include <CAM.h>
 
 /* Our own library of stuff! */
 #include "ll_uart.h"
@@ -38,21 +40,21 @@ uint8_t uart0_out_buffer[1024];
 /**********/
 /* Button */
 
-#if DT_NODE_HAS_STATUS(DT_ALIAS(button0),okay)
-#define BUTTON0_GPIO_LABEL DT_GPIO_LABEL(DT_ALIAS(button0), gpios)
-#define BUTTON0_GPIO_PIN   DT_GPIO_PIN(DT_ALIAS(button0), gpios)
-#define BUTTON0_GPIO_FLAGS (GPIO_INPUT | DT_GPIO_FLAGS(DT_ALIAS(button0), gpios))
-#else
-#error "No button defined in the devicetree"
-#endif
+/* #if DT_NODE_HAS_STATUS(DT_ALIAS(button0),okay) */
+/* #define BUTTON0_GPIO_LABEL DT_GPIO_LABEL(DT_ALIAS(button0), gpios) */
+/* #define BUTTON0_GPIO_PIN   DT_GPIO_PIN(DT_ALIAS(button0), gpios) */
+/* #define BUTTON0_GPIO_FLAGS (GPIO_INPUT | DT_GPIO_FLAGS(DT_ALIAS(button0), gpios)) */
+/* #else */
+/* #error "No button defined in the devicetree" */
+/* #endif */
 
-static struct gpio_callback button_cb_data;
+/* static struct gpio_callback button_cb_data; */
 
-void button_pressed(const struct device *dev,
-		    struct gpio_callback *cb,
-		    uint32_t pins) {
-  PRINT("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
-}
+/* void button_pressed(const struct device *dev, */
+/* 		    struct gpio_callback *cb, */
+/* 		    uint32_t pins) { */
+/*   PRINT("Button pressed at %" PRIu32 "\n", k_cycle_get_32()); */
+/* } */
 
 
 /* ****************** */
@@ -79,7 +81,8 @@ void t_info_dump(const struct k_thread *cthread, void *user_data) {
   t_counter++;
 
 }
-const struct device *button;
+
+//const struct device *button;
 
 void main(void) {
 
@@ -104,32 +107,32 @@ void main(void) {
 
   int ret = 0;
   
-  PRINT("Initializing button\r\n");
-  button = device_get_binding(BUTTON0_GPIO_LABEL);
-  if (button == NULL) {
-    printk("Error: didn't find %s device\n", BUTTON0_GPIO_LABEL);
-    return;
-  }
+  /* PRINT("Initializing button\r\n"); */
+  /* button = device_get_binding(BUTTON0_GPIO_LABEL); */
+  /* if (button == NULL) { */
+  /*   printk("Error: didn't find %s device\n", BUTTON0_GPIO_LABEL); */
+  /*   return; */
+  /* } */
 
-  ret = gpio_pin_configure(button, BUTTON0_GPIO_PIN, BUTTON0_GPIO_FLAGS);
-  if (ret != 0) {
-    printk("Error %d: failed to configure %s pin %d\n",
-	   ret, BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN);
-    return;
-  }
+  /* ret = gpio_pin_configure(button, BUTTON0_GPIO_PIN, BUTTON0_GPIO_FLAGS); */
+  /* if (ret != 0) { */
+  /*   printk("Error %d: failed to configure %s pin %d\n", */
+  /* 	   ret, BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN); */
+  /*   return; */
+  /* } */
   
-  ret = gpio_pin_interrupt_configure(button,
-				     BUTTON0_GPIO_PIN,
-				     GPIO_INT_EDGE_TO_ACTIVE);
-  if (ret != 0) {
-    printk("Error %d: failed to configure interrupt on %s pin %d\n",
-	   ret, BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN);
-    return;
-  }
+  /* ret = gpio_pin_interrupt_configure(button, */
+  /* 				     BUTTON0_GPIO_PIN, */
+  /* 				     GPIO_INT_EDGE_TO_ACTIVE); */
+  /* if (ret != 0) { */
+  /*   printk("Error %d: failed to configure interrupt on %s pin %d\n", */
+  /* 	   ret, BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN); */
+  /*   return; */
+  /* } */
   
-  gpio_init_callback(&button_cb_data, button_pressed, BIT(BUTTON0_GPIO_PIN));
-  gpio_add_callback(button, &button_cb_data);
-  printk("Set up button at %s pin %d\n", BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN);
+  /* gpio_init_callback(&button_cb_data, button_pressed, BIT(BUTTON0_GPIO_PIN)); */
+  /* gpio_add_callback(button, &button_cb_data); */
+  /* printk("Set up button at %s pin %d\n", BUTTON0_GPIO_LABEL, BUTTON0_GPIO_PIN); */
   
 
   
@@ -172,7 +175,7 @@ void main(void) {
   int i = 0; 
   while (1) {
 
-    ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
+    //ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
     uint8_t led0_state;
     uint8_t led1_state;
 
@@ -185,11 +188,11 @@ void main(void) {
     ll_write(&led0, &led0_state, 1);
     ll_write(&led1, &led1_state, 1);
 
-    if (i % 5 == 0) {
-      k_sleep(K_MSEC(100));
-      PRINT("Currently running threads:\r\n");
-      k_thread_foreach(t_info_dump, NULL);
-    }
+    /* if (i % 5 == 0) { */
+    /*   k_sleep(K_MSEC(100)); */
+    /*   PRINT("Currently running threads:\r\n"); */
+    /*   k_thread_foreach(t_info_dump, NULL); */
+    /* } */
     
     k_sleep(K_SECONDS(1));
     i++;

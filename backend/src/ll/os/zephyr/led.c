@@ -117,7 +117,10 @@ led_driver_t* led_init(uint32_t identifier) {
 
   if (!led_device) {
     /* assumption all leds will have the same device label */
+    /* assumption there will be a led0 */
+#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
     led_device = device_get_binding(LED_DEVICE_LABEL(led0));
+#endif
   }
 
   if (!led_device) return false;

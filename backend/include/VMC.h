@@ -33,6 +33,7 @@
 #include <channel.h>
 #include <iochannel.h>
 #include <Context.h>
+#include <ll_driver.h>
 
 #include <stdint.h>
 
@@ -40,6 +41,7 @@
 #define VMC_CONTAINER_2 1
 
 #define VMC_MAX_CONTEXTS 16
+#define VMC_MAX_DRIVERS  16
 
 #define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
 #define MAX_IO_CHANNELS 100
@@ -56,6 +58,9 @@ typedef struct {
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
   IOChannel_t   iochannels[MAX_IO_CHANNELS];
   Queue_t       rdyQ;
+  ll_driver_t   drivers[VMC_MAX_DRIVERS];
+  void*         backend_custom; /* Can be used by a backend for low level integration */
+  
 } vmc_t;
 
 /**********************/

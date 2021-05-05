@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2021 Joel Svensson, Abhiroop Sarkar             		  */
+/* Copyright (c) 2021 Joel Svensson, Abhiroop Sarkar 				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,21 +22,43 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef SVM_ZEPHYR_H_
-#define SVM_ZEPHYR_H_
+#include <ll_button.h>
+#include <button.h>
 
-#include <ll_driver.h>
+static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return 0;
+}
 
-/* backend_custom struct for zephyr integration */
-typedef struct zephyr_interop_s {
-  struct k_mbox *mbox;
+static bool ll_button_data_available(struct ll_driver_s *this) {
+  return true;
+}
 
-  /* Send a message to associated vm container */
-  void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
+static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return 0;
+}
 
-} zephyr_interop_t;
+static uint32_t ll_button_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return 0;
+}
 
-extern bool zephyr_start_container_threads(void);
-extern bool zephyr_sensevm_init(void);
 
-#endif
+bool ll_button_init(ll_driver_t* lld, void* backend_custom,  uint32_t button_id) {
+
+  button_driver_t *button_driver = button_init(backend_custom, button_id);
+
+  bool r = false;
+  
+  if (button_driver) {
+    r = true; 
+    lld->driver_info = (void*) button_driver;
+    lld->ll_control_fun = ll_button_control;
+    lld->ll_read_fun = ll_button_read;
+    lld->ll_write_fun = ll_button_write;
+    lld->ll_data_available_fun = ll_button_data_available;
+  }
+  return r;
+}
+
+
+
+  

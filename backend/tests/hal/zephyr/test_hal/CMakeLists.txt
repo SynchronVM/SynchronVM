@@ -23,8 +23,10 @@ FILE(GLOB extra_sources
   ${LLBC}/ll_driver.c
   ${LLBC}/ll_led.c
   ${LLBC}/ll_uart.c
+  ${LLBC}/ll_button.c
   ${LLBC_Z}/led.c
   ${LLBC_Z}/uart.c
+  ${LLBC_Z}/button.c
   ${HAL_Z}/svm_zephyr.c)
 #  ${LLBC_Z}/powerman.c)
 

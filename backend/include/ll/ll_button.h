@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2021 Joel Svensson, Abhiroop Sarkar             		  */
+/* Copyright (c) 2021 Joel Svensson, Abhiroop Sarkar 				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,21 +22,18 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef SVM_ZEPHYR_H_
-#define SVM_ZEPHYR_H_
+#ifndef LL_BUTTON_H_
+#define LL_BUTTON_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+
+#include <button.h>
 #include <ll_driver.h>
 
-/* backend_custom struct for zephyr integration */
-typedef struct zephyr_interop_s {
-  struct k_mbox *mbox;
 
-  /* Send a message to associated vm container */
-  void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
+extern bool ll_button_init(ll_driver_t* lld, void *backend_custom, uint32_t button_id);
 
-} zephyr_interop_t;
-
-extern bool zephyr_start_container_threads(void);
-extern bool zephyr_sensevm_init(void);
-
+  
 #endif
+

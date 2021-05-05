@@ -34,12 +34,13 @@
 #include <CAM.h>
 #include <queue.h>
 
+#include <ll_driver.h>
+
 /***************************/
 /* Static functions        */
 /***************************/
 
 static int scheduler(vmc_t *container, INT pc);
-
 
 
 /* This is just an experiment and if we end up building on it, the
@@ -81,10 +82,15 @@ const uint8_t vmc_container_2_code[] = {
 #endif
 
 
+/* we should rewrite this code so that we can
+   macro_instantiate the whole thing for up
+   to N containers. */
+
 int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int r = 0;
   int rl = 0;
+  int drv_num = 0;
 
   if (VMC_NUM_CONTAINERS > max_num_containers) {
     return -1; /* error! */
@@ -105,6 +111,40 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
     return -1;
   }
   vm_containers[VMC_CONTAINER_1].rdyQ  = readyq;
+
+
+  /**********************************************************/
+  /* Initialize the Drivers
+     At this point we can give the vmc_t data to the driver.
+     Maybe we just need to give the "backend_custom" field
+     to the driver. The LL-layer will just pass this information
+     forward to the os-specific layer that can cast it to the
+     correct os specific datastructure.
+  */
+
+  ll_driver_t lld;
+
+  /* it is fine to include (#include ll_uart.h) the ll drivers any number of times */
+  #if VMC_CONTAINER_1_USE_UART_0
+  #include <ll_uart.h>    
+  
+  drv_num++;
+  #endif
+
+  #if VMC_CONTAINER_1_USE_BUTTON_0
+  #include <ll_button.h>
+  if (ll_button_init(&lld, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
+    vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+    drv_num++;
+  }
+  #endif
+
+  #if VMC_CONTAINER_1_USE_LED_0
+  #include <ll_led.h>
+
+  drv_num++:
+  #endif
+  
   r++;
   #endif
 
@@ -220,8 +260,19 @@ int vmc_run(vmc_t *container) {
 int scheduler(vmc_t *container, INT pc) {
 
   uint8_t current_inst = container->code_memory[pc];
-  while (current_inst != 13) {
 
+  /* Use some low-level function to deque stuff from mailbox. 
+     ll_driver_msg_t messages. 
+     and check driver_id 
+         find corresponding IO Channel. 
+	 Enqueue message on channel 
+     and enqueue context associated with IO Channel. 
+     
+     Then run bytecode for some amount of time 
+     or until blocked. 
+  */ 
+
+  while (current_inst != 13) {
     /* Todo: we need an UUID that means "NOTHING" */
 
     if (container->current_running_context_id == UUID_NONE) {
