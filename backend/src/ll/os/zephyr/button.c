@@ -60,6 +60,8 @@ static void button_pressed(const struct device *dev,
 		    struct gpio_callback *cb,
 		    uint32_t pins) {
 
+  printk("entered callback\r\n");
+  
   /* This is so weird and backwards!!! */ 
   button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
   
