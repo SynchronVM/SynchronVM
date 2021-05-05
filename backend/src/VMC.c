@@ -80,6 +80,10 @@ const uint8_t vmc_container_2_code[] = {
 #endif
 
 
+/* we should rewrite this code so that we can
+   macro_instantiate the whole thing for up
+   to N containers. */
+
 int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int r = 0;
@@ -104,6 +108,24 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
     return -1;
   }
   vm_containers[VMC_CONTAINER_1].rdyQ  = readyq;
+
+
+  /**********************************************************/
+  /* Initialize the Drivers
+     At this point we can give the vmc_t data to the driver.
+     Maybe we just need to give the "backend_custom" field
+     to the driver. The LL-layer will just pass this information
+     forward to the os-specific layer that can cast it to the
+     correct os specific datastructure.
+  */
+
+  #if VMC_CONTAINER_1_USE_UART_0
+
+  #endif
+
+  #if VMC_CONTAINER_1_USE_BUTTON_0
+
+  #endif
   r++;
   #endif
 
