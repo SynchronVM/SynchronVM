@@ -1,10 +1,10 @@
 / {
      aliases {
-     	     svmuart0 = &uart0;
+     	     svm-uart0 = &uart0;
 
-	     svmbutton0 = &button0;
-	     svmbutton1 = &button1;
-	     svmbutton2 = &button2;
-	     svmbutton3 = &button3;	     
+	     svm-button0 = &button0;
+	     svm-button1 = &button1;
+	     svm-button2 = &button2;
+	     svm-button3 = &button3;	     
      };
 };

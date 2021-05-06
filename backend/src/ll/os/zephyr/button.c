@@ -36,13 +36,13 @@
 
 #define CONFIG_BUTTON_CASE(X) \
   case X: \
-  button_drivers[(X)].pin = BUTTON_PIN(svmbutton##X);\
+  button_drivers[(X)].pin = BUTTON_PIN(svm_button##X);\
   button_drivers[(X)].id  = drv_id; \
   button_data[(X)].interop = (zephyr_interop_t*)backend_custom;\
   button_data[(X)].drv_id = drv_id; \
-  gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(svmbutton##X)); \
+  gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(svm_button##X)); \
   gpio_pin_interrupt_configure(button_device, button_drivers[(X)].pin, GPIO_INT_EDGE_TO_ACTIVE); \
-  gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(svmbutton##X))); \
+  gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(svm_button##X))); \
   gpio_add_callback(button_device, &button_data[X].cb_data);\
   break;
 
@@ -82,34 +82,34 @@ static void button_pressed(const struct device *dev,
 uint32_t button_num(void) {
   uint32_t num_buttons = 0;
 
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton0), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button0), okay)
   num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton1), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button1), okay)
   num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton2), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button2), okay)
   num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton3), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button3), okay)
   num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton4), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button4), okay)
    num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton5), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button5), okay)
    num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton6), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button6), okay)
    num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton7), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button7), okay)
    num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton8), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button8), okay)
    num_buttons = num_buttons + 1;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton9), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button9), okay)
    num_buttons = num_buttons + 1;
 #endif
   return num_buttons;
@@ -119,42 +119,42 @@ uint32_t button_num(void) {
 button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t identifier){
 
   if (!button_device) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton0), okay) 
-    button_device = device_get_binding(BUTTON_DEVICE_LABEL(svmbutton0));
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button0), okay) 
+    button_device = device_get_binding(BUTTON_DEVICE_LABEL(svm_button0));
 #endif
   }
 
   if (!button_device) return false;
 
   switch(identifier) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton0), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button0), okay)
     CONFIG_BUTTON_CASE(0);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton1), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button1), okay)
     CONFIG_BUTTON_CASE(1);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton2), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button2), okay)
     CONFIG_BUTTON_CASE(2);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton3), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button3), okay)
     CONFIG_BUTTON_CASE(3);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton4), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button4), okay)
     CONFIG_BUTTON_CASE(4);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton5), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button5), okay)
     CONFIG_BUTTON_CASE(5);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton6), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button6), okay)
     CONFIG_BUTTON_CASE(6);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton7), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button7), okay)
     CONFIG_BUTTON_CASE(7);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton8), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button8), okay)
     CONFIG_BUTTON_CASE(8);
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmbutton9), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button9), okay)
     CONFIG_BUTTON_CASE(9);
 #endif
   default:

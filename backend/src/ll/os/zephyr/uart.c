@@ -83,9 +83,9 @@ uart_dev_t* uart_init(uart_if_t uif,
 	       uint32_t out_size) {
   int uart_id = -1;
   switch(uif) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svmuart0), okay)    
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart0), okay)    
   case UART_IF0:
-    uarts[0].dev = device_get_binding(DT_LABEL(DT_ALIAS(svmuart0)));
+    uarts[0].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart0)));
     uart_id = 0;
     break;  
 #endif
