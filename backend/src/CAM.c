@@ -1219,6 +1219,31 @@ static int handle_channel(vmc_t *vmc){
   return 1;
 }
 
+static int handle_sendevt(vmc_t *vmc){
+  cam_value_t message = vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  UUID channel_id = (UUID)hold_reg.value;
+
+  event_t send_evt;
+  int j = sendEvt(vmc, &channel_id, message, &send_evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with sendEvt \n"));
+    return j;
+  }
+
+  cam_value_t send_evt_env =
+    { .value = (UINT)send_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = send_evt_env;
+  return 1;
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1240,6 +1265,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 1:
       ret_code = handle_channel(vmc);
+      break;
+    case 2:
+      ret_code = handle_sendevt(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
