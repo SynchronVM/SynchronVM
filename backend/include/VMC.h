@@ -63,6 +63,16 @@ typedef struct {
   
 } vmc_t;
 
+/****************************************************/
+/* low-level message queue interface function types */ 
+
+#define VMC_MESSAGE_RECEIVED 0
+#define VMC_NO_MESSAGE       -1 
+
+typedef int (*message_read_poll_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
+typedef int (*message_read_block_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
+
+
 /**********************/
 /* External Interface */
 /**********************/
@@ -75,5 +85,8 @@ extern int vmc_run(vmc_t *container);
 extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
 
 extern heap_index heap_alloc_withGC(vmc_t *container);
+
+extern int scheduler(vmc_t *container, message_read_poll_fun poll_msg, message_read_block_fun block_msg);
+
 
 #endif

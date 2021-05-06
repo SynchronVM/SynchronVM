@@ -115,10 +115,34 @@ struct k_msgq *message_queues[4];
 /* Send_message implementation */
 
 
-int send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
+int send_message(zephyr_interop_t* this, ll_driver_msg_t msg) {
 
   return k_msgq_put(this->msgq,(void*)&msg, K_NO_WAIT);
 }
+
+int read_message_poll(vmc_t *vmc, ll_driver_msg_t *msg) {
+  zephyr_interop_t* interop = (zephyr_interop_t*)vmc->backend_custom;
+
+  int r = k_msgq_get(interop->msgq, (void*)msg, K_NO_WAIT);
+
+  if (r == -ENOMSG || r == -EAGAIN) {
+    return VMC_NO_MESSAGE;
+  }
+  return VMC_MESSAGE_RECEIVED;
+}
+
+int read_message_block(vmc_t *vmc, ll_driver_msg_t *msg) {
+  zephyr_interop_t* interop = (zephyr_interop_t*)vmc->backend_custom;
+
+  int r = k_msgq_get(interop->msgq, (void*)msg, K_FOREVER);
+
+  if (r == -ENOMSG || r == -EAGAIN) {
+    return VMC_NO_MESSAGE;
+  }
+  return VMC_MESSAGE_RECEIVED;
+}
+
+
 
 /* void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) { */
 
@@ -171,47 +195,21 @@ int send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
 /* Maybe this only runs Scheduler. */
 void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   (void)c;  /* These are unused so far. otherwise a way to pass arguments to the thread */ 
-
+  (void)vm_id; /* remove ?*/
+  
   vmc_t *container = vmc;
-  int id = *(int*)vm_id;
-  (void)container;
 
-  while (1) {
+  int r = 0;
 
-    /* Do stuff */
-    /* Like run the scheduler */
-
-    ll_driver_msg_t msg;
-
-    int r = k_msgq_get(message_queues[id], (void*)&msg, K_NO_WAIT);
-    if (r == 0) {
-      printk("message recv by polling\r\n");
-    } else {
-      r = k_msgq_get(message_queues[id], (void*)&msg, K_FOREVER);
-      if (r == 0) {
-	printk("message recv by blocking\r\n");
-      } else {
-	printk("error in recv from message queue\r\n");
-      }
-    }
-
-    /*scheduler(datastructure of info on what happened); */
-
-    /* use the messages from the mbox to add tasts to the
-       queue for the next launch of the scheduler */
-
-    /* There should be an interface in VMC.h for
-       creating this datastructure to pass data
-       back and forth from the zephyr thread and the
-       scheduler in the container */
-
-    /* This thread may need to yield to allow other threads
-       (containers) to run.
-       If blocking on the mailbox this yield will happen automativally.
-       In other cases it may need some coercion ;)
-    */
-
+  if (vmc_run(container) != 1) {
+    /* error state */
+    /* cannot currently happen */
   }
+
+  r = scheduler(container, read_message_poll, read_message_poll);
+
+  /* do something related to r? */
+
 }
 
 /* Must intialize before starting threads.

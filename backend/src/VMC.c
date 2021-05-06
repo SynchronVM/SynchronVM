@@ -36,13 +36,6 @@
 
 #include <ll/ll_driver.h>
 
-/***************************/
-/* Static functions        */
-/***************************/
-
-static int scheduler(vmc_t *container, INT pc);
-
-
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
 #if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 2
@@ -231,8 +224,6 @@ int vmc_run(vmc_t *container) {
   /* return 1; */
 
 
-
-
   /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
 
@@ -254,11 +245,17 @@ int vmc_run(vmc_t *container) {
      But trying to do so seems to lead to circular dependencies at the moment.
   */
 
-  return scheduler(container, pc);
+  return 1; /* Maybe have some error codes in relation to this fun */
 }
 
-int scheduler(vmc_t *container, INT pc) {
+int scheduler(vmc_t *container, message_read_poll_fun poll_msg, message_read_block_fun block_msg) {
 
+
+  //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
+  //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
+  
+  INT pc = container->contexts[container->current_running_context_id].pc;
+  
   uint8_t current_inst = container->code_memory[pc];
 
   /* Use some low-level function to deque stuff from mailbox. 
