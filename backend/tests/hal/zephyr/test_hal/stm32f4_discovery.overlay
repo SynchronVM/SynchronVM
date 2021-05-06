@@ -1,7 +1,7 @@
 / {
      aliases {
      svm-uart0 = &usart2;
-     //uart1 = &usart1;
+     svm-uart1 = &usart1;
 
      svm-button0 = &user_button;
      };

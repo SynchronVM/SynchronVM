@@ -89,52 +89,48 @@ uart_dev_t* uart_init(uart_if_t uif,
     uart_id = 0;
     break;  
 #endif
-    /*    
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart1), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart1), okay)
   case UART_IF1:
-    uarts[1].dev = device_get_binding(DT_ALIAS(uart1));
+    uarts[1].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart1)));
     uart_id = 1;
     break;
 #endif
-    */
-    /*
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart2), okay)
   case UART_IF2:
-    uarts[2].dev = device_get_binding(DT_ALIAS(svm_uart2));
+    uarts[2].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart2)));
     uart_id = 2;
     break;
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart3), okay)
   case UART_IF3:
-    uarts[3].dev = device_get_binding(DT_ALIAS(svm_uart3));
+    uarts[3].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart3)));
     uart_id = 3;
     break;
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart4), okay)
   case UART_IF4:
-    uarts[4].dev = device_get_binding(DT_ALIAS(svm_uart4));
+    uarts[4].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart4)));
     uart_id = 4;
     break;
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart5), okay)
   case UART_IF5:
-    uarts[5].dev = device_get_binding(DT_ALIAS(svm_uart5));
+    uarts[5].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart5)));
     uart_id = 5;
     break;
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart6), okay)
   case UART_IF6:
-    uarts[6].dev = device_get_binding(DT_ALIAS(svm_uart6));
+    uarts[6].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart6)));
     uart_id = 6;
     break;
 #endif
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart7), okay)
   case UART_IF7:
-    uarts[7].dev = device_get_binding(DT_ALIAS(svm_uart7));
+    uarts[7].dev = device_get_binding(DT_LABEL(DT_ALIAS(svm_uart7)));
     uart_id = 7;
     break;
 #endif
-    */
   default:
     uart_id = -1;
     break;
