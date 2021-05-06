@@ -31,6 +31,6 @@ typedef struct {
 } button_driver_t;
 
 extern uint32_t button_num(void);
-extern button_driver_t *button_init(void *backend_custom, uint32_t identifier);
+extern button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t identifier);
 
 #endif

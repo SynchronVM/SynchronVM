@@ -25,10 +25,11 @@
 #include <uart.h>
 #include <stdio.h>
 
+#include <devicetree.h>
+
 /* TODO: Surely there are problems with this
          if multiple os-threads read and write
-	 using the same uart device (uart_dev_t) */
-
+	 using the same uart device (uart_dev_t) */  
 
 /* ************************* */
 /* UARTS                     */
@@ -75,7 +76,6 @@ static void uart_isr(const struct device *dev, void *args)
 
 /* ******************************** */
 /* Initialization and configuration */
-
 uart_dev_t* uart_init(uart_if_t uif,
 	       uint8_t *in_buffer,
 	       uint32_t in_size,
@@ -83,54 +83,58 @@ uart_dev_t* uart_init(uart_if_t uif,
 	       uint32_t out_size) {
   int uart_id = -1;
   switch(uif) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart0), okay)    
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svmuart0), okay)    
   case UART_IF0:
-    uarts[0].dev = device_get_binding("UART_0");
+    uarts[0].dev = device_get_binding(DT_LABEL(DT_ALIAS(svmuart0)));
     uart_id = 0;
-    break;
+    break;  
 #endif
+    /*    
 #if DT_NODE_HAS_STATUS(DT_ALIAS(uart1), okay)
   case UART_IF1:
-    uarts[1].dev = device_get_binding("UART_1");
+    uarts[1].dev = device_get_binding(DT_ALIAS(uart1));
     uart_id = 1;
     break;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart2), okay)
+    */
+    /*
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart2), okay)
   case UART_IF2:
-    uarts[2].dev = device_get_binding("UART_2");
+    uarts[2].dev = device_get_binding(DT_ALIAS(svm_uart2));
     uart_id = 2;
     break;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart3), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart3), okay)
   case UART_IF3:
-    uarts[3].dev = device_get_binding("UART_3");
+    uarts[3].dev = device_get_binding(DT_ALIAS(svm_uart3));
     uart_id = 3;
     break;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart4), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart4), okay)
   case UART_IF4:
-    uarts[4].dev = device_get_binding("UART_4");
+    uarts[4].dev = device_get_binding(DT_ALIAS(svm_uart4));
     uart_id = 4;
     break;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart5), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart5), okay)
   case UART_IF5:
-    uarts[5].dev = device_get_binding("UART_5");
+    uarts[5].dev = device_get_binding(DT_ALIAS(svm_uart5));
     uart_id = 5;
     break;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart6), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart6), okay)
   case UART_IF6:
-    uarts[6].dev = device_get_binding("UART_6");
+    uarts[6].dev = device_get_binding(DT_ALIAS(svm_uart6));
     uart_id = 6;
     break;
 #endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(uart7), okay)
+#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart7), okay)
   case UART_IF7:
-    uarts[7].dev = device_get_binding("UART_7");
+    uarts[7].dev = device_get_binding(DT_ALIAS(svm_uart7));
     uart_id = 7;
     break;
 #endif
+    */
   default:
     uart_id = -1;
     break;

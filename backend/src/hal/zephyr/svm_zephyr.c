@@ -56,7 +56,8 @@
 /*********************************************/
 /* Declare stacks and threads for containers */
 
-#define STACK_SIZE 512
+#define STACK_SIZE  4096
+#define MAX_MESSAGES 100
 
 struct k_thread vmc_zephyr_thread[4];
 k_thread_stack_t *vmc_zephyr_stack[4];
@@ -92,23 +93,44 @@ k_thread_stack_t *vmc_zephyr_stack_3 = NULL;
 zephyr_interop_t zephyr_interop[4];
 
 
+/******************/
+/* Message Queues */
+
+#if VMC_NUM_CONTAINERS >= 1
+K_MSGQ_DEFINE(message_queue_0, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+#endif
+#if VMC_NUM_CONTAINERS >= 2
+K_MSGQ_DEFINE(message_queue_1, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+#endif
+#if VMC_NUM_CONTAINERS >= 3
+K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+#endif
+#if VMC_NUM_CONTAINERS >= 4
+K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+#endif
+
+struct k_msgq *message_queues[4];
+
 /*******************************/
 /* Send_message implementation */
 
 
-void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
+int send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
 
-  /* Should it be a ll_driver_msg_t at this point? */
-  struct k_mbox_msg send_msg;
-
-  send_msg.info = 101;
-  send_msg.size = sizeof(ll_driver_msg_t);
-  send_msg.tx_data = &msg; /* is this copied into the mbox. I assume so */
-  send_msg.tx_target_thread = K_ANY; /* Only one thread will read this mbox */
-
-  /* void return type on async put */
-  k_mbox_async_put(this->mbox, &send_msg, NULL);
+  return k_msgq_put(this->msgq,(void*)&msg, K_NO_WAIT);
 }
+
+/* void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) { */
+
+/*   struct k_mbox_msg send_msg; */
+
+/*   send_msg.info = 101; */
+/*   send_msg.size = sizeof(ll_driver_msg_t); */
+/*   send_msg.tx_data = &msg;  */
+/*   send_msg.tx_target_thread = K_ANY;  */
+
+/*   k_mbox_async_put(this->mbox, &send_msg, NULL); */
+/* } */
 
 
 /***********************************************/
@@ -140,40 +162,40 @@ void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) {
 /***********************************************/
 /* Zephyr thread for containing a VM container */
 
+/* void silly_thread(void* vmc, void* vm_id, void* c) { */
+/*   (void)vmc; */
+/*   (void)vm_id; */
+/*   (void) c;  /\* These are unused so far. otherwise a way to pass arguments to the thread *\/  */
+/* } */
 
-/* Maybe this only runs Scheduler. */ 
+/* Maybe this only runs Scheduler. */
 void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
   (void)c;  /* These are unused so far. otherwise a way to pass arguments to the thread */ 
 
   vmc_t *container = vmc;
   int id = *(int*)vm_id;
-
-  struct k_mbox_msg recv_msg;
+  (void)container;
 
   while (1) {
 
     /* Do stuff */
     /* Like run the scheduler */
 
-    /*scheduler(datastructure of info on what happened); */
+    ll_driver_msg_t msg;
 
-    if (k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_NO_WAIT) == 0) {
-      /* There was a message */
-      printk("Message arrived: Noticed by polling\r\n");
-      /* Maybe loop here to receive all messages */
-      //ll_driver_msg_t drv_msg;
-      
-      //k_mbox_data_get(&recv_msg, &drv_msg);
-      /* enqueue on shared datastructure with scheduler */
-
+    int r = k_msgq_get(message_queues[id], (void*)&msg, K_NO_WAIT);
+    if (r == 0) {
+      printk("message recv by polling\r\n");
     } else {
-      /* block until there is a message */
-
-      k_mbox_get(&zephyr_thread_mbox[id], &recv_msg, NULL, K_FOREVER);
-
-      printk("Message arrived: Noticed by blocking\r\n");
-      
+      r = k_msgq_get(message_queues[id], (void*)&msg, K_FOREVER);
+      if (r == 0) {
+	printk("message recv by blocking\r\n");
+      } else {
+	printk("error in recv from message queue\r\n");
+      }
     }
+
+    /*scheduler(datastructure of info on what happened); */
 
     /* use the messages from the mbox to add tasts to the
        queue for the next launch of the scheduler */
@@ -205,10 +227,10 @@ bool zephyr_start_container_threads(void) {
        different containers */
 
     k_tid_t t = k_thread_create(&vmc_zephyr_thread[i], vmc_zephyr_stack[i],
-				K_THREAD_STACK_SIZEOF(vmc_zephyr_stack[i]),
-				zephyr_container_thread,
-				(void*)&(vm_containers[i]), (void*)&vm_id[i], NULL,
-				5, 0, K_NO_WAIT);
+    				STACK_SIZE,
+    				zephyr_container_thread,
+    				(void*)&(vm_containers[i]), (void*)&vm_id[i], NULL,
+    				5, 0, K_NO_WAIT);
     if (t) {
       k_thread_name_set(t, container_names[i]);
     }
@@ -223,29 +245,43 @@ bool zephyr_sensevm_init(void) {
 
   bool r = false;
 
-  /* Stacks are null if not initialized */ 
+  /* Stacks are null if not initialized */
   vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
   vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
   vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
   vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
-  
+
+
+
+#if VMC_NUM_CONTAINERS >= 1
+  message_queues[0] = &message_queue_0;
+#endif
+#if VMC_NUM_CONTAINERS >= 2
+  message_queues[1] = &message_queue_1;
+#endif
+#if VMC_NUM_CONTAINERS >= 3
+  message_queues[2] = &message_queue_2;
+#endif
+#if VMC_NUM_CONTAINERS >= 4
+  message_queues[3] = &message_queue_3;
+#endif
+
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
     /* Initialize messageboxes */
     k_mbox_init(&zephyr_thread_mbox[i]);
 
     /* Initialize interop functionality */
-    zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
+    //zephyr_interop[i].mbox = &zephyr_thread_mbox[i];
+    zephyr_interop[i].msgq = message_queues[i];
     zephyr_interop[i].send_message = send_message;
 
     /* add zephyr_interop field to vm container */
     vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
-    printk("address of zephyr_interop[%d]: %u\r\n", i, (uint32_t)&zephyr_interop[i]);
-    
-    printk("address of send_message: %u\r\n", (uint32_t)send_message);
+
   }
 
   /* Initialize VM containers */
   r = vmc_init(vm_containers, 4);
-    
+
   return r;
 }

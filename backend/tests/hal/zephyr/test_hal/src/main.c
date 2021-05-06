@@ -101,8 +101,8 @@ void main(void) {
 
   k_sleep(K_SECONDS(1));
 
-  PRINT("Currently running threads:\r\n");
-  k_thread_foreach(t_info_dump, NULL);
+  /* PRINT("Currently running threads:\r\n"); */
+  /* k_thread_foreach(t_info_dump, NULL); */
 
 
   int ret = 0;

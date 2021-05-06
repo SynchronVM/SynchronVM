@@ -90,7 +90,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int r = 0;
   int rl = 0;
-  int drv_num = 0;
+  uint32_t drv_num = 0;
 
   if (VMC_NUM_CONTAINERS > max_num_containers) {
     return -1; /* error! */
@@ -133,7 +133,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   #if VMC_CONTAINER_1_USE_BUTTON_0
   #include <ll_button.h>
-  if (ll_button_init(&lld, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
+  if (ll_button_init(&lld, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
     vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
     drv_num++;
   }

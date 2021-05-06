@@ -1,7 +1,9 @@
 / {
      aliases {
-             uart1 = &usart1;
-	     uart2 = &usart2;
+     svmuart0 = &usart2;
+     //uart1 = &usart1;
+
+     svmbutton0 = &user_button;
      };
 };
 
