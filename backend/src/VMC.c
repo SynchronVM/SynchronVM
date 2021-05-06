@@ -34,7 +34,7 @@
 #include <CAM.h>
 #include <queue.h>
 
-#include <ll_driver.h>
+#include <ll/ll_driver.h>
 
 /***************************/
 /* Static functions        */
@@ -126,7 +126,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   /* it is fine to include (#include ll_uart.h) the ll drivers any number of times */
   #if VMC_CONTAINER_1_USE_UART_0
-  #include <ll_uart.h>    
+  /* #include <ll/ll_uart.h>     */
   
   drv_num++;
   #endif

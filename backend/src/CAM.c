@@ -102,7 +102,7 @@ void eval_snoc(vmc_t *vmc, INT *pc_idx);
 void eval_comb(vmc_t *vmc, INT *pc_idx);
 void eval_gotoifalse(vmc_t *vmc, INT *pc_idx);
 void eval_switchi   (vmc_t *vmc, INT *pc_idx);
-
+void eval_callrts   (vmc_t *vmc, INT *pc_idx);
 
 
 
@@ -161,7 +161,8 @@ eval_fun evaluators[] =
     eval_snoc,
     eval_comb,
     eval_gotoifalse,
-    eval_switchi };
+    eval_switchi,
+    eval_callrts };
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
@@ -1170,4 +1171,134 @@ void eval_switchi(vmc_t *vmc, INT *pc_idx){
   //goto label
   *pc_idx = (INT)label_to_jump;
 
+}
+
+static int handle_spawn(vmc_t *vmc){
+
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  heap_index closure_address = e.value;
+
+
+  cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
+  cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
+
+  if(heap_s.value == 4294967295){ // if combinator
+
+    cam_value_t label = heap_f;
+
+    return spawn(vmc, (uint16_t)label.value);
+
+
+  } else { // not a combinator but a closure
+
+    cam_value_t val = heap_f;
+    cam_value_t label = heap_s;
+
+
+    // Put the v of [v:l] on the env register;
+    // spawn then copies the content of the env register to
+    // the `env` register of the new context
+    vmc->contexts[vmc->current_running_context_id].env = val;
+
+    return spawn(vmc, (uint16_t)label.value);
+
+  }
+
+}
+
+static int handle_channel(vmc_t *vmc){
+  UUID chan_id;
+  int j = channel(vmc, &chan_id);
+  if(j == -1){
+    DEBUG_PRINT(("Error initializing a channel \n"));
+    return j;
+  }
+  cam_value_t channel_cam = { .value = (UINT)chan_id, .flags = 0 };
+  vmc->contexts[vmc->current_running_context_id].env = channel_cam;
+  return 1;
+}
+
+static int handle_sendevt(vmc_t *vmc){
+  cam_value_t message = vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  UUID channel_id = (UUID)hold_reg.value;
+
+  event_t send_evt;
+  int j = sendEvt(vmc, &channel_id, message, &send_evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with sendEvt \n"));
+    return j;
+  }
+
+  cam_value_t send_evt_env =
+    { .value = (UINT)send_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = send_evt_env;
+  return 1;
+}
+
+static int handle_recvevt(vmc_t *vmc){
+  cam_value_t channel_cam = vmc->contexts[vmc->current_running_context_id].env;
+
+  UUID channel_id = (UUID)channel_cam.value;
+
+  event_t recv_evt;
+  int j = recvEvt(vmc, &channel_id, &recv_evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with recvEvt \n"));
+    return j;
+  }
+
+  cam_value_t recv_evt_env =
+    { .value = (UINT)recv_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = recv_evt_env;
+  return 1;
+}
+
+void eval_callrts(vmc_t *vmc, INT *pc_idx){
+  INT n_idx = (*pc_idx) + 1;
+  uint8_t rts_op_no = vmc->code_memory[n_idx];
+
+  // do all operations here
+    /* spawn     - 0 */
+    /* channel   - 1 */
+    /* sendEvt   - 2 */
+    /* recvEvt   - 3 */
+    /* sync      - 4 */
+    /* iochannel - 5 */
+    /* sendIOEvt - 6 */
+    /* recvIOEvt - 7 */
+    /* choose    - 8 */
+  int ret_code = -1;
+  switch(rts_op_no){
+    case 0:
+      ret_code = handle_spawn(vmc);
+      break;
+    case 1:
+      ret_code = handle_channel(vmc);
+      break;
+    case 2:
+      ret_code = handle_sendevt(vmc);
+      break;
+    case 3:
+      ret_code = handle_recvevt(vmc);
+      break;
+    default:
+      DEBUG_PRINT(("Invalid RTS op number"));
+      *pc_idx = -1;
+      return;
+  }
+  if(ret_code == -1){
+    DEBUG_PRINT(("Error in RTS function"));
+    *pc_idx = -1;
+  }
+
+  *pc_idx = (*pc_idx) + 2;
 }
