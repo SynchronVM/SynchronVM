@@ -1244,6 +1244,24 @@ static int handle_sendevt(vmc_t *vmc){
   return 1;
 }
 
+static int handle_recvevt(vmc_t *vmc){
+  cam_value_t channel_cam = vmc->contexts[vmc->current_running_context_id].env;
+
+  UUID channel_id = (UUID)channel_cam.value;
+
+  event_t recv_evt;
+  int j = recvEvt(vmc, &channel_id, &recv_evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with recvEvt \n"));
+    return j;
+  }
+
+  cam_value_t recv_evt_env =
+    { .value = (UINT)recv_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = recv_evt_env;
+  return 1;
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1268,6 +1286,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 2:
       ret_code = handle_sendevt(vmc);
+      break;
+    case 3:
+      ret_code = handle_recvevt(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
