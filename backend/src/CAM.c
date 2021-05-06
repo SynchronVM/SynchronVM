@@ -1262,6 +1262,27 @@ static int handle_recvevt(vmc_t *vmc){
   return 1;
 }
 
+static int handle_sync(vmc_t *vmc){
+  cam_value_t event_env = vmc->contexts[vmc->current_running_context_id].env;
+
+  if(event_env.flags != VALUE_PTR_BIT){
+    DEBUG_PRINT(("Pointer not found in the environment register \n"));
+    return -1;
+  }
+
+  event_t evt = (event_t)event_env.value;
+
+  int j = sync(vmc, &evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with recvEvt \n"));
+    return j;
+  }
+
+  return 1;
+
+
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1289,6 +1310,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 3:
       ret_code = handle_recvevt(vmc);
+      break;
+    case 4:
+      ret_code = handle_sync(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
