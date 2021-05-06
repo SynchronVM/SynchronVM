@@ -1173,7 +1173,7 @@ void eval_switchi(vmc_t *vmc, INT *pc_idx){
 
 }
 
-int handle_spawn(vmc_t *vmc){
+static int handle_spawn(vmc_t *vmc){
 
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
 
@@ -1206,6 +1206,19 @@ int handle_spawn(vmc_t *vmc){
   }
 
 }
+
+static int handle_channel(vmc_t *vmc){
+  UUID chan_id;
+  int j = channel(vmc, &chan_id);
+  if(j == -1){
+    DEBUG_PRINT(("Error initializing a channel \n"));
+    return j;
+  }
+  cam_value_t channel_cam = { .value = (UINT)chan_id, .flags = 0 };
+  vmc->contexts[vmc->current_running_context_id].env = channel_cam;
+  return 1;
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1224,6 +1237,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
   switch(rts_op_no){
     case 0:
       ret_code = handle_spawn(vmc);
+      break;
+    case 1:
+      ret_code = handle_channel(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
