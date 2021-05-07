@@ -227,9 +227,11 @@ int vmc_run(vmc_t *container) {
   /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
 
-  container->contexts[container->current_running_context_id].env = v_empty;
-  container->contexts[container->current_running_context_id].pc  = pc;
-
+  /* Set up the parent context to be active */ 
+  container->contexts[0].env = v_empty;
+  container->contexts[0].pc  = pc;
+  container->context_used[0] = true;
+  container->current_running_context_id = 0;
 
 
   /* Currently no process is running */
@@ -248,67 +250,66 @@ int vmc_run(vmc_t *container) {
   return 1; /* Maybe have some error codes in relation to this fun */
 }
 
-int scheduler(vmc_t *container, message_read_poll_fun poll_msg, message_read_block_fun block_msg) {
+int scheduler(vmc_t *container,
+	      message_read_poll_fun poll_msg,
+	      message_read_block_fun block_msg,
+	      void (*dbg_print)(const char *str, ...)) {
 
 
   //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
   //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
+
+  ll_driver_msg_t msg;
   
-  INT pc = container->contexts[container->current_running_context_id].pc;
-  
-  uint8_t current_inst = container->code_memory[pc];
+  dbg_print("Entered Scheduler\r\n");
+  dbg_print("container address: %u\r\n", (uint32_t)container);
 
-  /* Use some low-level function to deque stuff from mailbox. 
-     ll_driver_msg_t messages. 
-     and check driver_id 
-         find corresponding IO Channel. 
-	 Enqueue message on channel 
-     and enqueue context associated with IO Channel. 
-     
-     Then run bytecode for some amount of time 
-     or until blocked. 
-  */ 
+  while (true) {
 
-  while (current_inst != 13) {
-    /* Todo: we need an UUID that means "NOTHING" */
 
+    /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
-
-      /* Check if there is something in the rdyQ */
-
-
-      /* If nothing in the rdyQ what to do?
-	 - check if something is blocked on a timer (wake up at time X)
-	 - go to sleep for a certain amount of time or indefinitely.
-	 (await being woken by some peripheral interrupt. */
-
-
-      /* After waking up code should resume here */
-
-      /* Check if there are things to do or repeat sleep procedure */
-
-      /* We arrive here when there is something to do.
-	 Set current_running_context_id to "something"
-	 exit the conditional.
-       */
-
-
+      block_msg(container, &msg);
+      dbg_print("message received: blocking\r\n");
+      /* handle msg */ 
+      while (poll_msg(container, &msg) == 0) {
+	/*handle messages*/
+	/* enqueue processes */
+      }
     }
 
-    /* If we arrive here there is a current_running_context. */
-
-
-    /* Execute an instruction */
-    (*evaluators[current_inst])(container, &pc);
-    if(pc  == -1){
-      DEBUG_PRINT(("Instruction %u failed",current_inst));
-      return -1; // error
+    /* Every now and then poll for messages (maybe not every iteration?)*/ 
+    if (poll_msg(container, &msg) == 0) {  /* loop over queue here ? */ 
+      dbg_print("message received: polling\r\n");
+      /* handle message */
+      /* enqueue processes */
     }
 
-    current_inst = container->code_memory[pc];
+    /* If a context is running do this... */
+    if (container->current_running_context_id != UUID_NONE) {
 
+      INT pc = container->contexts[container->current_running_context_id].pc;
+      dbg_print("executing ctx: %d\r\n", container->current_running_context_id);
+      dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
+      dbg_print("pc    : %d\r\n", pc);
+      dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env);
+      dbg_print("current instr: %x\r\n", container->code_memory[pc]);
+
+      /* Execute an instruction */
+      uint8_t current_inst = container->code_memory[pc];
+      //(*evaluators[current_inst])(container, &pc);
+      if(pc  == -1){
+	DEBUG_PRINT(("Instruction %u failed",current_inst));
+	return -1; // error
+      }
+      
+      current_inst = container->code_memory[pc];
+      if (current_inst == 13) container->current_running_context_id = UUID_NONE;
+      /* instruction 13 must be handled somehow. 
+	 Move context away from any ready q etc. 
+      */
+    }
   }
-
   /* end */
   return 1;
 }

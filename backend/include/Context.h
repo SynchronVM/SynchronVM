@@ -37,6 +37,7 @@ typedef struct {
 } Context_t;
 
 /* TODO: There is no implementation of this */
-extern int context_init(uint8_t *code);
+/* I dont remember what the thought was here */
+//extern int context_init(uint8_t *code);
 
 #endif

@@ -56,15 +56,13 @@
 /*********************************************/
 /* Declare stacks and threads for containers */
 
-#define STACK_SIZE  4096
+#define STACK_SIZE  1024
 #define MAX_MESSAGES 100
 
 struct k_thread vmc_zephyr_thread[4];
 k_thread_stack_t *vmc_zephyr_stack[4];
-struct k_mbox zephyr_thread_mbox[4];
 
 vmc_t vm_containers[4]; /* SenseVM containers */
-static const int   vm_id[4] = {0,1,2,3};
 
 const char* container_names[4] = { "C0", "C1", "C2", "C3" };
 
@@ -142,21 +140,6 @@ int read_message_block(vmc_t *vmc, ll_driver_msg_t *msg) {
   return VMC_MESSAGE_RECEIVED;
 }
 
-
-
-/* void send_message(struct zephyr_interop_s* this, ll_driver_msg_t msg) { */
-
-/*   struct k_mbox_msg send_msg; */
-
-/*   send_msg.info = 101; */
-/*   send_msg.size = sizeof(ll_driver_msg_t); */
-/*   send_msg.tx_data = &msg;  */
-/*   send_msg.tx_target_thread = K_ANY;  */
-
-/*   k_mbox_async_put(this->mbox, &send_msg, NULL); */
-/* } */
-
-
 /***********************************************/
 /*  Thoughts on threads                        */
 /*
@@ -186,19 +169,15 @@ int read_message_block(vmc_t *vmc, ll_driver_msg_t *msg) {
 /***********************************************/
 /* Zephyr thread for containing a VM container */
 
-/* void silly_thread(void* vmc, void* vm_id, void* c) { */
-/*   (void)vmc; */
-/*   (void)vm_id; */
-/*   (void) c;  /\* These are unused so far. otherwise a way to pass arguments to the thread *\/  */
-/* } */
-
 /* Maybe this only runs Scheduler. */
-void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
+void zephyr_container_thread(void* vmc, void* b, void* c) {
   (void)c;  /* These are unused so far. otherwise a way to pass arguments to the thread */ 
-  (void)vm_id; /* remove ?*/
+  (void)b;
   
-  vmc_t *container = vmc;
+  vmc_t *container = (vmc_t *)vmc;
 
+  printk("container address: %u\r\n", (uint32_t)container);
+  
   int r = 0;
 
   if (vmc_run(container) != 1) {
@@ -206,7 +185,7 @@ void zephyr_container_thread(void* vmc, void* vm_id, void* c) {
     /* cannot currently happen */
   }
 
-  r = scheduler(container, read_message_poll, read_message_poll);
+  r = scheduler(container, read_message_poll, read_message_block, printk);
 
   /* do something related to r? */
 
@@ -227,7 +206,7 @@ bool zephyr_start_container_threads(void) {
     k_tid_t t = k_thread_create(&vmc_zephyr_thread[i], vmc_zephyr_stack[i],
     				STACK_SIZE,
     				zephyr_container_thread,
-    				(void*)&(vm_containers[i]), (void*)&vm_id[i], NULL,
+    				(void*)&(vm_containers[i]), NULL, NULL,
     				5, 0, K_NO_WAIT);
     if (t) {
       k_thread_name_set(t, container_names[i]);
@@ -265,8 +244,6 @@ bool zephyr_sensevm_init(void) {
 #endif
 
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
-    /* Initialize messageboxes */
-    k_mbox_init(&zephyr_thread_mbox[i]);
 
     /* Initialize interop functionality */
     //zephyr_interop[i].mbox = &zephyr_thread_mbox[i];

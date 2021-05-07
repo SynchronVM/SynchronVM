@@ -86,7 +86,10 @@ extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal f
 
 extern heap_index heap_alloc_withGC(vmc_t *container);
 
-extern int scheduler(vmc_t *container, message_read_poll_fun poll_msg, message_read_block_fun block_msg);
+extern int scheduler(vmc_t *container,
+		     message_read_poll_fun poll_msg,
+		     message_read_block_fun block_msg,
+		     void (*dbg_print)(const char *str, ...));
 
 
 #endif
