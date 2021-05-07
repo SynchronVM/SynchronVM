@@ -60,11 +60,11 @@ To tie these loose ends we can have a yaml config file:
 # the button0, button1 etc on the left are
 # the Zephyr names used in the overlay files
 - buttons: Button #use CAPS for the SenseVM type generation
-  button0: 0
-  button1: 1
-  button2: 2
+    button0: 0
+    button1: 1
+    button2: 2
 - leds: LED
-  led0: 3
+    led0: 3
 ```
 
 We can have `sensevm-dt` tool which will parse this file and emit the following:
@@ -79,4 +79,19 @@ button1 = Button 1
 button2 = Button 2
 
 led0 = LED 3
+```
+
+Now these indices 0,1,2,3 refer to the indices of the `drivers` array in VMC.h
+
+Is it possible to automate the generation of a C file which does the following:
+
+```C
+  ll_driver_t lld;
+
+  // we have the button index say 0
+  #include <ll_button.h>
+  if (ll_button_init(&lld, 0, vm_containers[VMC_CONTAINER_1].backend_custom, 0))   {
+    vm_containers[VMC_CONTAINER_1].drivers[0] = lld;
+  }
+
 ```
