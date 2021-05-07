@@ -147,7 +147,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_2].stack_memory  = vmc_container_2_stack;
   vm_containers[VMC_CONTAINER_2].code_memory   = vmc_container_2_code;
   vm_containers[VMC_CONTAINER_2].arrays_memory = vmc_container_2_arrays;
-  vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
+  vm_containers[VMC_CONTAINER_2].current_running_context_id = 0;
   // channel initialization missing
   r++;
   #endif
@@ -156,8 +156,11 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 }
 
 
-int vmc_run(vmc_t *container) {
+int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
+
+  dbg_print("vcm_run container address: %u\r\n", (uint32_t)container);
+  
   for (int i = 0; i < VMC_MAX_CONTEXTS; i++) {
     container->context_used[i] = false;
   }
@@ -165,12 +168,17 @@ int vmc_run(vmc_t *container) {
   INT pc = 0;
   /* Check valid code */
   uint32_t magic = 0;
-  magic |= container->code_memory[pc++] << 24; /* not sure this shifting works out */
-  magic |= container->code_memory[pc++] << 16;
-  magic |= container->code_memory[pc++] << 8;
-  magic |= container->code_memory[pc++];
+  magic |= ((uint32_t)container->code_memory[pc++]) << 24; /* not sure this shifting works out */
+  magic |= ((uint32_t)container->code_memory[pc++]) << 16;
+  magic |= ((uint32_t)container->code_memory[pc++]) << 8;
+  magic |= ((uint32_t)container->code_memory[pc++]);
 
+
+  /* feedcafe: 4276996862 */
+  /* magic:    1214606444 */
+  dbg_print("magic: %u\r\n", magic);
   if (magic != 0xFEEDCAFE) return 0;
+  
 
   /* uint8_t version = container->code_memory[pc++]; */
   pc++;
@@ -197,7 +205,7 @@ int vmc_run(vmc_t *container) {
   code_size = container->code_memory[pc++] << 24;
   code_size |= container->code_memory[pc++] << 16;
   code_size |= container->code_memory[pc++] << 8;
-  code_size |= container->code_memory[pc++];
+  code_size |= container->code_memory[pc];  /* do not increment on last one */
 
   /* Now pc should be the index of the first instruction. */
   /* set up the parent context */
@@ -234,6 +242,13 @@ int vmc_run(vmc_t *container) {
   container->current_running_context_id = 0;
 
 
+  dbg_print("vmc_run executing ctx: %d\r\n", container->current_running_context_id);
+  dbg_print("vmc_run ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
+  dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env);
+  dbg_print("vmc_run current instr: %x\r\n", container->code_memory[pc]);
+  
+
+  
   /* Currently no process is running */
   //container->current_running_context_id = UUID_NONE;
 
@@ -294,10 +309,15 @@ int scheduler(vmc_t *container,
       dbg_print("pc    : %d\r\n", pc);
       dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env);
       dbg_print("current instr: %x\r\n", container->code_memory[pc]);
-
+      dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators));
       /* Execute an instruction */
       uint8_t current_inst = container->code_memory[pc];
-      //(*evaluators[current_inst])(container, &pc);
+
+      if (current_inst > (sizeof(evaluators) / 4)) {
+	dbg_print("current_inst is invalid\r\n");
+      } else { 
+	evaluators[current_inst](container, &pc);
+      } 
       if(pc  == -1){
 	DEBUG_PRINT(("Instruction %u failed",current_inst));
 	return -1; // error

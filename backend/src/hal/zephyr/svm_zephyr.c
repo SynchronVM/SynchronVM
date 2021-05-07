@@ -180,9 +180,11 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
   
   int r = 0;
 
-  if (vmc_run(container) != 1) {
+  if (vmc_run(container, printk) != 1) {
     /* error state */
     /* cannot currently happen */
+    /* report this to some error handling system */
+    return;
   }
 
   r = scheduler(container, read_message_poll, read_message_block, printk);

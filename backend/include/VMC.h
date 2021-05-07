@@ -80,7 +80,7 @@ typedef int (*message_read_block_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
 extern int vmc_init(vmc_t *vm_containers, int max_num_containers);
 
 // These need to run within some lower level thread abstractions
-extern int vmc_run(vmc_t *container);
+extern int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...));
 
 extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
 
