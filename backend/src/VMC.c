@@ -41,8 +41,8 @@
 #if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 2
 
 /* vmc_t vm_containers[VMC_NUM_CONTAINERS]; */
-/* Removing the containers from here and letting the lower level system 
-   take care of organising storage space for these */ 
+/* Removing the containers from here and letting the lower level system
+   take care of organising storage space for these */
 
 #else
 #error "VMC_NUM_CONTAINERS must be set to an integer value from 1 to 2"
@@ -120,7 +120,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   /* it is fine to include (#include ll_uart.h) the ll drivers any number of times */
   #if VMC_CONTAINER_1_USE_UART_0
   /* #include <ll/ll_uart.h>     */
-  
+
   drv_num++;
   #endif
 
@@ -137,7 +137,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   drv_num++:
   #endif
-  
+
   r++;
   #endif
 
@@ -160,7 +160,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
 
   dbg_print("vcm_run container address: %u\r\n", (uint32_t)container);
-  
+
   for (int i = 0; i < VMC_MAX_CONTEXTS; i++) {
     container->context_used[i] = false;
   }
@@ -178,7 +178,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   /* magic:    1214606444 */
   dbg_print("magic: %u\r\n", magic);
   if (magic != 0xFEEDCAFE) return 0;
-  
+
 
   /* uint8_t version = container->code_memory[pc++]; */
   pc++;
@@ -236,12 +236,12 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   cam_value_t v_empty = get_cam_val(0,0);
 
   /* Set up context stack for context 0 */
-  /* Some good machinery is needed to set up the stacks 
+  /* Some good machinery is needed to set up the stacks
      for each new context! */
   int r = stack_init(&container->contexts[0].stack, container->stack_memory, 256);
   if (!r) return 0;
-  
-  /* Set up the parent context to be active */ 
+
+  /* Set up the parent context to be active */
   container->contexts[0].env = v_empty;
   container->contexts[0].pc  = pc;
   container->context_used[0] = true;
@@ -252,7 +252,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   dbg_print("vmc_run ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
   dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env);
   dbg_print("vmc_run current instr: %x\r\n", container->code_memory[pc]);
-    
+
   /* Currently no process is running */
   //container->current_running_context_id = UUID_NONE;
 
@@ -272,7 +272,7 @@ int scheduler(vmc_t *container,
   //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
 
   ll_driver_msg_t msg;
-  
+
   dbg_print("Entered Scheduler\r\n");
   dbg_print("container address: %u\r\n", (uint32_t)container);
 
@@ -283,15 +283,15 @@ int scheduler(vmc_t *container,
     if (container->current_running_context_id == UUID_NONE) {
       block_msg(container, &msg);
       dbg_print("message received: blocking\r\n");
-      /* handle msg */ 
+      /* handle msg */
       while (poll_msg(container, &msg) == 0) {
 	/*handle messages*/
 	/* enqueue processes */
       }
     }
 
-    /* Every now and then poll for messages (maybe not every iteration?)*/ 
-    if (poll_msg(container, &msg) == 0) {  /* loop over queue here ? */ 
+    /* Every now and then poll for messages (maybe not every iteration?)*/
+    if (poll_msg(container, &msg) == 0) {  /* loop over queue here ? */
       dbg_print("message received: polling\r\n");
       /* handle message */
       /* enqueue processes */
@@ -322,7 +322,14 @@ int scheduler(vmc_t *container,
 	//} else {
 	evaluators[current_inst](container, pc);
 	//}
-      } 
+      }
+
+      /* Maybe there needs to be some communication between the evaluators
+	 and the scheduler. Maybe by return value? or by values in the context
+	 See if need for being able to "flag" about certain things arises.
+      */
+
+
       if(*pc  == -1){
 	DEBUG_PRINT(("Instruction %u failed",current_inst));
 	return -1; // error
@@ -333,14 +340,14 @@ int scheduler(vmc_t *container,
       dbg_print("PC after: %d\r\n", *pc);
       dbg_print("inst after: %d\r\n", current_inst);
       dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env);
-      
-      if (current_inst == 13) { 
+
+      if (current_inst == 13) {
 	container->current_running_context_id = UUID_NONE;
-	dbg_print("end of instruction stream\r\n");	
-      /* instruction 13 must be handled somehow. 
-	 Move context away from any ready q etc. 
+	dbg_print("end of instruction stream\r\n");
+      /* instruction 13 must be handled somehow.
+	 Move context away from any ready q etc.
       */
-      }	
+      }
     }
   }
   /* end */
