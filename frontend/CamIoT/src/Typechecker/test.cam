@@ -1,0 +1,19 @@
+
+id x = x
+
+lamid = \x -> x
+
+intid = id 5
+
+labintid = lamid 5
+
+baz = let x = 5 in x
+
+addtest = 5 + 10 + lamid 7 + lamid 10
+
+if2add5 2 = 2 + 5
+if2add5 x = x
+
+nestedled = let f = \x -> x in 5 + f 10
+
+main = baz

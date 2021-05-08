@@ -50,6 +50,9 @@ library
       Monomorphisation.Environment
       Desugaring.Desugar
       Desugaring.AST
+      Typechecker.Test
+      Typechecker.NewTypeChecker
+      Typechecker.NewTypeChecker2
   hs-source-dirs:
       src
   build-depends:
