@@ -235,6 +235,12 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
 
+  /* Set up context stack for context 0 */
+  /* Some good machinery is needed to set up the stacks 
+     for each new context! */
+  int r = stack_init(&container->contexts[0].stack, container->stack_memory, 256);
+  if (!r) return 0;
+  
   /* Set up the parent context to be active */ 
   container->contexts[0].env = v_empty;
   container->contexts[0].pc  = pc;
@@ -246,21 +252,12 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   dbg_print("vmc_run ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
   dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env);
   dbg_print("vmc_run current instr: %x\r\n", container->code_memory[pc]);
-  
-
-  
+    
   /* Currently no process is running */
   //container->current_running_context_id = UUID_NONE;
 
   /* Enqueue the parent context as ready to run */
   /* q_enqueue(&container->rdyQ, 0); */ //XXX: rdyQ not initialised in the tests
-
-  /* Here, I think, control should be passed over to another
-     function. Maybe we can call it Scheduler.
-
-     It may be nice if that function is in the RTS.c file.
-     But trying to do so seems to lead to circular dependencies at the moment.
-  */
 
   return 1; /* Maybe have some error codes in relation to this fun */
 }
@@ -316,15 +313,15 @@ int scheduler(vmc_t *container,
       if (current_inst > (sizeof(evaluators) / 4)) {
 	dbg_print("current_inst is invalid\r\n");
       } else {
-	if (current_inst == 4) {
-	  dbg_print("skipping push instr\r\n");
-	  *pc = *pc +1;
-	} else if (current_inst == 25) {
-	  dbg_print("skipping add_signedi instr\r\n");
-	  *pc = *pc +1;
-	} else {
-	  evaluators[current_inst](container, pc);
-	}
+	//if (current_inst == 4) {
+	//  dbg_print("skipping push instr\r\n");
+	//  *pc = *pc +1;
+	//} else if (current_inst == 25) {
+	//  dbg_print("skipping add_signedi instr\r\n");
+	//  *pc = *pc +1;
+	//} else {
+	evaluators[current_inst](container, pc);
+	//}
       } 
       if(*pc  == -1){
 	DEBUG_PRINT(("Instruction %u failed",current_inst));
@@ -335,10 +332,11 @@ int scheduler(vmc_t *container,
 
       dbg_print("PC after: %d\r\n", *pc);
       dbg_print("inst after: %d\r\n", current_inst);
+      dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env);
       
       if (current_inst == 13) { 
 	container->current_running_context_id = UUID_NONE;
-	dbg_print("end of instruction stream\r\n");
+	dbg_print("end of instruction stream\r\n");	
       /* instruction 13 must be handled somehow. 
 	 Move context away from any ready q etc. 
       */
