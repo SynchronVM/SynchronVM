@@ -303,31 +303,46 @@ int scheduler(vmc_t *container,
     /* If a context is running do this... */
     if (container->current_running_context_id != UUID_NONE) {
 
-      INT pc = container->contexts[container->current_running_context_id].pc;
+      INT *pc = &container->contexts[container->current_running_context_id].pc;
       dbg_print("executing ctx: %d\r\n", container->current_running_context_id);
       dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
-      dbg_print("pc    : %d\r\n", pc);
+      dbg_print("pc    : %d\r\n", *pc);
       dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env);
-      dbg_print("current instr: %x\r\n", container->code_memory[pc]);
+      dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]);
       dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators));
       /* Execute an instruction */
-      uint8_t current_inst = container->code_memory[pc];
+      uint8_t current_inst = container->code_memory[*pc];
 
       if (current_inst > (sizeof(evaluators) / 4)) {
 	dbg_print("current_inst is invalid\r\n");
-      } else { 
-	evaluators[current_inst](container, &pc);
+      } else {
+	if (current_inst == 4) {
+	  dbg_print("skipping push instr\r\n");
+	  *pc = *pc +1;
+	} else if (current_inst == 25) {
+	  dbg_print("skipping add_signedi instr\r\n");
+	  *pc = *pc +1;
+	} else {
+	  evaluators[current_inst](container, pc);
+	}
       } 
-      if(pc  == -1){
+      if(*pc  == -1){
 	DEBUG_PRINT(("Instruction %u failed",current_inst));
 	return -1; // error
       }
+
+      current_inst = container->code_memory[*pc];
+
+      dbg_print("PC after: %d\r\n", *pc);
+      dbg_print("inst after: %d\r\n", current_inst);
       
-      current_inst = container->code_memory[pc];
-      if (current_inst == 13) container->current_running_context_id = UUID_NONE;
+      if (current_inst == 13) { 
+	container->current_running_context_id = UUID_NONE;
+	dbg_print("end of instruction stream\r\n");
       /* instruction 13 must be handled somehow. 
 	 Move context away from any ready q etc. 
       */
+      }	
     }
   }
   /* end */
