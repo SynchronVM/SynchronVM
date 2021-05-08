@@ -1293,10 +1293,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
     /* sendEvt   - 2 */
     /* recvEvt   - 3 */
     /* sync      - 4 */
-    /* iochannel - 5 */
-    /* sendIOEvt - 6 */
-    /* recvIOEvt - 7 */
-    /* choose    - 8 */
+    /* choose    - 5 */
+    /* spawndriverop - 6 */
+
   int ret_code = -1;
   switch(rts_op_no){
     case 0:

@@ -60,7 +60,7 @@ typedef struct {
   Queue_t       rdyQ;
   ll_driver_t   drivers[VMC_MAX_DRIVERS];
   void*         backend_custom; /* Can be used by a backend for low level integration */
-  
+
 } vmc_t;
 
 /****************************************************/
