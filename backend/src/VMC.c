@@ -313,15 +313,7 @@ int scheduler(vmc_t *container,
       if (current_inst > (sizeof(evaluators) / 4)) {
 	dbg_print("current_inst is invalid\r\n");
       } else {
-	//if (current_inst == 4) {
-	//  dbg_print("skipping push instr\r\n");
-	//  *pc = *pc +1;
-	//} else if (current_inst == 25) {
-	//  dbg_print("skipping add_signedi instr\r\n");
-	//  *pc = *pc +1;
-	//} else {
 	evaluators[current_inst](container, pc);
-	//}
       }
 
       /* Maybe there needs to be some communication between the evaluators
