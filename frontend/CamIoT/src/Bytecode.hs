@@ -33,7 +33,7 @@ import GHC.Float(double2Float)
 import Interpreter.Interpreter
 import Lib
 
-import qualified CAM as C
+import qualified CamOpt as C
 import qualified Assembler as A
 import qualified Parser.AbsTinyCamiot as AST
 import qualified Parser.PrintTinyCamiot as PP
