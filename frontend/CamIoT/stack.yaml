@@ -36,7 +36,7 @@ packages:
 #
 extra-deps:
 - git: https://github.com/svenssonjoel/Sense-VM.git
-  commit: d78f89966550bf23ffec2bc592d5aa48adfafa2b
+  commit: 77ca280a22c5510f511f10087dd488c6dedb997d
   subdirs:
     - middleware/cam
 #
