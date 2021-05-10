@@ -68,12 +68,12 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
 
-data RTS2 = SEND | SYNC | SENDIO
+data RTS2 = SEND | SPAWNDRIVER
           deriving (Ord, Show, Eq)
 
 data RTS1 = CHANNEL | RECV
-          | SPAWN   | IOCHANNEL
-          | RECVIO  | CHOOSE
+          | SPAWN   | CHOOSE
+          | SYNC
           deriving (Ord, Show, Eq)
 
 data BinOp = PlusI | MultiplyI  | MinusI |
@@ -159,27 +159,22 @@ channel   - 1
 sendEvt   - 2
 recvEvt   - 3
 sync      - 4
-iochannel - 5
-sendIOEvt - 6
-recvIOEvt - 7
-choose    - 8
+choose    - 5
+spawnDriver - 6
 -}
 type OperationNumber = Word8
 
 
 spawnop, channelop, sendevtop, recvevtop :: Word8
-syncop, iochannelop, sendioop, recvioop  :: Word8
-chooseop :: Word8
+syncop, chooseop, spawndriverop :: Word8
 
 spawnop   = 0
 channelop = 1
 sendevtop = 2
 recvevtop = 3
 syncop    = 4
-iochannelop = 5
-sendioop    = 6
-recvioop    = 7
-chooseop    = 8
+chooseop  = 5
+spawndriverop = 6
 
 
 -- labels to identify a subroutine
@@ -569,17 +564,15 @@ nofail (Lab _ cam)  = nofail cam
 callrts = Ins . CALLRTS
 
 genrts2 :: RTS2 -> CAM
-genrts2 SEND   = callrts sendevtop
-genrts2 SYNC   = callrts syncop
-genrts2 SENDIO = callrts sendioop
+genrts2 SEND        = callrts sendevtop
+genrts2 SPAWNDRIVER = callrts spawndriverop
 
 genrts1 :: RTS1 -> CAM
-genrts1 CHANNEL   = callrts channelop
-genrts1 RECV      = callrts recvevtop
-genrts1 SPAWN     = callrts spawnop
-genrts1 IOCHANNEL = callrts iochannelop
-genrts1 RECVIO    = callrts recvioop
-genrts1 CHOOSE    = callrts chooseop
+genrts1 CHANNEL = callrts channelop
+genrts1 RECV    = callrts recvevtop
+genrts1 SPAWN   = callrts spawnop
+genrts1 CHOOSE  = callrts chooseop
+genrts1 SYNC    = callrts syncop
 
 zipWithA ::   Applicative t
          =>   (a -> b -> t c)
