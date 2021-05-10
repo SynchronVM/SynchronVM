@@ -205,7 +205,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   code_size = container->code_memory[pc++] << 24;
   code_size |= container->code_memory[pc++] << 16;
   code_size |= container->code_memory[pc++] << 8;
-  code_size |= container->code_memory[pc];  /* do not increment on last one */
+  code_size |= container->code_memory[pc++];  
 
   /* Now pc should be the index of the first instruction. */
   /* set up the parent context */
@@ -251,7 +251,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   dbg_print("vmc_run executing ctx: %d\r\n", container->current_running_context_id);
   dbg_print("vmc_run ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
   dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env);
-  dbg_print("vmc_run current instr: %x\r\n", container->code_memory[pc]);
+  dbg_print("vmc_run current instr: 0x%x\r\n", container->code_memory[pc]);
 
   /* Currently no process is running */
   //container->current_running_context_id = UUID_NONE;
@@ -301,10 +301,11 @@ int scheduler(vmc_t *container,
     if (container->current_running_context_id != UUID_NONE) {
 
       INT *pc = &container->contexts[container->current_running_context_id].pc;
+      dbg_print("*****************************************************'\r\n");
       dbg_print("executing ctx: %d\r\n", container->current_running_context_id);
       dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
       dbg_print("pc    : %d\r\n", *pc);
-      dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env);
+      dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env.value);
       dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]);
       dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators));
       /* Execute an instruction */
@@ -331,7 +332,7 @@ int scheduler(vmc_t *container,
 
       dbg_print("PC after: %d\r\n", *pc);
       dbg_print("inst after: %d\r\n", current_inst);
-      dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env);
+      dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env.value);
 
       if (current_inst == 13) {
 	container->current_running_context_id = UUID_NONE;
