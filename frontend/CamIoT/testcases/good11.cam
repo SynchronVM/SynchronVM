@@ -1,0 +1,2 @@
+foo = let c = channel ()
+       in 5
