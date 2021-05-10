@@ -23,6 +23,7 @@
 module LLExample where
 
 
+import Assembler
 import Bytecode.LLInterpreter
 import CAM
 
