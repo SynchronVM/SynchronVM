@@ -52,7 +52,7 @@ module Typechecker.Environment
        , fresh
        ) where
 
-import Parser.AbsTinyCamiot ( Type(TVar), UIdent, Ident(..) )
+import Parser.AbsTinyCamiot ( Type(..), UIdent(..), Ident(..) )
 import Parser.PrintTinyCamiot ()
 import Typechecker.Substitution ( Substitutable(..))
 --import Typechecker.Constraint ( Constraint )
@@ -83,8 +83,26 @@ instance Substitutable TEnv where
   ftv (TEnv env) = ftv $ Map.elems env
 
 -- | Empty environment
+-- emptyEnv :: TEnv
+-- emptyEnv = TEnv Map.empty
+
 emptyEnv :: TEnv
-emptyEnv = TEnv Map.empty
+emptyEnv = TEnv $ Map.fromList $
+  [ (Ident "channel", Forall [a] $ TLam unit channel )
+  , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
+  , (Ident "recv"   , Forall [a] $ TLam channel event)
+  , (Ident "sync"   , Forall [a] $ TLam event ta)
+  , (Ident "spawn"  , Forall [a] $ TLam (TLam unit unit) TInt)
+  ]
+  where
+    a       = Ident "a"
+    ta      = TVar a
+    unit    = TNil
+    channel = TAdt (UIdent "Channel") [ta]
+    event   = TAdt (UIdent "Event") [ta]
+    unitevent = TAdt (UIdent "Event") [unit]
+
+
 
 -- | Extend the environment with a new identifier and type schema
 extend :: TEnv -> (Ident, Scheme) -> TEnv

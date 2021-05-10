@@ -21,7 +21,19 @@ type R a = StateT StateEnv (
 runR :: R a -> (a, Int)
 runR ra = 
     let rea = runStateT ra 0
-    in runReader rea $ Map.singleton (Ident "main") (Ident "main") -- Don't want to rename main, should already be unique though
+    in runReader rea initialEnv
+    where
+      initialEnv = Map.fromList [((Ident "main" )  , (Ident "main" ))
+                                ,((Ident "send" )  , (Ident "send" ))
+                                ,((Ident "recv" )  , (Ident "recv" ))
+                                ,((Ident "sync" )  , (Ident "sync" ))
+                                ,((Ident "spawn")  , (Ident "spawn"))
+                                ,((Ident "channel"), (Ident "channel"))
+                                ]
+
+
+
+
 
 -- | Alpha-rename a program, returns the state so that it can be passed along to the lifter
 rename :: [Def a ] -> ([Def a], Int)
