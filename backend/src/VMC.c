@@ -250,7 +250,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
   dbg_print("vmc_run executing ctx: %d\r\n", container->current_running_context_id);
   dbg_print("vmc_run ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
-  dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env);
+  dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env.value);
   dbg_print("vmc_run current instr: 0x%x\r\n", container->code_memory[pc]);
 
   /* Currently no process is running */
