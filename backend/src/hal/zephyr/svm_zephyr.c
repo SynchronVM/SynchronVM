@@ -58,6 +58,7 @@
 
 #define STACK_SIZE  1024
 #define MAX_MESSAGES 100
+#define MSG_ALIGNMENT 4
 
 struct k_thread vmc_zephyr_thread[4];
 k_thread_stack_t *vmc_zephyr_stack[4];
@@ -95,16 +96,16 @@ zephyr_interop_t zephyr_interop[4];
 /* Message Queues */
 
 #if VMC_NUM_CONTAINERS >= 1
-K_MSGQ_DEFINE(message_queue_0, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+K_MSGQ_DEFINE(message_queue_0, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 2
-K_MSGQ_DEFINE(message_queue_1, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+K_MSGQ_DEFINE(message_queue_1, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 3
-K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 4
-K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_t),MAX_MESSAGES, 4);
+K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 
 struct k_msgq *message_queues[4];
