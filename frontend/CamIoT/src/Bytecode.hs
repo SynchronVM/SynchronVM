@@ -37,6 +37,7 @@ import qualified CamOpt as C
 import qualified Assembler as A
 import qualified Parser.AbsTinyCamiot as AST
 import qualified Parser.PrintTinyCamiot as PP
+import qualified Peephole as Peephole
 import qualified Bytecode.InterpreterModel as IM
 
 
@@ -58,7 +59,9 @@ translate (SETag _ (AST.UIdent tag) maybeExp) =
   case maybeExp of
     Nothing -> C.Con tag C.Void
     Just e  -> C.Con tag (translate e)
-translate (SEApp _ e1 e2) = C.App (translate e1) (translate e2)
+translate e@(SEApp _ e1 e2)
+  | runtimeFuncs e = genrtsfunc e
+  | otherwise      = C.App (translate e1) (translate e2)
 translate (SERel _ e1 relop e2) =
   case relop of
     AST.LTC _ ->
@@ -438,7 +441,7 @@ Unhandled patterns:
 
 
 -- Experiments --
-path = "testcases/good9.cam"
+path = "testcases/good11.cam"
 
 test :: IO ()
 test = do
@@ -453,15 +456,15 @@ test = do
 
       putStrLn $ "\n\n CAM IR (no pp) \n\n"
       let camir = translate desugaredIr
-      -- putStrLn $ show camir
+      putStrLn $ show camir
 
       putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
-      -- let cam   = C.interpret camir
-      -- putStrLn $ show cam
+      let cam   = Peephole.optimise $ C.interpret camir
+      putStrLn $ show cam
 
       putStrLn $ "\n\n CAM HS Interpreter \n\n"
       let val = IM.evaluate $ C.interpret camir
-      putStrLn $ show val
+      -- putStrLn $ show val
 
       putStrLn $ "\n\n CAM Assembler and true bytecode generator \n\n"
       -- A.genbytecode cam
@@ -916,3 +919,35 @@ rewriteCaseConstants expr@(SECase casety econd ((SPM (SPConst cty const) e):eres
   where
     condcheck = SERel STBool econd (AST.EQC (STLam (typeof econd) (STLam cty STBool))) (SEConst cty const)
 rewriteCaseConstants e = e
+
+
+runtimeFuncs :: SExp SType -> Bool
+runtimeFuncs (SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _) _)
+  | rtsfunc == send = True
+  | otherwise       = False
+runtimeFuncs (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _)
+  | rtsfunc == sync = True
+  | rtsfunc == channel = True
+  | rtsfunc == recv    = True
+  | rtsfunc == spawn   = True
+  | otherwise          = False
+runtimeFuncs _ = False
+
+
+sync  = "sync"
+send  = "send"
+recv  = "recv"
+spawn = "spawn"
+channel = "channel"
+
+genrtsfunc :: SExp SType -> C.Exp
+genrtsfunc e@(SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2) e3)
+  | rtsfunc == send = C.Sys $ C.RTS2 C.SEND (translate e2) (translate e3)
+  | otherwise = error $ "Incorrect expression type: " <> show e
+genrtsfunc e@(SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2)
+  | rtsfunc == sync    = C.Sys $ C.RTS1 C.SYNC    (translate e2)
+  | rtsfunc == channel = C.Sys $ C.RTS1 C.CHANNEL (translate e2)
+  | rtsfunc == recv    = C.Sys $ C.RTS1 C.RECV    (translate e2)
+  | rtsfunc == spawn   = C.Sys $ C.RTS1 C.SPAWN   (translate e2)
+  | otherwise = error $ "Incorrect expression type: " <> show e
+genrtsfunc e = translate e

@@ -1,2 +1,10 @@
-foo = let c = channel ()
-       in 5
+chan : Channel Int
+chan = channel ()
+
+process1 : () -> ()
+process1 void = sync (send chan 5)
+
+main =
+  let _ = spawn process1 in
+  let v = sync (recv chan) in
+  v
