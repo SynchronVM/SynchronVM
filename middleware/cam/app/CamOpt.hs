@@ -44,6 +44,9 @@ import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
 import qualified Data.Set as Set
 
+-- XXX: When adding new primitives like RTS3 do not forget
+--      to ensure the rFreeSys function is extended as well
+
 type Var = String
 type Tag = String
 type TaggedField = (Tag, Pat)
@@ -656,6 +659,10 @@ rFreeSys :: Sys -> EtaEnv -> PSet Var
 rFreeSys (Sys2 _ e1 e2) etaenv =
   rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFreeSys (Sys1 _ e) etaenv = rFree e etaenv
+rFreeSys (RTS2 _ e1 e2) etaenv =
+  rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFreeSys (RTS1 _ e) etaenv =
+  rFree e etaenv
 rFreeSys _ _ = Set.empty
 
 env2Eta :: Env -> EtaEnv

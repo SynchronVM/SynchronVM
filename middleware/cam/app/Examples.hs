@@ -622,3 +622,53 @@ runAllTests =
       ]
 
 
+-- Uninterpretable expressions
+-- These expressions call the runtime which is not fully supported
+-- in the Haskell interpreter currently.
+
+gencamir :: Exp -> CAM
+gencamir = optimise . CO.interpret
+
+{-
+
+chan : Channel Int
+chan = channel ()
+
+process1 : () -> ()
+process1 void = sync (send chan 5)
+
+main =
+  let _ = spawn process1 in
+  let v = sync (recv chan) in
+  v
+
+
+-- COMPILED TO --
+
+let v0 = channel () in let v1 = \ v4 -> case v4 of {
+  v2 -> sync (send v0 5)
+}
+in let _ = spawn v1 in let v3 = sync (recv v0) in v3
+
+-- REWRITTEN TO --
+
+
+let v0 = channel () in
+let v1 = \v4 -> let v2 = v4 in
+                sync (send v0 5) in
+let _  = spawn v1 in
+let v3 = sync (recv v0) in
+v3
+
+-}
+
+uiexample1 =
+  Let (PatVar "v0") (Sys (RTS1 CHANNEL Void))
+  (Let (PatVar "v1") (Lam (PatVar "v4")
+                      (Let (PatVar "v2") (Var "v4")
+                        (Sys (RTS1 SYNC (Sys (RTS2 SEND
+                                              (Var "v0")
+                                              (Sys (LInt 5))))))))
+    (Let Empty (Sys (RTS1 SPAWN (Var "v1")))
+     (Let (PatVar "v3") (Sys (RTS1 SYNC (Sys (RTS1 RECV (Var "v0")))))
+       (Var "v3"))))
