@@ -265,6 +265,11 @@ int spawn(vmc_t *container, uint16_t label){
         DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
         return -1;
       }
+
+      // Place the context-id(or process-id) on the environment register
+      cam_value_t process_id = { .value = (UINT)i, .flags = 0 };
+      container->contexts[container->current_running_context_id].env = process_id;
+
       // eval_RTS_spawn should now simply do *pc_idx++
       // so that the parent context can continue running
       return 1;
