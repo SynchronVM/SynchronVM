@@ -98,8 +98,9 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
   init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
                  , vmc_container_1_channels);
-  init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
-                         , vm_containers[VMC_CONTAINER_1].stack_memory);
+  init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts,
+			   vm_containers[VMC_CONTAINER_1].stack_memory,
+			   VMC_CONTAINER_1_STACK_SIZE_BYTES);
   Queue_t readyq = { .capacity = 0 };
   int readyq_status = q_init(&readyq, vmc_container_1_rdyq, VMC_MAX_CONTEXTS);
   if(readyq_status == -1){
@@ -382,13 +383,21 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
   return 1;
 }
 
-int init_all_contextstacks(Context_t *ctx, uint8_t *mem){
+int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
 
+  /* Maybe we want a different number of max contexts on different VMC. 
+     I think VMC_CONTAINERX_MAX_CONTEXTS should be defined in vm-conf. 
+     Then also VMC_CONTAINERX_CONTEXT_STACK_SPACE could be defined in vm-conf. */
+  
+  if (VMC_MAX_CONTEXTS * CONTEXT_STACK_SPACE > memory_size) {
+    return -1; /* Not enough space for that many stacks */
+  }
+      
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
 
     int st_status = stack_init(  &ctx[i].stack
-                               , mem
-                               , CONTEXT_STACK_SPACE);
+				 , (mem + i * CONTEXT_STACK_SPACE)
+				 ,   CONTEXT_STACK_SPACE);
 
     if(!st_status){
       DEBUG_PRINT(("Failed to initialise stack for %dth context", i));
