@@ -236,9 +236,14 @@ static int dispatch(vmc_t *container){
   UUID context_id;
   int de_q_status = q_dequeue(&container->rdyQ, &context_id);
   if (de_q_status == -1){
+    // This is the standard state of a microcontroller
+    // where processes are blocked and sleeping, waiting
+    // for interrupts to arrive. Setting the
+    // current_running_context_id = UUID_NONE is an indicator
+    // to zephyr to now wait for interrupts;
     DEBUG_PRINT(("Ready Queue is empty\n"));
-    return -1; // This is the standard state of a microcontroller
-               // and it should sleep when it gets -1 on dispatch
+    container->current_running_context_id = UUID_NONE;
+    return -1;
   }
   container->current_running_context_id = context_id;
   return 1;

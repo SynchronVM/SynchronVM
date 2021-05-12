@@ -87,6 +87,9 @@ int q_front(Queue_t *q, UUID *context_id){
   return 1;
 }
 
+bool q_isempty(Queue_t *q){
+  return (q->size == 0);
+}
 
 static inline void remove_pos_linear(Queue_t *q, int pos){
   for(int i = pos; i < q->rear; i++){

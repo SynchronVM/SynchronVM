@@ -96,11 +96,12 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
+  // No checks for the failure of the following two
   init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
                  , vmc_container_1_channels);
-  init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts,
-			   vm_containers[VMC_CONTAINER_1].stack_memory,
-			   VMC_CONTAINER_1_STACK_SIZE_BYTES);
+  init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
+                         , vm_containers[VMC_CONTAINER_1].stack_memory
+                         , VMC_CONTAINER_1_STACK_SIZE_BYTES);
   Queue_t readyq = { .capacity = 0 };
   int readyq_status = q_init(&readyq, vmc_container_1_rdyq, VMC_MAX_CONTEXTS);
   if(readyq_status == -1){
@@ -284,8 +285,8 @@ int scheduler(vmc_t *container,
       dbg_print("message received: blocking\r\n");
       /* handle msg */
       while (poll_msg(container, &msg) == 0) {
-	/*handle messages*/
-	/* enqueue processes */
+        /*handle messages*/
+        /* enqueue processes */
       }
     }
 
@@ -311,9 +312,9 @@ int scheduler(vmc_t *container,
       uint8_t current_inst = container->code_memory[*pc];
 
       if (current_inst > (sizeof(evaluators) / 4)) {
-	dbg_print("current_inst is invalid\r\n");
+        dbg_print("current_inst is invalid\r\n");
       } else {
-	evaluators[current_inst](container, pc);
+        evaluators[current_inst](container, pc);
       }
 
       /* Maybe there needs to be some communication between the evaluators
@@ -323,8 +324,8 @@ int scheduler(vmc_t *container,
 
 
       if(*pc  == -1){
-	DEBUG_PRINT(("Instruction %u failed",current_inst));
-	return -1; // error
+        DEBUG_PRINT(("Instruction %u failed",current_inst));
+        return -1; // error
       }
 
       current_inst = container->code_memory[*pc];
@@ -334,10 +335,10 @@ int scheduler(vmc_t *container,
       dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env.value);
 
       if (current_inst == 13) {
-	container->current_running_context_id = UUID_NONE;
-	dbg_print("end of instruction stream\r\n");
+        container->current_running_context_id = UUID_NONE;
+        dbg_print("end of instruction stream\r\n");
       /* instruction 13 must be handled somehow.
-	 Move context away from any ready q etc.
+         Move context away from any ready q etc.
       */
       }
     }
@@ -385,19 +386,19 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
 
 int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
 
-  /* Maybe we want a different number of max contexts on different VMC. 
-     I think VMC_CONTAINERX_MAX_CONTEXTS should be defined in vm-conf. 
+  /* Maybe we want a different number of max contexts on different VMC.
+     I think VMC_CONTAINERX_MAX_CONTEXTS should be defined in vm-conf.
      Then also VMC_CONTAINERX_CONTEXT_STACK_SPACE could be defined in vm-conf. */
-  
+
   if (VMC_MAX_CONTEXTS * CONTEXT_STACK_SPACE > memory_size) {
     return -1; /* Not enough space for that many stacks */
   }
-      
+
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
 
-    int st_status = stack_init(  &ctx[i].stack
-				 , (mem + i * CONTEXT_STACK_SPACE)
-				 ,   CONTEXT_STACK_SPACE);
+    int st_status = stack_init(&ctx[i].stack
+                               , (mem + i * CONTEXT_STACK_SPACE)
+                               , CONTEXT_STACK_SPACE);
 
     if(!st_status){
       DEBUG_PRINT(("Failed to initialise stack for %dth context", i));
@@ -465,23 +466,23 @@ heap_index heap_alloc_withGC(vmc_t *container) {
     //XXX: Tests breaking because channels not initialised in the tests
     //     PLEASE UNCOMMENT BELOW
     //GC all the dirty flags associated with the channels
-    /* for(int i = 0; i < MAX_CHANNELS; i++){ */
-    /*   if(container->channels[i].in_use){ */
-    /*     // first check if channel is in use */
-    /*     // and then mark all live dirty flags */
-    /*     // in the sendq and then in the recvq */
+    for(int i = 0; i < MAX_CHANNELS; i++){
+      if(container->channels[i].in_use){
+        // first check if channel is in use
+        // and then mark all live dirty flags
+        // in the sendq and then in the recvq
 
-    /*     for(int j = 0; j < container->channels[i].sendq.size; j++){ */
-    /*       heap_mark(  &container->heap */
-    /*                 , container->channels[i].sendq.data[j].dirty_flag_pointer); */
-    /*     } */
+        for(int j = 0; j < container->channels[i].sendq.size; j++){
+          heap_mark(  &container->heap
+                    , container->channels[i].sendq.data[j].dirty_flag_pointer);
+        }
 
-    /*     for(int j = 0; j < container->channels[i].recvq.size; j++){ */
-    /*       heap_mark(  &container->heap */
-    /*                   , container->channels[i].recvq.data[j].dirty_flag_pointer); */
-    /*     } */
-    /*   } */
-    /* } */
+        for(int j = 0; j < container->channels[i].recvq.size; j++){
+          heap_mark(  &container->heap
+                      , container->channels[i].recvq.data[j].dirty_flag_pointer);
+        }
+      }
+    }
 
     // First phase mark complete; try allocating again
     // Sweeping is lazy and integrated into the allocator

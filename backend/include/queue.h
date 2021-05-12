@@ -25,6 +25,7 @@
 #ifndef __QUEUE_H_
 #define __QUEUE_H_
 
+#include <stdbool.h>
 #include <typedefs.h>
 
 typedef struct {
@@ -40,6 +41,7 @@ extern int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes);
 extern int q_enqueue(Queue_t *q, UUID context_id);
 extern int q_dequeue(Queue_t *q, UUID *context_id);
 extern int q_front  (Queue_t *q, UUID *context_id);
+extern bool q_isempty(Queue_t *q);
 
 extern int q_remove(Queue_t *q, UUID *context_id); /* Not a regular queue operation; Not used as well */
 
