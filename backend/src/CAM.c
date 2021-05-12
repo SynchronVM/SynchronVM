@@ -1175,6 +1175,18 @@ void eval_switchi(vmc_t *vmc, INT *pc_idx){
 
 static int handle_spawn(vmc_t *vmc){
 
+  /* IMP:
+   * spawn starts a new process with the signature () -> ()
+   * When we jump to this process (because of sync) the operation
+   * is like processing an APP with the argument (). So the
+   * argument () needs to be placed in the environment depending
+   * on the cases of a closure [v:l] (snocced in this case) or
+   * a combinator [l] (simply place () in the env in this case)
+   */
+  cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+
+
+
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
 
   heap_index closure_address = e.value;
@@ -1187,7 +1199,9 @@ static int handle_spawn(vmc_t *vmc){
 
     cam_value_t label = heap_f;
 
-    return spawn(vmc, (uint16_t)label.value);
+    vmc->contexts[vmc->current_running_context_id].env = empty_tuple;
+
+    return spawn(vmc, (uint16_t)label.value); // will place PID in env
 
 
   } else { // not a combinator but a closure
@@ -1196,12 +1210,22 @@ static int handle_spawn(vmc_t *vmc){
     cam_value_t label = heap_s;
 
 
-    // Put the v of [v:l] on the env register;
+    // Put (v, ()) of [v:l] on the env register; Read above why () comes;
     // spawn then copies the content of the env register to
     // the `env` register of the new context
-    vmc->contexts[vmc->current_running_context_id].env = val;
 
-    return spawn(vmc, (uint16_t)label.value);
+    heap_index hi = heap_alloc_withGC(vmc);
+    if(hi == HEAP_NULL){
+      DEBUG_PRINT(("Heap allocation has failed"));
+      return -1;
+    }
+    heap_set(&vmc->heap, hi, val, empty_tuple);
+    cam_value_t new_env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+
+    vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
+
+    return spawn(vmc, (uint16_t)label.value); // will place PID in env
 
   }
 
