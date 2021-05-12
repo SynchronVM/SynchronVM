@@ -96,7 +96,10 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
-  init_all_chans(vm_containers[VMC_CONTAINER_1].channels, vmc_container_1_channels);
+  init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
+                 , vmc_container_1_channels);
+  init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
+                         , vm_containers[VMC_CONTAINER_1].stack_memory);
   Queue_t readyq = { .capacity = 0 };
   int readyq_status = q_init(&readyq, vmc_container_1_rdyq, VMC_MAX_CONTEXTS);
   if(readyq_status == -1){
@@ -162,7 +165,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   dbg_print("vcm_run container address: %u\r\n", (uint32_t)container);
 
   for (int i = 0; i < VMC_MAX_CONTEXTS; i++) {
-    container->context_used[i] = false;
+    container->context_used[i] = false; //XXX: should move to vmc_init
   }
 
   INT pc = 0;
@@ -235,11 +238,6 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
 
-  /* Set up context stack for context 0 */
-  /* Some good machinery is needed to set up the stacks
-     for each new context! */
-  int r = stack_init(&container->contexts[0].stack, container->stack_memory, 256);
-  if (!r) return 0;
 
   /* Set up the parent context to be active */
   container->contexts[0].env = v_empty;
@@ -383,6 +381,25 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
 
   return 1;
 }
+
+int init_all_contextstacks(Context_t *ctx, uint8_t *mem){
+
+  for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
+
+    int st_status = stack_init(  &ctx[i].stack
+                               , mem
+                               , CONTEXT_STACK_SPACE);
+
+    if(!st_status){
+      DEBUG_PRINT(("Failed to initialise stack for %dth context", i));
+      return -1;
+    }
+
+  }
+
+  return 1;
+}
+
 
 /* DEBUG loop
    while(current_inst != 13){ // stop instruction

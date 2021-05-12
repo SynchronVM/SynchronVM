@@ -39,8 +39,9 @@
 #define VMC_CONTAINER_1 0
 #define VMC_CONTAINER_2 1
 
-#define VMC_MAX_CONTEXTS 16
+#define VMC_MAX_CONTEXTS 4
 #define VMC_MAX_DRIVERS  16
+#define CONTEXT_STACK_SPACE 256
 
 #define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
 #define MAX_IO_CHANNELS 100
