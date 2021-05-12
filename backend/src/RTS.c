@@ -344,8 +344,9 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /****** PC increment *****/
 
-    container->contexts[container->current_running_context_id].pc++; // increments the PC of the sender
-    container->contexts[recv_context_id].pc++; // increments the PC of the receiver
+    container->contexts[container->current_running_context_id].pc+=2; // increments the PC of the sender
+    //receiver's PC is incremented by eval_callrts
+    /* container->contexts[recv_context_id].pc++; // increments the PC of the receiver */
 
     /****** PC increment *****/
 
@@ -395,8 +396,9 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /****** PC increment *****/
 
-    container->contexts[sender_data.context_id].pc++; //sender is unblocked now
-    container->contexts[container->current_running_context_id].pc++; //continue executing the receiver from sync
+    container->contexts[sender_data.context_id].pc+=2; //sender is unblocked now
+    //receiver's PC is incremented by eval_callrts
+    /* container->contexts[container->current_running_context_id].pc++; //continue executing the receiver from sync */
 
     /****** PC increment *****/
 
