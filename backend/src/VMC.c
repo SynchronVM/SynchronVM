@@ -438,7 +438,7 @@ heap_index heap_alloc_withGC(vmc_t *container) {
 
     //XXX: Tests breaking because channels not initialised in the tests
     //     PLEASE UNCOMMENT BELOW
-    /* GC all the dirty flags associated with the channels*/
+    //GC all the dirty flags associated with the channels
     /* for(int i = 0; i < MAX_CHANNELS; i++){ */
     /*   if(container->channels[i].in_use){ */
     /*     // first check if channel is in use */
@@ -456,26 +456,6 @@ heap_index heap_alloc_withGC(vmc_t *container) {
     /*     } */
     /*   } */
     /* } */
-
-    /* GC all the dirty flags associated with the IO channels*/
-    /* for(int i = 0; i < MAX_IO_CHANNELS; i++){ */
-    /*   if(container->iochannels[i].in_use){ */
-    /*     // first check if channel is in use */
-    /*     // and then mark all live dirty flags */
-    /*     // in the sendq and then in the recvq */
-
-    /*     for(int j = 0; j < container->iochannels[i].sendq.size; j++){ */
-    /*       heap_mark(  &container->heap */
-    /*                 , container->iochannels[i].sendq.data[j].dirty_flag_pointer); */
-    /*     } */
-
-    /*     for(int j = 0; j < container->iochannels[i].recvq.size; j++){ */
-    /*       heap_mark(  &container->heap */
-    /*                 , container->iochannels[i].recvq.data[j].dirty_flag_pointer); */
-    /*     } */
-    /*   } */
-    /* } */
-
 
     // First phase mark complete; try allocating again
     // Sweeping is lazy and integrated into the allocator
