@@ -54,7 +54,7 @@ uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];
 uint8_t vmc_container_1_stack[VMC_CONTAINER_1_STACK_SIZE_BYTES];
 uint8_t vmc_container_1_arrays[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];
 uint8_t vmc_container_1_channels[VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES];
-uint8_t vmc_container_1_rdyq[sizeof(UUID) * VMC_MAX_CONTEXTS];
+uint8_t vmc_container_1_rdyq[sizeof(UUID) * 1024 * VMC_MAX_CONTEXTS];
 
 const uint8_t vmc_container_1_code[] = {
   #include VMC_CONTAINER_1_BYTECODE_FILE
@@ -79,6 +79,10 @@ const uint8_t vmc_container_2_code[] = {
    macro_instantiate the whole thing for up
    to N containers. */
 
+
+static int init_all_chans(Channel_t *c, uint8_t *mem);
+static int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
+
 int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int r = 0;
@@ -102,13 +106,14 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
                          , vm_containers[VMC_CONTAINER_1].stack_memory
                          , VMC_CONTAINER_1_STACK_SIZE_BYTES);
-  Queue_t readyq = { .capacity = 0 };
-  int readyq_status = q_init(&readyq, vmc_container_1_rdyq, VMC_MAX_CONTEXTS);
+
+  int readyq_status = q_init(&vm_containers[VMC_CONTAINER_1].rdyQ
+                             , vmc_container_1_rdyq
+                             , sizeof(UUID) * 1024 * VMC_MAX_CONTEXTS);
   if(readyq_status == -1){
     DEBUG_PRINT(("Failed to initialise ready queue"));
     return -1;
   }
-  vm_containers[VMC_CONTAINER_1].rdyQ  = readyq;
 
 
   /**********************************************************/
@@ -352,7 +357,7 @@ int scheduler(vmc_t *container,
 }
 
 
-int init_all_chans(Channel_t *c, uint8_t *mem){
+static int init_all_chans(Channel_t *c, uint8_t *mem){
 
   int mem_offset = 0;
   for(int i = 0; i < MAX_CHANNELS; i++){
@@ -388,7 +393,7 @@ int init_all_chans(Channel_t *c, uint8_t *mem){
   return 1;
 }
 
-int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
+static int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
 
   /* Maybe we want a different number of max contexts on different VMC.
      I think VMC_CONTAINERX_MAX_CONTEXTS should be defined in vm-conf.

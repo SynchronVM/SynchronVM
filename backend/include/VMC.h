@@ -81,8 +81,6 @@ extern int vmc_init(vmc_t *vm_containers, int max_num_containers);
 // These need to run within some lower level thread abstractions
 extern int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...));
 
-extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
-
 extern heap_index heap_alloc_withGC(vmc_t *container);
 
 extern int scheduler(vmc_t *container,
