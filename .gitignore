@@ -1,5 +1,6 @@
 middleware/cam/.stack-work
-backend/tests/*.exe
+backend/tests/rts/*.exe
+backend/tests/rts/*.exe.dSYM
 
 # General
 *~
