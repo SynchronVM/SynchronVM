@@ -193,7 +193,7 @@ bool vmc_run_4_test(){
 
 
 
-// NOTE: Programs 5 and 6 require more stack than the other programs
+// NOTE: Programs 5, 6, 7 require more stack than the other programs
 /*
  * To run them the following parameter need to be changed in VMC.h
  * #define VMC_MAX_CONTEXTS 4
@@ -204,7 +204,7 @@ bool vmc_run_4_test(){
  * #define CONTEXT_STACK_SPACE 512
  * 512 * 2 = 1024
  *
- * From Program 6:
+ * From Program 6, 7:
  * #define VMC_MAX_CONTEXTS 1
  * #define CONTEXT_STACK_SPACE 1024
  * 1024 * 1 = 1024
@@ -261,6 +261,32 @@ bool vmc_run_6_test(){
 bool vmc_run_7_test(){
 
   /*
+   * Program 6 with the optimised bytecode
+  */
+
+  uint8_t code [] =
+    { 254,237,202,254,1,0,2,0,0,0,53,0,0,0,0,0,0,0,0,0,0,0,63,49,6,0,0,5,16,0,37,14,13,52,0,71,15,10,0,41,15,4,1,49,6,0,1,32,18,0,54,7,1,15,4,4,1,23,5,0,16,0,37,14,5,0,16,0,33,14,15,3,0,49,7,1,32,53,0,83,7,0,15,7,1,15 };
+
+  vmc_t container;
+
+  int i = setup_and_run(&container, code);
+  if(i == -1){
+    printf("Failure in vmc_run_8\n");
+    return false;
+  }
+
+  if(container.contexts[container.current_running_context_id].env.value == 0){ //env register contains False?
+    return true;
+  } else {
+    return false;
+  }
+
+}
+
+
+bool vmc_run_8_test(){
+
+  /*
     let foo = \x -> x + 11
     in let r = 2
     in foo r
@@ -283,6 +309,7 @@ bool vmc_run_7_test(){
     return false;
   }
 }
+
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -313,10 +340,12 @@ int main(int argc, char **argv) {
   /* test_stat("vmc_run_5", &total, t5); */
   /* bool t6 = vmc_run_6_test(); */
   /* test_stat("vmc_run_6", &total, t6); */
-  bool t7 = vmc_run_7_test();
-  test_stat("vmc_run_7", &total, t7);
+  /* bool t7 = vmc_run_7_test(); */
+  /* test_stat("vmc_run_7", &total, t7); */
+  bool t8 = vmc_run_8_test();
+  test_stat("vmc_run_8", &total, t8);
 
-  if (t1 && t2 && t3 && t4 && t7) {
+  if (t1 && t2 && t3 && t4 && t8) {
     printf("Passed total : %d/%d tests\n", total, 5);
     return 1;
   }
