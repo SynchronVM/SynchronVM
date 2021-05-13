@@ -51,14 +51,14 @@
 /*
   Each channel has a max capacity of storing 3 elements
   in sendq and 3 elements in recvq.x
-  sendq = 6 bytes * 3 = 18 bytes
-  recvq = 2 byte  * 3 =  6 bytes
-  Total -> 24 bytes
-  Assuming 100 channels -> 2400 bytes
+  sendq = 20 bytes * 3 = 60 bytes
+  recvq = 12 bytes * 3 = 36 bytes
+  Total -> 96 bytes
+  Assuming 100 channels -> 9600 bytes
   MAX_CHANNELS and MAX_WAIT_PARTICIPANTS can move here
 */
 
-#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  2400
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  9600
 
 /*********/
 /* VMC 2 */

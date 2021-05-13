@@ -273,7 +273,6 @@ int scheduler(vmc_t *container,
         void (*dbg_print)(const char *str, ...),
         bool unit_test) {
 
-
   //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
   //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
 
@@ -360,34 +359,41 @@ int scheduler(vmc_t *container,
 static int init_all_chans(Channel_t *c, uint8_t *mem){
 
   int mem_offset = 0;
+
+  size_t sd_size = sizeof(send_data_t);
+  size_t rd_size = sizeof(recv_data_t);
+
   for(int i = 0; i < MAX_CHANNELS; i++){
 
     chan_send_queue_t sq;
     chan_recv_queue_t rq;
 
-    int sq_status = chan_send_q_init(&sq, &mem[mem_offset], MAX_WAIT_PARTICIPANTS);
-    if(sq_status == -1){
+    int sq_status = chan_send_q_init(  &sq
+                                     , &mem[mem_offset]
+                                     , sd_size * MAX_WAIT_PARTICIPANTS);
+    if(!sq_status){
       DEBUG_PRINT(("Failed to initialise sendq for %dth channel", i));
       return -1;
     }
 
     int rq_status =
-      chan_recv_q_init(&rq, &mem[mem_offset + MAX_WAIT_PARTICIPANTS], MAX_WAIT_PARTICIPANTS);
-    if(rq_status == -1){
+      chan_recv_q_init(  &rq
+                       , &mem[mem_offset + sd_size * MAX_WAIT_PARTICIPANTS]
+                       , rd_size * MAX_WAIT_PARTICIPANTS);
+    if(!rq_status){
       DEBUG_PRINT(("Failed to initialise recvq for %dth channel", i));
       return -1;
     }
 
-    mem_offset +=   (MAX_WAIT_PARTICIPANTS * 6)  // sendq is 6 bytes each
-                  + (MAX_WAIT_PARTICIPANTS * 2); // recvq is 2 bytes each
-    Channel_t ch;
-    int ch_status = channel_init(&ch, sq, rq);
+    mem_offset +=   (MAX_WAIT_PARTICIPANTS * sd_size)  //a sendq elem is 20 bytes
+                  + (MAX_WAIT_PARTICIPANTS * rd_size); //a recvq elem is 12 bytes each
+
+    int ch_status = channel_init(&c[i], sq, rq);
     if(ch_status == -1){
       DEBUG_PRINT(("Failed to initialise %dth channel", i));
       return -1;
     }
 
-    c[i] = ch;
   }
 
   return 1;

@@ -32,7 +32,7 @@
 
 int chan_send_q_init(chan_send_queue_t *q, uint8_t *mem, unsigned int size_bytes){
 
-  if (!mem || !q || size_bytes < 256) return 0;
+  if (!mem || !q || size_bytes < sizeof(send_data_t)) return 0;
   unsigned int num_elt = size_bytes / sizeof(send_data_t);
   q->capacity = num_elt;
   q->front = q->size = 0;

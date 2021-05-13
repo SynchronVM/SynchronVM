@@ -44,7 +44,6 @@
 #define CONTEXT_STACK_SPACE 256
 
 #define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
-#define MAX_IO_CHANNELS 100
 #define MAX_WAIT_PARTICIPANTS 3
 
 typedef struct {

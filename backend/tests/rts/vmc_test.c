@@ -271,7 +271,7 @@ bool vmc_run_7_test(){
 
   int i = setup_and_run(&container, code);
   if(i == -1){
-    printf("Failure in vmc_run_8\n");
+    printf("Failure in vmc_run_7\n");
     return false;
   }
 
@@ -299,7 +299,7 @@ bool vmc_run_8_test(){
 
   int i = setup_and_run(&container, code);
   if(i == -1){
-    printf("Failure in vmc_run_7\n");
+    printf("Failure in vmc_run_8\n");
     return false;
   }
 
@@ -310,6 +310,26 @@ bool vmc_run_8_test(){
   }
 }
 
+bool vmc_run_9_test(){
+
+  uint8_t code [] = { 254,237,202,254,1,0,1,0,0,0,5,0,0,0,0,0,0,0,34,8,55,1,4,10,0,39,9,4,1,55,0,9,3,2,55,3,55,4,13,4,1,9,3,2,49,6,0,0,55,2,55,4,15 };
+
+  vmc_t container;
+
+  int i = setup_and_run(&container, code);
+  if(i == -1){
+    printf("Failure in vmc_run_9\n");
+    return false;
+  }
+
+  if(container.contexts[container.current_running_context_id].env.value == 5){
+    return true;
+  } else {
+    return false;
+  }
+
+
+}
 
 void test_stat(char *s, int *tot, bool t){
   if (t) {
@@ -326,14 +346,15 @@ int main(int argc, char **argv) {
   int total = 0;
 
 
-  bool t1 = vmc_run_1_test();
-  test_stat("vmc_run_1", &total, t1);
-  bool t2 = vmc_run_2_test();
-  test_stat("vmc_run_2", &total, t2);
-  bool t3 = vmc_run_3_test();
-  test_stat("vmc_run_3", &total, t3);
-  bool t4 = vmc_run_4_test();
-  test_stat("vmc_run_4", &total, t4);
+  /* bool t1 = vmc_run_1_test(); */
+  /* test_stat("vmc_run_1", &total, t1); */
+  /* bool t2 = vmc_run_2_test(); */
+  /* test_stat("vmc_run_2", &total, t2); */
+  /* bool t3 = vmc_run_3_test(); */
+  /* test_stat("vmc_run_3", &total, t3); */
+  /* bool t4 = vmc_run_4_test(); */
+  /* test_stat("vmc_run_4", &total, t4); */
+
   // SEE NOTE to find out config changes needed to
   // make program 5 and 6 run
   /* bool t5 = vmc_run_5_test(); */
@@ -342,11 +363,15 @@ int main(int argc, char **argv) {
   /* test_stat("vmc_run_6", &total, t6); */
   /* bool t7 = vmc_run_7_test(); */
   /* test_stat("vmc_run_7", &total, t7); */
-  bool t8 = vmc_run_8_test();
-  test_stat("vmc_run_8", &total, t8);
 
-  if (t1 && t2 && t3 && t4 && t8) {
-    printf("Passed total : %d/%d tests\n", total, 5);
+  /* bool t8 = vmc_run_8_test(); */
+  /* test_stat("vmc_run_8", &total, t8); */
+  bool t9 = vmc_run_9_test();
+  test_stat("vmc_run_9", &total, t9);
+
+  //(t1 && t2 && t3 && t4 && t8 && t9) {
+  if (t9) {
+    printf("Passed total : %d/%d tests\n", total, 1);
     return 1;
   }
   return -1;
