@@ -265,7 +265,8 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 int scheduler(vmc_t *container,
 	      message_read_poll_fun poll_msg,
 	      message_read_block_fun block_msg,
-	      void (*dbg_print)(const char *str, ...)) {
+        void (*dbg_print)(const char *str, ...),
+        bool unit_test) {
 
 
   //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
@@ -334,7 +335,10 @@ int scheduler(vmc_t *container,
       dbg_print("inst after: %d\r\n", current_inst);
       dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env.value);
 
-      if (current_inst == 13) {
+      if (current_inst == 13 && unit_test) {
+        break;
+      }
+      else if(current_inst == 13 && !unit_test){
         container->current_running_context_id = UUID_NONE;
         dbg_print("end of instruction stream\r\n");
       /* instruction 13 must be handled somehow.

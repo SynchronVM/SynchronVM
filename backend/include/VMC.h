@@ -88,7 +88,8 @@ extern heap_index heap_alloc_withGC(vmc_t *container);
 extern int scheduler(vmc_t *container,
 		     message_read_poll_fun poll_msg,
 		     message_read_block_fun block_msg,
-		     void (*dbg_print)(const char *str, ...));
+         void (*dbg_print)(const char *str, ...),
+         bool unit_test);
 
 
 #endif
