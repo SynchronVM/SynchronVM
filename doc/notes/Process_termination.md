@@ -95,7 +95,7 @@ lab_graveyard: STOP
 
 When STOP is encountered the first time the rdyQ contains C1.
 
-We hit dispatch:
+We call `dispatch`:
 
 C1 is back and then it does PC++ and comes to RETURN; The RETURN then jumps to 
 the `lab_graveyard` which calls STOP. We again do `dispatch`. No more processes in the `rdyQ`. So `current_running_context = UUID_NONE`. The program stops.
