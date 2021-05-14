@@ -248,12 +248,15 @@ freshLabel = do
 
 
 interpret :: Exp -> CAM
-interpret e = instrs <+> Ins STOP <+> fold thunks_
+interpret e = instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
         (runCodegen $! codegen e (EnvEmpty Normal))
         initState
+    labelGraveyard = Lab (Label maxLabel) (Ins STOP)
+
+    maxLabel = 65535 -- (label can be max 2 bytes)
 
 codegen :: Exp -> Env -> Codegen CAM
 codegen v@(Var var) env

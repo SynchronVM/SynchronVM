@@ -143,6 +143,8 @@ CALLRTS                        0x37FF                      1 + 1
 -- NOTE: Modify originalBytecodeOffset if adding any new pools etc
 -- NOTE: A SenseVM program can support a maximum of 65534 tags(and not 65535) because
 --       tag id 65535 is reserved for the "??WILDCARD??" tag.
+-- NOTE: There is maximum of 65534 labels(lambdas, processes included) because
+--       label 65535 is reserved for the label graveyard
 
 {- NOTE: INSTRUCTIONS TO BE ADDED
 
