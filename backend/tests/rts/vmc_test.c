@@ -193,7 +193,7 @@ bool vmc_run_4_test(){
 
 
 
-// NOTE: Programs 5, 6, 7 require more stack than the other programs
+// NOTE 1: Programs 5, 6, 7 require more stack than the other programs
 /*
  * To run them the following parameter need to be changed in VMC.h
  * #define VMC_MAX_CONTEXTS 4
@@ -346,16 +346,16 @@ int main(int argc, char **argv) {
   int total = 0;
 
 
-  /* bool t1 = vmc_run_1_test(); */
-  /* test_stat("vmc_run_1", &total, t1); */
-  /* bool t2 = vmc_run_2_test(); */
-  /* test_stat("vmc_run_2", &total, t2); */
-  /* bool t3 = vmc_run_3_test(); */
-  /* test_stat("vmc_run_3", &total, t3); */
-  /* bool t4 = vmc_run_4_test(); */
-  /* test_stat("vmc_run_4", &total, t4); */
+  bool t1 = vmc_run_1_test();
+  test_stat("vmc_run_1", &total, t1);
+  bool t2 = vmc_run_2_test();
+  test_stat("vmc_run_2", &total, t2);
+  bool t3 = vmc_run_3_test();
+  test_stat("vmc_run_3", &total, t3);
+  bool t4 = vmc_run_4_test();
+  test_stat("vmc_run_4", &total, t4);
 
-  // SEE NOTE to find out config changes needed to
+  // SEE NOTE 1 to find out config changes needed to
   // make program 5 and 6 run
   /* bool t5 = vmc_run_5_test(); */
   /* test_stat("vmc_run_5", &total, t5); */
@@ -364,14 +364,14 @@ int main(int argc, char **argv) {
   /* bool t7 = vmc_run_7_test(); */
   /* test_stat("vmc_run_7", &total, t7); */
 
-  /* bool t8 = vmc_run_8_test(); */
-  /* test_stat("vmc_run_8", &total, t8); */
+  bool t8 = vmc_run_8_test();
+  test_stat("vmc_run_8", &total, t8);
   bool t9 = vmc_run_9_test();
   test_stat("vmc_run_9", &total, t9);
 
-  //(t1 && t2 && t3 && t4 && t8 && t9) {
-  if (t9) {
-    printf("Passed total : %d/%d tests\n", total, 1);
+
+  if (t1 && t2 && t3 && t4 && t8 && t9) {
+    printf("Passed total : %d/%d tests\n", total, 6);
     return 1;
   }
   return -1;

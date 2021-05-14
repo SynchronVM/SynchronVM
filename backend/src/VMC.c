@@ -29,6 +29,7 @@
 #endif
 
 
+#include <stddef.h>
 #include <VMC.h>
 #include <heap.h>
 #include <CAM.h>
