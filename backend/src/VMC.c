@@ -305,7 +305,7 @@ int scheduler(vmc_t *container,
     /* If a context is running do this... */
     if (container->current_running_context_id != UUID_NONE) {
 
-      INT *pc = &container->contexts[container->current_running_context_id].pc;
+      INT *pc = (INT *)&container->contexts[container->current_running_context_id].pc;
       dbg_print("*****************************************************'\r\n");
       dbg_print("executing ctx: %d\r\n", container->current_running_context_id);
       dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
@@ -313,31 +313,10 @@ int scheduler(vmc_t *container,
       dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env.value);
       dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]);
       dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators));
+
       /* Execute an instruction */
+
       uint8_t current_inst = container->code_memory[*pc];
-
-      if (current_inst > (sizeof(evaluators) / 4)) {
-        dbg_print("current_inst is invalid\r\n");
-      } else {
-        evaluators[current_inst](container, pc);
-      }
-
-      /* Maybe there needs to be some communication between the evaluators
-	 and the scheduler. Maybe by return value? or by values in the context
-	 See if need for being able to "flag" about certain things arises.
-      */
-
-
-      if(*pc  == -1){
-        DEBUG_PRINT(("Instruction %u failed",current_inst));
-        return -1; // error
-      }
-
-      current_inst = container->code_memory[*pc];
-
-      dbg_print("PC after: %d\r\n", *pc);
-      dbg_print("inst after: %d\r\n", current_inst);
-      dbg_print("env after: %u\r\n", container->contexts[container->current_running_context_id].env.value);
 
       if (current_inst == 13 && unit_test) {
         break;
@@ -345,10 +324,22 @@ int scheduler(vmc_t *container,
       else if(current_inst == 13 && !unit_test){
         container->current_running_context_id = UUID_NONE;
         dbg_print("end of instruction stream\r\n");
-      /* instruction 13 must be handled somehow.
-         Move context away from any ready q etc.
-      */
       }
+
+
+      if (current_inst > (sizeof(evaluators) / 4)) {
+        dbg_print("current_inst is invalid\r\n");
+      } else {
+        evaluators[current_inst](container, pc);
+      }
+
+
+
+      if(*pc  == -1){
+        DEBUG_PRINT(("Instruction %u failed",current_inst));
+        return -1; // error
+      }
+
     }
   }
   /* end */
