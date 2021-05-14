@@ -19,8 +19,8 @@ In the above program the context switch proceeds something like this:
 ```
 C0 gets blocked at sync(recv chan)
 C1 gets scheduled
-C1 gets arrives at sync(send chan)
-C1 put itself at rdyQ and C0 is scheduled
+C1 arrives at sync(send chan)
+C1 puts itself at rdyQ and C0 is scheduled
 C0 terminates without issues
 
 ```
