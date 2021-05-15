@@ -204,7 +204,7 @@ instance Substitutable (Pat Type) where
   apply s p = case p of
     PVar a id    -> PVar (apply s a) id
     PConst a l   -> PConst (apply s a) l
-    PTup a p1 p2 -> PTup (apply s a) p1 p2
+    PTup a p1 p2 -> PTup (apply s a) (apply s p1) (apply s p2)
 
   -- We will never actually need this function for patterns, or anything other
   -- than types for that matter.

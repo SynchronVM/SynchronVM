@@ -16,4 +16,60 @@ if2add5 x = x
 
 nestedled = let f = \x -> x in 5 + f 10
 
+floatTest (x,y) = 2.5
+
+testadd2 = add2 5
+
+testprim_id1 = prim_id 5
+
+testprim_id2 = prim_id (id 5)
+
+yes : Bool
+yes = True
+
+no : a -> Bool
+no f = False
+
+floatadd : Float -> Float -> Float
+floatadd x y = x + y
+
+testsub x y = x > y
+
+testsubf : Float -> Float -> Float
+testsubf x y = x - y
+
+testif = if True then 5 else 2
+
+testiflet = if True && False
+  then let x = (\x -> x)
+       in x 10
+  else let x = 5 in x
+
 main = baz
+
+tuptest : (Int, Int, Float) -> (Int, Int, (Float, Float))
+tuptest (x, y, z) = (x+y, y+x, (z / z, 2.5))
+
+voidtest : ((), (), ()) -> (Int, ())
+voidtest ((), (), ()) = (2, ())
+
+wildtest : (Int, (Float, Bool), ()) -> (Int, ())
+wildtest (i, _, _) = (i+2, ())
+
+fbti : (Float, Bool) -> Int
+fbti (_,True)  = 5
+fbti (_,False) = 7
+
+astest : (Int, (Float, Bool)) -> (Int, ())
+astest (i, x as (2.5, True)) = (fbti x, ())
+astest (_,_)                 = (fbti (2.5, False), ())
+
+caseoftest : Int -> Int
+caseoftest i = case i of
+  y -> y
+  x -> case x of
+    z -> case z of
+      3 -> 3
+      8 -> 7
+      q -> q
+    1 -> 7
