@@ -92,6 +92,7 @@ data Lit = LInt Int
 
 data Exp a = EVar a Ident
            | ELit a Lit
+           | ECase a (Exp a) [(Pat a, Exp a)]
            | ETup a [(Exp a)]
            | EBin a (Exp a) (Exp a) (Binop a)
            | EUn a (Exp a) (Unop a)
@@ -105,6 +106,7 @@ expVar :: Exp a -> a
 expVar e = case e of
   EVar a _     -> a
   ELit a _     -> a
+  ECase a _ _  -> a
   ETup a _     -> a
   EBin a _ _ _ -> a
   EUn a _ _    -> a
@@ -260,6 +262,7 @@ instance Substitutable (Exp Type) where
   apply s e = case e of
     EVar a id      -> EVar (apply s a) id
     ELit a l       -> ELit (apply s a) l
+    ECase a e pms  -> ECase a (apply s e) $ map (\(p,e) -> (apply s p, apply s e)) pms
     ETup a es      -> ETup (apply s a) $ map (apply s) es
     EBin a e1 e2 o -> EBin (apply s a) (apply s e1) (apply s e2) (apply s o)
     EUn a e o      -> EUn (apply s a) (apply s e) (apply s o)
@@ -344,6 +347,14 @@ unifyWithAtleastOne :: Type -> [Type] -> TC Subst
 unifyWithAtleastOne t []       = error "can not unify with empty list of types"
 unifyWithAtleastOne t1 [t2]    = unify t1 t2
 unifyWithAtleastOne t1 (t2:ts) = catchError (unify t1 t2) $ \_ -> unifyWithAtleastOne t1 ts
+
+unifyAll :: [Type] -> TC Subst
+unifyAll []         = return unitsub
+unifyAll [t]        = return unitsub
+unifyAll (t1:t2:ts) = do
+  sub  <- unify t1 t2
+  sub' <- unifyAll $ apply sub (t2:ts)
+  return $ sub `compose` sub'
 
 data Schema = Forall [Ident] Type
   deriving Show
@@ -642,6 +653,23 @@ runTC tca = let excepted = runExceptT tca
                 stated   = evalStateT excepted (TCState 0)
             in runReaderT stated (Env Map.empty)
 
+checkCaseClauses :: Type -> [(Pat (), Exp ())] -> TC (Subst, [(Pat Type, Exp Type)])
+checkCaseClauses t []     = return (unitsub, [])
+checkCaseClauses t (c:cs) = do
+  (sub,c')   <- checkCaseClause t c
+  (sub',cs') <- checkCaseClauses t cs
+  return (sub `compose` sub', c':cs')
+
+checkCaseClause :: Type -> (Pat (), Exp ()) -> TC (Subst, (Pat Type, Exp Type))
+checkCaseClause ct (p,e) = do
+  p'          <- checkPat p
+  s1          <- unify ct (patVar p')
+  let p''     = apply s1 p'
+  let vars    = patBindings p''
+  let schemas = map (\(id,t) -> (id, Forall [] t)) vars
+  (s2,e')     <- inEnvMany schemas $ checkExp e
+  return (s1 `compose` s2, (p'', e'))
+
 checkExp :: Exp () -> TC (Subst, Exp Type)
 checkExp e = case e of
   EVar () id      -> do
@@ -649,6 +677,14 @@ checkExp e = case e of
     return (unitsub, EVar t id)
 
   ELit () l       -> return (unitsub, ELit (constType l) l)
+
+  ECase () e pms  -> do
+    (s1,e')      <- checkExp e
+    (s2, pms')   <- checkCaseClauses (expVar e') pms
+    s3           <- unifyAll $  map (expVar . snd) pms'
+    let finsub   = s1 `compose` s2 `compose` s3
+    let casetyps = expVar $ (snd . head) pms'
+    return (finsub, ECase casetyps e' pms')
 
   ETup () es      -> do
     (subs, es') <- unzip <$> mapM checkExp es
@@ -941,6 +977,17 @@ pExpVerbose = choice [
        pSymbol "else"
        e3 <- pExpVerbose
        return $ EIf () e1 e2 e3
+  , do pSymbol "case"
+       e <- pExpVerbose
+       pSymbol "of"
+       pChar '{'
+       branches <- sepBy1 (do
+         p <- pPat True
+         pSymbol "->"
+         e <- pExpVerbose
+         return (p,e)) (pChar ';')
+       pChar '}'
+       return $ ECase () e branches
   , pExpOr]
 
 pExp :: Parser (Exp ())
@@ -1066,6 +1113,14 @@ compile fp = do
     Left e  -> error $ show e
     Right r -> typecheck r
 
+tryParse :: String -> IO String
+tryParse fp = do
+  contents      <- TIO.readFile fp
+  let processed = process contents
+  let parsed    = parse pProgram fp processed
+  case parsed of
+    Left e  -> return $ show e
+    Right t -> return $ printTree t
 
 printTree :: Print a => a -> String
 printTree = render . prt 0
@@ -1204,15 +1259,21 @@ instance Print a => Print (Exp a) where
     ETup a es -> prPrec i 7 (concatD ([doc (showString "(")] ++ printTups es ++ [doc (showString ")")]))
     EVar a id -> prPrec i 7 (concatD [prt 0 id])
     ELit a const -> prPrec i 7 (concatD [prt 0 const])
+    ECase a exp patmatchs -> prPrec i 0 (concatD [doc (showString "case"), prt 0 exp, doc (showString "of"), doc (showString "{"), prt 0 patmatchs, doc (showString "}")])
     EIf a exp1 exp2 exp3 -> prPrec i 0 (concatD [doc (showString "if"), prt 0 exp1, doc (showString "then"), prt 0 exp2, doc (showString "else"), prt 0 exp3])
     where
         printTups [] = []
         printTups [x] = [prt 0 x]
-        printTups (x:y:xs) = [prt 0 x, doc (showString ",")] ++ printTups (y:xs) 
+        printTups (x:y:xs) = [prt 0 x, doc (showString ",")] ++ printTups (y:xs)
 
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
-    
+
+instance Print a => Print (Pat a, Exp a) where
+  prt i (pat,exp) = prPrec i 0 (concatD [prt 0 pat, doc (showString "->"), prt 0 exp])
+  prtList _ [x] = concatD [prt 0 x]
+  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
+
 instance Print a => Print [Exp a] where
   prt = prtList
 

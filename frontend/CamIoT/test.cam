@@ -1,10 +1,21 @@
+
+
+\x -> \y -> \z -> x + y + z
+
+\x y z -> x + y + z
+
 data List a where
-  Nil  : List a
-  Cons : a -> List a -> List a
 
-map : (a -> b) -> List a -> List b
-map _ Nil = Nil
-map f (Cons x xs) = Cons (f x) (map f xs)
+f = channel ()
 
-test : List (List Int) -> Int -> List (List Int)
-test xs n = map (\x -> map (\y -> y + n) x) xs
+sendint = send f 5
+sendbool = send f True
+
+g = let c = channel ()
+    in let _ = send c 5
+    in let _ = send c 2
+    in ()
+
+listtest = Cons 5 Nil
+
+main = sync sendint
