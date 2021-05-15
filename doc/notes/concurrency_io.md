@@ -428,6 +428,14 @@ spawn (() -> send c 5) -- or spawn (() -> sync (send c 5))
 Question: Execute which bytecode after copying next?
 Choices: Either the parent or the bytecode of the spawned thunk (child). Might need a way to distinguish the end of a child thread bytecode.
 
+### IO API
+
+```
+iochannel : IODriver -> IOChannel a -- typing?
+send_io   : IOChannel a -> a -> Event ()
+recv_io   : IOChannel a -> Event a
+```
+
 
 
 ### References

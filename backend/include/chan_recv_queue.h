@@ -30,7 +30,7 @@
 
 typedef struct {
   UUID  context_id;
-  bool *dirty_flag;
+  cam_value_t dirty_flag_pointer;
 } recv_data_t;
 
 

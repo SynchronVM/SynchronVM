@@ -22,7 +22,6 @@
 //#include "uart.h"
 #include "ll_uart.h"
 
-
 #include "powerman.h"
 #include "timerman.h"
 

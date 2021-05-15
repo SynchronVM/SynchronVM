@@ -39,6 +39,7 @@ import Data.Foldable (fold)
 import Data.Int (Int32)
 import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
+import qualified Data.Set as Set
 
 type Var = String
 type Tag = String
@@ -193,7 +194,7 @@ interpret e = instrs <+> Ins STOP <+> fold thunks_
         initState
 
 codegen :: Exp -> Env -> Codegen CAM
-codegen (Var var) env = pure $! lookup var env 0
+codegen (Var var) env     = pure $! lookup var env 0
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
@@ -299,6 +300,14 @@ lookup var (EnvAnn env (pat, l)) n =
   (Ins (REST n) <+> Ins (CALL l) <+> (lookupPat var pat)) <?>
   (lookup var env n)
 
+-- lookup for r-closed expressions
+lookupRC :: Var -> Env -> CAM
+lookupRC var EnvEmpty = Ins FAIL
+lookupRC var (EnvPair env _) = lookupRC var env
+lookupRC var (EnvAnn  env (p, l)) =
+  (Ins (CALL l) <+> lookupPat var p) <?>
+  lookupRC var env
+
 lookupPat :: Var -> Pat -> CAM
 lookupPat _ Empty = Ins FAIL
 lookupPat x (PatVar v)
@@ -349,11 +358,9 @@ zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
 -- NOTE:
 {-
 Data constructors:
-
    1 :: (2 :: Empty)
        |
        |  compiled to
        V
    Pair (Con "::" (Sys (LInt 1))) (Pair (Con "::" (Sys (LInt 2))) (Con Empty Void))
-
 -}

@@ -24,7 +24,9 @@ module Examples where
 
 import Assembler
 import Bytecode.InterpreterModel
-import CAM
+import CamOpt
+import Peephole
+import qualified CamOpt as CO
 
 example0 = Sys $ Sys2 MinusI (Sys $ LInt 5) (Sys $ LInt 4)
 
@@ -269,6 +271,7 @@ example18 =
     two  = Sys $ LInt 2
     three  = Sys $ LInt 3
     eleven = Sys $ LInt 11
+
 
 {-
 let y = \k -> k + 3
@@ -575,22 +578,38 @@ example32' =
        )
       ) (Pair (Sys $ LInt 5) (Sys $ LInt 6))
 
+{-
+let foo = \x -> x + 11
+  in let r = 2
+      in foo r
+-}
+example33 =
+  Let (PatVar "foo") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") eleven))
+  (Let (PatVar "r") two
+   (App (Var "foo") (Var "r")))
+  where
+    two  = Sys $ LInt 2
+    four = Sys $ LInt 4
+    eleven = Sys $ LInt 11
 
 run :: Exp -> Val
-run = evaluate . interpret
+run = evaluate . CO.interpret
+
+run' :: Exp -> Val
+run' = evaluate . optimise . CO.interpret
 
 runAllTests =
-  if all (== True) (zipWith (==) (map run examples) results)
+  if all (== True) (zipWith (==) (map run' examples) results)
   then print "All tests passed"
   else print "There are some errors"
   where
     examples =
-      [  example0,  example2,  example5,  example6,  example7
-      ,  example9, example10, example11, example12, example13
-      , example14, example15, example16, example17, example18
-      , example19, example20, example21, example22, example23
-      , example24, example25, example26, example27, example28
-      , example29', example30', example31'
+      [  example0 ,  example2 ,  example5 ,  example6 ,  example7
+      ,  example9 , example10 , example11 , example12 , example13
+      , example14 , example15 , example16 , example17 , example18
+      , example19 , example20 , example21 , example22 , example23
+      , example24 , example25 , example26 , example27 , example28
+      , example29', example30', example31', example32', example33
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
@@ -599,6 +618,57 @@ runAllTests =
       , VInt 20, VInt 14, VInt 10, VInt 3
       , VInt 10, VInt 8,  VInt 3 , VInt 5
       , VInt 10, VInt 8,  VInt 2 , VInt 5
-      , VInt 5,  VInt 11
+      , VInt 5,  VInt 11, VInt 11, VInt 13
       ]
 
+
+-- Uninterpretable expressions
+-- These expressions call the runtime which is not fully supported
+-- in the Haskell interpreter currently.
+
+gencamir :: Exp -> CAM
+gencamir = optimise . CO.interpret
+
+{-
+
+chan : Channel Int
+chan = channel ()
+
+process1 : () -> ()
+process1 void = sync (send chan 5)
+
+main =
+  let _ = spawn process1 in
+  let v = sync (recv chan) in
+  v
+
+
+-- COMPILED TO --
+
+let v0 = channel () in let v1 = \ v4 -> case v4 of {
+  v2 -> sync (send v0 5)
+}
+in let _ = spawn v1 in let v3 = sync (recv v0) in v3
+
+-- REWRITTEN TO --
+
+
+let v0 = channel () in
+let v1 = \v4 -> let v2 = v4 in
+                sync (send v0 5) in
+let _  = spawn v1 in
+let v3 = sync (recv v0) in
+v3
+
+-}
+
+uiexample1 =
+  Let (PatVar "v0") (Sys (RTS1 CHANNEL Void))
+  (Let (PatVar "v1") (Lam (PatVar "v4")
+                      (Let (PatVar "v2") (Var "v4")
+                        (Sys (RTS1 SYNC (Sys (RTS2 SEND
+                                              (Var "v0")
+                                              (Sys (LInt 5))))))))
+    (Let Empty (Sys (RTS1 SPAWN (Var "v1")))
+     (Let (PatVar "v3") (Sys (RTS1 SYNC (Sys (RTS1 RECV (Var "v0")))))
+       (Var "v3"))))

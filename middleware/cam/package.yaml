@@ -2,9 +2,9 @@ name:                cam
 version:             0.1.0.0
 github:              "githubuser/cam"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+author:              "Abhiroop Sarkar"
+maintainer:          "asiamgenius@gmail.com"
+copyright:           "2020 Abhiroop Sarkar"
 
 extra-source-files:
 - README.md
@@ -29,6 +29,7 @@ library:
   dependencies:
     - binary
     - bytestring
+    - containers
     - mtl
     - projectroot
   default-extensions:
@@ -46,6 +47,7 @@ executables:
     dependencies:
     - binary
     - bytestring
+    - containers
     - cam
     - mtl
     - projectroot

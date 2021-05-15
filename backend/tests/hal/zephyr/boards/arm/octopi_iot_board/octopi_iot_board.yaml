@@ -1,0 +1,15 @@
+identifier: octopi_iot_board
+name: Octopi IOT Board
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 128
+flash: 1024
+supported:
+  - can
+  - pwm
+  - counter
+  - usb

@@ -31,7 +31,7 @@
 typedef struct {
   UUID         context_id;
   cam_value_t  message;
-  bool        *dirty_flag;
+  cam_value_t dirty_flag_pointer;
 } send_data_t;
 
 typedef struct {

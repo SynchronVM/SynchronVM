@@ -95,6 +95,16 @@ void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx);
 void eval_eq_signedi(vmc_t *vmc, INT *pc_idx);
 void eval_eqf(vmc_t *vmc, INT *pc_idx);
 void eval_eq_bool(vmc_t *vmc, INT *pc_idx);
+/* Optimised instructions */
+void eval_move(vmc_t *vmc, INT *pc_idx);
+void eval_pop (vmc_t *vmc, INT *pc_idx);
+void eval_snoc(vmc_t *vmc, INT *pc_idx);
+void eval_comb(vmc_t *vmc, INT *pc_idx);
+void eval_gotoifalse(vmc_t *vmc, INT *pc_idx);
+void eval_switchi   (vmc_t *vmc, INT *pc_idx);
+void eval_callrts   (vmc_t *vmc, INT *pc_idx);
+
+
 
 eval_fun evaluators[] =
   { eval_fst,
@@ -145,7 +155,14 @@ eval_fun evaluators[] =
     eval_eqf,
     eval_gef,
     eval_lef,
-    eval_eq_bool };
+    eval_eq_bool,
+    eval_move,
+    eval_pop,
+    eval_snoc,
+    eval_comb,
+    eval_gotoifalse,
+    eval_switchi,
+    eval_callrts };
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
@@ -346,31 +363,60 @@ void eval_app(vmc_t *vmc, INT *pc_idx) {
     *pc_idx = -1;
     return;
   }
+
   heap_index closure_address = e.value; // TODO: should we do a pointer check here?
-  cam_value_t val = heap_fst(&vmc->heap, closure_address);
-  cam_value_t label = heap_snd(&vmc->heap, closure_address);
-  heap_index hi = heap_alloc_withGC(vmc);
-  if(hi == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation has failed"));
-    *pc_idx = -1;
-    return;
-  }
-  heap_set(&vmc->heap, hi, val, hold_reg);
-  cam_value_t new_env_pointer =
-    { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
-  vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
+                                        // closure or combinator, the if checks that
+
+  cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
+  cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
+
+  if(heap_s.value == 4294967295){ // if combinator
+
+    cam_value_t label = heap_f;
+
+    vmc->contexts[vmc->current_running_context_id].env = hold_reg;
 
 
-  //jump to label
-  INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
-  cam_value_t j_add = { .value = (UINT)jump_address };
-  int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
-  if(j == 0){
-    DEBUG_PRINT(("Stack push has failed"));
-    *pc_idx = -1;
-    return;
+    //jump to label
+    INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
+    cam_value_t j_add = { .value = (UINT)jump_address };
+    int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
+    if(j == 0){
+      DEBUG_PRINT(("Stack push has failed"));
+      *pc_idx = -1;
+      return;
+    }
+    *pc_idx = (INT)label.value;
+
+  } else { // not a combinator but a closure
+
+    cam_value_t val = heap_f;
+    cam_value_t label = heap_s;
+
+    heap_index hi = heap_alloc_withGC(vmc);
+    if(hi == HEAP_NULL){
+      DEBUG_PRINT(("Heap allocation has failed"));
+      *pc_idx = -1;
+      return;
+    }
+    heap_set(&vmc->heap, hi, val, hold_reg);
+    cam_value_t new_env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
+
+
+    //jump to label
+    INT jump_address = (*pc_idx) + 1; // see Jump convention at the top
+    cam_value_t j_add = { .value = (UINT)jump_address };
+    int j = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, j_add);
+    if(j == 0){
+      DEBUG_PRINT(("Stack push has failed"));
+      *pc_idx = -1;
+      return;
+    }
+    *pc_idx = (INT)label.value;
+
   }
-  *pc_idx = (INT)label.value;
 
 }
 
@@ -991,4 +1037,315 @@ void eval_eq_bool(vmc_t *vmc, INT *pc_idx) {
   cam_register_t final_value =
     { .flags = 0, .value = hold_reg.value == e.value };
   vmc->contexts[vmc->current_running_context_id].env = final_value;
+}
+
+void eval_move(vmc_t *vmc, INT *pc_idx){
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+  int i = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, e);
+  if(i == 0){
+    DEBUG_PRINT(("Stack push has failed"));
+    *pc_idx = -1;
+    return;
+  }
+
+  cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+  vmc->contexts[vmc->current_running_context_id].env = empty_tuple;
+
+  (*pc_idx)++;
+
+}
+
+void eval_pop (vmc_t *vmc, INT *pc_idx){
+  cam_register_t r;
+  int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &r);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  vmc->contexts[vmc->current_running_context_id].env = r;
+
+  (*pc_idx)++;
+}
+void eval_snoc(vmc_t *vmc, INT *pc_idx){
+  (*pc_idx)++;
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    *pc_idx = -1;
+    return;
+  }
+  heap_index hi = heap_alloc_withGC(vmc);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  } else {
+    // Assuming we have space for atleast one tuple
+    // Do we check this as well?
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->contexts[vmc->current_running_context_id].env = env_pointer;
+    heap_set(&vmc->heap, hi, e, hold_reg);
+  }
+
+}
+void eval_comb(vmc_t *vmc, INT *pc_idx){
+
+  uint16_t label = get_label(vmc, pc_idx);
+  cam_value_t cam_label =
+    { .value = (UINT)label, .flags = 0 };
+  heap_index hi = heap_alloc_withGC(vmc);
+  if(hi == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation has failed"));
+    *pc_idx = -1;
+    return;
+  } else {
+    cam_value_t env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    vmc->contexts[vmc->current_running_context_id].env = env_pointer;
+
+
+    // This value is used to demarcate a heap cell as
+    // storing a combinator value rather than a closure
+    cam_value_t dummy_val = { .value = 4294967295 };
+
+
+    heap_set(&vmc->heap, hi, cam_label, dummy_val);
+
+    *pc_idx = (*pc_idx) + 3;
+  }
+
+}
+void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  if ((e.value & 1) == 0){ // NOT SET; FALSE
+    eval_goto(vmc, pc_idx);
+  } else { // TRUE
+    *pc_idx = (*pc_idx) + 3;
+  }
+
+}
+void eval_switchi(vmc_t *vmc, INT *pc_idx){
+
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  heap_index tag_val_pair = e.value;
+  cam_value_t tag_heap = heap_fst(&vmc->heap, tag_val_pair);
+  cam_value_t val      = heap_snd(&vmc->heap, tag_val_pair);
+  INT switch_size_idx = (*pc_idx) + 1;
+  uint8_t switch_size = vmc->code_memory[switch_size_idx];
+
+  int label_to_jump = -1;
+  for(uint8_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
+    INT tag_idx1 = i;
+    INT tag_idx2 = i + 1;
+    uint16_t tag =
+      (vmc->code_memory[tag_idx1] << 8) | vmc->code_memory[tag_idx2]; // merge 2 bytes
+
+    INT lab_idx1 = i + 2;
+    INT lab_idx2 = i + 3;
+    uint16_t label =
+      (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
+
+
+    if(tag_heap.value == (UINT)tag ||
+       (UINT)tag == 65535){ //wildcard check; wildcard tag = max(uint16_t) = 65535
+      label_to_jump = label;
+      break;
+    }
+  }
+  if(label_to_jump == -1){
+    DEBUG_PRINT(("Tag %u not found while switching", tag_heap.value));
+    *pc_idx = -1;
+    return;
+  }
+
+  vmc->contexts[vmc->current_running_context_id].env = val;
+
+
+  //goto label
+  *pc_idx = (INT)label_to_jump;
+
+}
+
+static int handle_spawn(vmc_t *vmc){
+
+  /* IMP:
+   * spawn starts a new process with the signature () -> ()
+   * When we jump to this process (because of sync) the operation
+   * is like processing an APP with the argument (). So the
+   * argument () needs to be placed in the environment depending
+   * on the cases of a closure [v:l] (snocced in this case) or
+   * a combinator [l] (simply place () in the env in this case)
+   */
+  cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+
+
+
+  cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
+
+  heap_index closure_address = e.value;
+
+
+  cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
+  cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
+
+  if(heap_s.value == 4294967295){ // if combinator
+
+    cam_value_t label = heap_f;
+
+    vmc->contexts[vmc->current_running_context_id].env = empty_tuple;
+
+    return spawn(vmc, (uint16_t)label.value); // will place PID in env
+
+
+  } else { // not a combinator but a closure
+
+    cam_value_t val = heap_f;
+    cam_value_t label = heap_s;
+
+
+    // Put (v, ()) of [v:l] on the env register; Read above why () comes;
+    // spawn then copies the content of the env register to
+    // the `env` register of the new context
+
+    heap_index hi = heap_alloc_withGC(vmc);
+    if(hi == HEAP_NULL){
+      DEBUG_PRINT(("Heap allocation has failed"));
+      return -1;
+    }
+    heap_set(&vmc->heap, hi, val, empty_tuple);
+    cam_value_t new_env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+
+    vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
+
+    return spawn(vmc, (uint16_t)label.value); // will place PID in env
+
+  }
+
+}
+
+static int handle_channel(vmc_t *vmc){
+  UUID chan_id;
+  int j = channel(vmc, &chan_id);
+  if(j == -1){
+    DEBUG_PRINT(("Error initializing a channel \n"));
+    return j;
+  }
+  cam_value_t channel_cam = { .value = (UINT)chan_id, .flags = 0 };
+  vmc->contexts[vmc->current_running_context_id].env = channel_cam;
+  return 1;
+}
+
+static int handle_sendevt(vmc_t *vmc){
+  cam_value_t message = vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  UUID channel_id = (UUID)hold_reg.value;
+
+  event_t send_evt;
+  int j = sendEvt(vmc, &channel_id, message, &send_evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with sendEvt \n"));
+    return j;
+  }
+
+  cam_value_t send_evt_env =
+    { .value = (UINT)send_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = send_evt_env;
+  return 1;
+}
+
+static int handle_recvevt(vmc_t *vmc){
+  cam_value_t channel_cam = vmc->contexts[vmc->current_running_context_id].env;
+
+  UUID channel_id = (UUID)channel_cam.value;
+
+  event_t recv_evt;
+  int j = recvEvt(vmc, &channel_id, &recv_evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with recvEvt \n"));
+    return j;
+  }
+
+  cam_value_t recv_evt_env =
+    { .value = (UINT)recv_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = recv_evt_env;
+  return 1;
+}
+
+static int handle_sync(vmc_t *vmc){
+  cam_value_t event_env = vmc->contexts[vmc->current_running_context_id].env;
+
+  if(event_env.flags != VALUE_PTR_BIT){
+    DEBUG_PRINT(("Pointer not found in the environment register \n"));
+    return -1;
+  }
+
+  event_t evt = (event_t)event_env.value;
+
+  int j = sync(vmc, &evt);
+  if(j == -1){
+    DEBUG_PRINT(("Error with recvEvt \n"));
+    return j;
+  }
+
+  return 1;
+
+
+}
+
+void eval_callrts(vmc_t *vmc, INT *pc_idx){
+  INT n_idx = (*pc_idx) + 1;
+  uint8_t rts_op_no = vmc->code_memory[n_idx];
+
+  // do all operations here
+    /* spawn     - 0 */
+    /* channel   - 1 */
+    /* sendEvt   - 2 */
+    /* recvEvt   - 3 */
+    /* sync      - 4 */
+    /* choose    - 5 */
+    /* spawndriverop - 6 */
+
+  int ret_code = -1;
+  switch(rts_op_no){
+    case 0:
+      ret_code = handle_spawn(vmc);
+      break;
+    case 1:
+      ret_code = handle_channel(vmc);
+      break;
+    case 2:
+      ret_code = handle_sendevt(vmc);
+      break;
+    case 3:
+      ret_code = handle_recvevt(vmc);
+      break;
+    case 4:
+      ret_code = handle_sync(vmc);
+      break;
+    default:
+      DEBUG_PRINT(("Invalid RTS op number"));
+      *pc_idx = -1;
+      return;
+  }
+  if(ret_code == -1){
+    DEBUG_PRINT(("Error in RTS function"));
+    *pc_idx = -1;
+  }
+
+  *pc_idx = (*pc_idx) + 2;
 }

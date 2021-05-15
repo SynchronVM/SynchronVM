@@ -40,4 +40,4 @@ program2 = local (\(MS x d) -> MS (x + 1) (d + 1.0)) (
            bind ask return
            ))
 
-main = runReader program1 5
+main = runReader program2 (MS 1 2.0)

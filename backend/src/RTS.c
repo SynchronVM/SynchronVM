@@ -1,3 +1,4 @@
+
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
@@ -32,7 +33,6 @@
 #include <RTS.h>
 #include <stdbool.h>
 
-
 static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
   // counting begins with 0
   //  Bit pattern -> 0 1 0 0 1 1
@@ -53,6 +53,23 @@ static inline UINT set_first_16_bits(uint8_t first8bits, uint8_t second8bits){
 
 }
 
+static cam_value_t create_dirty_flag(vmc_t *container, bool b){
+
+  cam_value_t dirty_flag;
+
+  if(b)
+    dirty_flag = (cam_value_t){ .value = 1, .flags = 0 }; // true
+  else
+    dirty_flag = (cam_value_t){ .value = 0, .flags = 0 }; // false
+
+  heap_index dirty_flag_idx = heap_alloc_withGC(container);
+  heap_set_fst(&container->heap, dirty_flag_idx, dirty_flag);
+  cam_value_t dirty_flag_pointer =
+    { .value = (UINT)dirty_flag_idx, .flags = VALUE_PTR_BIT };
+
+  return dirty_flag_pointer;
+
+}
 
 
 static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev){
@@ -78,20 +95,21 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
 
     if(bevt.e_type == SEND){
 
-      if(poll_recvq(&container->channels[bevt.channel_id].recvq)){
+      if(poll_recvq(container, &container->channels[bevt.channel_id].recvq)){
         *cev = cevt;
         return 1;
       } // else continue the do-while loop
 
-    } else { // recvEvt
+    } else if (bevt.e_type == RECV) { // recvEvt
 
-      if(poll_sendq(&container->channels[bevt.channel_id].sendq)){
+      if(poll_sendq(container, &container->channels[bevt.channel_id].sendq)){
         *cev = cevt;
         return 1;
-      } // else continue the do-while loop
+      }
 
     }
 
+    // else continue the do-while loop
 
     cam_value_t pointer_to_next = heap_snd(&container->heap, index);
     index = (heap_index)pointer_to_next.value;
@@ -122,14 +140,17 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
 
     if(bevt.e_type == SEND){
 
-      bool dirty = false;
+      //Create dirty flag = false
+      cam_value_t df_pointer = create_dirty_flag(container, false);
+
+
 
       //XXX: Instead of copying the whole message send its reference.
       // send_data_t should have the field cam_value_t *message
       send_data_t sender_data =
         {   .context_id = container->current_running_context_id
           , .message = msg
-          , .dirty_flag = &dirty };
+          , .dirty_flag_pointer = df_pointer };
 
       int j =
         chan_send_q_enqueue(&container->channels[bevt.channel_id].sendq, sender_data);
@@ -140,13 +161,14 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
         return -1;
       }
 
-    } else { // recvEvt
+    } else if (bevt.e_type == RECV){ // recvEvt
 
-      bool dirty = false;
+      // create dirty flag = false
+      cam_value_t df_pointer = create_dirty_flag(container, false);
 
       recv_data_t recv_data =
         {   .context_id = container->current_running_context_id
-          , .dirty_flag = &dirty };
+          , .dirty_flag_pointer = df_pointer };
 
       int j =
         chan_recv_q_enqueue(  &container->channels[bevt.channel_id].recvq
@@ -158,7 +180,6 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
       }
 
     }
-
 
     cam_value_t pointer_to_next = heap_snd(&container->heap, index);
     index = (heap_index)pointer_to_next.value;
@@ -197,7 +218,12 @@ int spawn(vmc_t *container, uint16_t label){
         DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
         return -1;
       }
-      // eval_RTS_spawn should now simply do *pc_idx++
+
+      // Place the context-id(or process-id) on the environment register
+      cam_value_t process_id = { .value = (UINT)i, .flags = 0 };
+      container->contexts[container->current_running_context_id].env = process_id;
+
+      // eval_RTS_spawn should now simply do *pc_idx+=2
       // so that the parent context can continue running
       return 1;
     }
@@ -210,21 +236,17 @@ static int dispatch(vmc_t *container){
   UUID context_id;
   int de_q_status = q_dequeue(&container->rdyQ, &context_id);
   if (de_q_status == -1){
+    // This is the standard state of a microcontroller
+    // where processes are blocked and sleeping, waiting
+    // for interrupts to arrive. Setting the
+    // current_running_context_id = UUID_NONE is an indicator
+    // to zephyr to now wait for interrupts;
     DEBUG_PRINT(("Ready Queue is empty\n"));
-    return -1; // This is the standard state of a microcontroller
-               // and it should sleep when it gets -1 on dispatch
+    container->current_running_context_id = UUID_NONE;
+    return -1;
   }
   container->current_running_context_id = context_id;
   return 1;
-
-
-  /* Before current_running_context_id was introduced */
-  /* container->context = container->contexts[context_id]; // This will overwrite the parent context; */
-  /*                                                       // Do we want to store it somewhere? */
-  /* container->context.env = container->contexts[context_id].env; */
-  /* container->context.pc = container->contexts[context_id].pc; */
-  //hopefully stack is set by the first container->context = ....
-
 }
 
 static int synchronizeNow(vmc_t *container, cam_event_t cev){
@@ -251,7 +273,12 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
     }
 
     UUID recv_context_id = recv_data.context_id;
-    *recv_data.dirty_flag = true; // the unlogging trick
+
+    cam_value_t true_flag = { .value = 1, .flags = 0 };
+    heap_set_fst(  &container->heap
+                 , (heap_index)recv_data.dirty_flag_pointer.value
+                 , true_flag); //the unlogging trick
+
 
 
     /* NOTE Message passing begins */
@@ -275,8 +302,10 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /****** PC increment *****/
 
-    container->contexts[container->current_running_context_id].pc++; // increments the PC of the sender
-    container->contexts[recv_context_id].pc++; // increments the PC of the receiver
+    container->contexts[container->current_running_context_id].pc+=2; // increments the PC of the sender
+
+    //receiver's PC is incremented by eval_callrts
+    /* container->contexts[recv_context_id].pc++; // increments the PC of the receiver */
 
     /****** PC increment *****/
 
@@ -285,7 +314,7 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     return 1;
 
-  } else {
+  } else if(bevt.e_type == RECV) {
 
     send_data_t sender_data;
     int deq_status =
@@ -297,7 +326,11 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
       return -1;
     }
 
-    *sender_data.dirty_flag = true; // the unlogging trick
+    cam_value_t true_flag = { .value = 1, .flags = 0 };
+    heap_set_fst(  &container->heap
+                 , (heap_index)sender_data.dirty_flag_pointer.value
+                 , true_flag); //the unlogging trick
+
 
     /* NOTE Message passing begins */
     /*
@@ -322,8 +355,10 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /****** PC increment *****/
 
-    container->contexts[sender_data.context_id].pc++; //sender is unblocked now
-    container->contexts[container->current_running_context_id].pc++; //continue executing the receiver from sync
+    container->contexts[sender_data.context_id].pc+=2; //sender is unblocked now
+
+    //receiver's PC is incremented by eval_callrts
+    /* container->contexts[container->current_running_context_id].pc++; //continue executing the receiver from sync */
 
     /****** PC increment *****/
 
@@ -332,6 +367,8 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
     return 1;
 
   }
+
+  return -1; // neither SEND or RECV or SENDIO or RECVIO
 }
 
 int sync(vmc_t *container, event_t *evts){
@@ -423,4 +460,3 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
   return 1;
 
 }
-

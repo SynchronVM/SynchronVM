@@ -32,13 +32,16 @@
 #include <queue.h>
 #include <channel.h>
 #include <Context.h>
+#include <ll/ll_driver.h>
 
 #include <stdint.h>
 
 #define VMC_CONTAINER_1 0
 #define VMC_CONTAINER_2 1
 
-#define VMC_MAX_CONTEXTS 16
+#define VMC_MAX_CONTEXTS 4
+#define VMC_MAX_DRIVERS  16
+#define CONTEXT_STACK_SPACE 256
 
 #define MAX_CHANNELS 100 // This number should be configurable or statically analyzable from the code
 #define MAX_WAIT_PARTICIPANTS 3
@@ -53,21 +56,37 @@ typedef struct {
   bool          context_used[VMC_MAX_CONTEXTS];
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
   Queue_t       rdyQ;
+  ll_driver_t   drivers[VMC_MAX_DRIVERS];
+  void*         backend_custom; /* Can be used by a backend for low level integration */
+
 } vmc_t;
 
-extern vmc_t vm_containers[]; /* For testing, remove this later */
+/****************************************************/
+/* low-level message queue interface function types */ 
+
+#define VMC_MESSAGE_RECEIVED 0
+#define VMC_NO_MESSAGE       -1 
+
+typedef int (*message_read_poll_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
+typedef int (*message_read_block_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
+
 
 /**********************/
 /* External Interface */
 /**********************/
 
-extern int vmc_init(void);
+extern int vmc_init(vmc_t *vm_containers, int max_num_containers);
 
 // These need to run within some lower level thread abstractions
-extern int vmc_run(vmc_t *container);
-
-extern int init_all_chans(Channel_t *c, uint8_t *mem); /* Could be an internal function */
+extern int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...));
 
 extern heap_index heap_alloc_withGC(vmc_t *container);
+
+extern int scheduler(vmc_t *container,
+		     message_read_poll_fun poll_msg,
+		     message_read_block_fun block_msg,
+         void (*dbg_print)(const char *str, ...),
+         bool unit_test);
+
 
 #endif
