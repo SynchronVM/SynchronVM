@@ -59,7 +59,6 @@ uint8_t vmc_container_1_rdyq[sizeof(UUID) * 1024 * VMC_MAX_CONTEXTS];
 
 const uint8_t vmc_container_1_code[] = {
   #include VMC_CONTAINER_1_BYTECODE_FILE
-  ,0
 };
 #endif
 
@@ -70,7 +69,6 @@ uint8_t vmc_container_2_arrays[VMC_CONTAINER_2_ARRAY_MEM_SIZE_BYTES];
 
 const uint8_t vmc_container_2_code[] = {
   #include VMC_CONTAINER_2_BYTECODE_FILE
-  ,0
 };
 
 #endif
@@ -101,6 +99,8 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
+
+  vm_containers[VMC_CONTAINER_1].code_size = sizeof(vmc_container_1_code);
   // No checks for the failure of the following two
   init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
                  , vmc_container_1_channels);
@@ -166,7 +166,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   return r;
 }
 
-
+// the caller to vmc_init should set code_size
 int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
 
@@ -252,6 +252,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   container->contexts[0].pc  = pc;
   container->context_used[0] = true;
   container->current_running_context_id = 0;
+  container->all_contexts_stopped = false;
 
 
   dbg_print("vmc_run executing ctx: %d\r\n", container->current_running_context_id);
@@ -271,8 +272,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 int scheduler(vmc_t *container,
 	      message_read_poll_fun poll_msg,
 	      message_read_block_fun block_msg,
-        void (*dbg_print)(const char *str, ...),
-        bool unit_test) {
+        void (*dbg_print)(const char *str, ...)) {
 
   //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
   //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
@@ -285,6 +285,11 @@ int scheduler(vmc_t *container,
   while (true) {
 
 
+    if(container->all_contexts_stopped){
+      // All of the contexts have encountered the STOP operation; Program STOP
+      break;
+    }
+
     /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
       block_msg(container, &msg);
@@ -295,6 +300,7 @@ int scheduler(vmc_t *container,
         /* enqueue processes */
       }
     }
+
 
     /* Every now and then poll for messages (maybe not every iteration?)*/
     if (poll_msg(container, &msg) == 0) {  /* loop over queue here ? */
@@ -319,13 +325,14 @@ int scheduler(vmc_t *container,
 
       uint8_t current_inst = container->code_memory[*pc];
 
-      if (current_inst == 13 && unit_test) {
-        break;
-      }
-      else if(current_inst == 13 && !unit_test){
-        container->current_running_context_id = UUID_NONE;
-        dbg_print("end of instruction stream\r\n");
-      }
+      /* if (current_inst == 13 && unit_test) { */
+      /*   DEBUG_PRINT(("Encountered STOP")); */
+      /*   break; */
+      /* } */
+      /* else if(current_inst == 13 && !unit_test){ */
+      /*   container->current_running_context_id = UUID_NONE; */
+      /*   dbg_print("end of instruction stream\r\n"); */
+      /* } */
 
 
       if (current_inst > (sizeof(evaluators) / 4)) {

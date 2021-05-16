@@ -105,8 +105,7 @@ Concrete steps:
 
 ```
 1. Label Graveyard : LABEL - STOP - codegeneration
-2. When I spawn push on the stack the label graveyard
+2. When I spawn - push on the stack the label graveyard
 3. When STOP is encountered set context.used = false and call dispatch()
-
 4. Scheduler should check if all contexts are false to determine if the program is stopped
 ```

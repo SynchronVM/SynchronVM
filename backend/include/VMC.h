@@ -51,6 +51,7 @@ typedef struct {
   uint8_t       *stack_memory;
   uint8_t       *arrays_memory;
   const uint8_t *code_memory;
+  UINT          code_size;
   UUID          current_running_context_id;
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
@@ -58,6 +59,7 @@ typedef struct {
   Queue_t       rdyQ;
   ll_driver_t   drivers[VMC_MAX_DRIVERS];
   void*         backend_custom; /* Can be used by a backend for low level integration */
+  bool          all_contexts_stopped;
 
 } vmc_t;
 
@@ -85,8 +87,7 @@ extern heap_index heap_alloc_withGC(vmc_t *container);
 extern int scheduler(vmc_t *container,
 		     message_read_poll_fun poll_msg,
 		     message_read_block_fun block_msg,
-         void (*dbg_print)(const char *str, ...),
-         bool unit_test);
+         void (*dbg_print)(const char *str, ...));
 
 
 #endif

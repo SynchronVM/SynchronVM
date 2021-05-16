@@ -45,7 +45,7 @@ int mock_read_message_block(vmc_t *vmc, ll_driver_msg_t *msg){
 void mock_debug_print(const char* str, ...){ (void)str; }
 
 
-static int setup_and_run(vmc_t *container, uint8_t *code){
+static int setup_and_run(vmc_t *container, uint8_t *code, uint32_t c_size){
 
   int init_status = vmc_init(container, 4);
   if (init_status == -1){
@@ -54,6 +54,7 @@ static int setup_and_run(vmc_t *container, uint8_t *code){
   }
 
   container->code_memory = code;
+  container->code_size   = c_size;
 
 
   int run = vmc_run(container, mock_debug_print);
@@ -66,8 +67,7 @@ static int setup_and_run(vmc_t *container, uint8_t *code){
   int scheduler_status = scheduler(  container
                                      , mock_read_message_poll
                                      , mock_read_message_block
-                                     , mock_debug_print
-                                     , true);
+                                     , mock_debug_print);
 
   if (scheduler_status == -1){
     printf("scheduler has failed");
@@ -94,13 +94,13 @@ bool vmc_run_1_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_1\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 25){
+  if(container.contexts[0].env.value == 25){
     return true;
   } else {
     return false;
@@ -121,14 +121,14 @@ bool vmc_run_2_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_2\n");
     return false;
   }
 
 
-  if(container.contexts[container.current_running_context_id].env.value == 9){
+  if(container.contexts[0].env.value == 9){
     return true;
   } else {
     return false;
@@ -145,13 +145,13 @@ bool vmc_run_3_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_3\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 7){
+  if(container.contexts[0].env.value == 7){
     return true;
   } else {
     return false;
@@ -178,13 +178,13 @@ bool vmc_run_4_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_4\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 6){
+  if(container.contexts[0].env.value == 6){
     return true;
   } else {
     return false;
@@ -220,14 +220,14 @@ bool vmc_run_5_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_5\n");
     return false;
   }
 
 
-  if(container.contexts[container.current_running_context_id].env.value == 1){ //env register contains True?
+  if(container.contexts[0].env.value == 1){ //env register contains True?
     return true;
   } else {
     return false;
@@ -245,13 +245,13 @@ bool vmc_run_6_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_6\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 0){ //env register contains False?
+  if(container.contexts[0].env.value == 0){ //env register contains False?
     return true;
   } else {
     return false;
@@ -269,13 +269,13 @@ bool vmc_run_7_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_7\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 0){ //env register contains False?
+  if(container.contexts[0].env.value == 0){ //env register contains False?
     return true;
   } else {
     return false;
@@ -297,13 +297,13 @@ bool vmc_run_8_test(){
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_8\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 13){
+  if(container.contexts[0].env.value == 13){
     return true;
   } else {
     return false;
@@ -312,17 +312,18 @@ bool vmc_run_8_test(){
 
 bool vmc_run_9_test(){
 
-  uint8_t code [] = { 254,237,202,254,1,0,1,0,0,0,5,0,0,0,0,0,0,0,34,8,55,1,4,10,0,39,9,4,1,55,0,9,3,2,55,3,55,4,13,4,1,9,3,2,49,6,0,0,55,2,55,4,15 };
+  uint8_t code [] = { 254,237,202,254,1,0,1,0,0,0,5,0,0,0,0,0,0,0,34,8,55,1,4,10,0,39,9,4,1,55,0,9,3,2,55,3,55,4,13,4,1,9,3,2,49,6,0,0,55,2,55,4,15,13 };
 
   vmc_t container;
 
-  int i = setup_and_run(&container, code);
+  int i = setup_and_run(&container, code, sizeof(code));
   if(i == -1){
     printf("Failure in vmc_run_9\n");
     return false;
   }
 
-  if(container.contexts[container.current_running_context_id].env.value == 5){
+  if(container.contexts[0].env.value == 5 && // receiver
+     container.contexts[1].env.value == 0){  // sender
     return true;
   } else {
     return false;

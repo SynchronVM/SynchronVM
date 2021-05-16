@@ -188,7 +188,7 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
     return;
   }
 
-  r = scheduler(container, read_message_poll, read_message_block, printk, false);
+  r = scheduler(container, read_message_poll, read_message_block, printk);
 
   /* do something related to r? */
 

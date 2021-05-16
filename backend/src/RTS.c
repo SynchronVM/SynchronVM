@@ -30,6 +30,7 @@
 # define DEBUG_PRINT(x) do {} while (0)
 #endif
 
+
 #include <RTS.h>
 #include <stdbool.h>
 
@@ -208,10 +209,17 @@ int spawn(vmc_t *container, uint16_t label){
       container->contexts[i].pc = (UINT)label;
       container->contexts[i].env =
         container->contexts[container->current_running_context_id].env; //copying the environment
-      // XXX
-      //container->contexts[i].stack = Case 1. statically allocated in vmc_init; nothing to be done here
-      //                               Case 2. some kind of malloc with GC for stack memory with optimal memory use
-      //                                       In Case 2 we have to call the stack_alloc function here
+
+      /*** Push label graveyard address on the stack ****/
+      INT jump_address = container->code_size - 1;
+      cam_value_t j_add = { .value = (UINT)jump_address };
+      int q = stack_push(&container->contexts[i].stack, j_add);
+      if(q == 0){
+        DEBUG_PRINT(("Stack push has failed"));
+        return -1;
+      }
+      /**************************************************/
+
       container->context_used[i] = true;
       int j = q_enqueue(&container->rdyQ, i);
       if(j == -1){
@@ -232,7 +240,7 @@ int spawn(vmc_t *container, uint16_t label){
   return -1;
 }
 
-static int dispatch(vmc_t *container){
+int dispatch(vmc_t *container){
   UUID context_id;
   int de_q_status = q_dequeue(&container->rdyQ, &context_id);
   if (de_q_status == -1){
@@ -245,6 +253,7 @@ static int dispatch(vmc_t *container){
     container->current_running_context_id = UUID_NONE;
     return -1;
   }
+  DEBUG_PRINT(("Queueing\n"));
   container->current_running_context_id = context_id;
   return 1;
 }
@@ -302,12 +311,17 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /****** PC increment *****/
 
-    container->contexts[container->current_running_context_id].pc+=2; // increments the PC of the sender
 
-    //receiver's PC is incremented by eval_callrts
-    /* container->contexts[recv_context_id].pc++; // increments the PC of the receiver */
+    // PC increment not required with the current design as the
+    // eval_callrts function handles the PC increment for both
+    // sender and receiver;
 
     /****** PC increment *****/
+
+    // place the () on sender's env because sync (send) succeeded
+    cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+    container->contexts[container->current_running_context_id].env = empty_tuple;
+
 
     // the receiving thread will run now
     container->current_running_context_id = recv_context_id;
@@ -355,13 +369,15 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /****** PC increment *****/
 
-    container->contexts[sender_data.context_id].pc+=2; //sender is unblocked now
-
-    //receiver's PC is incremented by eval_callrts
-    /* container->contexts[container->current_running_context_id].pc++; //continue executing the receiver from sync */
+    // PC increment not required with the current design as the
+    // eval_callrts function handles the PC increment for both
+    // sender and receiver;
 
     /****** PC increment *****/
 
+    // place the () on sender's env because sync (send) succeeded
+    cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+    container->contexts[sender_data.context_id].env = empty_tuple;
 
     // the receiver will automatically run because we are now executing its context
     return 1;

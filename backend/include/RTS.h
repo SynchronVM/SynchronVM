@@ -29,6 +29,9 @@
 #include <event.h>
 
 extern int channel(vmc_t *container, UUID    *chan_id);
+
+extern int dispatch(vmc_t *container);
+
 extern int spawn  (vmc_t *container, uint16_t label  );
 
 extern int sync   (  vmc_t       *container, event_t   *evts);

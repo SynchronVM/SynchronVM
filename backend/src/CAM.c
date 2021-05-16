@@ -164,6 +164,7 @@ eval_fun evaluators[] =
     eval_switchi,
     eval_callrts };
 
+
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
   INT lab_idx2 = (*pc_idx) + 2;
@@ -178,6 +179,14 @@ uint16_t get_tag(vmc_t *vmc, INT *pc_idx){
   uint16_t tag =
     (vmc->code_memory[tag_idx1] << 8) | vmc->code_memory[tag_idx2]; // merge 2 bytes
   return tag;
+}
+
+static bool is_all_contexts_stopped(vmc_t *vmc){
+  bool start = false;
+  for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
+    start = start | vmc->context_used[i];
+  }
+  return !start;
 }
 
 void eval_fst(vmc_t *vmc, INT *pc_idx) {
@@ -349,8 +358,15 @@ void eval_skip(vmc_t *vmc, INT *pc_idx) {
 }
 
 void eval_stop(vmc_t *vmc, INT *pc_idx) {
-  (void)vmc;
   (void)pc_idx;
+  vmc->context_used[vmc->current_running_context_id] = false;
+  int i = dispatch(vmc);
+  if(i == -1)
+    DEBUG_PRINT(("Ready Queue is empty\n"));
+  if(is_all_contexts_stopped(vmc)){
+    vmc->all_contexts_stopped = true;
+  }
+
 }
 
 void eval_app(vmc_t *vmc, INT *pc_idx) {
@@ -1225,6 +1241,7 @@ static int handle_spawn(vmc_t *vmc){
 
     vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
 
+    // Spawn will places the label graveyard address on the stack
     return spawn(vmc, (uint16_t)label.value); // will place PID in env
 
   }
