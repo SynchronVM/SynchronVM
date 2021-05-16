@@ -166,7 +166,6 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   return r;
 }
 
-// the caller to vmc_init should set code_size
 int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
 
@@ -186,7 +185,6 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
 
   /* feedcafe: 4276996862 */
-  /* magic:    1214606444 */
   dbg_print("magic: %u\r\n", magic);
   if (magic != 0xFEEDCAFE) return 0;
 
@@ -218,30 +216,6 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   code_size |= container->code_memory[pc++] << 8;
   code_size |= container->code_memory[pc++];  
 
-  /* Now pc should be the index of the first instruction. */
-  /* set up the parent context */
-  /* Running all computations in parent context for now */
-
-  /* cam_value_t v_empty = get_cam_val(0,0); */
-  /* //container->current_running_context_id = 0; // done by the scheduler */
-  /* container->contexts[container->current_running_context_id].env = v_empty; */
-  /* container->contexts[container->current_running_context_id].pc  = pc; */
-
-
-  /* /\* Start executing instructions now *\/ */
-  /* uint8_t current_inst = container->code_memory[pc]; */
-  /* while(current_inst != 13){ // stop instruction */
-  /*   (*evaluators[current_inst])(container, &pc); */
-  /*   if(pc == -1){ */
-  /*     DEBUG_PRINT(("Instruction %u failed",current_inst)); */
-  /*     return -1; // error */
-  /*   } */
-  /*   current_inst = container->code_memory[pc];  } */
-  /* /\* Encountered STOP now *\/ */
-
-  /* /\* end *\/ */
-  /* return 1; */
-
 
   /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
@@ -260,11 +234,6 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   dbg_print("vmc_run current env: %u\r\n", container->contexts[container->current_running_context_id].env.value);
   dbg_print("vmc_run current instr: 0x%x\r\n", container->code_memory[pc]);
 
-  /* Currently no process is running */
-  //container->current_running_context_id = UUID_NONE;
-
-  /* Enqueue the parent context as ready to run */
-  /* q_enqueue(&container->rdyQ, 0); */ //XXX: rdyQ not initialised in the tests
 
   return 1; /* Maybe have some error codes in relation to this fun */
 }
@@ -324,15 +293,6 @@ int scheduler(vmc_t *container,
       /* Execute an instruction */
 
       uint8_t current_inst = container->code_memory[*pc];
-
-      /* if (current_inst == 13 && unit_test) { */
-      /*   DEBUG_PRINT(("Encountered STOP")); */
-      /*   break; */
-      /* } */
-      /* else if(current_inst == 13 && !unit_test){ */
-      /*   container->current_running_context_id = UUID_NONE; */
-      /*   dbg_print("end of instruction stream\r\n"); */
-      /* } */
 
 
       if (current_inst > (sizeof(evaluators) / 4)) {

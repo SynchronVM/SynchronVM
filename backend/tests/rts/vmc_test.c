@@ -312,6 +312,20 @@ bool vmc_run_8_test(){
 
 bool vmc_run_9_test(){
 
+  /*
+    chan : Channel Int
+    chan = channel ()
+
+    process1 : () -> ()
+    process1 void = sync (send chan 5)
+
+    main =
+    let _ = spawn process1 in
+    let v = sync (recv chan) in
+    v
+
+  */
+
   uint8_t code [] = { 254,237,202,254,1,0,1,0,0,0,5,0,0,0,0,0,0,0,34,8,55,1,4,10,0,39,9,4,1,55,0,9,3,2,55,3,55,4,13,4,1,9,3,2,49,6,0,0,55,2,55,4,15,13 };
 
   vmc_t container;
