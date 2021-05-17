@@ -73,7 +73,7 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
 
-data RTS2 = SEND | SPAWNDRIVER
+data RTS2 = SEND | SPAWNEXTERNAL
           deriving (Ord, Show, Eq)
 
 data RTS1 = CHANNEL | RECV
@@ -165,13 +165,13 @@ sendEvt   - 2
 recvEvt   - 3
 sync      - 4
 choose    - 5
-spawnDriver - 6
+spawnExternal - 6
 -}
 type OperationNumber = Word8
 
 
 spawnop, channelop, sendevtop, recvevtop :: Word8
-syncop, chooseop, spawndriverop :: Word8
+syncop, chooseop, spawnexternalop :: Word8
 
 spawnop   = 0
 channelop = 1
@@ -179,7 +179,7 @@ sendevtop = 2
 recvevtop = 3
 syncop    = 4
 chooseop  = 5
-spawndriverop = 6
+spawnexternalop = 6
 
 
 -- labels to identify a subroutine
@@ -572,8 +572,8 @@ nofail (Lab _ cam)  = nofail cam
 callrts = Ins . CALLRTS
 
 genrts2 :: RTS2 -> CAM
-genrts2 SEND        = callrts sendevtop
-genrts2 SPAWNDRIVER = callrts spawndriverop
+genrts2 SEND          = callrts sendevtop
+genrts2 SPAWNEXTERNAL = callrts spawnexternalop
 
 genrts1 :: RTS1 -> CAM
 genrts1 CHANNEL = callrts channelop

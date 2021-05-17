@@ -46,7 +46,7 @@ If I do
 
 ```
 let c = channel () : Bool in 
-let _ = _spawnDriver c ??
+let _ = _spawnExternal c ??
 ```
 
 What goes in the ??

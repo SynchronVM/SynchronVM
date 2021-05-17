@@ -150,7 +150,7 @@ In case 2 we might do
 
 
 ```
-spawnDriver : IODriver -> Channel a -> ThreadId
+spawnExternal : Channel a -> IODriver -> ()
 ```
 
 
@@ -162,8 +162,8 @@ main =
   let c     = channel () in
   let b_ioc = channel () in
   let l_ioc = channel ()  in
-  let _     = spawnDriver button0 b_ioc
-  let _     = spawnDriver led0    l_ioc
+  let _     = spawnExternal b_ioc button0 in
+  let _     = spawnExternal l_ioc led0 in
   let _     = spawn (button_process b_ioc c) in
   let _     = spawn (led_process    l_ioc c) in
   ()

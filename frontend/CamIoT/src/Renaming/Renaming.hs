@@ -29,6 +29,7 @@ runR ra =
                                 ,((Ident "sync" )  , (Ident "sync" ))
                                 ,((Ident "spawn")  , (Ident "spawn"))
                                 ,((Ident "channel"), (Ident "channel"))
+                                ,((Ident "spawnExternal"), (Ident "spawnExternal"))
                                 ]
 
 
