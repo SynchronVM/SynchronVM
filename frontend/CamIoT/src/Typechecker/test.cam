@@ -73,3 +73,7 @@ caseoftest i = case i of
       8 -> 7
       q -> q
     1 -> 7
+
+data Maybe a where
+  Just : a -> Maybe a
+  Nothing : Maybe a

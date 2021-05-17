@@ -53,6 +53,7 @@ data Type = TVar Ident
           | TBool
           | TNil
           | TTup [Type]
+          | TAdt UIdent [Type]
           | TLam Type Type
   deriving (Eq, Show)
 
@@ -67,11 +68,15 @@ funtype (t1:t2:ts) = TLam t1 (funtype (t2:ts))
 data Ident = Ident String
   deriving (Eq, Show, Ord)
 
+data UIdent = UIdent String
+  deriving (Eq, Show, Ord)
+
 data Pat a = PVar a Ident
            | PNil a
            | PConst a Lit
            | PWild a
            | PAs a Ident (Pat a)
+           | PAdt a UIdent [Pat a]
            | PTup a [Pat a]
   deriving (Eq, Show)
 
@@ -82,6 +87,7 @@ patVar p = case p of
   PConst a _ -> a
   PWild a    -> a
   PAs a _ _  -> a
+  PAdt a _ _ -> a
   PTup a _   -> a
 
 data Lit = LInt Int
@@ -91,6 +97,7 @@ data Lit = LInt Int
   deriving (Eq, Show)
 
 data Exp a = EVar a Ident
+           | ECon a UIdent
            | ELit a Lit
            | ECase a (Exp a) [(Pat a, Exp a)]
            | ETup a [(Exp a)]
@@ -105,6 +112,7 @@ data Exp a = EVar a Ident
 expVar :: Exp a -> a
 expVar e = case e of
   EVar a _     -> a
+  ECon a _     -> a
   ELit a _     -> a
   ECase a _ _  -> a
   ETup a _     -> a
@@ -169,6 +177,7 @@ setUnopVar a op = case op of
 
 data Def a = DTypeSig Ident Type
            | DEquation a Ident [Pat a] (Exp a)
+           | DDataDec UIdent [Ident] [(UIdent, Type)]
   deriving (Eq, Show)
 
 getName :: Def a -> Ident
@@ -190,9 +199,38 @@ data Function a = Function
 instance Print a => Show (Function a) where
   show = printTree
 
--- Use a forall to make the type of `groups` use the same `a`
-mkFunctions :: forall a . [Def a] -> [Function a]
+data Program a = Program
+  { datatypes :: [(UIdent, [Ident], [(UIdent, Type)])]
+  , functions :: [Function a]
+  , main      :: Function a
+  }
+
+instance Print a => Show (Program a) where
+  show = printTree
+
+mkProgram :: Eq a => [Def a] -> Program a
+mkProgram defs =
+  let (datadecs,funs)    = partitionDataDecs defs
+      functions          = mkFunctions funs
+      (main, functions') = partitionMain functions
+  in Program (map unwrapDataDec datadecs) functions' main
+  where
+      unwrapDataDec (DDataDec uid vars cons) = (uid, vars, cons)
+
+partitionDataDecs :: [Def a] -> ([Def a], [Def a])
+partitionDataDecs ds = partition pred ds
+  where
+      pred d = case d of
+        DDataDec _ _ _ -> True
+        _              -> False
+
+mkFunctions :: [Def a] -> [Function a]
 mkFunctions defs = map toFunction $ groups defs
+
+partitionMain :: Eq a => [Function a] -> (Function a, [Function a])
+partitionMain funs = let main  = find ((==) (Ident "main") . name) funs
+                         funs' = delete (fromJust main) funs
+                     in (fromJust main, funs')
 
 pred :: Def a -> Def a -> Bool
 pred d1 d2 = getName d1 == getName d2
@@ -208,6 +246,24 @@ toFunction (d:ds) = case d of
   DTypeSig id t -> Function id ds (Just t)
   -- In this case there was no declared type signature
   _             -> Function (getName d) (d:ds) Nothing
+
+compile :: String -> IO (Either String (Program Type, Subst))
+compile fp = do
+  contents <- TIO.readFile fp
+  let processed = process contents
+  let parsed    = parse pProgram fp processed
+  case parsed of
+    Left e  -> error $ show e
+    Right r -> typecheck r
+
+tryParse :: String -> IO String
+tryParse fp = do
+  contents      <- TIO.readFile fp
+  let processed = process contents
+  let parsed    = parse pProgram fp processed
+  case parsed of
+    Left e  -> return $ show e
+    Right t -> return $ printTree t
 
 type Subst = Map.Map Ident Type
 
@@ -234,6 +290,7 @@ instance Substitutable Type where
     TBool       -> TBool
     TNil        -> TNil
     TLam t1 t2  -> TLam (apply s t1) (apply s t2)
+    TAdt uid ts -> TAdt uid (apply s ts)
     TTup ts     -> TTup $ map (apply s) ts
 
   ftv t = case t of
@@ -243,16 +300,18 @@ instance Substitutable Type where
     TBool       -> Set.empty
     TNil        -> Set.empty
     TLam t1 t2  -> Set.union (ftv t1) (ftv t2)
-    TTup ts    -> Set.unions $ map ftv ts
+    TAdt uid ts -> Set.unions $ map ftv ts
+    TTup ts     -> Set.unions $ map ftv ts
 
 instance Substitutable (Pat Type) where
   apply s p = case p of
-    PVar a id  -> PVar (apply s a) id
-    PNil a     -> PNil (apply s a)
-    PConst a l -> PConst (apply s a) l
-    PWild a    -> PWild (apply s a)
-    PAs a id p -> PAs (apply s a) id (apply s p)
-    PTup a ps  -> PTup (apply s a) $ map (apply s) ps
+    PVar a id     -> PVar (apply s a) id
+    PNil a        -> PNil (apply s a)
+    PConst a l    -> PConst (apply s a) l
+    PWild a       -> PWild (apply s a)
+    PAs a id p    -> PAs (apply s a) id (apply s p)
+    PAdt a uid ps -> PAdt (apply s a) uid $ map (apply s) ps
+    PTup a ps     -> PTup (apply s a) $ map (apply s) ps
 
   -- We will never actually need this function for patterns, or anything other
   -- than types for that matter.
@@ -261,6 +320,7 @@ instance Substitutable (Pat Type) where
 instance Substitutable (Exp Type) where
   apply s e = case e of
     EVar a id      -> EVar (apply s a) id
+    ECon a uid     -> ECon (apply s a) uid
     ELit a l       -> ELit (apply s a) l
     ECase a e pms  -> ECase a (apply s e) $ map (\(p,e) -> (apply s p, apply s e)) pms
     ETup a es      -> ETup (apply s a) $ map (apply s) es
@@ -309,6 +369,13 @@ instance Substitutable (Function Type) where
 
   ftv = undefined
 
+instance Substitutable (Program Type) where
+  apply s p = p { functions = map (apply s) (functions p)
+                , main      = apply s (main p)
+                }
+
+  ftv = undefined
+
 refine :: [Function Type] -> Subst -> [Function Type]
 refine funs subst = map (apply subst) funs
 
@@ -319,6 +386,10 @@ unify (TLam t1 t2) (TLam t1' t2') = do
   s1 <- unify t1 t1'
   s2 <- unify (apply s1 t2) (apply s1 t2')
   return $ s2 `compose` s1
+
+unify t1@(TAdt uid1 []) t2@(TAdt uid2 []) | uid1 == uid2 = return unitsub
+unify (TAdt uid1 ts1) (TAdt uid2 ts2)
+  | uid1 == uid2 = unifyMany ts1 ts2 
 
 unify (TVar id) t   = bind id t
 unify t (TVar id)   = bind id t
@@ -367,16 +438,18 @@ instance Substitutable Schema where
 
   ftv (Forall vars t) = ftv t `Set.difference` Set.fromList vars
 
-data Env = Env (Map.Map Ident Schema)
+data Env = Env (Map.Map Ident Schema) (Map.Map UIdent Schema)
   deriving Show
 
 emptyEnv :: Env
-emptyEnv = Env Map.empty
+emptyEnv = Env Map.empty Map.empty
 
 instance Substitutable Env where
-  apply s (Env m) = Env $ Map.map (apply s) m
+  apply s (Env m1 m2) = Env (Map.map (apply s) m1) m2
 
-  ftv (Env m) = ftv $ Map.elems m
+  -- Not sure we need to account for the FTV in the constructors, they will
+  -- be constant
+  ftv (Env m1 m2) = ftv $ Map.elems m1
 
 generalize :: Type -> Env -> Schema
 generalize t env = Forall vars t
@@ -385,6 +458,7 @@ generalize t env = Forall vars t
       vars = Set.toList $ ftv t `Set.difference` ftv env
 
 data TCError = UnboundVariable Ident
+             | UnknownConstructor UIdent
              | UnknownBinop (Binop ())
              | OccursError Ident Type
              | UnificationError Type Type
@@ -392,6 +466,7 @@ data TCError = UnboundVariable Ident
 instance Show TCError where
   show e = case e of
     UnboundVariable id -> "can not resolve symbol: " ++ show id
+    UnknownConstructor uid -> "can not resolve constructor: " ++ show uid
     UnknownBinop op -> "can not resolve binop: " ++ printTree op
     OccursError id t -> concat ["Can not substitute ", show id
                                , " for ", show t
@@ -427,10 +502,17 @@ instantiate (Forall vars t) = do
 
 lookupVar :: Ident -> TC Type
 lookupVar id = do
-  (Env env) <- ask
+  (Env env _) <- ask
   case Map.lookup id env of
     Just schema -> instantiate schema
     Nothing     -> throwError $ UnboundVariable id
+
+lookupCon :: UIdent -> TC Type
+lookupCon uid = do
+  (Env _ env) <- ask
+  case Map.lookup uid env of
+    Just schema -> instantiate schema
+    Nothing -> throwError $ UnknownConstructor uid
 
 lookupBinop :: Binop () -> TC Type
 lookupBinop op =
@@ -492,10 +574,10 @@ unopCandidates op = case op of
   Not () -> [TLam TBool TBool]
 
 extend :: Env -> Ident -> Schema -> Env
-extend (Env m) id schema = Env $ Map.insert id schema m
+extend (Env m1 m2) id schema = Env (Map.insert id schema m1) m2
 
 restrict :: Env -> Ident -> Env
-restrict (Env m) id = Env $ Map.delete id m
+restrict (Env m1 m2) id = Env (Map.delete id m1) m2
 
 inEnv :: Ident -> Schema -> TC a -> TC a
 inEnv id schema ma = inEnvMany [(id,schema)] ma
@@ -519,6 +601,7 @@ checkPat p = case p of
   PAs () id p -> do
     p' <- checkPat p
     return $ PAs (patVar p') id p'
+  PAdt () uid ps -> undefined
   PTup () ps -> do
     ps' <- mapM checkPat ps
     let tuptype = TTup $ map patVar ps'
@@ -532,12 +615,13 @@ constType LNil       = TNil
 
 patBindings :: Pat Type -> [(Ident, Type)]
 patBindings p = case p of
-  PVar t id  -> [(id,t)]
-  PNil _     -> []
-  PConst _ l -> []
-  PWild _    -> []
-  PAs t id p -> (id, t) : patBindings p
-  PTup _ ps  -> concat $ map patBindings ps
+  PVar t id     -> [(id,t)]
+  PNil _        -> []
+  PConst _ l    -> []
+  PWild _       -> []
+  PAs t id p    -> (id, t) : patBindings p
+  PAdt _ uid ps -> concat $ map patBindings ps
+  PTup _ ps     -> concat $ map patBindings ps
 
 checkPatAndBindings :: Pat () -> TC (Pat Type, [(Ident, Type)])
 checkPatAndBindings p = do
@@ -599,34 +683,52 @@ checkFunction f = do
         s' <- unify x y
         unifyEquations (y:xs) (s `compose` s')
 
-checkProgram :: [Function ()] -> TC (Subst, [Function Type])
-checkProgram fs = checkProgram_ fs unitsub
+checkProgram :: Program () -> TC (Subst, Program Type)
+checkProgram p = do
+  let allfunctions = functions p ++ [main p]
+  (sub, funs) <- checkFunctions allfunctions
+  let main' = last funs
+  let funs' = init funs
+  return (sub, p { functions = funs'
+               , main      = main'
+               }
+         )
 
-checkProgram_ :: [Function ()] -> Subst -> TC (Subst, [Function Type])
-checkProgram_ [] s     = return (s, [])
-checkProgram_ (f:fs) s = do
+checkFunctions :: [Function ()] -> TC (Subst, [Function Type])
+checkFunctions fs = checkFunctions_ fs unitsub
+
+checkFunctions_ :: [Function ()] -> Subst -> TC (Subst, [Function Type])
+checkFunctions_ [] s     = return (s, [])
+checkFunctions_ (f:fs) s = do
   (sub, f')   <- checkFunction f
   let id      = name f'
   let ty      = fromJust $ defVar $ head $ equations f'
   env         <- ask
   let schema  = generalize ty env
-  (sub', fs') <- inEnv id schema $ checkProgram_ fs (s `compose` sub)
+  (sub', fs') <- inEnv id schema $ checkFunctions_ fs (s `compose` sub)
   return $ (sub', f' : fs')
 
-typecheck :: [Def ()] -> IO (Either String ([Function Type], Subst))
+typecheck :: [Def ()] -> IO (Either String (Program Type, Subst))
 typecheck defs = do
-  let excepted = runExceptT $ checkProgram funs
+  let excepted = runExceptT $ checkProgram program
   let stated   = evalStateT excepted (TCState 0)
   readed       <- runReaderT stated initialEnv
   case readed of
     Left err -> return $ Left $ show err
     Right (subs,annotated) -> return (Right (annotated, subs))
   where
+      program :: Program ()
+      program = mkProgram defs
+
       funs :: [Function ()]
       funs = mkFunctions defs
 
       initialEnv :: Env
-      initialEnv = Env $ Map.fromList entries
+      initialEnv = Env (Map.fromList entries) (Map.fromList constructors)
+
+      constructors :: [(UIdent, Schema)]
+      constructors = concat $ flip map (datatypes program) $ \(uid,vars,cons) ->
+        flip map cons $ \(con,t) -> (con, Forall (Set.toList (ftv t)) t)
 
       entries :: [(Ident, Schema)]
       entries = [ (Ident "add2", Forall [] $ TLam TInt TInt)
@@ -651,7 +753,7 @@ instance {-# OVERLAPPING #-} Print a => Show [Function a] where
 runTC :: TC a -> IO (Either TCError a)
 runTC tca = let excepted = runExceptT tca
                 stated   = evalStateT excepted (TCState 0)
-            in runReaderT stated (Env Map.empty)
+            in runReaderT stated (Env Map.empty Map.empty)
 
 checkCaseClauses :: Type -> [(Pat (), Exp ())] -> TC (Subst, [(Pat Type, Exp Type)])
 checkCaseClauses t []     = return (unitsub, [])
@@ -675,6 +777,10 @@ checkExp e = case e of
   EVar () id      -> do
     t <- lookupVar id
     return (unitsub, EVar t id)
+
+  ECon () uid     -> do
+    t <- lookupCon uid
+    return (unitsub, ECon t uid)
 
   ELit () l       -> return (unitsub, ELit (constType l) l)
 
@@ -863,7 +969,7 @@ type Parser a = Parsec Void T.Text a
 
 -- | Parser that parses a program
 pProgram :: Parser [Def ()]
-pProgram = many $ {-pDataDec <|>-} try pTypeSignature <|> pEquation
+pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation
 
 -- parse types
 pClosed :: Parser Type
@@ -871,6 +977,7 @@ pClosed = choice [ TInt    <$ pSymbol "Int"
                  , TFloat  <$ pSymbol "Float"
                  , TBool   <$ pSymbol "Bool"
                  , TVar    <$> pIdent
+                 , flip TAdt [] <$> pUIdent
                  , do pChar '('
                       ts <- sepBy pFun (pChar ',') <* pChar ')'
                       case ts of
@@ -879,8 +986,13 @@ pClosed = choice [ TInt    <$ pSymbol "Int"
                           (_:_:_) -> pure (TTup ts)
                  ]
 
+pApp :: Parser Type
+pApp = choice [ TAdt <$> pUIdent <*> many pClosed
+              , pClosed
+              ]
+
 pFun :: Parser Type
-pFun = foldr1 TLam <$> sepBy1 pClosed (pSymbol "->")
+pFun = foldr1 TLam <$> sepBy1 pApp (pSymbol "->")
 
 pType :: Parser Type
 pType = pSpace *> pFun
@@ -889,7 +1001,8 @@ pType = pSpace *> pFun
 
 pExpClosed :: Parser (Exp ())
 pExpClosed = choice [ ELit () <$> pConst
-                    , EVar   () <$> pIdent
+                    , EVar () <$> pIdent
+                    , ECon () <$> pUIdent
                     , do pChar '('
                          es <- sepBy1 pExpVerbose (pChar ',') <* pChar ')'
                          case es of
@@ -961,13 +1074,13 @@ pExpOr = foldr1 (\e1 e2 -> EBin () e1 e2 (Or ())) <$> sepBy1 pExpAnd (pSymbol "|
 pExpVerbose :: Parser (Exp ())
 pExpVerbose = choice [
     do pSymbol "let"
-       p <- pPat False
+       p <- pPat False False
        pSymbol "="
        e1 <- pExpVerbose
        pSymbol "in"
        ELet () p e1 <$> pExpVerbose
   , do pChar '\\'
-       p <- pPat False
+       p <- pPat False False
        pSymbol "->"
        ELam () p <$> pExpVerbose
   , do pSymbol "if"
@@ -982,7 +1095,7 @@ pExpVerbose = choice [
        pSymbol "of"
        pChar '{'
        branches <- sepBy1 (do
-         p <- pPat True
+         p <- pPat True True
          pSymbol "->"
          e <- pExpVerbose
          return (p,e)) (pChar ';')
@@ -1002,12 +1115,27 @@ pTypeSignature = do
     pChar ';'
     return $ DTypeSig name t
 
+pDataDec :: Parser (Def ())
+pDataDec = do
+  pSymbol "data"
+  uid <- pUIdent
+  vars <- many pIdent
+  pSymbol "where"
+  pChar '{'
+  constructors <- sepBy (do
+    con <- pUIdent
+    pChar ':'
+    typ <- pType
+    return (con,typ)) (pChar ';')
+  pChar '}'
+  pChar ';'
+  return $ DDataDec uid vars constructors
 
   -- parse function clauses
 pEquation :: Parser (Def ())
 pEquation = do
     name <- pIdent
-    patterns <- many (pPat True)
+    patterns <- many (pPat True False)
     pSymbol "="
     exp <- pExp
     pChar ';'
@@ -1015,30 +1143,42 @@ pEquation = do
 
 -- parse patterns
 
--- \1 -> flsfgg
-pPatClosed :: Bool -> Parser (Pat ())
-pPatClosed allowConstants = choice $ maybe ++ always
-  where maybe  = [PConst () <$> pConst | allowConstants]
-        always = [ PVar  () <$> pIdent
-                 , PWild () <$  pChar '_'
+pPatClosed :: Bool -> Bool -> Parser (Pat ())
+pPatClosed allowConstants allowNary = choice $ maybe ++ always
+  where maybe  = [PConst ()          <$> pConst | allowConstants]
+        always = [ PVar  ()          <$> pIdent
+                 , flip (PAdt ()) [] <$> pUIdent
+                 , PWild ()          <$  pChar '_'
                  , do pChar '('
-                      ps <- sepBy (pPatAs allowConstants) (pChar ',') <* pChar ')'
+                      ps <- sepBy (pPatAs allowConstants allowNary) (pChar ',') <* pChar ')'
                       case ps of
                         []      -> pure $ PNil ()
                         [p]     -> pure p
                         (_:_:_) -> pure (PTup () ps)
                  ]
 
-pPatAs :: Bool -> Parser (Pat ())
-pPatAs allowConstants = choice
+pPatApp :: Bool -> Bool -> Parser (Pat ())
+pPatApp allowconstants allowNary = choice $ pAdt ++ [pPatClosed allowconstants allowNary]
+  where
+      pAdt = if allowNary
+        then [adt]
+        else [ try $ parens adt
+             , pPatClosed allowconstants allowNary
+             ]
+      adt = do con  <- pUIdent
+               vars <- many (pPatClosed allowconstants allowNary)
+               return $ PAdt () con vars
+
+pPatAs :: Bool -> Bool -> Parser (Pat ())
+pPatAs allowConstants allowNary = choice
   [ try $ do x <- pIdent
              pSymbol "as"
-             p <- pPatClosed allowConstants
+             p <- pPatAs allowConstants allowNary
              return $ PAs () x p
-  , pPatClosed allowConstants]
+  , pPatApp allowConstants allowNary]
 
-pPat :: Bool -> Parser (Pat ())
-pPat allowConstants = pSpace *> pPatAs allowConstants
+pPat :: Bool -> Bool -> Parser (Pat ())
+pPat allowConstants allowNary = pSpace *> pPatAs allowConstants allowNary
 
 -- parse constants
 
@@ -1069,6 +1209,16 @@ pIdent = try $ do
     if x `elem` pkeywords
         then fail "found keyword, expected identifier"
         else return $ Ident x
+
+pUIdent :: Parser UIdent
+pUIdent = try $ do
+    a <- upperChar
+    rest <- many $ choice [letterChar, digitChar, char '_']
+    pSpace
+    let x = a:rest
+    if x `elem` pkeywords
+        then fail "found keyword, expected uppercase identifier"
+        else pure $ UIdent x
 
 pSymbol :: T.Text -> Parser T.Text
 pSymbol = Lexer.symbol pSpace
@@ -1103,24 +1253,6 @@ pkeywords = [
   , "if"
   , "then"
   , "else"]
-
-compile :: String -> IO (Either String ([Function Type], Subst))
-compile fp = do
-  contents <- TIO.readFile fp
-  let processed = process contents
-  let parsed    = parse pProgram fp processed
-  case parsed of
-    Left e  -> error $ show e
-    Right r -> typecheck r
-
-tryParse :: String -> IO String
-tryParse fp = do
-  contents      <- TIO.readFile fp
-  let processed = process contents
-  let parsed    = parse pProgram fp processed
-  case parsed of
-    Left e  -> return $ show e
-    Right t -> return $ printTree t
 
 printTree :: Print a => a -> String
 printTree = render . prt 0
@@ -1215,6 +1347,9 @@ instance Print Ident where
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
+instance Print UIdent where
+  prt _ (UIdent i) = doc $ showString i
+
 instance Print a => Print [Def a] where
   prt = prtList
 
@@ -1222,9 +1357,19 @@ instance Print a => Print (Def a) where
   prt i e = case e of
     DEquation a id pats exp -> prPrec i 0 (concatD [prt 0 id, prt 0 pats, doc (showString "="), prt 0 exp, doc (showString ":"), prt 0 a])
     DTypeSig id type_ -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_])
+    DDataDec uident ids constructordecs -> prPrec i 0 (concatD [doc (showString "data"), prt 0 uident, prt 0 ids, doc (showString "where"), doc (showString "{"), prt 0 constructordecs, doc (showString "}")])
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
+
+instance Print (UIdent, Type) where
+  prt i (uid,t) = prPrec i 0 (concatD [prt 0 uid, doc (showString ":"), prt 0 t])
+  prtList _ [] = concatD []
+  prtList _ [x] = concatD [prt 0 x]
+  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
+
+instance Print [(UIdent, Type)] where
+  prt = prtList
 
 instance Print [Ident] where
   prt = prtList
@@ -1238,6 +1383,7 @@ instance Print Type where
     TFloat -> prPrec i 2 (concatD [doc (showString "Float")])
     TBool -> prPrec i 2 (concatD [doc (showString "Bool")])
     TNil -> prPrec i 2 (concatD [doc (showString "()")])
+    TAdt uident types -> prPrec i 2 (concatD [prt 0 uident, prt 1 types])
     where
         printTups [] = []
         printTups [x] = [prt 0 x]
@@ -1258,6 +1404,7 @@ instance Print a => Print (Exp a) where
     EUn a e o -> prPrec i 4 (concatD [prt 4 o, prt 4 e])
     ETup a es -> prPrec i 7 (concatD ([doc (showString "(")] ++ printTups es ++ [doc (showString ")")]))
     EVar a id -> prPrec i 7 (concatD [prt 0 id])
+    ECon a uid -> prPrec i 7 (concatD [prt 0 uid])
     ELit a const -> prPrec i 7 (concatD [prt 0 const])
     ECase a exp patmatchs -> prPrec i 0 (concatD [doc (showString "case"), prt 0 exp, doc (showString "of"), doc (showString "{"), prt 0 patmatchs, doc (showString "}")])
     EIf a exp1 exp2 exp3 -> prPrec i 0 (concatD [doc (showString "if"), prt 0 exp1, doc (showString "then"), prt 0 exp2, doc (showString "else"), prt 0 exp3])
@@ -1309,6 +1456,8 @@ instance Print (Pat a) where
     PNil _ -> prPrec i 0 (concatD [doc (showString "()")])
     PWild _ -> prPrec i 0 (concatD [doc (showString "_")])
     PAs _ id pat -> prPrec i 2 (concatD [prt 0 id, doc (showString "as"), prt 0 pat])
+    PAdt _ uident [] -> prPrec i 0 (concatD [prt 0 uident])
+    PAdt _ uident adtpats -> prPrec i 0 (concatD [doc (showString "("), prt 0 uident, prt 0 adtpats, doc (showString ")")])
     PTup _ ps -> prPrec i 1 (concatD $ [doc (showString "(")] ++ printTups ps ++ [doc (showString ")")])
     where
         printTups [] = []
@@ -1325,5 +1474,10 @@ instance Print a => Print (Function a) where
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
+instance Print a => Print (Program a) where
+  prt i p = concatD [prtList 0 datadecs, prtList 0 (functions p ++ [main p])]
+    where
+        datadecs :: [Def a]
+        datadecs = map (\(uid, vars, cons) -> DDataDec uid vars cons) (datatypes p)
 
 \end{code}
