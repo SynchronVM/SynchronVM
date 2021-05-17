@@ -93,7 +93,7 @@ emptyEnv = TEnv $ Map.fromList $
   , (Ident "recv"   , Forall [a] $ TLam channel event)
   , (Ident "sync"   , Forall [a] $ TLam event ta)
   , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
-  , (Ident "spawnExternal", Forall [] $ TLam channel (TLam TInt unit))
+  , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
   ]
   where
     a       = Ident "a"

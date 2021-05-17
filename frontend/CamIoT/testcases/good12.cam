@@ -1,0 +1,7 @@
+chan : Channel Int
+chan = channel ()
+
+main =
+  let _ = spawnExternal chan 1 in
+  let v = sync (recv chan) in
+  v
