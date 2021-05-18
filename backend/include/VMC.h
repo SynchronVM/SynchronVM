@@ -33,7 +33,6 @@
 #include <channel.h>
 #include <Context.h>
 #include <ll/ll_driver.h>
-
 #include <stdint.h>
 
 #define VMC_CONTAINER_1 0

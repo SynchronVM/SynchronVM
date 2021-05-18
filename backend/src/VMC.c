@@ -33,6 +33,7 @@
 #include <VMC.h>
 #include <heap.h>
 #include <CAM.h>
+#include <RTSIO.h>
 #include <queue.h>
 
 #include <ll/ll_driver.h>
@@ -264,6 +265,7 @@ int scheduler(vmc_t *container,
       block_msg(container, &msg);
       dbg_print("message received: blocking\r\n");
       /* handle msg */
+      handle_msg(container, &msg);
       while (poll_msg(container, &msg) == 0) {
         /*handle messages*/
         /* enqueue processes */
@@ -313,7 +315,6 @@ int scheduler(vmc_t *container,
   /* end */
   return 1;
 }
-
 
 static int init_all_chans(Channel_t *c, uint8_t *mem){
 

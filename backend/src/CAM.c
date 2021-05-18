@@ -1324,6 +1324,28 @@ static int handle_sync(vmc_t *vmc){
 
 }
 
+static int handle_spawnExternal(vmc_t *vmc){
+
+  //spawnExternal : Channel a -> Int -> ()
+
+  cam_value_t driver_details =
+    vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  UUID chan_id = (UUID)hold_reg.value;
+
+  vmc->drivers[driver_details.value].channel_id = chan_id;
+
+  return 1;
+
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1353,6 +1375,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 4:
       ret_code = handle_sync(vmc);
+      break;
+    case 6:
+      ret_code = handle_spawnExternal(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
