@@ -441,7 +441,7 @@ Unhandled patterns:
 
 
 -- Experiments --
-path = "testcases/good12.cam"
+path = "testcases/good13.cam"
 
 test :: IO ()
 test = do
@@ -923,7 +923,8 @@ rewriteCaseConstants e = e
 
 runtimeFuncs :: SExp SType -> Bool
 runtimeFuncs (SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _) _)
-  | rtsfunc == send = True
+  | rtsfunc == send   = True
+  | rtsfunc == choose = True
   | rtsfunc == spawnExternal = True
   | otherwise       = False
 runtimeFuncs (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _)
@@ -935,16 +936,18 @@ runtimeFuncs (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _)
 runtimeFuncs _ = False
 
 
-sync  = "sync"
-send  = "send"
-recv  = "recv"
-spawn = "spawn"
+sync    = "sync"
+send    = "send"
+recv    = "recv"
+spawn   = "spawn"
+choose  = "choose"
 channel = "channel"
 spawnExternal = "spawnExternal"
 
 genrtsfunc :: SExp SType -> C.Exp
 genrtsfunc e@(SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2) e3)
-  | rtsfunc == send = C.Sys $ C.RTS2 C.SEND (translate e2) (translate e3)
+  | rtsfunc == send   = C.Sys $ C.RTS2 C.SEND   (translate e2) (translate e3)
+  | rtsfunc == choose = C.Sys $ C.RTS2 C.CHOOSE (translate e2) (translate e3)
   | rtsfunc == spawnExternal =
     C.Sys $ C.RTS2 C.SPAWNEXTERNAL (translate e2) (translate e3)
   | otherwise = error $ "Incorrect expression type: " <> show e

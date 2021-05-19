@@ -92,6 +92,7 @@ emptyEnv = TEnv $ Map.fromList $
   , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
   , (Ident "recv"   , Forall [a] $ TLam channel event)
   , (Ident "sync"   , Forall [a] $ TLam event ta)
+  , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
   , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
   , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
   ]
