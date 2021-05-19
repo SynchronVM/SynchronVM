@@ -73,12 +73,13 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
 
-data RTS2 = SEND | SPAWNEXTERNAL
+data RTS2 = SEND
+          | CHOOSE
+          | SPAWNEXTERNAL
           deriving (Ord, Show, Eq)
 
 data RTS1 = CHANNEL | RECV
-          | SPAWN   | CHOOSE
-          | SYNC
+          | SPAWN   | SYNC
           deriving (Ord, Show, Eq)
 
 data BinOp = PlusI | MultiplyI  | MinusI |
@@ -573,13 +574,13 @@ callrts = Ins . CALLRTS
 
 genrts2 :: RTS2 -> CAM
 genrts2 SEND          = callrts sendevtop
+genrts2 CHOOSE        = callrts chooseop
 genrts2 SPAWNEXTERNAL = callrts spawnexternalop
 
 genrts1 :: RTS1 -> CAM
 genrts1 CHANNEL = callrts channelop
 genrts1 RECV    = callrts recvevtop
 genrts1 SPAWN   = callrts spawnop
-genrts1 CHOOSE  = callrts chooseop
 genrts1 SYNC    = callrts syncop
 
 zipWithA ::   Applicative t
