@@ -476,3 +476,30 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
   return 1;
 
 }
+
+int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
+  heap_index index1 = *evt1;
+
+  heap_index original_e1_idx = index1;
+
+  while(true){
+
+    /* cam_value_t cam_evt_pointer = heap_fst(&container->heap, index1); */
+
+    cam_value_t pointer_to_next = heap_snd(&container->heap, index1);
+    if((heap_index)pointer_to_next.value == HEAP_NULL){
+      //reached the end of evt1 list
+      break;
+    }
+    index1 = (heap_index)pointer_to_next.value;
+
+  }
+
+  heap_index index2 = *evt2;
+  cam_value_t e2_cam = { .value = (UINT)index2, .flags = VALUE_PTR_BIT };
+  heap_set_snd(&container->heap, index1, e2_cam);
+
+  *evts = original_e1_idx;
+
+  return 1;
+}

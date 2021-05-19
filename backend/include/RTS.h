@@ -45,5 +45,9 @@ extern int recvEvt(  vmc_t   *container
                    , UUID    *chan_id
                    , event_t *revt);
 
+extern int choose (  vmc_t   *container
+                   , event_t *evt1
+                   , event_t *evt2
+                   , event_t *evts);
 
 #endif

@@ -1324,6 +1324,33 @@ static int handle_sync(vmc_t *vmc){
 
 }
 
+static int handle_choose(vmc_t *vmc){
+  cam_value_t e1 = vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t e2;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &e2);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+
+  event_t evt1 = (event_t)e1.value;
+  event_t evt2 = (event_t)e2.value;
+
+  event_t final_evt;
+
+  choose(vmc, &evt1, &evt2, &final_evt);
+
+  cam_value_t final_evt_cam =
+    { .value = (UINT)final_evt, .flags = VALUE_PTR_BIT };
+
+  vmc->contexts[vmc->current_running_context_id].env = final_evt_cam;
+
+  return 1;
+
+}
+
 static int handle_spawnExternal(vmc_t *vmc){
 
   //spawnExternal : Channel a -> Int -> ()
@@ -1375,6 +1402,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 4:
       ret_code = handle_sync(vmc);
+      break;
+    case 5:
+      ret_code = handle_choose(vmc);
       break;
     case 6:
       ret_code = handle_spawnExternal(vmc);
