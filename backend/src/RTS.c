@@ -384,6 +384,28 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
   }
 
+  //XXX: Implementing wrap
+  /***********/
+  /*
+    if (bevt.wrap_label == WRAP_NULL) //set during send, recv
+      return 1; // dont do anything
+    else {
+        uint8_t crci = container->current_running_context_id;
+        int current_pc = container->contexts[crci].pc;
+        push current_pc to container->contexts[crci].stack;
+        container->contexts[crci].pc = bevt.wrap_label
+
+        ??? Any changes needed in container->contexts[crci].evt ????
+    }
+
+    TODO: 1. define WRAP_NULL in typedefs.h
+          2. in send and recv set bevt.wrap_label = WRAP_NULL
+          3. call_rts wrap gets `wrap e1 [v:l]`
+             e1.wrap_label = l;
+             what to do with v? snoc to current env?
+   */
+  /***********/
+
   return -1; // neither SEND or RECV or SENDIO or RECVIO
 }
 
