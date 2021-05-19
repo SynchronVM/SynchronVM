@@ -672,3 +672,39 @@ uiexample1 =
     (Let Empty (Sys (RTS1 SPAWN (Var "v1")))
      (Let (PatVar "v3") (Sys (RTS1 SYNC (Sys (RTS1 RECV (Var "v0")))))
        (Var "v3"))))
+
+
+{-
+
+chan : Channel Int
+chan = channel ()
+
+foo : ()
+foo =
+  let v = sync (recv chan) in
+  foo
+
+main =
+  let _ = spawnExternal chan 0 in
+  foo
+
+-- COMPILED TO --
+
+let v0 = channel () in
+letrec v1 = let v2 = sync (recv v0) in
+             v1 in
+let _ = spawnExternal v0 0 in v1
+
+
+No rewrites needed
+
+-}
+
+uiexample2 =
+  Let (PatVar "v0") (Sys (RTS1 CHANNEL Void))
+  (Letrec [((PatVar "v1"), (Let (PatVar "v2") (Sys (RTS1 SYNC
+                                                    (Sys (RTS1 RECV
+                                                          (Var "v0")))))
+                            (Var "v1")))]
+    (Let Empty (Sys (RTS2 SPAWNEXTERNAL (Var "v0") (Sys (LInt 0))))
+     (Var "v1")))
