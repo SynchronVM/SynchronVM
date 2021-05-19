@@ -149,8 +149,11 @@ desugarFunction defs = do
                 else SELet  typ (SPVar typ name) resultExp
         else do let (typ, name)  = typeAndName
                 let casebranches = branches m defs
+                let let_ = case recursive defs of
+                             True -> SELetR
+                             False -> SELet
                 case casebranches of
-                    [(_,x)] -> return $ SELet typ (SPVar typ name) x
+                    [(_,x)] -> return $ let_ typ (SPVar typ name) x
                     _   -> error "we should not end up here"
   where
       -- We don't care about the type signature any more, so we drop it if there is one.
