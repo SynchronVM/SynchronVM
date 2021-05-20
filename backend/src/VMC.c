@@ -315,6 +315,7 @@ int scheduler(vmc_t *container,
     }
   }
   /* end */
+  dbg_print("Closing down scheduler\r\n");
   return 1;
 }
 
