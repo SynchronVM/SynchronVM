@@ -75,7 +75,7 @@ inline bool ll_data_available(ll_driver_t *drv) { /* bytes available */
   
 typedef struct ll_driver_msg_s{
   uint32_t driver_id;     // Index into an array of drivers maintained by "low-level"
-  uint32_t msg_type;      // Encode what kind of message ?
+  uint32_t msg_type;      // Encode what kind of message ? (this could be 2 bytes, if driver_id is also 2 bytes)
   uint32_t data;          // Data payload, driver specific message or pointer  
   uint64_t timestamp;
 } ll_driver_msg_t;
