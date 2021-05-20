@@ -29,6 +29,69 @@ import Control.Monad.Writer
 import Control.Monad.Except ( when )
 import qualified Data.Text as T
 
+{-
+
+The idea of the preprocessing module is to apply the same kind of layout syntax that the
+BNF converter does: https://bnfc.readthedocs.io/en/latest/lbnf.html#layout
+
+The short story is that if we try to parse something like this
+
+case x of
+    a -> 1
+    b -> case b of
+          c -> 1
+    d -> 1
+
+it is not clear if the last branch (d -> 1) belongs to the inner case branch expression or
+the outer case expression. This is not a context free syntax. Another issue is e.g the following
+program
+
+foo x = 3
+foo 3 = 5
+
+If we try to parse this as a context free language the parser will see this as
+foo x = 3 foo 3 = 5, and it's not clear where one definition ends and where the other one begins.
+The same issue arises with the case branches, where it's not clear where one branch ends and
+the next one begins.
+
+Layout syntax addresses this issue. A version of the two expressions above that are very easy to
+parse contains delimiters to signify scope of an expression.
+
+case x of {
+    a -> 1;
+    b -> case b of {
+           c -> 1
+         };
+    d -> 1
+}
+
+foo x = 3;
+foo 3 = 5
+
+What has been done to make it clear where the last branch belongs is to include characters
+('{','}',';'}) to delimit things. A case expression now wraps the branches it encompasses
+in brackets, and branches are delimited by semicolons. Similarly, function definitions are
+delimited with statements.
+
+This module is intended to take a program in the first format (without the extra fluff) and then
+transform it to a version that contains the delimiters. The approach I've taken here to do
+this is very greedy, but it seems to be okay enough for a large portion of programs.
+
+The general approach is the following:
+  * When a keyword is found, insert an opening bracket after the keyword and remember the
+    column at which the token immediately following the keyword began.  This column number
+    is placed in a stack, with the most recently registered column at the top.
+  * If the stack of columns is not empty and you see a token appear at a column that is
+    lower than the column at the top of the stack, insert a closing bracket and pop that column
+    number off of the stack.
+  * If you see a token at the same column as the one at the top of the stack, emit a semicolon
+    before emitting the token.
+
+This is described more in detail in the BNFC documentation. I tried to implement some hacky
+version of what they describe there.
+
+-}
+
 
 data PPState = ST 
      { source       :: T.Text  -- ^ The contents that remains unpreprocessed so far
