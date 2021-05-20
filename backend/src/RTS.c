@@ -403,6 +403,11 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
           3. call_rts wrap gets `wrap e1 [v:l]`
              e1.wrap_label = l;
              what to do with v? snoc to current env?
+
+    // XXX:
+    The above is not enough; it will only apply wrap_label to recv;
+    When applying wrap_label of the recv; we need to go to the env of the
+    sender; extract the event_type and then accordingly apply the wrap_label;
    */
   /***********/
 
