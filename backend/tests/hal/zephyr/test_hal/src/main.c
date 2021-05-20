@@ -37,26 +37,6 @@
 uint8_t uart0_in_buffer[1024];
 uint8_t uart0_out_buffer[1024];
 
-/**********/
-/* Button */
-
-/* #if DT_NODE_HAS_STATUS(DT_ALIAS(button0),okay) */
-/* #define BUTTON0_GPIO_LABEL DT_GPIO_LABEL(DT_ALIAS(button0), gpios) */
-/* #define BUTTON0_GPIO_PIN   DT_GPIO_PIN(DT_ALIAS(button0), gpios) */
-/* #define BUTTON0_GPIO_FLAGS (GPIO_INPUT | DT_GPIO_FLAGS(DT_ALIAS(button0), gpios)) */
-/* #else */
-/* #error "No button defined in the devicetree" */
-/* #endif */
-
-/* static struct gpio_callback button_cb_data; */
-
-/* void button_pressed(const struct device *dev, */
-/* 		    struct gpio_callback *cb, */
-/* 		    uint32_t pins) { */
-/*   PRINT("Button pressed at %" PRIu32 "\n", k_cycle_get_32()); */
-/* } */
-
-
 /* ****************** */
 /* Thread info dumper */
 
@@ -144,14 +124,8 @@ void main(void) {
   /* ******************* */
   /* Configure some LEDs */
 
-  ll_driver_t led0;
   ll_driver_t led1;
 
-  if (ll_led_init(&led0, 0, 0)) {
-    PRINT("LL_LED: OK init led0\r\n");
-  } else {
-    PRINT("LL_LED: FAILED init led0\r\n");
-  }
 
   if (ll_led_init(&led1, 1, 1)) {
     PRINT("LL_LED: OK init led1\r\n");
@@ -175,24 +149,13 @@ void main(void) {
   int i = 0; 
   while (1) {
 
-    //ll_write(&uart_drv, (uint8_t*)hello, strlen(hello));
-    uint8_t led0_state;
     uint8_t led1_state;
 
-    ll_read(&led0, &led0_state, 1);
     ll_read(&led1, &led1_state, 1);
 
-    led0_state = 1 - led0_state;
     led1_state = 1 - led1_state;
 
-    ll_write(&led0, &led0_state, 1);
     ll_write(&led1, &led1_state, 1);
-
-    /* if (i % 5 == 0) { */
-    /*   k_sleep(K_MSEC(100)); */
-    /*   PRINT("Currently running threads:\r\n"); */
-    /*   k_thread_foreach(t_info_dump, NULL); */
-    /* } */
     
     k_sleep(K_SECONDS(1));
     i++;
