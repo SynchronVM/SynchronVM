@@ -35,6 +35,10 @@ static uint32_t ll_led_data_available(struct ll_driver_s *this) {
   return 1;
 }
 
+static uint32_t ll_led_data_writeable(struct ll_driver_s *this) {
+  return 1;
+}
+
 /* sets bit 0 in the first byte of data to the value of the led.
     The rest of data is cleared. */ 
 static uint32_t ll_led_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
@@ -70,6 +74,7 @@ bool ll_led_init(ll_driver_t* lld, uint32_t led_id, bool initial_state) {
     lld->ll_read_fun = ll_led_read;
     lld->ll_write_fun = ll_led_write;
     lld->ll_data_readable_fun = ll_led_data_available;
+    lld->ll_data_writeable_fun = ll_led_data_writeable;
   }
   return r;
 }
