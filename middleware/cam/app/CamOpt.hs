@@ -252,7 +252,7 @@ freshLabel = do
 
 
 interpret :: Exp -> CAM
-interpret e = instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
+interpret e = instrs <+> Ins STOP <+> fold (reverse thunks_) <+> labelGraveyard
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
