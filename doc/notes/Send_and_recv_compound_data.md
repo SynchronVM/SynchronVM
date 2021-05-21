@@ -75,7 +75,11 @@
      need to do a garbage collection pass.
 
 
-  
+  Positive side-effects:
+  1. If we can transfer large data by usage of chunks from a bool, then
+     we can fix the size of ll_read and ll_write. In that case maybe these two
+     functions should read and write a single 32bit value (uint32_t).
+     
   
   
   
