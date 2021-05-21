@@ -311,14 +311,14 @@ codegen (App e1 e2) env
     env' = markEnv env
 codegen expr@(Lam pat e) env
   | rClosed expr (env2Eta env) = do
-      l <- freshLabel
       is <- codegenR e (EnvPair Normal env' pat)
+      l  <- freshLabel
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ COMB l)
   | otherwise = do
-      l <- freshLabel
       is <- codegenR e (EnvPair Normal env pat)
+      l  <- freshLabel
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ CUR l)
@@ -326,11 +326,11 @@ codegen expr@(Lam pat e) env
     env' = markEnv env
 codegen (If e1 e2 e3) env
   | rClosed e2 (env2Eta env) && rClosed e3 (env2Eta env) = do
-      l1  <- freshLabel
-      l2  <- freshLabel
       is1 <- codegen e1 env
       is2 <- codegen e2 env'
       is3 <- codegen e3 env'
+      l1  <- freshLabel
+      l2  <- freshLabel
       pure $! is1
           <+> (Ins $ GOTOIFALSE l1)
           <+> is2
@@ -338,11 +338,11 @@ codegen (If e1 e2 e3) env
           <+> Lab l1 is3
           <+> Lab l2 (Ins SKIP)
   | otherwise = do
-      l1 <- freshLabel
-      l2 <- freshLabel
       is1 <- codegen e1 env
       is2 <- codegen e2 env
       is3 <- codegen e3 env
+      l1  <- freshLabel
+      l2  <- freshLabel
       pure $! Ins PUSH
           <+> is1
           <+> Ins (GOTOFALSE l1)
@@ -354,9 +354,9 @@ codegen (If e1 e2 e3) env
     env' = markEnv env
 codegen (Case cond clauses) env
   | allClausesClosed = do
+      cond'     <- codegen cond env
       labels    <- replicateM (length clauses) freshLabel
       skiplabel <- freshLabel
-      cond'     <- codegen cond env
       let tagandlabel = zipWith extractTL clauses labels
       instrs <- zipWith3A (genStackClauses Star skiplabel) labels exps pats
       pure $! cond'
@@ -364,9 +364,9 @@ codegen (Case cond clauses) env
           <+> fold instrs
           <+> Lab skiplabel (Ins SKIP)
   | otherwise = do
+      cond'     <- codegen cond env
       labels    <- replicateM (length clauses) freshLabel
       skiplabel <- freshLabel
-      cond'     <- codegen cond env
       let tagandlabel = zipWith extractTL clauses labels
       instrs <- zipWith3A (genStackClauses Normal skiplabel) labels exps pats
       pure $! Ins PUSH
@@ -434,19 +434,19 @@ codegen (Letrec recpats e) env = do
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e@(If e1 e2 e3) env
   | rClosed e2 (env2Eta env) && rClosed e3 (env2Eta env) = do
-      l  <- freshLabel
       i1 <- codegen  e1 env
       i2 <- codegenR e2 (markEnv env)
       i3 <- codegenR e3 (markEnv env)
+      l  <- freshLabel
       pure $! i1
           <+> (Ins $ GOTOIFALSE l)
           <+> i2
           <+> (Lab l i3)
   | otherwise = do
-      l  <- freshLabel
       i1 <- codegen  e1 env
       i2 <- codegenR e2 env
       i3 <- codegenR e3 env
+      l  <- freshLabel
       pure $! (Ins PUSH)
           <+> i1
           <+> (Ins $ GOTOFALSE l)
@@ -455,16 +455,16 @@ codegenR e@(If e1 e2 e3) env
 
 codegenR (Case cond clauses) env
   | allClausesClosed = do
-      labels    <- replicateM (length clauses) freshLabel
       cond'     <- codegen cond env
+      labels    <- replicateM (length clauses) freshLabel
       let tagandlabel = zipWith extractTL clauses labels
       instrs <- zipWith3A (genStackClauses Star) labels exps pats
       pure $! cond'
           <+> Ins (SWITCHI tagandlabel)
           <+> fold instrs
   | otherwise = do
-      labels    <- replicateM (length clauses) freshLabel
       cond'     <- codegen cond env
+      labels    <- replicateM (length clauses) freshLabel
       let tagandlabel = zipWith extractTL clauses labels
       instrs <- zipWith3A (genStackClauses Normal) labels exps pats
       pure $! Ins PUSH
