@@ -95,13 +95,18 @@ emptyEnv = TEnv $ Map.fromList $
   , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
   , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
   , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
+  , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
   ]
+  --  wrap : Event a -> (a -> b) -> Event b
   where
     a       = Ident "a"
+    b       = Ident "b"
     ta      = TVar a
+    tb      = TVar b
     unit    = TNil
     channel = TAdt (UIdent "Channel") [ta]
-    event   = TAdt (UIdent "Event") [ta]
+    event   = TAdt (UIdent "Event")   [ta]
+    eventb  = TAdt (UIdent "Event")   [tb]
     unitevent = TAdt (UIdent "Event") [unit]
 
 

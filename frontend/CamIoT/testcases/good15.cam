@@ -1,0 +1,4 @@
+main =
+  let m = 3 in
+  let v = (\x -> x + m) in
+  (v 2)

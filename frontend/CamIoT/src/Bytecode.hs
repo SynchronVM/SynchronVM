@@ -441,7 +441,7 @@ Unhandled patterns:
 
 
 -- Experiments --
-path = "testcases/good14.cam"
+path = "testcases/good15.cam"
 
 test :: IO ()
 test = do
@@ -926,6 +926,7 @@ runtimeFuncs (SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _) _)
   | rtsfunc == send   = True
   | rtsfunc == choose = True
   | rtsfunc == spawnExternal = True
+  | rtsfunc == wrap   = True
   | otherwise       = False
 runtimeFuncs (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _)
   | rtsfunc == sync = True
@@ -943,6 +944,7 @@ spawn   = "spawn"
 choose  = "choose"
 channel = "channel"
 spawnExternal = "spawnExternal"
+wrap    = "wrap"
 
 genrtsfunc :: SExp SType -> C.Exp
 genrtsfunc e@(SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2) e3)
@@ -950,6 +952,7 @@ genrtsfunc e@(SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2) e3)
   | rtsfunc == choose = C.Sys $ C.RTS2 C.CHOOSE (translate e2) (translate e3)
   | rtsfunc == spawnExternal =
     C.Sys $ C.RTS2 C.SPAWNEXTERNAL (translate e2) (translate e3)
+  | rtsfunc == wrap = C.Sys $ C.RTS2 C.WRAP (translate e2) (translate e3)
   | otherwise = error $ "Incorrect expression type: " <> show e
 genrtsfunc e@(SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2)
   | rtsfunc == sync    = C.Sys $ C.RTS1 C.SYNC    (translate e2)
