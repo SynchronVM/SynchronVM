@@ -252,7 +252,7 @@ freshLabel = do
 
 
 interpret :: Exp -> CAM
-interpret e = instrs <+> Ins STOP <+> fold (reverse thunks_) <+> labelGraveyard
+interpret e = instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
@@ -314,13 +314,13 @@ codegen expr@(Lam pat e) env
       l <- freshLabel
       is <- codegenR e (EnvPair Normal env' pat)
       ts <- S.gets thunks
-      S.modify $ \s -> s {thunks = (Lab l is) : ts}
+      S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ COMB l)
   | otherwise = do
       l <- freshLabel
       is <- codegenR e (EnvPair Normal env pat)
       ts <- S.gets thunks
-      S.modify $ \s -> s {thunks = (Lab l is) : ts}
+      S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ CUR l)
   where
     env' = markEnv env
@@ -420,7 +420,7 @@ codegen (Letrec recpats e) env = do
   instrs <- zipWithA codegenR exps (repeat evalEnv)
   let labeledInstrs = zipWith Lab labels instrs
   ts <- S.gets thunks
-  S.modify $ \s -> s {thunks = labeledInstrs ++ ts}
+  S.modify $ \s -> s {thunks = ts ++ labeledInstrs}
   pure instr
   where
     growEnv :: Env -> [(Pat,Label)] -> Env
