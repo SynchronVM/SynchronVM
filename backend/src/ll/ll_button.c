@@ -29,18 +29,29 @@ static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint3
   return 0;
 }
 
-static bool ll_button_data_available(struct ll_driver_s *this) {
-  return true;
+static uint32_t ll_button_data_available(struct ll_driver_s *this) {
+  return 1;
 }
 
 static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
-  return 0;
+  button_driver_t *b = (button_driver_t*)this->driver_info;
+
+  uint32_t r = 0;
+  
+  if (data_size == 4) {
+    data[0] = b->state;
+    data[1] = b->state >> 8;
+    data[2] = b->state >> 16;
+    data[3] = b->state >> 24;
+    r = 4;
+  }
+  
+  return r;
 }
 
 static uint32_t ll_button_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   return 0;
 }
-
 
 bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void* backend_custom,  uint32_t button_id) {
 
@@ -54,7 +65,7 @@ bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void* backend_custom,  ui
     lld->ll_control_fun = ll_button_control;
     lld->ll_read_fun = ll_button_read;
     lld->ll_write_fun = ll_button_write;
-    lld->ll_data_available_fun = ll_button_data_available;
+    lld->ll_data_readable_fun = ll_button_data_available;
   }
   return r;
 }

@@ -53,7 +53,10 @@ typedef struct ll_driver_s{
   uint32_t (*ll_read_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_write_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
-  bool (*ll_data_available_fun)(struct ll_driver_s *this);
+  uint32_t (*ll_data_readable_fun)(struct ll_driver_s *this);
+  uint32_t (*ll_data_writeable_fun)(struct ll_driver_s *this);
+
+  
   UUID channel_id;
 } ll_driver_t;
 
@@ -65,9 +68,14 @@ inline int ll_write(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
   return drv->ll_write_fun((struct ll_driver_s*)drv, data, data_size);
 }
 
-inline bool ll_data_available(ll_driver_t *drv) { /* bytes available */
-  return drv->ll_data_available_fun((struct ll_driver_s*)drv);
+inline int ll_data_readable(ll_driver_t *drv) { /* bytes available */
+  return drv->ll_data_readable_fun((struct ll_driver_s*)drv);
 }
+
+inline int ll_data_writeable(ll_driver_t *drv) { /* bytes writeable */
+  return drv->ll_data_writeable_fun((struct ll_driver_s*)drv);
+}
+
 
 /* Message format for messages from driver to RTS */
 /* The message must be a multiple of 4 bytes in  size to ensure 

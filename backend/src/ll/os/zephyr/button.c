@@ -38,8 +38,9 @@
   case X: \
   button_drivers[(X)].pin = BUTTON_PIN(svm_button##X);\
   button_drivers[(X)].id  = drv_id; \
+  button_drivers[(X)].state = 0; \
   button_data[(X)].interop = (zephyr_interop_t*)backend_custom;\
-  button_data[(X)].drv_id = drv_id; \
+  button_data[(X)].driver = &(button_drivers[(X)]); \
   gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(svm_button##X)); \
   gpio_pin_interrupt_configure(button_device, button_drivers[(X)].pin, GPIO_INT_EDGE_TO_ACTIVE); \
   gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(svm_button##X))); \
@@ -49,7 +50,7 @@
 typedef struct {
   struct gpio_callback cb_data;
   zephyr_interop_t *interop;
-  uint32_t drv_id;
+  button_driver_t *driver;
 }  button_user_data_t;
 
 
@@ -63,15 +64,16 @@ static void button_pressed(const struct device *dev,
 		    uint32_t pins) {
 
   /* This is so weird and backwards!!! CONTAINER_OF*/
-
   button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
-
   zephyr_interop_t *interop = parent->interop;
+  button_driver_t  *driver  = parent->driver;
+
+  driver->state = gpio_pin_get(button_device, driver->pin);
 
   ll_driver_msg_t msg; // nonsense message
-  msg.driver_id = 77;  // why not!?
+  msg.driver_id = driver->id; 
   msg.timestamp = 128;
-  msg.data = 1;  // button is pressed
+  msg.data = driver->state;  // 1 or 0
 
   if (interop->send_message(interop, msg) == -ENOMSG) {
     /* Message was not send due to queue being full. 

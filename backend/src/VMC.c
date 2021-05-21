@@ -131,9 +131,9 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   /* it is fine to include (#include ll_uart.h) the ll drivers any number of times */
   #if VMC_CONTAINER_1_USE_UART_0
-  /* #include <ll/ll_uart.h>     */
+  //#include <ll/ll_uart.h>
 
-  drv_num++;
+  //drv_num++;
   #endif
 
   #if VMC_CONTAINER_1_USE_BUTTON_0
@@ -266,6 +266,10 @@ int scheduler(vmc_t *container,
     if (container->current_running_context_id == UUID_NONE) {
       block_msg(container, &msg);
       dbg_print("message received: blocking\r\n");
+      dbg_print("  driver: %u\r\n", msg.driver_id);
+      dbg_print("  msg_typ: %u\r\n", msg.msg_type);
+      dbg_print("  data: %u\r\n", msg.data);
+      dbg_print("  time: %llu\r\n", msg.timestamp);
       /* handle msg */
       handle_msg(container, &msg);
       while (poll_msg(container, &msg) == 0) {

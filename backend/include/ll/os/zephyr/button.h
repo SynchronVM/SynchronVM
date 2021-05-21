@@ -28,6 +28,7 @@
 typedef struct {
   uint32_t pin;
   uint32_t id;
+  uint32_t state;
 } button_driver_t;
 
 extern uint32_t button_num(void);
