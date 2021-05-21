@@ -24,6 +24,7 @@
 
 #include <uart.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <devicetree.h>
 
@@ -159,13 +160,17 @@ bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud) {
 /* Are there bytes ?                     */
 
 bool uart_data_available(uart_dev_t *dev) {
-  return !ring_buf_is_empty(&dev->out_ringbuf);
+  return !ring_buf_is_empty(&dev->out_ringbuf);  
 }
 
-int uart_ndata_available(uart_dev_t *dev) {
+uint32_t uart_ndata_available(uart_dev_t *dev) {
   return
-    ring_buf_capacity_get(&dev->in_ringbuf) -
-    ring_buf_space_get(&dev->in_ringbuf);
+    ring_buf_capacity_get(&dev->out_ringbuf) -
+    ring_buf_space_get(&dev->out_ringbuf);
+}
+
+uint32_t uart_ndata_writeable(uart_dev_t *dev) {
+  return ring_buf_space_get(&dev->in_ringbuf);
 }
 
 

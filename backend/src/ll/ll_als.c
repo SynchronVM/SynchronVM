@@ -29,10 +29,12 @@ static uint32_t ll_als_control(struct ll_driver_s *this, uint8_t *data, uint32_t
   return 0;
 }
 
-static bool ll_als_data_available(struct ll_driver_s *this) {
-  return true;
+static uint32_t ll_als_data_available(struct ll_driver_s *this) {
+  return 4; // not really sure what to do here. the driver should be redesigned
 }
-
+static uint32_t ll_als_data_writeable(struct ll_driver_s *this) {
+  return 0;
+}
 
 static uint32_t ll_als_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
 
@@ -65,6 +67,7 @@ bool ll_als_init(ll_driver_t* lld, uint8_t gain) {
     lld->ll_read_fun = ll_als_read;
     lld->ll_write_fun = ll_als_write;
     lld->ll_data_available_fun = ll_als_data_available;
+    lld->ll_data_writeable_fun = ll_als_data_writeable;
   }
 
   if(r) ll_driver_sleep_ms(ALS_WAKEUP_TIME_MS);
