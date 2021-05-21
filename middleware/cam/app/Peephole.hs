@@ -157,10 +157,10 @@ twoOPRule FST  FST  = ([REST 2],   0)
 twoOPRule FST  SND  = ([ACC 1] ,   1)
 twoOPRule (REST n) FST
   | n >= 2    = ([REST (n + 1)] ,  0)
-  | otherwise = ([(REST n), FST],  1)
+  | otherwise = ([(REST n), FST],  0)
 twoOPRule (REST n) SND
   | n >= 2    = ([ACC n]        ,  1)
-  | otherwise = ([(REST n), SND],  1)
+  | otherwise = ([(REST n), SND],  0)
 twoOPRule PUSH SWAP = ([PUSH]   ,  0)
 twoOPRule MOVE POP  = ([]       , -1)
 twoOPRule SWAP CONS = ([SNOC]   , -1)
