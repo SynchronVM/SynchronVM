@@ -33,6 +33,10 @@ static uint32_t ll_button_data_available(struct ll_driver_s *this) {
   return 1;
 }
 
+static uint32_t ll_button_data_writeable(struct ll_driver_s *this) {
+  return 0;
+}
+
 static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   button_driver_t *b = (button_driver_t*)this->driver_info;
 
@@ -66,6 +70,7 @@ bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void* backend_custom,  ui
     lld->ll_read_fun = ll_button_read;
     lld->ll_write_fun = ll_button_write;
     lld->ll_data_readable_fun = ll_button_data_available;
+    lld->ll_data_writeable_fun = ll_button_data_writeable;
   }
   return r;
 }

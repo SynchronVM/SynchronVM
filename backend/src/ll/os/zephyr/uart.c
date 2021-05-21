@@ -165,8 +165,12 @@ bool uart_data_available(uart_dev_t *dev) {
 
 uint32_t uart_ndata_available(uart_dev_t *dev) {
   return
-    ring_buf_capacity_get(&dev->in_ringbuf) -
-    ring_buf_space_get(&dev->in_ringbuf);
+    ring_buf_capacity_get(&dev->out_ringbuf) -
+    ring_buf_space_get(&dev->out_ringbuf);
+}
+
+uint32_t uart_ndata_writeable(uart_dev_t *dev) {
+  return ring_buf_space_get(&dev->in_ringbuf);
 }
 
 

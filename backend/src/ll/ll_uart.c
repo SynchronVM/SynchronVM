@@ -33,6 +33,10 @@ static uint32_t ll_uart_data_available(struct ll_driver_s *this) {
   return uart_ndata_available((uart_dev_t*)this->driver_info);
 }
 
+static uint32_t ll_uart_data_writeable(struct ll_driver_s *this) {
+  return uart_ndata_writeable((uart_dev_t*)this->driver_info);
+}
+
 static uint32_t ll_uart_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   return uart_read_bytes((uart_dev_t*)this->driver_info, data, data_size);
 }
@@ -56,6 +60,7 @@ bool ll_uart_init(ll_driver_t* lld,
     lld->ll_read_fun = ll_uart_read;
     lld->ll_write_fun = ll_uart_write;
     lld->ll_data_readable_fun = ll_uart_data_available;
+    lld->ll_data_writeable_fun = ll_uart_data_writeable;
   }
   return (bool)u;
 }
