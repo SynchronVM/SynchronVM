@@ -31,9 +31,14 @@ static uint32_t ll_bme280_control(struct ll_driver_s *this, uint8_t *data, uint3
   return 0;
 }
 
-static bool ll_bme280_data_available(struct ll_driver_s *this) {
-  return true;
+static uint32_t ll_bme280_data_available(struct ll_driver_s *this) {
+  return 12;
 }
+
+static uint32_t ll_bme280_data_writeable(struct ll_driver_s *this) {
+  return 0;
+}
+
 
 /* Maybe this should be split up into 3 different read channels? 
    Will have to think about that in relation to how IOChannels will look 
@@ -102,7 +107,8 @@ bool ll_bme280_init(ll_driver_t* lld) {
     lld->ll_control_fun = ll_bme280_control;
     lld->ll_read_fun = ll_bme280_read;
     lld->ll_write_fun = ll_bme280_write;
-    lld->ll_data_available_fun = ll_bme280_data_available;
+    lld->ll_data_readable_fun = ll_bme280_data_available;
+    lld->ll_data_writeable_fun = ll_bme280_data_writeable;
   }
   
   return r;

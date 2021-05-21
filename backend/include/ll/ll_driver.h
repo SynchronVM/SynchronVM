@@ -76,7 +76,6 @@ inline int ll_data_writeable(ll_driver_t *drv) { /* bytes writeable */
   return drv->ll_data_writeable_fun((struct ll_driver_s*)drv);
 }
 
-
 /* Message format for messages from driver to RTS */
 /* The message must be a multiple of 4 bytes in  size to ensure 
    four byte alignment */ 
