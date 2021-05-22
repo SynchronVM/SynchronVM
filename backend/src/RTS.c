@@ -44,11 +44,11 @@ static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
 }
 
 
-static inline UINT set_first_16_bits(uint8_t first8bits, uint8_t second8bits){
+static inline UINT set_bottom_16_bits(uint8_t first8bits, uint8_t second8bits){
 
   UINT value = 0;
-  value = value | (first8bits << 24);
-  value = value | (second8bits << 16);
+  value = value | (first8bits << 8);
+  value = value | second8bits;
 
   return value;
 
@@ -79,31 +79,44 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
 
     cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
 
-    cam_value_t base_evt_cam =
+
+
+    cam_value_t base_evt_ptr =
       heap_fst(&container->heap, (heap_index)cam_evt_pointer.value);
 
     cam_value_t message =
       heap_snd(&container->heap, (heap_index)cam_evt_pointer.value);
 
 
-    base_event_t bevt =
-      {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
-        , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
-        , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
+
+    cam_value_t base_evt_simple =
+      heap_fst(&container->heap, (heap_index)base_evt_ptr.value);
+
+    cam_value_t wrap_fptr =
+      heap_snd(&container->heap, (heap_index)base_evt_ptr.value);
+
+
+
+    base_evt_simple_t bevt_simple =
+      {   .e_type     = extract_bits(base_evt_simple.value,  8, 8)
+        , .channel_id = extract_bits(base_evt_simple.value,  0, 8)
       };
+
+    base_event_t bevt = {   .evt_details   = bevt_simple
+                          , .wrap_func_ptr = wrap_fptr };
 
     cam_event_t cevt = { .bev = bevt, .msg = message };
 
-    if(bevt.e_type == SEND){
+    if(bevt_simple.e_type == SEND){
 
-      if(poll_recvq(container, &container->channels[bevt.channel_id].recvq)){
+      if(poll_recvq(container, &container->channels[bevt_simple.channel_id].recvq)){
         *cev = cevt;
         return 1;
       } // else continue the do-while loop
 
-    } else if (bevt.e_type == RECV) { // recvEvt
+    } else if (bevt_simple.e_type == RECV) { // recvEvt
 
-      if(poll_sendq(container, &container->channels[bevt.channel_id].sendq)){
+      if(poll_sendq(container, &container->channels[bevt_simple.channel_id].sendq)){
         *cev = cevt;
         return 1;
       }
@@ -126,20 +139,38 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
 
     cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
 
-    cam_value_t base_evt_cam =
+
+
+    cam_value_t base_evt_ptr =
       heap_fst(&container->heap, (heap_index)cam_evt_pointer.value);
 
     cam_value_t msg =
       heap_snd(&container->heap, (heap_index)cam_evt_pointer.value);
 
 
-    base_event_t bevt =
-      {   .e_type = extract_bits(base_evt_cam.value, 24, sizeof(event_type_t))
-        , .channel_id = extract_bits(base_evt_cam.value, 16, sizeof(UUID))
-        , .wrap_label = extract_bits(base_evt_cam.value,  0, sizeof(uint16_t))
+
+    cam_value_t base_evt_simple =
+      heap_fst(&container->heap, (heap_index)base_evt_ptr.value);
+
+    cam_value_t wrap_fptr =
+      heap_snd(&container->heap, (heap_index)base_evt_ptr.value);
+
+
+
+    base_evt_simple_t bevt_simple =
+      {   .e_type     = extract_bits(base_evt_simple.value,  8, 8)
+        , .channel_id = extract_bits(base_evt_simple.value,  0, 8)
       };
 
-    if(bevt.e_type == SEND){
+
+    base_event_t bevt =
+      {   .evt_details   = bevt_simple
+        , .wrap_func_ptr = wrap_fptr
+      };
+
+    (void)bevt;// unused
+
+    if(bevt_simple.e_type == SEND){
 
       //Create dirty flag = false
       cam_value_t df_pointer = create_dirty_flag(container, false);
@@ -154,15 +185,15 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
           , .dirty_flag_pointer = df_pointer };
 
       int j =
-        chan_send_q_enqueue(&container->channels[bevt.channel_id].sendq, sender_data);
+        chan_send_q_enqueue(&container->channels[bevt_simple.channel_id].sendq, sender_data);
 
       if(j == -1){
         DEBUG_PRINT(( "Cannot enqueue in channel %u 's send queue \n"
-                     , bevt.channel_id));
+                     , bevt_simple.channel_id));
         return -1;
       }
 
-    } else if (bevt.e_type == RECV){ // recvEvt
+    } else if (bevt_simple.e_type == RECV){ // recvEvt
 
       // create dirty flag = false
       cam_value_t df_pointer = create_dirty_flag(container, false);
@@ -172,11 +203,11 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
           , .dirty_flag_pointer = df_pointer };
 
       int j =
-        chan_recv_q_enqueue(  &container->channels[bevt.channel_id].recvq
+        chan_recv_q_enqueue(  &container->channels[bevt_simple.channel_id].recvq
                             , recv_data);
       if(j == -1){
         DEBUG_PRINT((" Cannot enqueue in channel %u 's recv queue \n"
-                     , bevt.channel_id));
+                     , bevt_simple.channel_id));
         return -1;
       }
 
@@ -193,7 +224,7 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
 
 int channel(vmc_t *container, UUID *chan_id){
   for(int i = 0; i < MAX_CHANNELS; i++){
-    if(container->channels[i].in_use == false){
+     if(container->channels[i].in_use == false){
       container->channels[i].in_use = true;
       *chan_id = (UUID)i;
       return 1;
@@ -269,15 +300,18 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
   base_event_t bevt = cev.bev;
   cam_value_t  message = cev.msg; // NULL for recv
 
+  base_evt_simple_t bevt_simple = bevt.evt_details;
+  cam_value_t wrap_fptr = bevt.wrap_func_ptr;
 
-  if(bevt.e_type == SEND){
+
+  if(bevt_simple.e_type == SEND){
 
     recv_data_t recv_data;//recv_context_id;
     int deq_status =
-      chan_recv_q_dequeue(&container->channels[bevt.channel_id].recvq, &recv_data);
+      chan_recv_q_dequeue(&container->channels[bevt_simple.channel_id].recvq, &recv_data);
     if(deq_status == -1){ //empty queue
       DEBUG_PRINT(( "Recv Queue of %u empty for syncing send \n"
-                   , bevt.channel_id));
+                   , bevt_simple.channel_id));
       return -1;
     }
 
@@ -328,15 +362,15 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     return 1;
 
-  } else if(bevt.e_type == RECV) {
+  } else if(bevt_simple.e_type == RECV) {
 
     send_data_t sender_data;
     int deq_status =
-      chan_send_q_dequeue(&container->channels[bevt.channel_id].sendq, &sender_data);
+      chan_send_q_dequeue(&container->channels[bevt_simple.channel_id].sendq, &sender_data);
 
     if(deq_status == -1){ //empty queue
       DEBUG_PRINT((  "Send Queue of %u empty for syncing recv \n"
-                   , bevt.channel_id));
+                   , bevt_simple.channel_id));
       return -1;
     }
 
@@ -442,8 +476,36 @@ int sync(vmc_t *container, event_t *evts){
 
 int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
-  UINT data = set_first_16_bits(SEND, *chan_id); // wrap_label not set
-  cam_value_t event = {.value = data, .flags = 0};
+  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
+
+
+  /*
+   *  base_event_t -> fst = top    16 bits free;
+   *                        bottom 16 bits base_evt_simple_t
+   *               -> snd = pointer to wrap_func - [v:l] or [l]
+   *
+   */
+
+  UINT data = set_bottom_16_bits(SEND, *chan_id);
+
+  cam_value_t base_evt_simple = { .value = data, .flags = 0};
+
+  heap_index base_evt_idx = heap_alloc_withGC(container);
+
+  if(base_evt_idx == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation for base_event_t has failed"));
+    return -1;
+  }
+
+  heap_set(&container->heap, base_evt_idx, base_evt_simple, null); // pointer to wrap func NULL
+
+
+  /*
+   *  cam_event_t -> fst = pointer to base_event_t
+   *              -> snd = message or pointer to message
+   */
+
+  cam_value_t event = {.value = (UINT)base_evt_idx, .flags = VALUE_PTR_BIT};
 
   heap_index cev_idx = heap_alloc_withGC(container);
 
@@ -453,8 +515,13 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
   }
   heap_set(&container->heap, cev_idx, event, msg);
 
+
+  /*
+   *  heap_cell_list -> fst = pointer to cam_event_t
+   *                 -> snd = pointer to next heap_cell_ev
+   */
+
   cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
-  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
   heap_index hi = heap_alloc_withGC(container);
 
@@ -473,9 +540,39 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
 int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
+  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
-  UINT data = set_first_16_bits(RECV, *chan_id); // wrap_label not set
-  cam_value_t event = {.value = data, .flags = 0};
+
+  /*
+   *  base_event_t -> fst = top    16 bits free;
+   *                        bottom 16 bits base_evt_simple_t
+   *               -> snd = pointer to wrap_func - [v:l] or [l]
+   *
+   */
+
+  UINT data = set_bottom_16_bits(RECV, *chan_id);
+
+  cam_value_t base_evt_simple = { .value = data, .flags = 0};
+
+  heap_index base_evt_idx = heap_alloc_withGC(container);
+
+  if(base_evt_idx == HEAP_NULL){
+    DEBUG_PRINT(("Heap allocation for base_event_t has failed"));
+    return -1;
+  }
+
+  heap_set(&container->heap, base_evt_idx, base_evt_simple, null); // pointer to wrap func NULL
+
+
+
+  /*
+   *  cam_event_t -> fst = pointer to base_event_t
+   *              -> snd = null for recv
+   */
+
+
+  cam_value_t event = {.value = (UINT)base_evt_idx, .flags = VALUE_PTR_BIT};
+
   cam_value_t null_msg  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
   heap_index cev_idx = heap_alloc_withGC(container);
@@ -486,8 +583,13 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
   }
   heap_set(&container->heap, cev_idx, event, null_msg);
 
+
+  /*
+   *  heap_cell_list -> fst = pointer to cam_event_t
+   *                 -> snd = pointer to next heap_cell_ev
+   */
+
   cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
-  cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
   heap_index hi = heap_alloc_withGC(container);
 
