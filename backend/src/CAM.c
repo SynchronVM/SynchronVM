@@ -1373,6 +1373,36 @@ static int handle_spawnExternal(vmc_t *vmc){
 
 }
 
+static int handle_wrap(vmc_t *vmc){
+
+  //wrap : Event a -> (a -> b) -> Event b
+
+  cam_value_t wrapf_ptr =
+    vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t hold_reg;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+  event_t current_evt = hold_reg.value;
+
+  // IMP: we are guaranteed by the compiler tranformations that
+  // current_evt is a base event; so traversal of event not needed
+
+  // get pointer to cam_event_t
+  cam_value_t cevt_ptr = heap_fst(&vmc->heap, (heap_index)current_evt);
+  // get pointer to base_event_t
+  cam_value_t bevt_ptr = heap_fst(&vmc->heap, (heap_index)cevt_ptr.value);
+  // set the second of the cell that bevt_ptr is pointing to wrapf_ptr
+  heap_set_snd(&vmc->heap, (heap_index)bevt_ptr.value, wrapf_ptr);
+
+  return 1;
+
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1385,6 +1415,7 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
     /* sync      - 4 */
     /* choose    - 5 */
     /* spawndriverop - 6 */
+    /* wrap      - 7 */
 
   int ret_code = -1;
   switch(rts_op_no){
@@ -1408,6 +1439,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 6:
       ret_code = handle_spawnExternal(vmc);
+      break;
+    case 7:
+      ret_code = handle_wrap(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));

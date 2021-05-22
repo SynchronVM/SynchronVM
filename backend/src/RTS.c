@@ -289,13 +289,119 @@ int dispatch(vmc_t *container){
   return 1;
 }
 
+static int postSync( vmc_t *container
+                   , cam_value_t wrap_fptr
+                   , cam_value_t msg_content
+                   , UUID ctx_id){
+
+
+  heap_index closure_address = wrap_fptr.value;
+
+  cam_value_t heap_f = heap_fst(&container->heap, closure_address);
+  cam_value_t heap_s = heap_snd(&container->heap, closure_address);
+
+  cam_value_t label;
+  if(heap_s.value == 4294967295){ // if combinator
+
+    label = heap_f;
+
+    container->contexts[ctx_id].env = msg_content;
+
+  } else { // not a combinator but a closure
+
+    cam_value_t val = heap_f;
+    label = heap_s;
+
+    heap_index hi = heap_alloc_withGC(container);
+    if(hi == HEAP_NULL){
+      DEBUG_PRINT(("Heap allocation failed in post-syncer"));
+      return -1;
+    }
+    heap_set(&container->heap, hi, val, msg_content);
+    cam_value_t new_env_pointer =
+      { .value = (UINT)hi, .flags = VALUE_PTR_BIT };
+    container->contexts[ctx_id].env
+      = new_env_pointer;
+  }
+
+  UINT current_pc =
+    container->contexts[ctx_id].pc;
+  cam_value_t j_add = { .value = current_pc };
+  int q =
+    stack_push(  &container->contexts[ctx_id].stack
+               , j_add);
+  if(q == 0){
+    DEBUG_PRINT(("Stack push failed in post-syncer"));
+    return -1;
+  }
+
+  container->contexts[ctx_id].pc = label.value;
+
+  return 1;
+
+}
+
+static int message_pass( vmc_t *container
+                       , UUID ctx_id
+                       , cam_value_t msg
+                       , UUID chan_id
+                       , event_type_t ety){
+  //This function looks at the environment of the blocked context;
+  // It finds the event which demanded synchronization and checks
+  // if there are post synchronization actions associated with it
+  // If yes; it calls postSync otherwise simply places the msg on the env
+  cam_value_t event = container->contexts[ctx_id].env;
+  heap_index index  = event.value;
+  do{
+    cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
+
+    cam_value_t base_evt_ptr =
+      heap_fst(&container->heap, (heap_index)cam_evt_pointer.value);
+
+    cam_value_t base_evt_simple =
+      heap_fst(&container->heap, (heap_index)base_evt_ptr.value);
+
+    cam_value_t wrap_fptr =
+      heap_snd(&container->heap, (heap_index)base_evt_ptr.value);
+
+    base_evt_simple_t bevt_simple =
+      {   .e_type     = extract_bits(base_evt_simple.value,  8, 8)
+        , .channel_id = extract_bits(base_evt_simple.value,  0, 8)
+      };
+
+    if((bevt_simple.e_type == ety) && (bevt_simple.channel_id == chan_id)){
+      if((heap_index)wrap_fptr.value != HEAP_NULL){
+
+        int q = postSync( container
+                        , wrap_fptr
+                        , msg
+                        , ctx_id);
+        if(q == -1){
+          DEBUG_PRINT(("Post synchronization error\n"));
+          return q;
+        }
+        return 1;
+
+      } else {
+        container->contexts[ctx_id].env = msg;
+        return 1;
+      }
+    }
+    cam_value_t pointer_to_next = heap_snd(&container->heap, index);
+    index = (heap_index)pointer_to_next.value;
+
+
+  } while(index != HEAP_NULL);
+
+  return -1; // could not find the right event to sync
+}
+
 static int synchronizeNow(vmc_t *container, cam_event_t cev){
   /* NOTE: BEWARE! SEND and RECV have different behaviours! Study */
   /* both the if and else blocks carefully to understand the */
   /* difference. In both cases the receiving thread starts executing */
   /* when `sync` succeeds! Therefore the code is differnt if you */
   /* view it from the perspective of the sender or the receiver. */
-
 
   base_event_t bevt = cev.bev;
   cam_value_t  message = cev.msg; // NULL for recv
@@ -326,13 +432,19 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /* NOTE Message passing begins */
     /*
-     * Put the message residing on the receiving context's env register
      */
 
-    container->contexts[recv_context_id].env = message;
+    /* container->contexts[recv_context_id].env = message; */
+    int k = message_pass( container
+                        , recv_context_id
+                        , message
+                        , bevt_simple.channel_id
+                        , RECV);
+    if(k == -1){
+      DEBUG_PRINT(("Error in message passing"));
+      return -1;
+    }
 
-    //XXX: PC_IDX should be moved to bevt.wrap_label here and the
-    // wrapped function should be applied now
 
     /* NOTE Message passing ends */
 
@@ -343,18 +455,28 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
       return -1;
     }
 
-    /****** PC increment *****/
-
-
-    // PC increment not required with the current design as the
-    // eval_callrts function handles the PC increment for both
-    // sender and receiver;
-
-    /****** PC increment *****/
-
+    /* NOTE Post synchronization actions begins */
     // place the () on sender's env because sync (send) succeeded
+
     cam_value_t empty_tuple = { .value = 0, .flags = 0 };
-    container->contexts[container->current_running_context_id].env = empty_tuple;
+
+    if((heap_index)wrap_fptr.value != HEAP_NULL){
+
+      int q = postSync( container
+                      , wrap_fptr
+                      , empty_tuple
+                      , container->current_running_context_id);
+      if(q == -1){
+        DEBUG_PRINT(("Post synchronization error\n"));
+        return q;
+      }
+
+
+    } else {
+      container->contexts[container->current_running_context_id].env
+        = empty_tuple;
+    }
+    /* NOTE Post synchronization actions ends */
 
 
     // the receiving thread will run now
@@ -381,17 +503,26 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
 
     /* NOTE Message passing begins */
-    /*
-     * Take the message from sender's environment where it has to be
-     * blocked if `sync` call was issued with the message on the env register
-     * Place the message on the receivers env (current running context)
-     */
 
-    container->contexts[container->current_running_context_id].env =
-      sender_data.message;
 
-    //XXX: PC_IDX should be moved to bevt.wrap_label here and the
-    // wrapped function should be applied now
+    if((heap_index)wrap_fptr.value != HEAP_NULL){
+
+      int q = postSync( container
+                      , wrap_fptr
+                      , sender_data.message
+                      , container->current_running_context_id);
+      if(q == -1){
+        DEBUG_PRINT(("Post synchronization error\n"));
+        return q;
+      }
+
+
+    } else {
+      container->contexts[container->current_running_context_id].env
+        = sender_data.message;
+    }
+
+
 
     /* NOTE Message passing ends */
 
@@ -401,51 +532,26 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
       return -1;
     }
 
-    /****** PC increment *****/
 
-    // PC increment not required with the current design as the
-    // eval_callrts function handles the PC increment for both
-    // sender and receiver;
-
-    /****** PC increment *****/
-
-    // place the () on sender's env because sync (send) succeeded
     cam_value_t empty_tuple = { .value = 0, .flags = 0 };
-    container->contexts[sender_data.context_id].env = empty_tuple;
+    /* container->contexts[sender_data.context_id].env = empty_tuple; */
+    int k = message_pass( container
+                        , sender_data.context_id
+                        , empty_tuple
+                        , bevt_simple.channel_id
+                        , SEND);
+    if(k == -1){
+      DEBUG_PRINT(("Error in message passing"));
+      return -1;
+    }
+
 
     // the receiver will automatically run because we are now executing its context
     return 1;
 
   }
 
-  //XXX: Implementing wrap
-  /***********/
-  /*
-    if (bevt.wrap_label == WRAP_NULL) //set during send, recv
-      return 1; // dont do anything
-    else {
-        uint8_t crci = container->current_running_context_id;
-        int current_pc = container->contexts[crci].pc;
-        push current_pc to container->contexts[crci].stack;
-        container->contexts[crci].pc = bevt.wrap_label
-
-        ??? Any changes needed in container->contexts[crci].evt ????
-    }
-
-    TODO: 1. define WRAP_NULL in typedefs.h
-          2. in send and recv set bevt.wrap_label = WRAP_NULL
-          3. call_rts wrap gets `wrap e1 [v:l]`
-             e1.wrap_label = l;
-             what to do with v? snoc to current env?
-
-    // XXX:
-    The above is not enough; it will only apply wrap_label to recv;
-    When applying wrap_label of the recv; we need to go to the env of the
-    sender; extract the event_type and then accordingly apply the wrap_label;
-   */
-  /***********/
-
-  return -1; // neither SEND or RECV or SENDIO or RECVIO
+  return -1; // neither SEND or RECV
 }
 
 int sync(vmc_t *container, event_t *evts){
