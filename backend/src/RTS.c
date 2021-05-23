@@ -301,6 +301,9 @@ static int postSync( vmc_t *container
   cam_value_t heap_s = heap_snd(&container->heap, closure_address);
 
   cam_value_t label;
+
+
+  //update the env
   if(heap_s.value == 4294967295){ // if combinator
 
     label = heap_f;
@@ -324,6 +327,8 @@ static int postSync( vmc_t *container
       = new_env_pointer;
   }
 
+
+  // update the PC
   UINT current_pc =
     container->contexts[ctx_id].pc;
   cam_value_t j_add = { .value = current_pc };
