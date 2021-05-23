@@ -434,7 +434,7 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
     /*
      */
 
-    /* container->contexts[recv_context_id].env = message; */
+
     int k = message_pass( container
                         , recv_context_id
                         , message

@@ -264,6 +264,7 @@ int scheduler(vmc_t *container,
 
     /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
+
       block_msg(container, &msg);
       dbg_print("message received: blocking\r\n");
       dbg_print("  driver: %u\r\n", msg.driver_id);
@@ -301,7 +302,6 @@ int scheduler(vmc_t *container,
       /* Execute an instruction */
 
       uint8_t current_inst = container->code_memory[*pc];
-
 
       if (current_inst > (sizeof(evaluators) / 4)) {
         dbg_print("current_inst is invalid\r\n");

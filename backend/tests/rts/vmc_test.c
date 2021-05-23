@@ -342,8 +342,46 @@ bool vmc_run_9_test(){
   } else {
     return false;
   }
+}
 
 
+bool vmc_run_10_test(){
+
+  /*
+
+    chan : Channel Int
+    chan = channel ()
+
+    plus3 : Int -> Int
+    plus3 x = x + 3
+
+    process1 : () -> ()
+    process1 void = sync (send chan 5)
+
+    main =
+    let _ = spawn process1 in
+    let v = sync (wrap (recv chan) plus3) in
+    v
+
+
+  */
+
+  uint8_t code [] ={ 254,237,202,254,1,0,2,0,0,0,3,0,0,0,5,0,0,0,0,0,0,0,54,8,55,1,49,52,0,54,9,4,10,0,62,9,4,1,55,0,9,4,3,3,55,3,5,2,2,55,7,55,4,13,3,0,49,6,0,0,24,15,4,1,9,3,3,49,6,0,1,55,2,55,4,15,13 };
+
+  vmc_t container;
+
+  int i = setup_and_run(&container, code, sizeof(code));
+  if(i == -1){
+    printf("Failure in vmc_run_10\n");
+    return false;
+  }
+
+  if(container.contexts[0].env.value == 8 && // receiver
+     container.contexts[1].env.value == 0){  // sender
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void test_stat(char *s, int *tot, bool t){
@@ -383,10 +421,11 @@ int main(int argc, char **argv) {
   test_stat("vmc_run_8", &total, t8);
   bool t9 = vmc_run_9_test();
   test_stat("vmc_run_9", &total, t9);
+  bool t10 = vmc_run_10_test();
+  test_stat("vmc_run_10", &total, t10);
 
-
-  if (t1 && t2 && t3 && t4 && t8 && t9) {
-    printf("Passed total : %d/%d tests\n", total, 6);
+  if (t1 && t2 && t3 && t4 && t8 && t9 && t10) {
+    printf("Passed total : %d/%d tests\n", total, 7);
     return 1;
   }
   return -1;

@@ -1399,6 +1399,10 @@ static int handle_wrap(vmc_t *vmc){
   // set the second of the cell that bevt_ptr is pointing to wrapf_ptr
   heap_set_snd(&vmc->heap, (heap_index)bevt_ptr.value, wrapf_ptr);
 
+  //Place the modified event on the environment
+  cam_value_t new_env = { .value = (UINT)current_evt, .flags = VALUE_PTR_BIT };
+  vmc->contexts[vmc->current_running_context_id].env = new_env;
+
   return 1;
 
 }
