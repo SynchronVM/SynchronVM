@@ -39,6 +39,8 @@ import Control.Monad.Combinators.Expr
 import Control.Monad.Identity
 import Data.Void
 
+import System.Exit
+import System.IO
 import System.IO.Unsafe
 
 trace :: Show a => a -> a
@@ -253,14 +255,28 @@ toFunction (d:ds) = case d of
   -- In this case there was no declared type signature
   _             -> Function (getName d) (d:ds) Nothing
 
-compile :: String -> IO (Either String (Program Type, Subst))
+{-
+exitcodes:
+  1 - parse error
+  2 - typecheck error
+  3 - rename error
+  4 - lambdalift error
+  5 - monomorphise error
+-}
+compile :: String -> IO (Program Type, Subst)
 compile fp = do
   contents <- TIO.readFile fp
   let processed = process contents
   let parsed    = parse pProgram fp processed
   case parsed of
-    Left e  -> error $ show e
-    Right r -> typecheck r
+    Left e  -> do hPutStrLn stderr $ show e
+                  exitWith $ ExitFailure 1
+    Right r -> do
+      tc <- typecheck r
+      case tc of
+        Left e -> do hPutStrLn stderr e
+                     exitWith $ ExitFailure 2
+        Right r -> return r
 
 tryParse :: String -> IO String
 tryParse fp = do
@@ -564,7 +580,7 @@ extendTyconArity :: UIdent -> Int -> TC ()
 extendTyconArity uid arity = do
   st <- get
   case Map.lookup uid (tycons st) of
-    Just _ -> throwError $ undefined
+    Just _ -> throwError $ DuplicateTycon uid
     Nothing -> put $ st { tycons = Map.insert uid arity (tycons st) }
 
 lookupBinop :: Binop () -> TC Type
@@ -684,7 +700,27 @@ checkPat p = case p of
   PAs () id p -> do
     p' <- checkPat p
     return $ PAs (patVar p') id p'
-  PAdt () uid ps -> undefined
+  PAdt () uid ps -> do
+    -- look up the type of the constructor
+    t            <- lookupCon uid
+    -- typecheck the constructor arguments
+    ps'          <- mapM checkPat ps
+
+    -- fetch the types of the constructor arguments and construct a function
+    -- type from the argument types to the constructor target
+    let ptyps    = map patVar ps'
+    let targ     = construction t
+    let functype = funtype $ ptyps ++ [targ]
+
+    -- unify the type of the constructor with the inferred types of the
+    -- constructor arguments and the constructor target
+    sub          <- unify t functype
+
+    -- apply the substitution to the constructor arguments and the constructor
+    -- target, and then return the annotated pattern
+    let ps''     = apply sub ps'
+    let targ'    = apply sub targ
+    return $ PAdt targ' uid ps''
   PTup () ps -> do
     ps' <- mapM checkPat ps
     let tuptype = TTup $ map patVar ps'
@@ -819,7 +855,10 @@ checkProgram :: Program () -> TC (Subst, Program Type)
 checkProgram p = do
   -- check that the declared ADTs are not GADTs and that they are
   -- well formed etc
-  mapM_ checkDataDeclaration (datatypes p)
+  foldM (\acc d -> do withConstructors acc $ checkDataDeclaration d
+                      return $ d : acc)
+        []
+        (datatypes p)
 
   -- extend the environment with the data constructors in scope and then
   -- type check all functions in the program

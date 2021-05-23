@@ -77,3 +77,9 @@ caseoftest i = case i of
 data Maybe a where
   Just : a -> Maybe a
   Nothing : Maybe a
+
+addTwoMaybes : Maybe Int -> Maybe Int -> Maybe Int
+addTwoMaybes (Just i1) (Just i2) = Just (i1 + i2)
+addTwoMaybes Nothing _           = Nothing
+addTwoMaybes _ Nothing           = Nothing
+addTwoMaybes _ _                 = Nothing
