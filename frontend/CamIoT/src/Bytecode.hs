@@ -462,6 +462,10 @@ test = do
       let cam   = Peephole.optimise $ C.interpret camir
       putStrLn $ show cam
 
+      putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
+      let cam   = Peephole.optimise $ C.interpret camir
+      putStrLn $ show $ A.translate cam
+
       putStrLn $ "\n\n CAM HS Interpreter \n\n"
       let val = IM.evaluate $ C.interpret camir
       -- putStrLn $ show val
