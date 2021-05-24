@@ -71,6 +71,7 @@ bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void* backend_custom,  ui
     lld->ll_write_fun = ll_button_write;
     lld->ll_data_readable_fun = ll_button_data_available;
     lld->ll_data_writeable_fun = ll_button_data_writeable;
+    lld->ll_is_synchronous_fun = NULL;
   }
   return r;
 }

@@ -61,6 +61,10 @@ static uint32_t ll_led_write(struct ll_driver_s *this, uint8_t *data, uint32_t d
   return data_size; /* there are alternative interpretations one could make... */
 }
 
+static bool ll_led_is_synchronous(struct ll_drivers *this) {
+  return true;
+}
+
 
 bool ll_led_init(ll_driver_t* lld, uint32_t led_id, bool initial_state) {
   led_driver_t *led_driver = led_init(led_id);
@@ -75,6 +79,7 @@ bool ll_led_init(ll_driver_t* lld, uint32_t led_id, bool initial_state) {
     lld->ll_write_fun = ll_led_write;
     lld->ll_data_readable_fun = ll_led_data_available;
     lld->ll_data_writeable_fun = ll_led_data_writeable;
+    lld->ll_is_synchronous_fun = ll_led_is_synchronous;
   }
   return r;
 }

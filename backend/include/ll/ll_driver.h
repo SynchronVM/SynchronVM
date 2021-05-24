@@ -27,6 +27,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <typedefs.h>
 
 #define LL_DRIVER_CONTROL_FAILURE 0x0
@@ -55,7 +56,7 @@ typedef struct ll_driver_s{
   uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_data_readable_fun)(struct ll_driver_s *this);
   uint32_t (*ll_data_writeable_fun)(struct ll_driver_s *this);
-
+  bool (*ll_is_synchronous_fun)(struct ll_driver_s *this);
   
   UUID channel_id;
 } ll_driver_t;
@@ -74,6 +75,14 @@ inline int ll_data_readable(ll_driver_t *drv) { /* bytes available */
 
 inline int ll_data_writeable(ll_driver_t *drv) { /* bytes writeable */
   return drv->ll_data_writeable_fun((struct ll_driver_s*)drv);
+}
+
+inline bool ll_is_synchronous(ll_driver_t *drv) {
+  bool b = false;
+  if (drv->ll_is_synchronous_fun != NULL) {
+    b = drv->ll_is_synchronous_fun((struct ll_driver_s*)drv);
+  }
+  return b;
 }
 
 /* Message format for messages from driver to RTS */

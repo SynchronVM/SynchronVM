@@ -68,6 +68,7 @@ bool ll_als_init(ll_driver_t* lld, uint8_t gain) {
     lld->ll_write_fun = ll_als_write;
     lld->ll_data_available_fun = ll_als_data_available;
     lld->ll_data_writeable_fun = ll_als_data_writeable;
+    lld->ll_is_synchronous_fun = NULL;
   }
 
   if(r) ll_driver_sleep_ms(ALS_WAKEUP_TIME_MS);

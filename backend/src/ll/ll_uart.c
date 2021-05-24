@@ -61,6 +61,7 @@ bool ll_uart_init(ll_driver_t* lld,
     lld->ll_write_fun = ll_uart_write;
     lld->ll_data_readable_fun = ll_uart_data_available;
     lld->ll_data_writeable_fun = ll_uart_data_writeable;
+    lld->ll_is_synchronous_fun = NULL;
   }
   return (bool)u;
 }
