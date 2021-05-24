@@ -426,6 +426,71 @@ static inline void mark_heap_context(Context_t *context, heap_t *heap){
   }
 }
 
+/* should it return some status ? */
+void heap_mark_phase(vmc_t *container) {
+  mark_heap_context
+    (  &container->contexts[container->current_running_context_id]
+       , &container->heap);
+
+  /* GC all active child contexts; children starts from 1 */
+  for(int i = 1; i < VMC_MAX_CONTEXTS; i++){
+    if(container->context_used[i] ){
+      mark_heap_context(&container->contexts[i], &container->heap);
+    }
+  }
+  
+  //XXX: Tests breaking because channels not initialised in the tests
+  //     PLEASE UNCOMMENT BELOW
+  //GC all the dirty flags associated with the channels
+  for(int i = 0; i < MAX_CHANNELS; i++){
+    if(container->channels[i].in_use){
+      // first check if channel is in use
+      // and then mark all live dirty flags
+      // in the sendq and then in the recvq
+      
+      for(int j = 0; j < container->channels[i].sendq.size; j++){
+	heap_mark(  &container->heap
+                    , container->channels[i].sendq.data[j].dirty_flag_pointer);
+      }
+      
+      for(int j = 0; j < container->channels[i].recvq.size; j++){
+	heap_mark(  &container->heap
+		    , container->channels[i].recvq.data[j].dirty_flag_pointer);
+      }
+    }
+  } 
+}
+
+
+heap_index heap_allocate_n(vmc_t *container, unsigned int n) {
+
+  heap_index head; 
+
+  cam_value_t list = get_cam_val((UINT)HEAP_NULL, VALUE_PTR_BIT);
+    
+  for(int retries = 0; retries < 2; retries ++) { 
+    for (int i = 0; i < n; i ++) {
+      
+      head = heap_allocate(&container->heap);
+      
+      if (head == HEAP_NULL) {
+	break;
+      }
+      
+      /* Is this correct ? */ 
+      heap_set_snd(&container->heap, head, list);
+      list = get_cam_val((UINT)head, VALUE_PTR_BIT); 
+    }
+    
+    if (head != HEAP_NULL) {
+      break;
+    }
+    heap_mark_phase(container);
+  }
+
+  /* head should be HEAP_NULL or a list of cells */
+  return head;
+}
 
 heap_index heap_alloc_withGC(vmc_t *container) {
 
@@ -434,38 +499,7 @@ heap_index heap_alloc_withGC(vmc_t *container) {
     // heap full; time to do a GC
 
     /* GC parent context */
-    mark_heap_context
-      (  &container->contexts[container->current_running_context_id]
-         , &container->heap);
-
-    /* GC all active child contexts; children starts from 1 */
-    for(int i = 1; i < VMC_MAX_CONTEXTS; i++){
-      if(container->context_used[i] ){
-        mark_heap_context(&container->contexts[i], &container->heap);
-      }
-    }
-
-    //XXX: Tests breaking because channels not initialised in the tests
-    //     PLEASE UNCOMMENT BELOW
-    //GC all the dirty flags associated with the channels
-    for(int i = 0; i < MAX_CHANNELS; i++){
-      if(container->channels[i].in_use){
-        // first check if channel is in use
-        // and then mark all live dirty flags
-        // in the sendq and then in the recvq
-
-        for(int j = 0; j < container->channels[i].sendq.size; j++){
-          heap_mark(  &container->heap
-                    , container->channels[i].sendq.data[j].dirty_flag_pointer);
-        }
-
-        for(int j = 0; j < container->channels[i].recvq.size; j++){
-          heap_mark(  &container->heap
-                      , container->channels[i].recvq.data[j].dirty_flag_pointer);
-        }
-      }
-    }
-
+    heap_mark_phase(container);
     // First phase mark complete; try allocating again
     // Sweeping is lazy and integrated into the allocator
 
