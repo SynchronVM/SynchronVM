@@ -33,6 +33,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <ll/ll_driver.h>
+
 /* Each eval function is called with the vmc state and the
  * current index of the program counter (pointed at the opcode).
  * The eval function internally increments the pc_idx. The
