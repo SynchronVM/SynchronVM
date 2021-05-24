@@ -47,6 +47,7 @@
 
 //#define VMC_CONTAINER_1_USE_UART_0            1      /* not using this yet */
 #define VMC_CONTAINER_1_USE_BUTTON_0          1
+#define VMC_CONTAINER_1_USE_LED_0             1
 
 /*
   Each channel has a max capacity of storing 3 elements

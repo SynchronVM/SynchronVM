@@ -124,41 +124,40 @@ void main(void) {
   /* ******************* */
   /* Configure some LEDs */
 
-  ll_driver_t led1;
+  //  ll_driver_t led1;
 
+  /* if (ll_led_init(&led1, 1, 1)) { */
+  /*   PRINT("LL_LED: OK init led1\r\n"); */
+  /* } else { */
+  /*   PRINT("LL_LED: FAILED init led1\r\n"); */
+  /* } */
 
-  if (ll_led_init(&led1, 1, 1)) {
-    PRINT("LL_LED: OK init led1\r\n");
-  } else {
-    PRINT("LL_LED: FAILED init led1\r\n");
-  }
+  /* /\* configure uart *\/ */
 
-  /* configure uart */
+  /* ll_driver_t uart_drv; */
 
-  ll_driver_t uart_drv;
+  /* PRINT("STARTING UARTS\r\n"); */
+  /* if (ll_uart_init(&uart_drv, UART_IF0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) { */
+  /*   PRINT("LL_UART: OK!\r\n"); */
+  /* } else { */
+  /*   PRINT("LL_UART: Failed!\r\n"); */
+  /* } */
 
-  PRINT("STARTING UARTS\r\n");
-  if (ll_uart_init(&uart_drv, UART_IF0, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
-    PRINT("LL_UART: OK!\r\n");
-  } else {
-    PRINT("LL_UART: Failed!\r\n");
-  }
+  /* const char *hello = "hello world\r\n"; */
 
-  const char *hello = "hello world\r\n";
+  /* int i = 0;  */
+  /* while (1) { */
 
-  int i = 0; 
-  while (1) {
+  /*   uint8_t led1_state; */
 
-    uint8_t led1_state;
+  /*   ll_read(&led1, &led1_state, 1); */
 
-    ll_read(&led1, &led1_state, 1);
+  /*   led1_state = 1 - led1_state; */
 
-    led1_state = 1 - led1_state;
-
-    ll_write(&led1, &led1_state, 1);
+  /*   ll_write(&led1, &led1_state, 1); */
     
-    k_sleep(K_SECONDS(1));
-    i++;
-  }
+  /*   k_sleep(K_SECONDS(1)); */
+  /*   i++; */
+  /* } */
 
 }

@@ -4,6 +4,11 @@
      svm-uart1 = &usart1;
 
      svm-button0 = &user_button;
+
+     svm-led0 = &orange_led_3;
+     svm-led1 = &green_led_4;
+     svm-led2 = &red_led_5;
+     svm-led3 = &blue_led_6;
      };
 };
 

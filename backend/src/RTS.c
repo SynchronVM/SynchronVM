@@ -780,11 +780,12 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
     //     now; We should make such checks here and serialize accordingly
 
     uint8_t data_arr[4];
-    data_arr[0] = extract_bits(message.value, 24, 8);
-    data_arr[1] = extract_bits(message.value, 16, 8);
-    data_arr[2] = extract_bits(message.value,  8, 8);
-    data_arr[3] = extract_bits(message.value,  0, 8);
-
+    data_arr[3] = extract_bits(message.value, 24, 8);
+    data_arr[2] = extract_bits(message.value, 16, 8);
+    data_arr[1] = extract_bits(message.value,  8, 8);
+    data_arr[0] = extract_bits(message.value,  0, 8);
+    
+    
     UUID sync_driver_number =
       container->channels[bevt_simple.channel_id].sync_driver_no;
 
@@ -813,10 +814,10 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
     }
 
     UINT data = 0;
-    data = data | (data_arr[0] << 24);
-    data = data | (data_arr[1] << 16);
-    data = data | (data_arr[2] <<  8);
-    data = data | data_arr[3];
+    data = data | (data_arr[3] << 24);
+    data = data | (data_arr[2] << 16);
+    data = data | (data_arr[1] <<  8);
+    data = data | data_arr[0];
 
     cam_value_t msg_ = { .value = data, .flags = 0};
 

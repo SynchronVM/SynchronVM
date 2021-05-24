@@ -38,8 +38,6 @@ extern uint32_t led_num(void);
 extern led_driver_t* led_init(uint32_t identifier);
 extern void led_set(led_driver_t *led, bool value);
 
-static inline bool led_state(led_driver_t *led) {
-  return led->state;
-}
+extern bool led_state(led_driver_t *led);
 
 #endif
