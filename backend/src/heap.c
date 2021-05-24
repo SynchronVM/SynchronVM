@@ -183,7 +183,6 @@ heap_index heap_allocate(heap_t *heap) {
   return HEAP_NULL;
 }
 
-
 /**********************/
 /* Garbage Collection */
 /**********************/
