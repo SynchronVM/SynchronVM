@@ -22,7 +22,7 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <ll_uart.h>
+#include <ll/ll_uart.h>
 
 
 static uint32_t ll_uart_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {

@@ -22,7 +22,7 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <ll_button.h>
+#include <ll/ll_button.h>
 #include <button.h>
 
 static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {

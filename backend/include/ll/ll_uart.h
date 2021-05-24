@@ -31,7 +31,7 @@
 // of uart.h/uart.c is needed. But if that exists, it should just be about
 // Makefile tweaking to use the chibios implementation instead.
 #include <uart.h>
-#include <ll_driver.h>
+#include <ll/ll_driver.h>
 
 extern bool ll_uart_init(ll_driver_t* lld, uart_if_t uif,
 			 uint8_t *in_buffer,

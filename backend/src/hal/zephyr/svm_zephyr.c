@@ -41,7 +41,7 @@
 
 #include <vm-conf.h>
 #include <VMC.h>
-#include <ll_driver.h>
+#include <ll/ll_driver.h>
 
 #include <hal/zephyr/svm_zephyr.h>
 

@@ -22,7 +22,7 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <ll_als.h>
+#include <ll/ll_als.h>
 
 
 static uint32_t ll_als_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {

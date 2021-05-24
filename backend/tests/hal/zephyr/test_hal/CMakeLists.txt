@@ -34,7 +34,6 @@ target_sources(app PRIVATE ${app_sources} ${extra_sources})
 target_include_directories(app PRIVATE
   .
   ${SENSE_VM_H}
-  ${LLBH}
   ${LLBH_Z}
   ${HALH_Z}
   ${ZEPHYR_BASE}/kernel/include
