@@ -61,7 +61,7 @@ static uint32_t ll_led_write(struct ll_driver_s *this, uint8_t *data, uint32_t d
   return data_size; /* there are alternative interpretations one could make... */
 }
 
-static bool ll_led_is_synchronous(struct ll_drivers *this) {
+static bool ll_led_is_synchronous(struct ll_driver_s *this) {
   return true;
 }
 

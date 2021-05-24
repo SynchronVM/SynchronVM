@@ -34,6 +34,7 @@
 
 #include <RTS.h>
 #include <stdbool.h>
+#include <ll/ll_driver.h>
 
 static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
   // counting begins with 0
