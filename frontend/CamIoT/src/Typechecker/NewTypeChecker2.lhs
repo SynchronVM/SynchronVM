@@ -39,6 +39,8 @@ import Control.Monad.Combinators.Expr
 import Control.Monad.Identity
 import Data.Void
 
+import System.Exit
+import System.IO
 import System.IO.Unsafe
 
 trace :: Show a => a -> a
@@ -60,6 +62,10 @@ data Type = TVar Ident
 args :: Type -> [Type]
 args (TLam t1 t2) = t1 : args t2
 args _            = []
+
+construction :: Type -> Type
+construction (TLam t1 t2) = construction t2
+construction t            = t
 
 funtype :: [Type] -> Type
 funtype [t]        = t
@@ -200,10 +206,12 @@ instance Print a => Show (Function a) where
   show = printTree
 
 data Program a = Program
-  { datatypes :: [(UIdent, [Ident], [(UIdent, Type)])]
+  { datatypes :: [ADT]
   , functions :: [Function a]
   , main      :: Function a
   }
+
+type ADT = (UIdent, [Ident], [(UIdent, Type)])
 
 instance Print a => Show (Program a) where
   show = printTree
@@ -247,14 +255,28 @@ toFunction (d:ds) = case d of
   -- In this case there was no declared type signature
   _             -> Function (getName d) (d:ds) Nothing
 
-compile :: String -> IO (Either String (Program Type, Subst))
+{-
+exitcodes:
+  1 - parse error
+  2 - typecheck error
+  3 - rename error
+  4 - lambdalift error
+  5 - monomorphise error
+-}
+compile :: String -> IO (Program Type, Subst)
 compile fp = do
   contents <- TIO.readFile fp
   let processed = process contents
   let parsed    = parse pProgram fp processed
   case parsed of
-    Left e  -> error $ show e
-    Right r -> typecheck r
+    Left e  -> do hPutStrLn stderr $ show e
+                  exitWith $ ExitFailure 1
+    Right r -> do
+      tc <- typecheck r
+      case tc of
+        Left e -> do hPutStrLn stderr e
+                     exitWith $ ExitFailure 2
+        Right r -> return r
 
 tryParse :: String -> IO String
 tryParse fp = do
@@ -462,21 +484,45 @@ data TCError = UnboundVariable Ident
              | UnknownBinop (Binop ())
              | OccursError Ident Type
              | UnificationError Type Type
+             | UndeclaredTycon UIdent
+             | DuplicateTycon UIdent
+             | DuplicateDataConstructor UIdent
+             | PartiallyAppliedTycon UIdent Int Int
+             | UnboundADTVariable UIdent [Ident] UIdent Type Ident
+             | NonADTConstruction UIdent Type Type
 
 instance Show TCError where
   show e = case e of
-    UnboundVariable id -> "can not resolve symbol: " ++ show id
+    UnboundVariable id     -> "can not resolve symbol: " ++ show id
     UnknownConstructor uid -> "can not resolve constructor: " ++ show uid
-    UnknownBinop op -> "can not resolve binop: " ++ printTree op
-    OccursError id t -> concat ["Can not substitute ", show id
-                               , " for ", show t
-                               , "! the type does not become more concrete."
-                               ]
-    UnificationError t1 t2 -> concat ["Can not unify the two types "
-                                     , show t1, " and ", show t2
-                                     ]
+    UnknownBinop op        -> "can not resolve binop: " ++ printTree op
+    OccursError id t       ->
+      concat ["Can not substitute ", show id
+             , " for ", show t
+             , "! the type does not become more concrete."
+             ]
+    UnificationError t1 t2 ->
+      concat ["Can not unify the two types "
+             , show t1, " and ", show t2
+             ]
+    UndeclaredTycon uid    -> concat ["Undeclared type constructor: ", printTree uid]
+    DuplicateTycon uid     -> concat ["Type constructor ", printTree uid, " already declared"]
+    DuplicateDataConstructor uid -> concat ["Data constructor ", printTree uid, " already declared"]
+    PartiallyAppliedTycon uid expectedarity actualarity ->
+      concat [ "Type constructor ", printTree uid, " is partially applied; expected arity is "
+             , show expectedarity, " but actual arity is ", show actualarity]
+    UnboundADTVariable tycon vars datacon t unexpected ->
+      concat [ "The data constructor ", printTree datacon, " declared with "
+             , printTree tycon, " ", printTree vars, ", is declared to have type ", printTree t
+             , ", but the data declaration only binds variables [", printTree vars, "]. The "
+             , "variable ", printTree unexpected, " is unbound and unexpected"]
+    NonADTConstruction datacon expected actual ->
+      concat [ "The data constructor ", printTree datacon, " constructs a value of type "
+             , printTree actual, ", but the expected type is ", printTree expected]
 
-data TCState = TCState { namegen :: Int }
+data TCState = TCState { namegen :: Int
+                       , tycons  :: Map.Map UIdent Int  -- ^ ADT arity
+                       }
 
 type TC a = ExceptT TCError (
             StateT TCState (
@@ -513,6 +559,29 @@ lookupCon uid = do
   case Map.lookup uid env of
     Just schema -> instantiate schema
     Nothing -> throwError $ UnknownConstructor uid
+
+-- | Does a constructor already exist? Used for verifying data type declarations,
+-- that the constructors are unique.
+existsCon :: UIdent -> TC Bool
+existsCon uid = do
+  (Env _ env) <- ask
+  case Map.lookup uid env of
+    Just _  -> return True
+    Nothing -> return False 
+
+lookupTyconArity :: UIdent -> TC Int
+lookupTyconArity uid = do
+  st <- get
+  case Map.lookup uid (tycons st) of
+    Just i  -> return i
+    Nothing -> throwError $ UndeclaredTycon uid
+
+extendTyconArity :: UIdent -> Int -> TC ()
+extendTyconArity uid arity = do
+  st <- get
+  case Map.lookup uid (tycons st) of
+    Just _ -> throwError $ DuplicateTycon uid
+    Nothing -> put $ st { tycons = Map.insert uid arity (tycons st) }
 
 lookupBinop :: Binop () -> TC Type
 lookupBinop op =
@@ -587,6 +656,36 @@ inEnvMany xs ma =
   let scope e = foldl (\e' (id,schema) -> extend (restrict e' id) id schema) e xs
   in local scope ma
 
+withConstructors :: [ADT] -> TC a -> TC a
+withConstructors adts = local (\(Env m1 m2) -> Env m1 $ Map.fromList allConsSchemas)
+  where
+      adtToCons :: ADT -> [(UIdent, Schema)]
+      adtToCons (_,vars,cons) = map (\(con,t) -> (con, Forall vars t)) cons
+
+      allConsSchemas :: [(UIdent, Schema)]
+      allConsSchemas = concat $ map adtToCons adts
+
+-- | Can use this for type signatures to make sure all types are
+-- fully applied.
+containsFullyAppliedTycons :: Type -> TC ()
+containsFullyAppliedTycons t = case t of
+  TAdt uid ts -> do
+    arity <- lookupTyconArity uid
+    if arity == length ts
+      then return ()
+      else throwError $ PartiallyAppliedTycon uid arity (length ts)
+
+  TTup ts     -> mapM_ containsFullyAppliedTycons ts
+  TLam t1 t2  -> containsFullyAppliedTycons t1 >> containsFullyAppliedTycons t2
+  _           -> return ()
+
+whenM :: Monad m => m Bool -> m a -> a -> m a
+whenM mb ma d = do
+  b <- mb
+  if b
+    then ma
+    else return d
+
 checkPat :: Pat () -> TC (Pat Type)
 checkPat p = case p of
   PVar () id    -> do
@@ -601,7 +700,27 @@ checkPat p = case p of
   PAs () id p -> do
     p' <- checkPat p
     return $ PAs (patVar p') id p'
-  PAdt () uid ps -> undefined
+  PAdt () uid ps -> do
+    -- look up the type of the constructor
+    t            <- lookupCon uid
+    -- typecheck the constructor arguments
+    ps'          <- mapM checkPat ps
+
+    -- fetch the types of the constructor arguments and construct a function
+    -- type from the argument types to the constructor target
+    let ptyps    = map patVar ps'
+    let targ     = construction t
+    let functype = funtype $ ptyps ++ [targ]
+
+    -- unify the type of the constructor with the inferred types of the
+    -- constructor arguments and the constructor target
+    sub          <- unify t functype
+
+    -- apply the substitution to the constructor arguments and the constructor
+    -- target, and then return the annotated pattern
+    let ps''     = apply sub ps'
+    let targ'    = apply sub targ
+    return $ PAdt targ' uid ps''
   PTup () ps -> do
     ps' <- mapM checkPat ps
     let tuptype = TTup $ map patVar ps'
@@ -683,10 +802,69 @@ checkFunction f = do
         s' <- unify x y
         unifyEquations (y:xs) (s `compose` s')
 
+-- | Check that the declaration of an ADT is okay.
+checkDataDeclaration :: ADT -> TC ()
+checkDataDeclaration (tycon, vars, cons) = do
+  extendTyconArity tycon (length vars)
+  let constructors = map fst cons
+
+  -- make sure that each constructor is okay
+  forM_ cons $ \(con,t) -> do
+
+    -- was this constructor already declared with another ADT?
+    whenM (existsCon con) (throwError $ DuplicateDataConstructor con) ()
+
+    -- are we currently declaring two constructors with the same name?
+    whenM (return $ con `elem` (delete con constructors))
+          (throwError $ DuplicateDataConstructor con)
+          ()
+
+    -- are any ADTs in this type fully applied?
+    containsFullyAppliedTycons t
+
+    {----------- The checks below this relate to ADTs vs GADTs -----------}
+
+    -- does it only use the variables bound by the data declaration?
+    let vars = tvars t
+    forM_ vars $ \v ->
+      whenM (return $ not $ v `elem` vars)
+            (throwError $ UnboundADTVariable tycon vars con t v)
+            ()
+
+    -- does it construct something of the declared type? E.g constructors in the
+    -- type `data Test a b where ...` may only construct values of type `Test a b`.
+    let restype = construction t -- this just unwraps a function type
+    let types   = map TVar vars
+    whenM (return $ not $ restype == (TAdt tycon types))
+          (throwError $ NonADTConstruction con (TAdt tycon types) restype)
+          ()
+
+  where
+      tvars :: Type -> [Ident]
+      tvars t = nub $ allvars t
+
+      allvars :: Type -> [Ident]
+      allvars t = case t of
+        TVar a      -> [a]
+        TTup ts     -> concat $ map tvars ts
+        TAdt uid ts -> concat $ map tvars ts
+        TLam t1 t2  -> tvars t1 ++ tvars t2
+        _           -> []
+
 checkProgram :: Program () -> TC (Subst, Program Type)
 checkProgram p = do
+  -- check that the declared ADTs are not GADTs and that they are
+  -- well formed etc
+  foldM (\acc d -> do withConstructors acc $ checkDataDeclaration d
+                      return $ d : acc)
+        []
+        (datatypes p)
+
+  -- extend the environment with the data constructors in scope and then
+  -- type check all functions in the program
   let allfunctions = functions p ++ [main p]
-  (sub, funs) <- checkFunctions allfunctions
+  (sub, funs) <- withConstructors (datatypes p) $ checkFunctions allfunctions
+
   let main' = last funs
   let funs' = init funs
   return (sub, p { functions = funs'
@@ -711,7 +889,7 @@ checkFunctions_ (f:fs) s = do
 typecheck :: [Def ()] -> IO (Either String (Program Type, Subst))
 typecheck defs = do
   let excepted = runExceptT $ checkProgram program
-  let stated   = evalStateT excepted (TCState 0)
+  let stated   = evalStateT excepted (TCState 0 Map.empty)
   readed       <- runReaderT stated initialEnv
   case readed of
     Left err -> return $ Left $ show err
@@ -724,11 +902,7 @@ typecheck defs = do
       funs = mkFunctions defs
 
       initialEnv :: Env
-      initialEnv = Env (Map.fromList entries) (Map.fromList constructors)
-
-      constructors :: [(UIdent, Schema)]
-      constructors = concat $ flip map (datatypes program) $ \(uid,vars,cons) ->
-        flip map cons $ \(con,t) -> (con, Forall (Set.toList (ftv t)) t)
+      initialEnv = Env (Map.fromList entries) Map.empty
 
       entries :: [(Ident, Schema)]
       entries = [ (Ident "add2", Forall [] $ TLam TInt TInt)
@@ -752,7 +926,7 @@ instance {-# OVERLAPPING #-} Print a => Show [Function a] where
 
 runTC :: TC a -> IO (Either TCError a)
 runTC tca = let excepted = runExceptT tca
-                stated   = evalStateT excepted (TCState 0)
+                stated   = evalStateT excepted (TCState 0 Map.empty)
             in runReaderT stated (Env Map.empty Map.empty)
 
 checkCaseClauses :: Type -> [(Pat (), Exp ())] -> TC (Subst, [(Pat Type, Exp Type)])

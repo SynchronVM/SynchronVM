@@ -1,0 +1,3 @@
+
+data Exp a where
+  EInt : Int -> Exp Int

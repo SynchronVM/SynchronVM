@@ -22,8 +22,8 @@
 //#include <CAM.h>
 
 /* Our own library of stuff! */
-#include "ll_uart.h"
-#include "ll_led.h"
+#include "ll/ll_uart.h"
+#include "ll/ll_led.h"
 
 //#include "powerman.h"
 //#include "timerman.h"

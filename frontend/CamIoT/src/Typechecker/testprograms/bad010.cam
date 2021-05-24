@@ -1,0 +1,8 @@
+
+data Test a where
+  Con : a -> Test a
+
+data Test2 a where
+  Con : a -> Test2 a
+
+main = 3

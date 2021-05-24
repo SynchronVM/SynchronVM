@@ -31,7 +31,7 @@
 
 #define BUTTON_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
 #define BUTTON_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
-#define BUTTON_FLAGS(X)        (GPIO_INPUT | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
+#define BUTTON_FLAGS(X)        (GPIO_INPUT | GPIO_INT_DEBOUNCE | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
 
 
 #define CONFIG_BUTTON_CASE(X) \
@@ -42,7 +42,7 @@
   button_data[(X)].interop = (zephyr_interop_t*)backend_custom;\
   button_data[(X)].driver = &(button_drivers[(X)]); \
   gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(svm_button##X)); \
-  gpio_pin_interrupt_configure(button_device, button_drivers[(X)].pin, GPIO_INT_EDGE_TO_ACTIVE); \
+  gpio_pin_interrupt_configure(button_device, button_drivers[(X)].pin, GPIO_INT_EDGE_BOTH); \
   gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(svm_button##X))); \
   gpio_add_callback(button_device, &button_data[X].cb_data);\
   break;

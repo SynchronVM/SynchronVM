@@ -26,7 +26,7 @@
 #define LL_BME280_H_
 
 #include <bme280.h>
-#include <ll_driver.h>
+#include <ll/ll_driver.h>
 
 extern bool ll_bme280_init(ll_driver_t* lld);
 

@@ -1,0 +1,6 @@
+
+data Test a where
+  Con : a -> Test a
+
+data Test a where
+  Con1 : a -> Test a

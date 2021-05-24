@@ -22,7 +22,7 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <ll_bme280.h>
+#include <ll/ll_bme280.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>

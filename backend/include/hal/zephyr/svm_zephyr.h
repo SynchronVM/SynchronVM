@@ -25,7 +25,7 @@
 #ifndef SVM_ZEPHYR_H_
 #define SVM_ZEPHYR_H_
 
-#include <ll_driver.h>
+#include <ll/ll_driver.h>
 
 /* backend_custom struct for zephyr integration */
 typedef struct zephyr_interop_s {

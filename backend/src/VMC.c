@@ -137,7 +137,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #endif
 
   #if VMC_CONTAINER_1_USE_BUTTON_0
-  #include <ll_button.h>
+  #include <ll/ll_button.h>
   if (ll_button_init(&lld, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
     vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
     drv_num++;
@@ -145,7 +145,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #endif
 
   #if VMC_CONTAINER_1_USE_LED_0
-  #include <ll_led.h>
+  #include <ll/ll_led.h>
   if (ll_led_init(&lld, 0, 0)) {
     vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
     drv_num++;

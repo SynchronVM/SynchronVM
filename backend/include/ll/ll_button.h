@@ -29,7 +29,7 @@
 #include <stdbool.h>
 
 #include <button.h>
-#include <ll_driver.h>
+#include <ll/ll_driver.h>
 
 
 extern bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void *backend_custom, uint32_t button_id);
