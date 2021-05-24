@@ -30,5 +30,6 @@ int channel_init(Channel_t *c, chan_send_queue_t sq, chan_recv_queue_t rq){
   c->sendq = sq;
   c->recvq = rq;
   c->in_use = false;
+  c->sync_driver_no = DRIVER_NULL;
   return 1;
 }

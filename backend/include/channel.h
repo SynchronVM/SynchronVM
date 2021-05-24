@@ -35,6 +35,7 @@ typedef struct {
   chan_send_queue_t sendq;
   chan_recv_queue_t recvq;
   bool         in_use;
+  UUID         sync_driver_no;
 } Channel_t;
 
 extern int channel_init(  Channel_t *c

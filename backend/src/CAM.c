@@ -1367,7 +1367,13 @@ static int handle_spawnExternal(vmc_t *vmc){
   }
   UUID chan_id = (UUID)hold_reg.value;
 
-  vmc->drivers[driver_details.value].channel_id = chan_id;
+  if(ll_is_synchronous(&vmc->drivers[driver_details.value])){
+    // synchronous driver like LEDs
+    vmc->channels[chan_id].sync_driver_no = (UUID)driver_details.value;
+  } else {
+    // asynchronous drivers like buttons
+    vmc->drivers[driver_details.value].channel_id = chan_id;
+  }
 
   return 1;
 

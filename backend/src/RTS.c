@@ -30,6 +30,7 @@
 # define DEBUG_PRINT(x) do {} while (0)
 #endif
 
+#define SYNC_DRIVER 7
 
 #include <RTS.h>
 #include <stdbool.h>
@@ -106,6 +107,14 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
                           , .wrap_func_ptr = wrap_fptr };
 
     cam_event_t cevt = { .bev = bevt, .msg = message };
+
+    /**** Dealing with synchronous drivers like LEDs *****/
+    if(container->channels[bevt_simple.channel_id].sync_driver_no != DRIVER_NULL){
+      // should use ll_data_readable/ ll_data_writeable depending on the event_type here
+      *cev = cevt;
+      return SYNC_DRIVER;
+    }
+    /****************************************************/
 
     if(bevt_simple.e_type == SEND){
 
@@ -559,6 +568,8 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
   return -1; // neither SEND or RECV
 }
 
+static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev);
+
 int sync(vmc_t *container, event_t *evts){
   cam_event_t cev;
   int i = findSynchronizable(container, evts, &cev);
@@ -568,6 +579,13 @@ int sync(vmc_t *container, event_t *evts){
     int sync_status = synchronizeNow(container, cev);
     if(sync_status == -1){
       DEBUG_PRINT(("Synchronization failed! \n"));
+      return -1;
+    }
+
+  } else if(i == SYNC_DRIVER){
+    int sync_status = synchronizeSyncDriver(container, cev);
+    if(sync_status == -1){
+      DEBUG_PRINT(("Synchronization on sync driver failed! \n"));
       return -1;
     }
 
@@ -740,6 +758,90 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
   heap_set_snd(&container->heap, index1, e2_cam);
 
   *evts = original_e1_idx;
+
+  return 1;
+}
+
+
+/********** IO operation **********/
+static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
+  base_event_t bevt = cev.bev;
+  cam_value_t  message = cev.msg; // NULL for recv
+
+  base_evt_simple_t bevt_simple = bevt.evt_details;
+  cam_value_t wrap_fptr = bevt.wrap_func_ptr;
+
+
+  cam_value_t val_before_post_sync;
+  if(bevt_simple.e_type == SEND){
+
+    //XXX: Assuming the message is a simple value and not a pointer for
+    //     now; We should make such checks here and serialize accordingly
+
+    uint8_t data_arr[4];
+    data_arr[0] = extract_bits(message.value, 24, 8);
+    data_arr[1] = extract_bits(message.value, 16, 8);
+    data_arr[2] = extract_bits(message.value,  8, 8);
+    data_arr[3] = extract_bits(message.value,  0, 8);
+
+    UUID sync_driver_number =
+      container->channels[bevt_simple.channel_id].sync_driver_no;
+
+    int k =
+      ll_write(&container->drivers[sync_driver_number], data_arr, 1); //writing 1 byte
+    if(k != 1){
+      DEBUG_PRINT(("Failed to write to sync driver!"));
+      return -1;
+    }
+
+    cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+
+    val_before_post_sync = empty_tuple;
+
+
+
+  } else if(bevt_simple.e_type == RECV) {
+    UUID sync_driver_number =
+      container->channels[bevt_simple.channel_id].sync_driver_no;
+    uint8_t data_arr[4];
+    int k =
+      ll_read(&container->drivers[sync_driver_number], data_arr, 1); //reading 1 byte
+    if(k != 1){
+      DEBUG_PRINT(("Failed to read from sync driver!"));
+      return -1;
+    }
+
+    UINT data = 0;
+    data = data | (data_arr[0] << 24);
+    data = data | (data_arr[1] << 16);
+    data = data | (data_arr[2] <<  8);
+    data = data | data_arr[3];
+
+    cam_value_t msg_ = { .value = data, .flags = 0};
+
+    val_before_post_sync = msg_;
+
+  }
+
+
+  //Post synchronization
+  if((heap_index)wrap_fptr.value != HEAP_NULL){
+
+    int q = postSync( container
+                    , wrap_fptr
+                    , val_before_post_sync
+                    , container->current_running_context_id);
+    if(q == -1){
+      DEBUG_PRINT(("Post synchronization error\n"));
+      return q;
+    }
+
+
+  } else {
+    container->contexts[container->current_running_context_id].env
+      = val_before_post_sync;
+  }
+
 
   return 1;
 }
