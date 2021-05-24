@@ -441,7 +441,7 @@ Unhandled patterns:
 
 
 -- Experiments --
-path = "testcases/good16.cam"
+path = "testcases/good12.cam"
 
 test :: IO ()
 test = do
