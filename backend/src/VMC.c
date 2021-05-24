@@ -469,7 +469,7 @@ heap_index heap_allocate_n(vmc_t *container, unsigned int n) {
   cam_value_t list = get_cam_val((UINT)HEAP_NULL, VALUE_PTR_BIT);
     
   for(int retries = 0; retries < 2; retries ++) { 
-    for (int i = 0; i < n; i ++) {
+    for (int i = 0; i < (int)n; i ++) {
       
       head = heap_allocate(&container->heap);
       
