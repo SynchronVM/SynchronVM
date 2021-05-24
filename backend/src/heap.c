@@ -24,6 +24,7 @@
 #ifdef DEBUG
 #include <stdio.h>
 # define DEBUG_PRINT(x) printf x
+//# define DEBUG_PRINT(x) printk(x)
 #else
 # define DEBUG_PRINT(x) do {} while (0)
 #endif

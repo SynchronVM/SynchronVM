@@ -274,6 +274,15 @@ int scheduler(vmc_t *container,
       /* handle msg */
       handle_msg(container, &msg);
       while (poll_msg(container, &msg) == 0) {
+	dbg_print("message received: poll loop in blocking\r\n");
+	dbg_print("  driver: %u\r\n", msg.driver_id);
+	dbg_print("  msg_typ: %u\r\n", msg.msg_type);
+	dbg_print("  data: %u\r\n", msg.data);
+	dbg_print("  time: %llu\r\n", msg.timestamp);
+	/* handle msg */
+
+	/* This should be the same handler as below, do not context-switch*/
+	//handle_msg(container, &msg);
         /*handle messages*/
         /* enqueue processes */
       }
@@ -283,6 +292,16 @@ int scheduler(vmc_t *container,
     /* Every now and then poll for messages (maybe not every iteration?)*/
     if (poll_msg(container, &msg) == 0) {  /* loop over queue here ? */
       dbg_print("message received: polling\r\n");
+      dbg_print("  driver: %u\r\n", msg.driver_id);
+      dbg_print("  msg_typ: %u\r\n", msg.msg_type);
+      dbg_print("  data: %u\r\n", msg.data);
+      dbg_print("  time: %llu\r\n", msg.timestamp);
+
+      /* Do not switch context, just enqueue on ready queue */ 
+      
+      // handle_msg(container, &msg);
+      // Some other form of handle_msg
+      
       /* handle message */
       /* enqueue processes */
     }
@@ -292,12 +311,12 @@ int scheduler(vmc_t *container,
 
       INT *pc = (INT *)&container->contexts[container->current_running_context_id].pc;
       dbg_print("*****************************************************'\r\n");
-      dbg_print("executing ctx: %d\r\n", container->current_running_context_id);
-      dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc);
-      dbg_print("pc    : %d\r\n", *pc);
-      dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env.value);
-      dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]);
-      dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators));
+      /* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
+      /* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
+      /* dbg_print("pc    : %d\r\n", *pc); */
+      /* dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env.value); */
+      /* dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]); */
+      /* dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators)); */
 
       /* Execute an instruction */
 
