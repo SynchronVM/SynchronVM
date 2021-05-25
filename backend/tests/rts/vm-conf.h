@@ -45,7 +45,7 @@
 #define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
 #define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  4096
 
-#define VMC_CONTAINER_1_USE_UART_0            1
+//#define VMC_CONTAINER_1_USE_UART_0            1
 //#define VMC_CONTAINER_1_USE_UART_1            1
 
 /*
