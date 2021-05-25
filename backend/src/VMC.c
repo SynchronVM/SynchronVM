@@ -33,7 +33,6 @@
 #include <VMC.h>
 #include <heap.h>
 #include <CAM.h>
-#include <RTSIO.h>
 #include <queue.h>
 
 #include <ll/ll_driver.h>
