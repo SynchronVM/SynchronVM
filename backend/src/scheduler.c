@@ -25,7 +25,7 @@
 #include <scheduler.h>
 #include <heap.h>
 #include <CAM.h>
-#include <RTSIO.h>
+#include <RTS.h>
 #include <queue.h>
 
 int scheduler(vmc_t *container,
