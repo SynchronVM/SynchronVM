@@ -54,7 +54,6 @@ int handle_msg(vmc_t *vmc, ll_driver_msg_t *m){
 
 
 
-
   // The following code is a barebones version of what `sync` does
 
   recv_data_t recv_data;//recv_context_id;
@@ -71,23 +70,22 @@ int handle_msg(vmc_t *vmc, ll_driver_msg_t *m){
 
   cam_value_t true_flag = { .value = 1, .flags = 0 };
   heap_set_fst(  &vmc->heap
-               , (heap_index)recv_data.dirty_flag_pointer.value
-               , true_flag); //the unlogging trick
-
+		 , (heap_index)recv_data.dirty_flag_pointer.value
+		 , true_flag); //the unlogging trick
+  
 
 
   /* NOTE Message passing begins */
-
+  
   int k = message_pass( vmc
-                      , recv_context_id
-                      , msg
-                      , chan_id
-                      , RECV);
+			, recv_context_id
+			, msg
+			, chan_id
+			, RECV);
   if(k == -1){
     DEBUG_PRINT(("Error in message passing"));
     return -1;
   }
-
 
   /* NOTE Message passing ends */
 

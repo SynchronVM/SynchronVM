@@ -256,61 +256,49 @@ int scheduler(vmc_t *container,
 
   while (true) {
 
+    //dbg_print("CURRENT_ID: %u\r\n", container->current_running_context_id);
 
     if(container->all_contexts_stopped){
       // All of the contexts have encountered the STOP operation; Program STOP
       break;
     }
 
+    /* What if we want to pre-emt running context for an important 
+       message 
+       - threads cooperative. 
+       - 
+    */
     /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
 
       block_msg(container, &msg);
-      dbg_print("message received: blocking\r\n");
-      dbg_print("  driver: %u\r\n", msg.driver_id);
-      dbg_print("  msg_typ: %u\r\n", msg.msg_type);
-      dbg_print("  data: %u\r\n", msg.data);
-      dbg_print("  time: %llu\r\n", msg.timestamp);
+      /* dbg_print("message received: blocking\r\n"); */
+      /* dbg_print("  driver: %u\r\n", msg.driver_id); */
+      /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
+      /* dbg_print("  data: %u\r\n", msg.data); */
+      /* dbg_print("  time: %llu\r\n", msg.timestamp); */
       /* handle msg */
       handle_msg(container, &msg);
-      while (poll_msg(container, &msg) == 0) {
-	dbg_print("message received: poll loop in blocking\r\n");
-	dbg_print("  driver: %u\r\n", msg.driver_id);
-	dbg_print("  msg_typ: %u\r\n", msg.msg_type);
-	dbg_print("  data: %u\r\n", msg.data);
-	dbg_print("  time: %llu\r\n", msg.timestamp);
-	/* handle msg */
-
-	/* This should be the same handler as below, do not context-switch*/
-	//handle_msg(container, &msg);
-        /*handle messages*/
-        /* enqueue processes */
-      }
-    }
-
-
-    /* Every now and then poll for messages (maybe not every iteration?)*/
-    if (poll_msg(container, &msg) == 0) {  /* loop over queue here ? */
-      dbg_print("message received: polling\r\n");
-      dbg_print("  driver: %u\r\n", msg.driver_id);
-      dbg_print("  msg_typ: %u\r\n", msg.msg_type);
-      dbg_print("  data: %u\r\n", msg.data);
-      dbg_print("  time: %llu\r\n", msg.timestamp);
-
-      /* Do not switch context, just enqueue on ready queue */ 
-      
-      // handle_msg(container, &msg);
-      // Some other form of handle_msg
-      
-      /* handle message */
-      /* enqueue processes */
+      /* while (poll_msg(container, &msg) == 0) { */
+      /* 	dbg_print("message received: poll loop in blocking\r\n"); */
+      /* 	dbg_print("  driver: %u\r\n", msg.driver_id); */
+      /* 	dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
+      /* 	dbg_print("  data: %u\r\n", msg.data); */
+      /* 	dbg_print("  time: %llu\r\n", msg.timestamp); */
+      /* 	/\* handle msg *\/ */
+      /* 	handle_msg(container, &msg); */
+      /* 	/\* This should be the same handler as below, do not context-switch*\/ */
+      /* 	//handle_msg(container, &msg); */
+      /*   /\*handle messages*\/ */
+      /*   /\* enqueue processes *\/ */
+      /* } */
     }
 
     /* If a context is running do this... */
     if (container->current_running_context_id != UUID_NONE) {
 
       INT *pc = (INT *)&container->contexts[container->current_running_context_id].pc;
-      dbg_print("*****************************************************'\r\n");
+      //dbg_print("*****************************************************\r\n");
       /* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
       /* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
       /* dbg_print("pc    : %d\r\n", *pc); */
