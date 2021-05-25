@@ -28,6 +28,6 @@
 #include <RTS.h>
 #include <VMC.h>
 
-extern int handle_msg(vmc_t *vmc, ll_driver_msg_t *m);
+
 
 #endif

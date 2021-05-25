@@ -50,4 +50,6 @@ extern int choose (  vmc_t   *container
                    , event_t *evt2
                    , event_t *evts);
 
+extern int handle_msg(vmc_t *vmc, ll_driver_msg_t *m);
+
 #endif
