@@ -78,15 +78,14 @@ typedef int (*message_read_block_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
 
 extern int vmc_init(vmc_t *vm_containers, int max_num_containers);
 
-// These need to run within some lower level thread abstractions
 extern int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...));
 
-extern heap_index heap_alloc_withGC(vmc_t *container);
+extern heap_index vmc_heap_alloc_withGC(vmc_t *container);
 
-extern int scheduler(vmc_t *container,
-		     message_read_poll_fun poll_msg,
-		     message_read_block_fun block_msg,
-         void (*dbg_print)(const char *str, ...));
-
+/* 
+   Allocate n elements from the heap, returned as a cons list. 
+   Succeeds to allocate n elements or fails. No partial success.
+ */ 
+extern heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n);
 
 #endif

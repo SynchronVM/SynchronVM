@@ -85,7 +85,7 @@ void main(void) {
   /* k_thread_foreach(t_info_dump, NULL); */
 
 
-  int ret = 0;
+  // int ret = 0;
   
   /* PRINT("Initializing button\r\n"); */
   /* button = device_get_binding(BUTTON0_GPIO_LABEL); */

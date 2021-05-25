@@ -301,7 +301,7 @@ void eval_cons(vmc_t *vmc, INT *pc_idx) {
     *pc_idx = -1;
     return;
   }
-  heap_index hi = heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -321,7 +321,7 @@ void eval_cur(vmc_t *vmc, INT *pc_idx) {
   uint16_t label = get_label(vmc, pc_idx);
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
-  heap_index hi = heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -340,7 +340,7 @@ void eval_pack(vmc_t *vmc, INT *pc_idx) {
   uint16_t tag = get_tag(vmc, pc_idx);
   cam_value_t cam_tag =
     { .value = (UINT)tag, .flags = 0 };
-  heap_index hi = heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -411,7 +411,7 @@ void eval_app(vmc_t *vmc, INT *pc_idx) {
     cam_value_t val = heap_f;
     cam_value_t label = heap_s;
 
-    heap_index hi = heap_alloc_withGC(vmc);
+    heap_index hi = vmc_heap_alloc_withGC(vmc);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation has failed"));
       *pc_idx = -1;
@@ -525,7 +525,7 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
     return;
   }
 
-  heap_index hi = heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -1096,7 +1096,7 @@ void eval_snoc(vmc_t *vmc, INT *pc_idx){
     *pc_idx = -1;
     return;
   }
-  heap_index hi = heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -1116,7 +1116,7 @@ void eval_comb(vmc_t *vmc, INT *pc_idx){
   uint16_t label = get_label(vmc, pc_idx);
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
-  heap_index hi = heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -1232,7 +1232,7 @@ static int handle_spawn(vmc_t *vmc){
     // spawn then copies the content of the env register to
     // the `env` register of the new context
 
-    heap_index hi = heap_alloc_withGC(vmc);
+    heap_index hi = vmc_heap_alloc_withGC(vmc);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation has failed"));
       return -1;

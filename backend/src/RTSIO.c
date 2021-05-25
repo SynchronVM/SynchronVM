@@ -133,7 +133,7 @@ static int postSync( vmc_t *container
     cam_value_t val = heap_f;
     label = heap_s;
 
-    heap_index hi = heap_alloc_withGC(container);
+    heap_index hi = vmc_heap_alloc_withGC(container);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation failed in post-syncer"));
       return -1;

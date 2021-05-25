@@ -65,7 +65,7 @@ static cam_value_t create_dirty_flag(vmc_t *container, bool b){
   else
     dirty_flag = (cam_value_t){ .value = 0, .flags = 0 }; // false
 
-  heap_index dirty_flag_idx = heap_alloc_withGC(container);
+  heap_index dirty_flag_idx = vmc_heap_alloc_withGC(container);
   heap_set_fst(&container->heap, dirty_flag_idx, dirty_flag);
   cam_value_t dirty_flag_pointer =
     { .value = (UINT)dirty_flag_idx, .flags = VALUE_PTR_BIT };
@@ -325,7 +325,7 @@ static int postSync( vmc_t *container
     cam_value_t val = heap_f;
     label = heap_s;
 
-    heap_index hi = heap_alloc_withGC(container);
+    heap_index hi = vmc_heap_alloc_withGC(container);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation failed in post-syncer"));
       return -1;
@@ -620,7 +620,7 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   cam_value_t base_evt_simple = { .value = data, .flags = 0};
 
-  heap_index base_evt_idx = heap_alloc_withGC(container);
+  heap_index base_evt_idx = vmc_heap_alloc_withGC(container);
 
   if(base_evt_idx == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation for base_event_t has failed"));
@@ -637,7 +637,7 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   cam_value_t event = {.value = (UINT)base_evt_idx, .flags = VALUE_PTR_BIT};
 
-  heap_index cev_idx = heap_alloc_withGC(container);
+  heap_index cev_idx = vmc_heap_alloc_withGC(container);
 
   if(cev_idx == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation for cam_event_t has failed"));
@@ -653,7 +653,7 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
 
-  heap_index hi = heap_alloc_withGC(container);
+  heap_index hi = vmc_heap_alloc_withGC(container);
 
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation for event_t has failed"));
@@ -684,7 +684,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
   cam_value_t base_evt_simple = { .value = data, .flags = 0};
 
-  heap_index base_evt_idx = heap_alloc_withGC(container);
+  heap_index base_evt_idx = vmc_heap_alloc_withGC(container);
 
   if(base_evt_idx == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation for base_event_t has failed"));
@@ -705,7 +705,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
   cam_value_t null_msg  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
-  heap_index cev_idx = heap_alloc_withGC(container);
+  heap_index cev_idx = vmc_heap_alloc_withGC(container);
 
   if(cev_idx == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation for cam_event_t has failed"));
@@ -721,7 +721,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
   cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
 
-  heap_index hi = heap_alloc_withGC(container);
+  heap_index hi = vmc_heap_alloc_withGC(container);
 
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation for event_t has failed"));
