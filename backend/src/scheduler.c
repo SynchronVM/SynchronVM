@@ -36,6 +36,8 @@ int scheduler(vmc_t *container,
   //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
   //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
 
+  (void)poll_msg;
+
   ll_driver_msg_t msg;
 
   dbg_print("Entered Scheduler\r\n");

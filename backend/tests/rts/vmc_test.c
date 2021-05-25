@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <heap.h>
+#include <scheduler.h>
 /* #include <string.h> */ // has memcpy
 
 int mock_read_message_poll(vmc_t *vmc, ll_driver_msg_t *msg){
