@@ -29,7 +29,9 @@ desugar state defs = runDS state $ do
         then do datadecs <- desugarADTs datadecs
                 program  <- desugarFunctions funs' (fromJust main)
                 return $ datadecs program
-        else desugarFunctions funs' (fromJust main)
+        else case main of
+               Nothing -> error "No main function present!\n\n"
+               Just main' -> desugarFunctions funs' (main')
   where
       funs  = groupAsFunctions defs
       funs' = filter (\(d:_) -> case d of

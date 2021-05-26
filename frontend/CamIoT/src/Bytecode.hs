@@ -32,6 +32,7 @@ import Desugaring.AST
 import GHC.Float(double2Float)
 import Interpreter.Interpreter
 import Lib
+import GHC.Word
 
 import qualified CamOpt as C
 import qualified Assembler as A
@@ -438,6 +439,38 @@ Unhandled patterns:
 -}
 
 
+byteCompile :: FilePath -> IO [Word8]
+byteCompile path = do
+  compiled <- compile path
+  case compiled of
+    Left err -> do putStrLn err
+                   return []
+    Right desugaredIr -> do
+      putStrLn $ PP.printTree desugaredIr
+      putStrLn $ "\n\n Debug Follows \n\n"
+      -- putStrLn $ show desugaredIr
+
+
+      putStrLn $ "\n\n CAM IR (no pp) \n\n"
+      let camir = translate desugaredIr
+      putStrLn $ show camir
+
+      putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
+      let cam   = Peephole.optimise $ C.interpret camir
+      putStrLn $ show cam
+
+      putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
+      let cam   = Peephole.optimise $ C.interpret camir
+      putStrLn $ show $ A.translate cam
+
+      putStrLn $ "\n\n CAM HS Interpreter \n\n"
+      let val = IM.evaluate $ C.interpret camir
+      -- putStrLn $ show val
+
+      putStrLn $ "\n\n CAM Assembler and true bytecode generator \n\n"
+      -- A.genbytecode cam
+      -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
+      return (A.translate cam)
 
 
 -- Experiments --
