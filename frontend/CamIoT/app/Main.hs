@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2020 Robert Krook and Joel Svensson
+-- Copyright (c) 2020,2021 Robert Krook and Joel Svensson
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
