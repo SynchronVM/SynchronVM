@@ -26,6 +26,7 @@ import System.Exit
 
 import Numeric
 import Data.List
+import Data.Maybe
 import GHC.Word
 
 import Lib (compile)
@@ -33,11 +34,14 @@ import Bytecode
 
 data Target = Target { inputFile :: Maybe FilePath
                      , outputFile :: Maybe FilePath
+                     , verbose :: Bool
                      -- Add more stuff as needed 
                      }
               deriving (Eq, Ord, Show)
 emptyTarget :: Target
-emptyTarget = Target Nothing Nothing
+emptyTarget = Target { inputFile = Nothing
+                     , outputFile = Nothing
+                     , verbose = False }
 
 
 helpText :: String
@@ -45,6 +49,7 @@ helpText = unlines
  ["camiotc"
  ,"  Options"
  ,"    -o <output>  : Specify output file"
+ ,"    --verbose    : Compiler becomes very chatty"
  ,"    --help       : Prints this message"
  ," "
  ,"  Usage: "
@@ -60,6 +65,7 @@ parseOption_ t s = Left $ "Error: Incorrect option " ++ show s
 parseOption__ :: Target -> [String] -> Either String ([String], Target)
 parseOption__ t [] = Right ([], t)
 parseOption__ t ("--help":ss) = Left helpText
+parseOption__ t ("--verbose":ss) = Right (ss, t { verbose = True })
 parseOption__ t s = Left $ "Error: Incorrect option " ++ show s
 
 parseArg :: Target -> [String] -> Either String ([String] ,Target)
@@ -92,18 +98,20 @@ hexStrings xs = map (\x -> "0x" ++ showHex x "") xs
 
 
 doCompile :: Target -> IO ()
-doCompile (Target Nothing _) = putStrLn "No input file specified"
-doCompile (Target (Just input) output) =
-  do
-    let outFile = case output of
-                    Nothing -> "out.svm"
-                    Just s -> s
-    putStrLn $ "compiling file " ++ show input ++ " to output " ++ show outFile
+doCompile t
+  | (inputFile t) == Nothing = putStrLn "No input file specified"
+  | otherwise =
+      do
+        let input = fromJust (inputFile t)
+        let outFile = case outputFile t of
+                        Nothing -> "out.svm"
+                        Just s -> s
+        putStrLn $ "compiling file " ++ show input ++ " to output " ++ show outFile
     
-    compiled <- byteCompile input
-    let bc = concat $ intersperse ", " $ hexStrings compiled
-    putStrLn $ "ByteCode: " ++ bc
-    writeFile outFile bc
+        compiled <- byteCompile (verbose t) input
+        let bc = concat $ intersperse ", " $ hexStrings compiled
+        condPutStrLn (verbose t) $ "SenseVM ByteCode: \n" ++ bc
+        writeFile outFile bc
                                          
 main :: IO ()
 main = do

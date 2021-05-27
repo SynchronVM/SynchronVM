@@ -438,36 +438,43 @@ Unhandled patterns:
 
 -}
 
+condPutStrLn :: Bool -> String -> IO ()
+condPutStrLn b s =
+  case b of
+    True -> putStrLn s
+    False -> return () 
 
-byteCompile :: FilePath -> IO [Word8]
-byteCompile path = do
+byteCompile :: Bool -> FilePath -> IO [Word8]
+byteCompile verbose path = do
   compiled <- compile path
   case compiled of
     Left err -> do putStrLn err
                    return []
     Right desugaredIr -> do
-      putStrLn $ PP.printTree desugaredIr
-      putStrLn $ "\n\n Debug Follows \n\n"
-      -- putStrLn $ show desugaredIr
 
+      condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
+      condPutStrLn verbose $ PP.printTree desugaredIr
+      --putStrLn $ show desugaredIr
 
-      putStrLn $ "\n\n CAM IR (no pp) \n\n"
+      condPutStrLn verbose $ "\nCAM IR (no pp): \n"
       let camir = translate desugaredIr
-      putStrLn $ show camir
+      condPutStrLn verbose $ show camir
 
-      putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
+      condPutStrLn verbose $ "\nCAM BYTECODE (Hs Datatype): \n"
       let cam   = Peephole.optimise $ C.interpret camir
-      putStrLn $ show cam
+      condPutStrLn verbose $ show cam
 
-      putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
+      condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
       let cam   = Peephole.optimise $ C.interpret camir
-      putStrLn $ show $ A.translate cam
+      condPutStrLn verbose $ show $ A.translate cam
 
-      putStrLn $ "\n\n CAM HS Interpreter \n\n"
-      let val = IM.evaluate $ C.interpret camir
-      -- putStrLn $ show val
+     
+      condPutStrLn verbose $ "\n"
+      --condPutStrLn verbose $ "\n\n CAM HS Interpreter \n\n"
+      --let val = IM.evaluate $ C.interpret camir
+      --condPutStrLn verbose $ show val
 
-      putStrLn $ "\n\n CAM Assembler and true bytecode generator \n\n"
+      -- condPutStrLn verbose $ "\nCAM Assembler and true bytecode generator: \n"
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
       return (A.translate cam)
