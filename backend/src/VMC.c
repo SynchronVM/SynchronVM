@@ -212,12 +212,14 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
   pc += (pool_size_native * 4);
 
+  /* this value is not used for anything currently */
+  /*
   uint32_t code_size;
   code_size = container->code_memory[pc++] << 24;
   code_size |= container->code_memory[pc++] << 16;
   code_size |= container->code_memory[pc++] << 8;
   code_size |= container->code_memory[pc++];  
-
+  */
 
   /* Experiments with the scheduler */
   cam_value_t v_empty = get_cam_val(0,0);
@@ -379,7 +381,7 @@ static void heap_mark_phase(vmc_t *container) {
 
 heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 
-  heap_index head; 
+  heap_index head = HEAP_NULL; 
 
   cam_value_t list = get_cam_val((UINT)HEAP_NULL, VALUE_PTR_BIT);
     

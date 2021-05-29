@@ -1429,7 +1429,7 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
     /* spawndriverop - 6 */
     /* wrap      - 7 */
 
-  int ret_code = -1;
+  int ret_code = -1; 
   switch(rts_op_no){
     case 0:
       ret_code = handle_spawn(vmc);
@@ -1457,12 +1457,12 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
-      *pc_idx = -1;
+      *pc_idx = ret_code;
       return;
   }
   if(ret_code == -1){
     DEBUG_PRINT(("Error in RTS function"));
-    *pc_idx = -1;
+    *pc_idx = ret_code;
   }
 
   *pc_idx = (*pc_idx) + 2;
