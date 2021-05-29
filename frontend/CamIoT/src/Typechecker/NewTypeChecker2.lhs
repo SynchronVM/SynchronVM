@@ -292,6 +292,13 @@ type Subst = Map.Map Ident Type
 unitsub :: Subst
 unitsub = Map.empty
 
+instance {-# OVERLAPPING #-} Show Subst where
+  show s = unlines $
+           map (\(t1,t2) -> concat [ printTree t1
+                                   , " ~> "
+                                   , printTree t2]) $
+           Map.toList s
+
 class Substitutable a where
   apply :: Subst -> a -> a
   ftv :: a -> Set.Set Ident -- free type variables
@@ -772,9 +779,11 @@ checkDef mt d = case d of
     let argschemas  = map (\(id,t) -> (id, Forall [] t)) argbindings
     -- typecheck the equation body
     (sub, body')    <- inEnvMany argschemas $ checkExp body
+    -- combine all substitution information
+    let retsub = patsub `compose` sub
     -- create the inferred type of the entire definition
-    let functype    = foldr TLam (expVar body') $ map patVar args''
-    return (patsub `compose` sub, DEquation functype id args'' body')
+    let functype    = apply retsub $ foldr TLam (expVar body') $ map patVar args''
+    return (retsub, DEquation functype id args'' body')
 
 checkFunction :: Function () -> TC (Subst, Function Type)
 checkFunction f = do
@@ -783,24 +792,20 @@ checkFunction f = do
   let (subs, eqs) = unzip subneqs
   let types       = map (fromJust . defVar) $ filter (isJust . defVar) eqs
   
-  let sub = foldl compose unitsub subs
+  let sub         = foldl compose unitsub subs
 
   -- unify all the types of the equations and with the typesig, if
   -- one exists
-  sub' <- unifyEquations (maybe types (: types) (typesig f)) sub
-  
-  -- return annotated functions
-  return $ (sub', f { equations = eqs
-                    , typesig   = maybe (Just (head types)) Just (typesig f)
-                    }
-           )
-  where
-      unifyEquations :: [Type] -> Subst -> TC Subst
-      unifyEquations []  s      = return s
-      unifyEquations [x] s      = return s
-      unifyEquations (x:y:xs) s = do
-        s' <- unify x y
-        unifyEquations (y:xs) (s `compose` s')
+  sub'            <- unifyAll (maybe types (: types) (typesig f))
+  let eqs'        = apply sub' eqs
+  let eqt         = fromJust $ defVar $ head eqs'
+
+  let f'          = f { equations = eqs'
+                      , typesig = maybe (Just eqt) Just (typesig f)
+                      }
+
+  -- return annotated, substituted functions
+  return $ (sub', f')
 
 -- | Check that the declaration of an ADT is okay.
 checkDataDeclaration :: ADT -> TC ()
@@ -868,8 +873,8 @@ checkProgram p = do
   let main' = last funs
   let funs' = init funs
   return (sub, p { functions = funs'
-               , main      = main'
-               }
+                 , main      = main'
+                 }
          )
 
 checkFunctions :: [Function ()] -> TC (Subst, [Function Type])
@@ -882,7 +887,7 @@ checkFunctions_ (f:fs) s = do
   let id      = name f'
   let ty      = fromJust $ defVar $ head $ equations f'
   env         <- ask
-  let schema  = generalize ty env
+  let schema  = generalize (apply (s `compose` sub) ty) env
   (sub', fs') <- inEnv id schema $ checkFunctions_ fs (s `compose` sub)
   return $ (sub', f' : fs')
 
