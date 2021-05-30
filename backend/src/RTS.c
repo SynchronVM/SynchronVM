@@ -773,7 +773,7 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
   cam_value_t wrap_fptr = bevt.wrap_func_ptr;
 
 
-  cam_value_t val_before_post_sync = { .value = 0, .flags = 0};
+  cam_value_t val_before_post_sync; // this will be initialised inside the contionals
   if(bevt_simple.e_type == SEND){
 
     //XXX: Assuming the message is a simple value and not a pointer for
@@ -795,9 +795,9 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
       return -1;
     }
 
-    //cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+    cam_value_t empty_tuple = { .value = 0, .flags = 0 };
 
-    //val_before_post_sync = empty_tuple;
+    val_before_post_sync = empty_tuple;
 
 
 
@@ -825,7 +825,7 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
   } else {
     // Definitely an error case.
     DEBUG_PRINT(("Post synchronization error: Malformed event type\n"));
-    return -1;    
+    return -1;
   }
 
 
