@@ -37,6 +37,7 @@ extern bool ll_uart_init(ll_driver_t* lld, uart_if_t uif,
 			 uint8_t *in_buffer,
 			 uint32_t in_size,
 			 uint8_t *out_buffer,
-			 uint32_t out_size);
+			 uint32_t out_size,
+			 void *backend_custom);
 
 #endif

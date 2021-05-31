@@ -51,9 +51,10 @@ bool ll_uart_init(ll_driver_t* lld,
 		  uint8_t *in_buffer,
 		  uint32_t in_size,
 		  uint8_t *out_buffer,
-		  uint32_t out_size) {
+		  uint32_t out_size,
+		  void *backend_custom) {
 
-  uart_dev_t* u = uart_init(uif, in_buffer, in_size, out_buffer, out_size);
+  uart_dev_t* u = uart_init(uif, in_buffer, in_size, out_buffer, out_size, backend_custom);
   if (u) {
     lld->driver_info = (void*) u; /* store the uart device as ll_driver internal info */
     lld->ll_control_fun = ll_uart_control;

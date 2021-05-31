@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <sys/ring_buffer.h>
 #include <drivers/uart.h>
+#include <hal/zephyr/svm_zephyr.h>
 
 typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } uart_if_t;
 
@@ -35,13 +36,15 @@ typedef struct {
   struct ring_buf in_ringbuf;
   struct ring_buf out_ringbuf;
   const struct device *dev;
+  zephyr_interop_t* interop;
 } uart_dev_t;
 
 extern uart_dev_t* uart_init(uart_if_t uif,
 			     uint8_t *in_buffer,
 			     uint32_t in_size,
 			     uint8_t *out_buffer,
-			     uint32_t out_size);
+			     uint32_t out_size,
+			     void *backend_custom);
 extern bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud);
 extern bool uart_data_available(uart_dev_t *dev);
 extern uint32_t uart_ndata_available(uart_dev_t *dev);
