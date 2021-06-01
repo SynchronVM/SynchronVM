@@ -9,7 +9,7 @@ discovery:
 	west build -p auto -b stm32f4_disco .
 
 nrf_mod:
-	west build -p auto -b nrf_module_v1 -- -DBOARD_ROOT=../ .
+	west build -p auto -b nrf_module_v1 -- -DBOARD_ROOT=../../../backend/tests/hal/zephyr/ . -DDTC_OVERLAY_FILE="nrf52_module.overlay"
 
 clean:
 	rm -r build/

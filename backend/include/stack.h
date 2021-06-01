@@ -41,6 +41,8 @@ extern int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes);
 extern int stack_push(cam_stack_t *s, cam_value_t cvalue);
 extern int stack_pop(cam_stack_t *s, cam_register_t *r);
 
+extern unsigned int stack_get_sp(cam_stack_t *s);
+
 #ifdef DEBUG
 extern void stack_show(cam_stack_t *stack, int size);
 #endif

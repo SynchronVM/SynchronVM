@@ -142,6 +142,12 @@ int read_message_block(vmc_t *vmc, ll_driver_msg_t *msg) {
   return VMC_MESSAGE_RECEIVED;
 }
 
+uint32_t message_queue_num_used(vmc_t *vmc) {
+  zephyr_interop_t* interop = (zephyr_interop_t*)vmc->backend_custom;
+
+  return k_msgq_num_used_get(interop->msgq);
+}
+
 /***********************************************/
 /*  Thoughts on threads                        */
 /*
@@ -189,7 +195,7 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
     return;
   }
 
-  r = scheduler(container, read_message_poll, read_message_block, printk);
+  r = scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
 
   /* do something related to r? */
 

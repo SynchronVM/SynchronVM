@@ -28,9 +28,72 @@
 #include <RTS.h>
 #include <queue.h>
 
+//#define TRACE_ON 
+#define MAX_TRACE_LENGTH 100
+
+typedef struct scheduler_trace_s { 
+  UUID context_id;
+  cam_register_t env;
+  UINT pc;
+  uint8_t instr;
+  unsigned int sp;
+  uint32_t num_msgs;
+  struct scheduler_trace_s *next; 
+} scheduler_trace_t; 
+
+scheduler_trace_t trace_storage[MAX_TRACE_LENGTH];
+int trace_next = 0;
+
+scheduler_trace_t *trace = NULL;
+
+void trace_add(UUID cid, cam_register_t env, UINT pc,
+	       uint8_t instr, unsigned int sp, uint32_t num_msgs) {
+
+  if (trace_next == 100) { 
+    trace_next = 0;
+  }
+
+  scheduler_trace_t *curr = &trace_storage[trace_next];
+
+  curr->context_id = cid;
+  curr->env = env;
+  curr->pc = pc;
+  curr->instr = instr;
+  curr->sp = sp;
+  curr->next = trace;
+  curr->num_msgs = num_msgs;
+  trace = curr;
+  trace_next++;
+  trace_storage[trace_next].next = NULL;
+}
+	       
+
+
+void trace_print(void (*dbg_print)(const char *str, ...), int num) {
+
+  scheduler_trace_t *curr = trace;
+
+  int n = 0; 
+  
+  while (curr) {
+    dbg_print("*****************************************************\r\n");    
+    dbg_print("Trace position: %d \r\n", n++);
+    dbg_print("Context: %d\r\n",curr->context_id );
+    dbg_print("PC: %d\r\n", curr->pc);
+    dbg_print("Environment: %u\r\n", curr->env.value);
+    dbg_print("Instruction: 0x%x\r\n", curr->instr);
+    dbg_print("Msg num: %u\r\n", curr->num_msgs);
+    curr = curr->next;
+    if (n > num) break;
+  }
+}
+
+
+
 int scheduler(vmc_t *container,
 	      message_read_poll_fun poll_msg,
 	      message_read_block_fun block_msg,
+	      message_queue_num_used_fun msgq_num_used,
         void (*dbg_print)(const char *str, ...)) {
 
   //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
@@ -45,6 +108,25 @@ int scheduler(vmc_t *container,
 
   while (true) {
 
+
+#ifdef TRACE_ON 
+    uint32_t num_msgs = msgq_num_used(container);
+    
+    trace_add(container->current_running_context_id,
+	      container->contexts[container->current_running_context_id].env,
+	      container->contexts[container->current_running_context_id].pc,
+	      container->code_memory[container->contexts[container->current_running_context_id].pc],
+	      stack_get_sp(&container->contexts[container->current_running_context_id].stack),
+	      num_msgs);
+#endif	      
+	     
+    /* if (container->current_running_context_id != UUID_NONE) { */
+
+    /*   dbg_print("[%d] stack sp: %u\r\n", */
+    /* 		container->current_running_context_id, */
+    /* 		stack_get_sp(&container->contexts[container->current_running_context_id].stack)); */
+    /* } */
+    
     //dbg_print("CURRENT_ID: %u\r\n", container->current_running_context_id);
 
     if(container->all_contexts_stopped){
@@ -100,7 +182,18 @@ int scheduler(vmc_t *container,
       uint8_t current_inst = container->code_memory[*pc];
 
       if (current_inst > (sizeof(evaluators) / 4)) {
-        dbg_print("current_inst is invalid\r\n");
+        dbg_print("current_inst is invalid\r\n"); 
+	/* dbg_print("*****************************************************\r\n"); */
+	/* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
+	/* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
+	/* dbg_print("pc    : %d\r\n", *pc); */
+	/* dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env.value); */
+	/* dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]); */
+	/* dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators)); */
+#ifdef TRACE_ON
+	trace_print(dbg_print, 25);
+#endif
+	return -1;
       } else {
         evaluators[current_inst](container, pc);
       }
@@ -109,6 +202,9 @@ int scheduler(vmc_t *container,
 
       if(*pc  == -1){
         dbg_print("Instruction %u failed",current_inst);
+#ifdef TRACE_ON
+	trace_print(dbg_print, 25);
+#endif	
         return -1; // error
       }
 

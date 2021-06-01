@@ -70,7 +70,10 @@ void main(void) {
   k_sleep(K_SECONDS(2));
 
   PRINT("Initializing SenseVM Runtime System\r\n");
-  zephyr_sensevm_init();
+  if (zephyr_sensevm_init() <= 0) {
+    PRINT("Error Initializing SenseVM RTS\r\n");
+    return;
+  }
 
   PRINT("Number of containers: %d\r\n", VMC_NUM_CONTAINERS);
 

@@ -17,7 +17,7 @@
 /*
  * Get button configuration from the devicetree sw0 alias. This is mandatory.
  */
-#define SW0_NODE	DT_ALIAS(sw0)
+#define SW0_NODE	DT_ALIAS(svm_button0)
 #if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
 #error "Unsupported board: sw0 devicetree alias is not defined"
 #endif
@@ -29,7 +29,7 @@ static struct gpio_callback button_cb_data;
  * The led0 devicetree alias is optional. If present, we'll use it
  * to turn on the LED whenever the button is pressed.
  */
-static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led1), gpios,
+static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(svm_led0), gpios,
 						     {0});
 
 

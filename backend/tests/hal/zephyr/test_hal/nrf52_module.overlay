@@ -1,10 +1,31 @@
 / {
+
+  
+     leds {
+     	  compatible = "gpio-leds";
+	  led100: led_100 {
+	      	  gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+		  label = "Experiment led";
+	  };
+     };
+
+     buttons {
+     	     compatible = "gpio-keys";
+	     button100: button_100 {
+	     		gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Experiment button";
+	     };
+     };
+
      aliases {
      	     svm-uart0 = &uart0;
 
-	     svm-button0 = &button0;
+	     svm-led0 = &led100;
+	     
+	     svm-button0 = &button100;
 	     svm-button1 = &button1;
 	     svm-button2 = &button2;
 	     svm-button3 = &button3;	     
      };
 };
+
