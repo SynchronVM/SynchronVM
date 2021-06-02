@@ -62,6 +62,7 @@ data Exp = Var Var  -- variable
          | Let Pat Exp Exp -- Let bindings
          | Letrec [(Pat,Exp)] Exp -- letrec
          | Case Exp [(TaggedField, Exp)]
+         | Sequence Exp Exp -- ;
          deriving (Ord, Show, Eq)
 
 data Sys = Sys2 BinOp Exp Exp -- BinOp
@@ -430,6 +431,10 @@ codegen (Letrec recpats e) env = do
 
     pats = map fst recpats
     exps = map snd recpats
+codegen (Sequence e1 e2) env = do
+  e1' <- codegen e1 env
+  e2' <- codegen e2 env
+  pure $! e1' <+> e2'
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e@(If e1 e2 e3) env
@@ -660,7 +665,12 @@ rFree (Letrec recpats e) etaenv = rFree e eta'
       | envPrevIter == envNew = envNew -- fixpoint reached
       | otherwise = fixpoint recpats envNew
       where
-        envNew = foldr (\(pat, e) eta -> EtaAnn eta (pat, rFree e envPrevIter)) etaenv recpats
+        envNew =
+          foldr (\(pat, e) eta ->
+                   EtaAnn eta (pat, rFree e envPrevIter)) etaenv recpats
+rFree (Sequence e1 e2) etaenv = -- XXX: Added ad-hoc; please check for bugs
+  (rFree e1 etaenv) `Set.union`
+  (rFree e2 etaenv)
 
 
 rFreeSys :: Sys -> EtaEnv -> PSet Var
