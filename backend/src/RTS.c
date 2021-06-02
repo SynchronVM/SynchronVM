@@ -150,7 +150,6 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
     cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
 
 
-
     cam_value_t base_evt_ptr =
       heap_fst(&container->heap, (heap_index)cam_evt_pointer.value);
 
@@ -597,6 +596,8 @@ int sync(vmc_t *container, event_t *evts){
       DEBUG_PRINT(("Block events failed! \n"));
       return -1;
     }
+    /* Return value not checked?
+       It can be 1 or -1. neither case looks like an error though */
     dispatch(container);
 
   }
@@ -608,7 +609,6 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
-
   /*
    *  base_event_t -> fst = top    16 bits free;
    *                        bottom 16 bits base_evt_simple_t
@@ -616,17 +616,20 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
    *
    */
 
-  UINT data = set_bottom_16_bits(SEND, *chan_id);
-
-  cam_value_t base_evt_simple = { .value = data, .flags = 0};
-
-  heap_index base_evt_idx = vmc_heap_alloc_withGC(container);
-
-  if(base_evt_idx == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation for base_event_t has failed"));
+  /* Allocate all memory needed in one go */
+  heap_index cells = vmc_heap_alloc_n(container,3);
+  if ((INT)cells == HEAP_NULL) {
+    DEBUG_PRINT(("heap allocation of 3 cells for event has failed"));
     return -1;
   }
 
+  heap_index base_evt_idx = cells;
+  heap_index cev_idx = heap_snd(&container->heap, cells).value;
+  heap_index hi = heap_snd(&container->heap, cev_idx).value;
+
+  UINT data = set_bottom_16_bits(SEND, *chan_id);
+
+  cam_value_t base_evt_simple = { .value = data, .flags = 0};
   heap_set(&container->heap, base_evt_idx, base_evt_simple, null); // pointer to wrap func NULL
 
 
@@ -636,13 +639,6 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
    */
 
   cam_value_t event = {.value = (UINT)base_evt_idx, .flags = VALUE_PTR_BIT};
-
-  heap_index cev_idx = vmc_heap_alloc_withGC(container);
-
-  if(cev_idx == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation for cam_event_t has failed"));
-    return -1;
-  }
   heap_set(&container->heap, cev_idx, event, msg);
 
 
@@ -652,14 +648,6 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
    */
 
   cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
-
-  heap_index hi = vmc_heap_alloc_withGC(container);
-
-  if(hi == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation for event_t has failed"));
-    return -1;
-  }
-
   heap_set(&container->heap, hi, heap_cell, null);
 
   *sevt = hi;
@@ -680,17 +668,21 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
    *
    */
 
-  UINT data = set_bottom_16_bits(RECV, *chan_id);
 
-  cam_value_t base_evt_simple = { .value = data, .flags = 0};
-
-  heap_index base_evt_idx = vmc_heap_alloc_withGC(container);
-
-  if(base_evt_idx == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation for base_event_t has failed"));
+  /* Allocating all cells needed in one go */
+  heap_index cells = vmc_heap_alloc_n(container,3);
+  if (cells == HEAP_NULL) {
+    DEBUG_PRINT(("heap allocation of 3 cells for event has failed"));
     return -1;
   }
 
+  heap_index base_evt_idx = cells;
+  heap_index cev_idx = heap_snd(&container->heap, cells).value;
+  heap_index hi = heap_snd(&container->heap, cev_idx).value;
+
+  UINT data = set_bottom_16_bits(RECV, *chan_id);
+
+  cam_value_t base_evt_simple = { .value = data, .flags = 0};
   heap_set(&container->heap, base_evt_idx, base_evt_simple, null); // pointer to wrap func NULL
 
 
@@ -702,15 +694,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
 
   cam_value_t event = {.value = (UINT)base_evt_idx, .flags = VALUE_PTR_BIT};
-
   cam_value_t null_msg  = {.value = (UINT)HEAP_NULL, .flags = 0};
-
-  heap_index cev_idx = vmc_heap_alloc_withGC(container);
-
-  if(cev_idx == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation for cam_event_t has failed"));
-    return -1;
-  }
   heap_set(&container->heap, cev_idx, event, null_msg);
 
 
@@ -720,13 +704,6 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
    */
 
   cam_value_t heap_cell = {.value = (UINT)cev_idx, .flags = VALUE_PTR_BIT };
-
-  heap_index hi = vmc_heap_alloc_withGC(container);
-
-  if(hi == HEAP_NULL){
-    DEBUG_PRINT(("Heap allocation for event_t has failed"));
-    return -1;
-  }
 
   heap_set(&container->heap, hi, heap_cell, null);
 
@@ -852,19 +829,15 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
 }
 
 
-
-
 int handle_msg(vmc_t *vmc, ll_driver_msg_t *m){
 
   UUID chan_id = vmc->drivers[m->driver_id].channel_id;
+
   //XXX: Logic here to decide if the arrived message is
   //     the entire message or the pointer to a location to read
   cam_value_t msg = { .value = m->data, .flags = 0 };
 
-
-
   // The following code is a barebones version of what `sync` does
-
   recv_data_t recv_data;//recv_context_id;
   int deq_status =
     chan_recv_q_dequeue(&vmc->channels[chan_id].recvq, &recv_data);
@@ -876,16 +849,19 @@ int handle_msg(vmc_t *vmc, ll_driver_msg_t *m){
   }
 
   UUID recv_context_id = recv_data.context_id;
+  /* if (recv_context_id == UUID_NONE) { */
+  /*   return -(int)UUID_NONE; */
+  /* } */
 
   cam_value_t true_flag = { .value = 1, .flags = 0 };
   heap_set_fst(  &vmc->heap
 		 , (heap_index)recv_data.dirty_flag_pointer.value
 		 , true_flag); //the unlogging trick
-  
+
 
 
   /* NOTE Message passing begins */
-  
+
   int k = message_pass( vmc
                       , recv_context_id
                       , msg
@@ -893,7 +869,7 @@ int handle_msg(vmc_t *vmc, ll_driver_msg_t *m){
                       , RECV);
   if(k == -1){
     DEBUG_PRINT(("Error in message passing"));
-    return -1;
+    return -2;
   }
 
   /* NOTE Message passing ends */

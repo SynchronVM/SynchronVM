@@ -353,12 +353,15 @@ static inline void mark_heap_context(Context_t *context, heap_t *heap){
 }
 
 static void heap_mark_phase(vmc_t *container) {
-  mark_heap_context
-    (  &container->contexts[container->current_running_context_id]
-       , &container->heap);
+#ifdef HEAP_COLLECT_STATS  
+  gc_stats.num_mark_phases++;
+#endif
+  //mark_heap_context
+  //  (  &container->contexts[container->current_running_context_id]
+  //     , &container->heap);
 
-  /* GC all active child contexts; children starts from 1 */
-  for(int i = 1; i < VMC_MAX_CONTEXTS; i++){
+  /* GC all active contexts */
+  for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
     if(container->context_used[i] ){
       mark_heap_context(&container->contexts[i], &container->heap);
     }
@@ -376,6 +379,10 @@ static void heap_mark_phase(vmc_t *container) {
       for(int j = 0; j < container->channels[i].sendq.size; j++){
 	heap_mark(  &container->heap
                     , container->channels[i].sendq.data[j].dirty_flag_pointer);
+
+	// could the message potentially be a heap structure ?
+	//heap_mark(  &container->heap
+        //            , container->channels[i].sendq.data[j].message);
       }
       
       for(int j = 0; j < container->channels[i].recvq.size; j++){

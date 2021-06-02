@@ -31,6 +31,19 @@
 
 #include <heap.h>
 
+/* Statistics collection */
+gc_stats_t gc_stats;
+
+void heap_clear_stats(void) {
+  gc_stats.num_mark_phases = 0;
+  gc_stats.num_recovered = 0; // Nut sure how to count this.
+  gc_stats.num_allocated = 0;
+}
+
+extern gc_stats_t heap_get_stats(void) {
+  return gc_stats;
+}
+
 
 /*****************************/
 /* Smaller Utility Functions */
@@ -154,6 +167,10 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
   heap->size_bytes = size_bytes;
   heap->size_cells = n_cells;
 
+#ifdef HEAP_COLLECT_STATS
+  heap_clear_stats();
+#endif
+
   return 1;
 }
 /*******************/
@@ -176,6 +193,9 @@ heap_index heap_allocate(heap_t *heap) {
       heap->sweep_pos++;
     } else {
       clr_cell(heap, heap->sweep_pos);
+#ifdef HEAP_COLLECT_STATS
+      gc_stats.num_allocated ++;
+#endif
       return heap->sweep_pos++;
     }
   }

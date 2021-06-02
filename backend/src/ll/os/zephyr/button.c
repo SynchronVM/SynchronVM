@@ -62,7 +62,7 @@ const struct device *button_device;
 static void button_pressed(const struct device *dev,
 		    struct gpio_callback *cb,
 		    uint32_t pins) {
-
+  unsigned int key = irq_lock();
   /* This is so weird and backwards!!! CONTAINER_OF*/
   button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
   zephyr_interop_t *interop = parent->interop;
@@ -79,6 +79,7 @@ static void button_pressed(const struct device *dev,
     /* Message was not send due to queue being full. 
        What do we do in this case?  */ 
   }
+  irq_unlock(key);
 }
 
 uint32_t button_num(void) {

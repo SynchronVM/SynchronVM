@@ -32,7 +32,7 @@ extern int scheduler(vmc_t *container,
 		     message_read_poll_fun poll_msg,
 		     message_read_block_fun block_msg,
 		     message_queue_num_used_fun msgq_num_used,
-         void (*dbg_print)(const char *str, ...));
+		     void (*dbg_print)(const char *str, ...));
 
 
 #endif

@@ -31,6 +31,7 @@
 #include <register.h>
 #include <flags.h>
 
+//#define HEAP_COLLECT_STATS
 
 #define  HEAP_NULL                 -1
 
@@ -59,6 +60,13 @@ typedef struct {
   uint8_t      *flags;           // GC flags
 } heap_t;
 
+typedef struct  {
+  uint64_t num_mark_phases;
+  uint64_t num_recovered;
+  uint64_t num_allocated;
+} gc_stats_t;
+
+extern gc_stats_t gc_stats;
 
 /* could go to a util namespace */
 extern cam_value_t get_cam_val(UINT ui, value_flags_t f); /* maybe put elsewhere */
@@ -73,6 +81,7 @@ extern void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value);
 extern void heap_set_flags(heap_t *heap, heap_index i, heap_flags_t flags);
 
 extern int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes);
+extern gc_stats_t heap_get_stats(void);
 
 #ifdef DEBUG
 extern void heap_show(heap_t *heap, int size);

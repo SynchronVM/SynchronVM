@@ -28,18 +28,21 @@
 #include <RTS.h>
 #include <queue.h>
 
-//#define TRACE_ON 
-#define MAX_TRACE_LENGTH 100
+//#define TRACE_ON
+#define MAX_TRACE_LENGTH 1000
 
-typedef struct scheduler_trace_s { 
+typedef struct scheduler_trace_s {
   UUID context_id;
   cam_register_t env;
   UINT pc;
   uint8_t instr;
+  uint8_t  bytes[4];
   unsigned int sp;
   uint32_t num_msgs;
-  struct scheduler_trace_s *next; 
-} scheduler_trace_t; 
+  uint32_t total_msgs;
+  gc_stats_t gc_stats;
+  struct scheduler_trace_s *next;
+} scheduler_trace_t;
 
 scheduler_trace_t trace_storage[MAX_TRACE_LENGTH];
 int trace_next = 0;
@@ -47,9 +50,10 @@ int trace_next = 0;
 scheduler_trace_t *trace = NULL;
 
 void trace_add(UUID cid, cam_register_t env, UINT pc,
-	       uint8_t instr, unsigned int sp, uint32_t num_msgs) {
+	       uint8_t instr, unsigned int sp, uint32_t num_msgs, uint32_t total_msgs,
+	       uint8_t *bytes, gc_stats_t gc_stats) {
 
-  if (trace_next == 100) { 
+  if (trace_next == MAX_TRACE_LENGTH) {
     trace_next = 0;
   }
 
@@ -59,35 +63,46 @@ void trace_add(UUID cid, cam_register_t env, UINT pc,
   curr->env = env;
   curr->pc = pc;
   curr->instr = instr;
+  curr->bytes[0] = bytes[0];
+  curr->bytes[1] = bytes[1];
+  curr->bytes[2] = bytes[2];
+  curr->bytes[3] = bytes[3];
   curr->sp = sp;
   curr->next = trace;
   curr->num_msgs = num_msgs;
+  curr->total_msgs = total_msgs;
+  curr->gc_stats = gc_stats;
   trace = curr;
   trace_next++;
   trace_storage[trace_next].next = NULL;
 }
-	       
+
 
 
 void trace_print(void (*dbg_print)(const char *str, ...), int num) {
 
   scheduler_trace_t *curr = trace;
 
-  int n = 0; 
-  
+  int n = 0;
+
   while (curr) {
-    dbg_print("*****************************************************\r\n");    
+    dbg_print("*****************************************************\r\n");
     dbg_print("Trace position: %d \r\n", n++);
     dbg_print("Context: %d\r\n",curr->context_id );
     dbg_print("PC: %d\r\n", curr->pc);
     dbg_print("Environment: %u\r\n", curr->env.value);
     dbg_print("Instruction: 0x%x\r\n", curr->instr);
+    dbg_print("Bytes: [0x%x , 0x%x, 0x%x, 0x%x]\r\n", curr->bytes[0], curr->bytes[1], curr->bytes[2], curr->bytes[3]);
     dbg_print("Msg num: %u\r\n", curr->num_msgs);
+    dbg_print("Total num msgs %u\r\n", curr->total_msgs);
+    dbg_print("GC Stats:\r\n");
+    dbg_print("  Num mark phases: %llu\r\n", curr->gc_stats.num_mark_phases);
+    dbg_print("  Num recovered: %llu\r\n", curr->gc_stats.num_recovered);
+    dbg_print("  Num allocated: %llu\r\n", curr->gc_stats.num_allocated);
     curr = curr->next;
     if (n > num) break;
   }
 }
-
 
 
 int scheduler(vmc_t *container,
@@ -106,27 +121,37 @@ int scheduler(vmc_t *container,
   dbg_print("Entered Scheduler\r\n");
   dbg_print("container address: %u\r\n", (uint32_t)container);
 
+#ifdef TRACE_ON
+  uint32_t total_msgs = 0;
+#endif
+
   while (true) {
 
-
-#ifdef TRACE_ON 
+#ifdef TRACE_ON
     uint32_t num_msgs = msgq_num_used(container);
-    
+
+    uint8_t bytes[4];
+    bytes[0] = container->code_memory[container->contexts[container->current_running_context_id].pc+1];
+    bytes[1] = container->code_memory[container->contexts[container->current_running_context_id].pc+2];
+    bytes[2] = container->code_memory[container->contexts[container->current_running_context_id].pc+3];
+    bytes[3] = container->code_memory[container->contexts[container->current_running_context_id].pc+4];
+
     trace_add(container->current_running_context_id,
 	      container->contexts[container->current_running_context_id].env,
 	      container->contexts[container->current_running_context_id].pc,
 	      container->code_memory[container->contexts[container->current_running_context_id].pc],
 	      stack_get_sp(&container->contexts[container->current_running_context_id].stack),
-	      num_msgs);
-#endif	      
-	     
+	      num_msgs,
+	      total_msgs,
+	      bytes, heap_get_stats());
+#endif
     /* if (container->current_running_context_id != UUID_NONE) { */
 
     /*   dbg_print("[%d] stack sp: %u\r\n", */
     /* 		container->current_running_context_id, */
     /* 		stack_get_sp(&container->contexts[container->current_running_context_id].stack)); */
     /* } */
-    
+
     //dbg_print("CURRENT_ID: %u\r\n", container->current_running_context_id);
 
     if(container->all_contexts_stopped){
@@ -134,22 +159,43 @@ int scheduler(vmc_t *container,
       break;
     }
 
-    /* What if we want to pre-emt running context for an important 
-       message 
-       - threads cooperative. 
-       - 
+    /* What if we want to pre-emt running context for an important
+       message
+       - threads cooperative.
+       -
     */
     /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
 
-      block_msg(container, &msg);
-      /* dbg_print("message received: blocking\r\n"); */
+ /*      dbg_print("***********************\r\n"); */
+/*       dbg_print("Blocking: showing trace\r\n"); */
+/* #ifdef TRACE_ON */
+/*       trace_print(dbg_print, 25); */
+/* #endif	 */
+
+      block_msg(container, &msg);      
+#ifdef TRACE_ON
+      total_msgs ++;
+#endif
+
+      /* dbg_print("message received: blocking\r\n");  */
       /* dbg_print("  driver: %u\r\n", msg.driver_id); */
       /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
       /* dbg_print("  data: %u\r\n", msg.data); */
       /* dbg_print("  time: %llu\r\n", msg.timestamp); */
       /* handle msg */
-      handle_msg(container, &msg);
+      int msg_r = handle_msg(container, &msg);
+      if (msg_r  <= 0) {
+	dbg_print("Error in handle_msg: %d\r\n",msg_r);
+
+#ifdef TRACE_ON
+	trace_print(dbg_print, 1000);
+#endif
+
+	return -1;
+	/* continue as if nothing has happend.
+	   This should be like throwing the message away */
+      }
       /* while (poll_msg(container, &msg) == 0) { */
       /* 	dbg_print("message received: poll loop in blocking\r\n"); */
       /* 	dbg_print("  driver: %u\r\n", msg.driver_id); */
@@ -182,7 +228,7 @@ int scheduler(vmc_t *container,
       uint8_t current_inst = container->code_memory[*pc];
 
       if (current_inst > (sizeof(evaluators) / 4)) {
-        dbg_print("current_inst is invalid\r\n"); 
+        dbg_print("current_inst is invalid\r\n");
 	/* dbg_print("*****************************************************\r\n"); */
 	/* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
 	/* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
@@ -204,7 +250,7 @@ int scheduler(vmc_t *container,
         dbg_print("Instruction %u failed",current_inst);
 #ifdef TRACE_ON
 	trace_print(dbg_print, 25);
-#endif	
+#endif
         return -1; // error
       }
 
