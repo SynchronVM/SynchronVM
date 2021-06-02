@@ -363,27 +363,25 @@ static void heap_mark_phase(vmc_t *container) {
       mark_heap_context(&container->contexts[i], &container->heap);
     }
   }
-  
-  //XXX: Tests breaking because channels not initialised in the tests
-  //     PLEASE UNCOMMENT BELOW
+
   //GC all the dirty flags associated with the channels
   for(int i = 0; i < MAX_CHANNELS; i++){
     if(container->channels[i].in_use){
       // first check if channel is in use
       // and then mark all live dirty flags
       // in the sendq and then in the recvq
-      
+
       for(int j = 0; j < container->channels[i].sendq.size; j++){
 	heap_mark(  &container->heap
                     , container->channels[i].sendq.data[j].dirty_flag_pointer);
       }
-      
+
       for(int j = 0; j < container->channels[i].recvq.size; j++){
 	heap_mark(  &container->heap
 		    , container->channels[i].recvq.data[j].dirty_flag_pointer);
       }
     }
-  } 
+  }
 }
 
 heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
