@@ -30,7 +30,7 @@ stack install
 For example, to compile one of the example programs under `testcases` do:
 
 ```
-camoitc testcases/good11.cam 
+camiotc testcases/good11.cam 
 ```
 
 The output of this command should be:
