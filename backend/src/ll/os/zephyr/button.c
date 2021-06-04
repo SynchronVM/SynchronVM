@@ -72,7 +72,7 @@ static void button_pressed(const struct device *dev,
 
   ll_driver_msg_t msg; // nonsense message
   msg.driver_id = driver->id; 
-  msg.timestamp = 128;
+  msg.timestamp = ll_driver_timestamp();
   msg.data = driver->state;  // 1 or 0
 
   if (interop->send_message(interop, msg) == -ENOMSG) {

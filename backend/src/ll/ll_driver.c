@@ -49,7 +49,6 @@ uint64_t ll_driver_timestamp() {
   return ts;
 }
 
-
 uint32_t ll_read(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
   return drv->ll_read_fun((struct ll_driver_s*)drv, data, data_size);
 }
