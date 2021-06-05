@@ -15,8 +15,8 @@ Go to the `frontend/CamIoT` directory and issue the command:
 stack build
 ```
 
-The command above builds an executable called `camiotc` in somewhere
-under the '.stack-work' directory that the `stack` tool generates.
+The command above builds an executable called `camiotc` somewhere
+under the `.stack-work` directory that the `stack` tool generates.
 
 To install the binary to `$HOME/.local/bin` issue the command:
 
