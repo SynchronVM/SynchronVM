@@ -625,7 +625,7 @@ int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   heap_index base_evt_idx = cells;
   heap_index cev_idx = heap_snd(&container->heap, cells).value;
-  heap_index hi = heap_snd(&container->heap, cev_idx).value;
+  heap_index hi      = heap_snd(&container->heap, cev_idx).value;
 
   UINT data = set_bottom_16_bits(SEND, *chan_id);
 
@@ -678,7 +678,7 @@ int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){
 
   heap_index base_evt_idx = cells;
   heap_index cev_idx = heap_snd(&container->heap, cells).value;
-  heap_index hi = heap_snd(&container->heap, cev_idx).value;
+  heap_index hi      = heap_snd(&container->heap, cev_idx).value;
 
   UINT data = set_bottom_16_bits(RECV, *chan_id);
 
