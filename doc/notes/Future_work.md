@@ -27,6 +27,7 @@
      ```
      - `genTimeout` can be implemented as `RTSCALL x`
      - Channels are a limited resource!
+     - Timeout channels will have a known lifetime (at runtime) - Can that be exploited?
 
     i. One interesting idea - Have a hidden time process and the process gets blocked on that process which sends a message after time t. 
     ii. Timed channels - useful for implementing timeouts. Can we implement this simply using what we already have?
