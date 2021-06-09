@@ -33,7 +33,9 @@
     ii. Timed channels - useful for implementing timeouts. Can we implement this simply using what we already have?
 
 5. Should the time system operate on absolute time or relative?
-   - The SSM project is making good arguments for absolute time. 
+   - The SSM project is making good arguments for absolute time.
+
+6. The environment. We represent the environment as a nested tuple. The advantage is that the tuple like structure encodes lookup + scope well. However lookup a variable can end up traversing the heap a lot. If we introduce a symbol table we need to think a bit about how we maintain the scoping, but no traversal required, lookup is O(1). Tradeoffs.
 
 
 ## Researchy
