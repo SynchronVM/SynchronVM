@@ -19,6 +19,12 @@
      very similarly to how a channel connected to a driver works.
    - Poll-channel
      - can be implemented as sync (choose (recv c) (timeout x))
+       - This means we should allow numerous outstanding timeouts!
+         this is not directly compatibel with a low level timer interface
+	 so some kind of management of the outstanding timeouts is needed.
+	 This is a bit problematic as that is another bit of storage
+	 and bookkeeping to deal with.
+	 
      - what exactly is a timeout? Timer API needed
      ``` 
        	  timeout : Time -> ()

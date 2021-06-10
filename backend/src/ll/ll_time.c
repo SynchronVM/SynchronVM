@@ -28,3 +28,20 @@ bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode tmode) {
 
   return true;
 }
+
+
+/* Thoughts 
+   
+   - How to set an absolute time timeout?
+   - How to set a relative time timeout?
+  
+   - Get current time
+     - ll_read
+ 
+   - Only one outstanding timeout possible at any time per timer.
+     - This makes things very tricky. 
+     - 
+   
+   
+
+ */ 
