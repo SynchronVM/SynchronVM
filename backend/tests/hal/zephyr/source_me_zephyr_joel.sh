@@ -7,3 +7,4 @@ export ZEPHYR_BASE=$HOME/Current/zephyrproject
 source $ZEPHYR_BASE/zephyr/zephyr-env.sh
 
 
+
