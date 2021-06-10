@@ -27,10 +27,11 @@
 
 #include <ll/ll_driver.h>
 
-typedef enum { TIME_IF0, TIME_IF1, TIME_IF2, TIME_IF3 } ll_time_if_t
+typedef enum { TIME_IF0, TIME_IF1, TIME_IF2, TIME_IF3 } ll_time_if_t;
 
+typedef enum { TIME_32BIT_MODE , TIME_64BIT_MODE } ll_time_mode_t;
 
-extern bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif);
+extern bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode_t tmode);
 
 
 #endif

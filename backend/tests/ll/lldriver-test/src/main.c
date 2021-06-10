@@ -19,6 +19,7 @@
 #include <ll/ll_driver.h>
 #include <ll/ll_uart.h>
 #include <ll/ll_led.h>
+#include <ll/ll_time.h>
 #include <hal/zephyr/svm_zephyr.h>
 
 //#include <ll/powerman.h>

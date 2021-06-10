@@ -24,7 +24,7 @@
 
 #include <ll/ll_time.h>
 
-bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif) {
+bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode tmode) {
 
   return true;
 }
