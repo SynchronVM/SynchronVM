@@ -16,11 +16,13 @@
 #include <kernel.h>
 
 /* Our own library of stuff! */
-#include "ll_uart.h"
-#include "ll_led.h"
+#include <ll/ll_driver.h>
+#include <ll/ll_uart.h>
+#include <ll/ll_led.h>
+#include <hal/zephyr/svm_zephyr.h>
 
-#include "powerman.h"
-#include "timerman.h"
+//#include <ll/powerman.h>
+//#include <ll/timerman.h>
 
 //#define PRINT usb_printf
 #define PRINT printk
@@ -31,6 +33,19 @@
 uint8_t uart0_in_buffer[1024];
 uint8_t uart0_out_buffer[1024];
 
+/* *************************/
+/* Interrupt message queue */
+#define MAX_MESSAGES 100
+#define MSG_ALIGNMENT 4
+
+K_MSGQ_DEFINE(message_queue, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
+
+int send_message(zephyr_interop_t* this, ll_driver_msg_t msg) {
+
+  return k_msgq_put(this->msgq,(void*)&msg, K_NO_WAIT);
+}
+
+zephyr_interop_t zephyr_interop;
 
 /* ****************** */
 /* Thread info dumper */
@@ -59,20 +74,27 @@ void t_info_dump(const struct k_thread *cthread, void *user_data) {
 
 void main(void) {
 
-  PRINT("Pause 5 seconds\r\n");
+  PRINT("Pause 1 seconds\r\n");
   //k_sleep(K_SECONDS(5));
 
   /* ***************** */
   /* Register powerman */ 
   //powerman_init();
 
-  PRINT("POWERMAN: started\r\n");
+  //PRINT("POWERMAN: started\r\n");
   
   //k_sleep(K_SECONDS(5));
 
   k_thread_foreach(t_info_dump, NULL);
 
   PRINT("t_info_dump called %d times\r\n", t_counter);
+
+  /**********************/
+  /* Initialize interop */
+
+  zephyr_interop.msgq = &message_queue;
+  zephyr_interop.send_message = send_message;
+
   
   /* ******************* */
   /* Configure some LEDs */
@@ -97,7 +119,7 @@ void main(void) {
   ll_driver_t uart_drv;
 
   PRINT("STARTING UARTS\r\n");
-  if (ll_uart_init(&uart_drv, UART_IF1, uart0_in_buffer, 1024, uart0_out_buffer, 1024)) {
+  if (ll_uart_init(&uart_drv, UART_IF1, uart0_in_buffer, 1024, uart0_out_buffer, 1024,(void*)&zephyr_interop)) {
     PRINT("LL_UART: OK!\r\n");
   } else {
     PRINT("LL_UART: Failed!\r\n");
