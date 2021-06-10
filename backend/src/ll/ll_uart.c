@@ -24,6 +24,7 @@
 
 #include <ll/ll_uart.h>
 
+#include <uart.h> 
 
 static uint32_t ll_uart_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   return LL_DRIVER_CONTROL_SUCCESS;
@@ -47,7 +48,7 @@ static uint32_t ll_uart_write(struct ll_driver_s *this, uint8_t *data, uint32_t 
 
 
 bool ll_uart_init(ll_driver_t* lld,
-		  uart_if_t uif,
+		  ll_uart_if_t uif,
 		  uint8_t *in_buffer,
 		  uint32_t in_size,
 		  uint8_t *out_buffer,

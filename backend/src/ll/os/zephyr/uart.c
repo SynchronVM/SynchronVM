@@ -77,7 +77,7 @@ static void uart_isr(const struct device *dev, void *args)
 
 /* ******************************** */
 /* Initialization and configuration */
-uart_dev_t* uart_init(uart_if_t uif,
+uart_dev_t* uart_init(ll_uart_if_t uif,
 		      uint8_t *in_buffer,
 		      uint32_t in_size,
 		      uint8_t *out_buffer,

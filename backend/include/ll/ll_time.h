@@ -25,5 +25,12 @@
 #ifndef LL_TIME_H_
 #define LL_TIME_H_
 
+#include <ll/ll_driver.h>
 
-#endif 
+typedef enum { TIME_IF0, TIME_IF1, TIME_IF2, TIME_IF3 } ll_time_if_t
+
+
+extern bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif);
+
+
+#endif

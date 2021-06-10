@@ -30,7 +30,7 @@
 #include <drivers/uart.h>
 #include <hal/zephyr/svm_zephyr.h>
 
-typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } uart_if_t;
+#include <ll/ll_uart.h>
 
 typedef struct {
   struct ring_buf in_ringbuf;
@@ -39,7 +39,7 @@ typedef struct {
   zephyr_interop_t* interop;
 } uart_dev_t;
 
-extern uart_dev_t* uart_init(uart_if_t uif,
+extern uart_dev_t* uart_init(ll_uart_if_t uif,
 			     uint8_t *in_buffer,
 			     uint32_t in_size,
 			     uint8_t *out_buffer,
