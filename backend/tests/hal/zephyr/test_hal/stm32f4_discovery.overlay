@@ -9,6 +9,8 @@
      svm-led1 = &green_led_4;
      svm-led2 = &red_led_5;
      svm-led3 = &blue_led_6;
+
+     ssm-timer   = &rtc; /* not working */     
      };
 };
 

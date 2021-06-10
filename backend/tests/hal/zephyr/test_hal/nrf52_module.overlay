@@ -25,7 +25,9 @@
 	     svm-button0 = &button100;
 	     svm-button1 = &button1;
 	     svm-button2 = &button2;
-	     svm-button3 = &button3;	     
+	     svm-button3 = &button3;
+
+	     svm-timer = &timer4;
      };
 };
 
