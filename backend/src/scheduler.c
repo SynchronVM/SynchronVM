@@ -28,6 +28,9 @@
 #include <RTS.h>
 #include <queue.h>
 
+/*********************/
+/* Scheduler tracing */
+
 //#define TRACE_ON
 #define MAX_TRACE_LENGTH 1000
 
@@ -103,6 +106,9 @@ void trace_print(void (*dbg_print)(const char *str, ...), int num) {
     if (n > num) break;
   }
 }
+
+/*************/
+/* Scheduler */
 
 
 int scheduler(vmc_t *container,

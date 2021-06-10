@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2021 Joel Svensson, Abhiroop Sarkar 				  */
+/* Copyright (c) 2022 Joel Svensson, Abhiroop Sarkar 				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,23 +22,26 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef LL_UART_H_
-#define LL_UART_H_
+#include <ll/ll_time.h>
+
+bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode tmode) {
+
+  return true;
+}
 
 
-// uart.h is currently Zephyr specific (uses zephyr ringbufs).
-// to make it run on for example ChibiOs a compatible reimplementation
-// of uart.h/uart.c is needed. But if that exists, it should just be about
-// Makefile tweaking to use the chibios implementation instead.
-#include <ll/ll_driver.h>
+/* Thoughts 
+   
+   - How to set an absolute time timeout?
+   - How to set a relative time timeout?
+  
+   - Get current time
+     - ll_read
+ 
+   - Only one outstanding timeout possible at any time per timer.
+     - This makes things very tricky. 
+     - 
+   
+   
 
-typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;
-
-extern bool ll_uart_init(ll_driver_t* lld, ll_uart_if_t uif,
-			 uint8_t *in_buffer,
-			 uint32_t in_size,
-			 uint8_t *out_buffer,
-			 uint32_t out_size,
-			 void *backend_custom);
-
-#endif
+ */ 
