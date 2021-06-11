@@ -27,9 +27,12 @@
 
 #include <ll/ll_driver.h>
 
+#include "ch.h"
+#include "hal.h"
+
 /* backend_custom struct for zephyr integration */
 typedef struct chibios_interop_s {
-  //struct k_msgq *msgq;
+  mailbox_t *mb;
   
   /* Send a message to associated vm container */
   //void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
