@@ -524,8 +524,8 @@ app = do
       if label == dummyLabel
       then do
         case h of
-          SV val -> S.modify $ \s -> s { environment = EV val }
-          SP ptr -> S.modify $ \s -> s { environment = EP ptr }
+          SV val -> S.modify $ \s -> s { environment = EV val, stack = t }
+          SP ptr -> S.modify $ \s -> s { environment = EP ptr, stack = t }
         let (L jl) = fstHeap
         jumpTo jl
       else do
