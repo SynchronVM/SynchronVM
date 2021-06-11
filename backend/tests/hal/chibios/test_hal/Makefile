@@ -123,6 +123,8 @@ LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld
 SENSE_VM = ../../../../src
 SENSE_VM_H = ../../../../include
 
+
+
 SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/channel.c \
             $(SENSE_VM)/chan_recv_queue.c \
@@ -133,7 +135,8 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/RTS.c \
             $(SENSE_VM)/scheduler.c \
             $(SENSE_VM)/stack.c \
-            $(SENSE_VM)/VMC.c
+            $(SENSE_VM)/VMC.c \
+            $(SENSE_VM)/ll/ll_driver.c
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
