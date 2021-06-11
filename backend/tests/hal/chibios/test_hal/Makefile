@@ -122,6 +122,7 @@ LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld
 
 SENSE_VM = ../../../../src
 SENSE_VM_H = ../../../../include
+SENSE_VM_CH_H = ../../../../include/hal/chibios
 
 
 
@@ -136,7 +137,8 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/scheduler.c \
             $(SENSE_VM)/stack.c \
             $(SENSE_VM)/VMC.c \
-            $(SENSE_VM)/ll/ll_driver.c
+            $(SENSE_VM)/ll/ll_driver.c \
+            $(SENSE_VM)/hal/chibios/svm_chibios.c
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -175,7 +177,7 @@ TCPPSRC =
 ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
-INCDIR = $(ALLINC) $(TESTINC) $(SENSE_VM_H)
+INCDIR = $(ALLINC) $(TESTINC) $(SENSE_VM_H) $(SENSE_VM_CH_H)
 
 #
 # Project, sources and paths

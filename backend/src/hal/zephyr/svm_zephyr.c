@@ -31,6 +31,7 @@
 #include <sys/ring_buffer.h>
 
 /*********************/
+/* stdlib includes   */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
