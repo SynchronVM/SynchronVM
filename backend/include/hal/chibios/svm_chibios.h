@@ -32,11 +32,11 @@
 
 /* backend_custom struct for zephyr integration */
 typedef struct chibios_interop_s {
+  memory_pool_t *msg_pool;
   mailbox_t *mb;
   
   /* Send a message to associated vm container */
-  //void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
-  //int (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
+  int (*send_message)(struct chibios_interop_s* this, ll_driver_msg_t msg);
 
 } chibios_interop_t;
 
