@@ -27,6 +27,7 @@
 /* Chibios includes */
 #include "ch.h"
 #include "hal.h"
+//#include "chmempools.h"
 
 /*********************/
 /* stdlib includes   */
@@ -64,29 +65,31 @@ static mailbox_t mb[VMC_NUM_CONTAINERS];
 static msg_t b[VMC_NUM_CONTAINERS][MAX_MESSAGES];
 
 static ll_driver_msg_t msgs[VMC_NUM_CONTAINERS][MAX_MESSAGES] __attribute__((aligned((4))));
-static memory_pool_t msg_pool[VMC_NUM_CONTAINERS];
+
+static memory_pool_t* msg_pools[VMC_NUM_CONTAINERS];
+
+#if (VMC_NUM_CONTAINERS >= 1) 
+static MEMORYPOOL_DECL(msg_pool1, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+#endif
+#if (VMC_NUM_CONTAINERS >= 2)
+static MEMORYPOOL_DECL(msg_pool2, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+#endif
+#if (VMC_NUM_CONTAINERS >= 3)
+static MEMORYPOOL_DECL(msg_pool3, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+#endif
+#if (VMC_NUM_CONTAINERS >= 4)
+static MEMORYPOOL_DECL(msg_pool4, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+#endif
+
+
 
 chibios_interop_t chibios_interop[VMC_NUM_CONTAINERS];
-
-static bool init_message_system(void) {
-
-  bool r = true; /* figure out what type chPoolInit returns... */
-  
-  for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
-    chPoolInit(&msg_pool[i], sizeof(ll_driver_msg_t), NULL);
-    for(int j=0; i < MAX_MESSAGES; j++) {
-      chPoolFree(&msg_pool[i], &msgs[i][j]);
-    }
-  }
-  return r;
-}
-
 
 static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
   /* Called from within an interrupt routine */
 
   int r = 0;
-  ll_driver_msg_t *m = (ll_driver_t *)chPoolAlloc(this->msg_pool);
+  ll_driver_msg_t *m = (ll_driver_msg_t *)chPoolAlloc(this->msg_pool);
 
   if (m) {
 
@@ -142,8 +145,6 @@ static THD_FUNCTION(chibios_container_thread, arg) {
 
   // TODO: vmc_run
   // TODO: Call scheduler
-
-
 }
 
 
@@ -162,7 +163,7 @@ bool chibios_start_container_threads(void) {
 				   chibios_container_thread,
 				   (void *)&thread_data[i]);
   }
-
+  return r;
 }
 
 
@@ -170,11 +171,33 @@ bool chibios_sensevm_init(void) {
 
   bool r = true;
   
+#if (VMC_NUM_CONTAINERS >= 1) 
+  msg_pools[0] = &msg_pool1;
+  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+#endif
+#if (VMC_NUM_CONTAINERS >= 2)
+  msg_pools[1] = &msg_pool2;
+  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+#endif
+#if (VMC_NUM_CONTAINERS >= 3)
+  msg_pools[2] = &msg_pool3;
+  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+#endif
+#if (VMC_NUM_CONTAINERS >= 4)
+  msg_pools[3] = &msg_pool4;
+  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+#endif
+
+  
+
+
+  
+  
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
      chMBObjectInit(&mb[i], b[i], MAX_MESSAGES);
 
      chibios_interop[i].mb = &mb[i];
-     chibios_interop[i].msg_pool = &msg_pool[i];
+     chibios_interop[i].msg_pool = msg_pools[i];
      chibios_interop[i].send_message = send_message;
      vm_containers[i].backend_custom = (void*)&chibios_interop[i];
   }
