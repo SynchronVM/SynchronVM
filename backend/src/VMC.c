@@ -184,8 +184,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
 int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
-
-  dbg_print("vcm_run container address: %u\r\n", (uint32_t)container);
+  dbg_print("vmc_run container address: %u\r\n", (uint32_t)container);
 
   for (int i = 0; i < VMC_MAX_CONTEXTS; i++) {
     container->context_used[i] = false; //XXX: should move to vmc_init

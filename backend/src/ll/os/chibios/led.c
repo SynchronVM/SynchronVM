@@ -28,14 +28,37 @@ uint32_t led_num(void) {
   return gpio_num_leds();
 }
 
+
+led_driver_t led_drivers[10];
+
+/* TODO: see if it makes more sense to take a led_driver_t * object as argument */
 led_driver_t* led_init(uint32_t identifier) {
 
-}
+  led_driver_t *r = NULL;
+  
+  if (identifier < led_num()) {
+    palSetPadMode(leds[identifier].port,
+		  leds[identifier].pad,
+		  leds[identifier].mode);
+    palClearPad(leds[identifier].port,
+		leds[identifier].pad);
 
+    led_drivers[identifier].port = leds[identifier].port;
+    led_drivers[identifier].pad = leds[identifier].pad;
+    led_drivers[identifier].id = identifier;
+    led_drivers[identifier].state = false;
+    r = &led_drivers[identifier];
+  }
+ 
+  return r;
+}
 void led_set(led_driver_t *led, bool value) {
 
+  palWritePad(led->port, led->pad, value);
+  led->state = value;
+  
 }
 
 bool led_state(led_driver_t *led) {
-
+  return led->state;
 }

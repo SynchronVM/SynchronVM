@@ -144,6 +144,7 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/ll/ll_button.c\
             $(SENSE_VM)/ll/os/chibios/button.c\
             $(SENSE_VM)/ll/os/chibios/led.c\
+            $(SENSE_VM)/ll/os/chibios/gpio.c\
             $(SENSE_VM)/hal/chibios/svm_chibios.c \
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global

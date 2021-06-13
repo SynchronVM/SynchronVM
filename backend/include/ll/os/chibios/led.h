@@ -31,7 +31,8 @@
 #include <gpio.h>
 
 typedef struct {
-  uint32_t pin;
+  stm32_gpio_t *port;
+  uint16_t pad;
   uint32_t id;
   bool state;
 } led_driver_t;

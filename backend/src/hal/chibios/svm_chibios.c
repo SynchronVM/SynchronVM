@@ -70,6 +70,11 @@ void chibios_register_dbg_print(void (*f)(const char *str, ...)) {
 }
 
 
+
+/* TODO: This is broken
+   possibly resolve by using some function stdarg 
+   vsnprintf for example.  
+*/
 void dbg_print(const char *str, ...) {
   va_list args;
 
@@ -84,7 +89,7 @@ void dbg_print(const char *str, ...) {
 /********************************************************/
 /* Declare stacks, threads and mailboxes for containers */
 
-#define STACK_SIZE  1024
+#define STACK_SIZE  1024 // 2048 //1024
 #define MAX_MESSAGES 64
 
 static mailbox_t mb[VMC_NUM_CONTAINERS];
@@ -121,14 +126,11 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
   if (m) {
 
     msg_t msg_val;
-
-    chSysLockFromISR();  /* not sure about granularity to lock here */
     msg_val = chMBPostI(this->mb, (uint32_t)m);
     if (msg_val != MSG_OK) {
       chPoolFree(this->msg_pool, m); /* message is dropped if mailbox is full */
       r = -1;
     }
-    chSysUnlockFromISR();
   }
   return r;
 }
@@ -191,10 +193,12 @@ chibios_svm_thread_data_t thread_data[VMC_NUM_CONTAINERS];
 static THD_FUNCTION(chibios_container_thread, arg) {
 
   chibios_svm_thread_data_t *data = (chibios_svm_thread_data_t*)arg;
-  vmc_t * container = data->container;
+  dbg_print("Container address data = %u\r\n", (uint32_t)data->container);
+  vmc_t *container = data->container;
 
   dbg_print("Container thread starting\r\n");
-  dbg_print("Containter address = %u\r\n", (uint32_t)container);
+  dbg_print("Container address = %u\r\n", (uint32_t)container);
+  
   
   int r = 0;
 
@@ -225,6 +229,7 @@ bool chibios_start_container_threads(void) {
     thread_data[i].container_name = container_names[i];
 
     dbg_print("Container launcher: Container addr = %u\r\n", (uint32_t)&vm_containers[i]);
+    dbg_print("Container launcher: Container addr data = %u\r\n", (uint32_t)thread_data[i].container);
 
     
     threads[i] = chThdCreateStatic(thread_wa[i],

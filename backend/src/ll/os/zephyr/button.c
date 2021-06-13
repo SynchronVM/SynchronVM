@@ -70,7 +70,7 @@ static void button_pressed(const struct device *dev,
 
   driver->state = gpio_pin_get(button_device, driver->pin);
 
-  ll_driver_msg_t msg; // nonsense message
+  ll_driver_msg_t msg; 
   msg.driver_id = driver->id; 
   msg.timestamp = ll_driver_timestamp();
   msg.data = driver->state;  // 1 or 0
