@@ -1118,8 +1118,9 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
     nextToken t = fetchToken [ tokuiden t
                              , tokint t
                              , tokfloat t
+                             , tokiden t
                              , tokreserved t
-                             , tokiden t]
+                             ]
       where
         fetchToken :: [Maybe (Tok, T.Text)] -> Maybe (Tok, T.Text)
         fetchToken []     = Nothing
@@ -1143,6 +1144,7 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
     tokiden t = do
       assertB $ isLetter $ T.head t
       let (token, rest) = T.span pred t
+      assertB $ not (T.unpack token `elem` pkeywords)
       return (TV token, rest)
       where
         pred c = isLetter c || isDigit c || c == '\'' || c == '_'
@@ -1810,7 +1812,9 @@ pkeywords = [
   , "in"
   , "if"
   , "then"
-  , "else"]
+  , "else"
+  , "as"
+  ]
 
 printTree :: Print a => a -> String
 printTree = render . prt 0
