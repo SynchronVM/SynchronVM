@@ -25,7 +25,7 @@
 #include <button.h>
 
 uint32_t button_num(void){
-  return gpio_num_buttons(); /* not sure this will work */
+  return gpio_num_buttons();
 }
 
 button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t identifier) {
