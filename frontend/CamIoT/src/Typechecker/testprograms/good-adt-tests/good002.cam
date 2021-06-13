@@ -1,0 +1,15 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+id x = x
+
+addMaybe : Maybe Int -> Maybe Int -> Maybe Int
+addMaybe (Just i1) (Just i2) = Just (i1 + i2)
+addMaybe _ _                 = Nothing
+
+main : Int
+main = case id (addMaybe (Just 5) (Just 10)) of
+  Just x  -> x
+  Nothing -> 20

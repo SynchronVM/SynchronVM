@@ -35,15 +35,15 @@ echo "********************"
 
 echo "********************"
 echo ""
-echo "running failing tests"
+echo "running failing datatype declaration tests"
 echo ""
 echo "********************"
 
-for file in `ls src/Typechecker/testprograms/`
+for file in `ls src/Typechecker/testprograms/bad-datatype-decl`
 do
 	if [ $(basename $file) != $(basename $0) ]
         then
-		var=$(CamIoT-exe src/Typechecker/testprograms/$file 2>&1)
+		var=$(camiotc src/Typechecker/testprograms/bad-datatype-decl/$file 2>&1)
 		res=$?
 	        if [ "$res" -ne 0 ]
                 then
@@ -56,6 +56,35 @@ do
 		    failing_tests="$failing_tests $file \n"
 		    echo "\noops!"
 		    echo "file: $file passed typechecking, which was unexpected..."
+		    echo $var
+			echo ""
+		fi
+        fi
+done
+
+echo "********************"
+echo ""
+echo "running working ADT tests"
+echo ""
+echo "********************"
+
+for file in `ls src/Typechecker/testprograms/good-adt-tests`
+do
+	if [ $(basename $file) != $(basename $0) ]
+        then
+		var=$(camiotc src/Typechecker/testprograms/good-adt-tests/$file 2>&1)
+		res=$?
+	        if [ "$res" -eq 0 ]
+                then
+		    success_count=$((success_count+1))
+		    echo "file: $file passed typechecking, as expected"
+	        fi
+		if [ "$res" -ne 0 ]
+		then
+		    fail_count=$((fail_count+1))
+		    failing_tests="$failing_tests $file \n"
+		    echo "\noops!"
+		    echo "file: $file failed typechecking, which was unexpected..."
 		    echo $var
 			echo ""
 		fi

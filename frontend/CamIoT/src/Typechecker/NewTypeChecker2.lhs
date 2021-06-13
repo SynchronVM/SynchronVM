@@ -287,10 +287,22 @@ tryParse fp = do
     Left e  -> return $ show e
     Right t -> return $ printTree t
 
+tryProcess :: String -> IO ()
+tryProcess fp = do
+  contents <- TIO.readFile fp
+  TIO.putStrLn $ process contents
+
 type Subst = Map.Map Ident Type
 
 unitsub :: Subst
 unitsub = Map.empty
+
+instance {-# OVERLAPPING #-} Show Subst where
+  show s = unlines $
+           map (\(t1,t2) -> concat [ printTree t1
+                                   , " ~> "
+                                   , printTree t2]) $
+           Map.toList s
 
 class Substitutable a where
   apply :: Subst -> a -> a
@@ -772,35 +784,37 @@ checkDef mt d = case d of
     let argschemas  = map (\(id,t) -> (id, Forall [] t)) argbindings
     -- typecheck the equation body
     (sub, body')    <- inEnvMany argschemas $ checkExp body
+    -- combine all substitution information
+    let retsub = patsub `compose` sub
     -- create the inferred type of the entire definition
-    let functype    = foldr TLam (expVar body') $ map patVar args''
-    return (patsub `compose` sub, DEquation functype id args'' body')
+    let functype    = apply retsub $ foldr TLam (expVar body') $ map patVar args''
+    return (retsub, DEquation functype id args'' body')
 
 checkFunction :: Function () -> TC (Subst, Function Type)
 checkFunction f = do
   -- typecheck equations and fetch their types
-  subneqs         <- mapM (checkDef (typesig f)) $ equations f
+  subneqs <- case (typesig f) of
+    Just t -> do env <- ask
+                 let sch = generalize t env
+                 inEnv (name f) sch $ mapM (checkDef (typesig f)) $ equations f
+    Nothing -> mapM (checkDef (typesig f)) $ equations f
   let (subs, eqs) = unzip subneqs
   let types       = map (fromJust . defVar) $ filter (isJust . defVar) eqs
   
-  let sub = foldl compose unitsub subs
+  let sub         = foldl compose unitsub subs
 
   -- unify all the types of the equations and with the typesig, if
   -- one exists
-  sub' <- unifyEquations (maybe types (: types) (typesig f)) sub
-  
-  -- return annotated functions
-  return $ (sub', f { equations = eqs
-                    , typesig   = maybe (Just (head types)) Just (typesig f)
-                    }
-           )
-  where
-      unifyEquations :: [Type] -> Subst -> TC Subst
-      unifyEquations []  s      = return s
-      unifyEquations [x] s      = return s
-      unifyEquations (x:y:xs) s = do
-        s' <- unify x y
-        unifyEquations (y:xs) (s `compose` s')
+  sub'            <- unifyAll (maybe types (: types) (typesig f))
+  let eqs'        = apply sub' eqs
+  let eqt         = fromJust $ defVar $ head eqs'
+
+  let f'          = f { equations = eqs'
+                      , typesig = maybe (Just eqt) Just (typesig f)
+                      }
+
+  -- return annotated, substituted functions
+  return $ (sub', f')
 
 -- | Check that the declaration of an ADT is okay.
 checkDataDeclaration :: ADT -> TC ()
@@ -868,8 +882,8 @@ checkProgram p = do
   let main' = last funs
   let funs' = init funs
   return (sub, p { functions = funs'
-               , main      = main'
-               }
+                 , main      = main'
+                 }
          )
 
 checkFunctions :: [Function ()] -> TC (Subst, [Function Type])
@@ -882,7 +896,7 @@ checkFunctions_ (f:fs) s = do
   let id      = name f'
   let ty      = fromJust $ defVar $ head $ equations f'
   env         <- ask
-  let schema  = generalize ty env
+  let schema  = generalize (apply (s `compose` sub) ty) env
   (sub', fs') <- inEnv id schema $ checkFunctions_ fs (s `compose` sub)
   return $ (sub', f' : fs')
 
@@ -1029,114 +1043,484 @@ checkExp e = case e of
     let sub = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
     return (sub, EIf (expVar e2') e1' e2' e3')
 
-data PPState = ST 
-     { source       :: T.Text  -- ^ The contents that remains unpreprocessed so far
-     , current      :: Int     -- ^ The column number of the last fetched token
-     , targetIndent :: [Int]}  -- ^ A stack of stored columns
-  deriving Show
 
-data Error = IndentationError Int Int String
-instance Show Error where
-    show (IndentationError expected found token) =
-        "Parse error: expected indentation " ++ show expected ++ 
-        " of token " ++ token ++ " but found " ++ show found
+{-********** Start of tokenizer **********-}
 
-type PP a = StateT PPState (Writer T.Text) a
-
-keywords :: [T.Text]
-keywords = ["where", "of"]
-
--- | Function that will take a `Text` and preprocess it
+-- | To preprocess a file, apply layout resolution
 process :: T.Text -> T.Text
-process t =
-    let wr = runStateT process_ (ST t 0 [0])
-        ((_,_),w) = runWriter wr
-        w' = T.dropWhile (/= ';') w
-    in T.snoc (T.tail w') ';'
+process t = printTokPos $ resolveLayout True $ tokenize t
 
-process_ :: PP ()
-process_ = do
-    (t,i) <- nextToken
-    if t /= T.empty
-        then (do
-            while (getCurrentTarget >>= \i' -> if t `T.isPrefixOf` "--" ||
-                                                  t `T.isPrefixOf` "{-" ||
-                                                  t `T.isPrefixOf` "-}"
-                                               then return False
-                                               else emitFluff i i')
-            tell t
-            when (isKeyword t) (do
-                tell "{"
-                (t',i') <- nextToken
-                pushCurrentTarget i'
-                tell t')
-            process_)
-        else while (do
-            target <- getCurrentTarget
-            if target > 0
-                then tell "}" >> popCurrentTarget >> return True
-                else return False)
+-- | Data type of tokens (definition stolen from the stuff BNFC generates)
+data Tok =
+   TS T.Text !Int    -- reserved words and symbols (not sure what the unique int is for)
+ | TL T.Text         -- string literals
+ | TI T.Text         -- integer literals
+ | TV T.Text         -- identifiers
+ | TD T.Text         -- double precision float literals
+ | T_UIdent T.Text
+ deriving Show
 
-emitFluff :: Int -> Int -> PP Bool
-emitFluff i1 i2
-  | i1 < i2  = tell "}" >> popCurrentTarget >> return True
-  | i1 == i2 = tell ";" >> return False
-  | i1 > i2  = return False
+type TokPos = (Tok, Int, Int)
 
-getCurrentTarget :: PP Int
-getCurrentTarget = head <$> gets targetIndent
+toktext :: TokPos -> T.Text
+toktext (t,_,_) = case t of
+  TS t _     -> t
+  TL t       -> t
+  TI t       -> t
+  TV t       -> t
+  TD t       -> t
+  T_UIdent t -> t
 
-popCurrentTarget :: PP ()
-popCurrentTarget = modify $ \(ST r c (_:ts)) -> ST r c ts
+-- | Turn a list of TokPos into a line of Text. Prepend the line with the
+-- indentation level as specified by the first token. The list of tokens are
+-- assumed to all be on the same line.
+tokline :: [TokPos] -> T.Text
+tokline [] = ""
+tokline (tok@(_,_,c):ts) = T.append first $ T.unwords $ map toktext ts
+  where
+    first = T.snoc (T.append (T.replicate (c-1) " ") (toktext tok)) ' '
 
-pushCurrentTarget :: Int -> PP ()
-pushCurrentTarget i = modify $ \(ST r c ts) -> ST r c (i:ts)
+-- | Turn a list of tokens back into a source file
+printTokPos :: [TokPos] -> T.Text
+printTokPos ts = T.unlines $ map tokline $ groupBy pred ts
+  where
+    pred (_,l1,_) (_,l2,_) = l1 == l2
 
-isKeyword :: T.Text -> Bool
-isKeyword token = token `elem` keywords
+-- | Compute the length of a token
+toklength :: Tok -> Int
+toklength t = case t of
+  TS t _     -> T.length t
+  TL t       -> T.length t
+  TI t       -> T.length t
+  TV t       -> T.length t
+  TD t       -> T.length t
+  T_UIdent t -> T.length t
 
-nextToken :: PP (T.Text, Int)
-nextToken = do
-    (ST t i ti) <- get
+-- | Split a source file up into its tokens. I am guessing this is grossly inefficient.
+tokenize :: T.Text -> [TokPos]
+tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
+  where
+    -- | Input text starts at (line, col), and tokenizes a single line
+    tokenizeLine :: Int -> T.Text -> [TokPos]
+    tokenizeLine line row = case sptb row of
+      Just (count, rest) -> go line (count + 1) rest
+      Nothing            -> []
+      where
+        go :: Int -> Int -> T.Text -> [TokPos]
+        go line col row = case nextToken row of
+          Just (tok, rest) -> case sptb rest of
+            Just (count, rest') -> (tok, line, col) : go line (col + toklength tok + count) rest'
+            Nothing             -> [(tok, line, col)]
+          Nothing          -> []
 
-    -- first split the input up in its leading whitespace/newline and the rest
-    let (fluff, t')  = T.span (\c -> c == ' ' || c == '\n') t
-    -- then extract the next token and the rest of the input
-    let (token, t'') = T.span (\c -> c /= ' ' && c /= '\n') t'
+    -- | Tries the tokenize functions one by one until one succeeds
+    nextToken :: T.Text -> Maybe (Tok, T.Text)
+    nextToken t = fetchToken [ tokuiden t
+                             , tokint t
+                             , tokfloat t
+                             , tokreserved t
+                             , tokiden t]
+      where
+        fetchToken :: [Maybe (Tok, T.Text)] -> Maybe (Tok, T.Text)
+        fetchToken []     = Nothing
+        fetchToken (x:xs) = if isJust x then x else fetchToken xs
 
+    -- int literals
+    tokint :: T.Text -> Maybe (Tok, T.Text)
+    tokint t = let (token, rest) = T.span (\c -> isDigit c) t
+               in if T.null token then Nothing else Just (TI token, rest)
+    
+    -- float literals
+    tokfloat :: T.Text -> Maybe (Tok, T.Text)
+    tokfloat t = do
+      (TI big, rest)  <- tokint t
+      assertB $ T.head rest == '.'
+      (TI low, rest') <- tokint $ T.tail rest
+      return (TD $ T.concat [big, ".", low], rest')
 
-    -- update the internal column counter
-    updateColumn fluff
-    c <- gets current
+    -- identifiers    
+    tokiden :: T.Text -> Maybe (Tok, T.Text)
+    tokiden t = do
+      assertB $ isLetter $ T.head t
+      let (token, rest) = T.span pred t
+      return (TV token, rest)
+      where
+        pred c = isLetter c || isDigit c || c == '\'' || c == '_'
 
-    -- emit the things we just cut off, to keep
-    -- the annotated code as close to the source as possible
-    tell fluff
+    -- uppercase identifiers
+    tokuiden :: T.Text -> Maybe (Tok, T.Text)
+    tokuiden t = do
+      assertB $ isUpper $ T.head t
+      let (restuid, rest) = T.span pred t
+      return (T_UIdent restuid, rest)
+      where
+        pred c = isLetter c || isUpper c || c == '\'' || c == '_'
 
-    -- modify the internal state to reflect the rest of the input
-    modify $ \(ST _ c i) -> ST t'' c i
+    -- reserved words and keywords
+    tokreserved :: T.Text -> Maybe (Tok, T.Text)
+    tokreserved t
+      | "Bool"  `T.isPrefixOf` t = Just (TS "Bool" 18,  T.drop (T.length "Bool") t)
+      | "Int"   `T.isPrefixOf` t = Just (TS "Int" 21,   T.drop (T.length "Int") t)
+      | "Float" `T.isPrefixOf` t = Just (TS "Float" 20, T.drop (T.length "Float") t)
+      | "True"  `T.isPrefixOf` t = Just (TS "True" 22,  T.drop (T.length "True") t)
+      | "False" `T.isPrefixOf` t = Just (TS "False" 19, T.drop (T.length "False") t)
+      | "data"  `T.isPrefixOf` t = Just (TS "data" 27,  T.drop (T.length "data") t)
+      | "where" `T.isPrefixOf` t = Just (TS "where" 34, T.drop (T.length "where") t)
+      | "case"  `T.isPrefixOf` t = Just (TS "case" 26,  T.drop (T.length "case") t)
+      | "of"    `T.isPrefixOf` t = Just (TS "of" 32,    T.drop (T.length "of") t)
+      | "let"   `T.isPrefixOf` t = Just (TS "let" 31,   T.drop (T.length "let") t)
+      | "in"    `T.isPrefixOf` t = Just (TS "in" 30,    T.drop (T.length "in") t)
+      | "if"    `T.isPrefixOf` t = Just (TS "if" 29,    T.drop (T.length "if") t)
+      | "then"  `T.isPrefixOf` t = Just (TS "then" 33,  T.drop (T.length "then") t)
+      | "else"  `T.isPrefixOf` t = Just (TS "else" 28,  T.drop (T.length "else") t)
+      | ":"     `T.isPrefixOf` t = Just (TS ":" 12,     T.drop (T.length ":") t)
+      | "->"    `T.isPrefixOf` t = Just (TS "->" 10,    T.drop (T.length "->") t)
+      | "{"     `T.isPrefixOf` t = Just (TS "{" 35,     T.drop (T.length "{") t)
+      | "}"     `T.isPrefixOf` t = Just (TS "}" 37,     T.drop (T.length "}") t)
+      | ";"     `T.isPrefixOf` t = Just (TS ";" 13,     T.drop (T.length ";") t)
+      | "()"    `T.isPrefixOf` t = Just (TS "()" 4,     T.drop (T.length "()") t)
+      | "("     `T.isPrefixOf` t = Just (TS "(" 3,      T.drop (T.length "(") t)
+      | ")"     `T.isPrefixOf` t = Just (TS ")" 5,      T.drop (T.length ")") t)
+      | "+"     `T.isPrefixOf` t = Just (TS "+" 7,      T.drop (T.length "+") t)
+      | "-"     `T.isPrefixOf` t = Just (TS "-" 9,      T.drop (T.length "-") t)
+      | "*"     `T.isPrefixOf` t = Just (TS "*" 6,      T.drop (T.length "*") t)
+      | "/"     `T.isPrefixOf` t = Just (TS "/" 11,     T.drop (T.length "/") t)
+      | "&&"    `T.isPrefixOf` t = Just (TS "&&" 2,     T.drop (T.length "&&") t)
+      | "||"    `T.isPrefixOf` t = Just (TS "||" 36,    T.drop (T.length "||") t)
+      | "!"     `T.isPrefixOf` t = Just (TS "!" 1,      T.drop (T.length "!") t)
+      | ","     `T.isPrefixOf` t = Just (TS "," 8,      T.drop (T.length ",") t)
+      | "<="    `T.isPrefixOf` t = Just (TS "<=" 38,    T.drop (T.length "<=") t)
+      | "<"     `T.isPrefixOf` t = Just (TS "<" 14,     T.drop (T.length "<") t)
+      | ">="    `T.isPrefixOf` t = Just (TS ">=" 39,    T.drop (T.length ">=") t)
+      | ">"     `T.isPrefixOf` t = Just (TS ">" 17,     T.drop (T.length ">") t)
+      | "=="    `T.isPrefixOf` t = Just (TS "==" 16,    T.drop (T.length "==") t)
+      | "="     `T.isPrefixOf` t = Just (TS "=" 15,     T.drop (T.length "=") t)
+      | "\\"    `T.isPrefixOf` t = Just (TS "\\" 23,    T.drop (T.length "\\") t)
+      | "_"     `T.isPrefixOf` t = Just (TS "_" 24,     T.drop (T.length "_") t)
+      | "as"    `T.isPrefixOf` t = Just (TS "as" 25,    T.drop (T.length "as") t)
+    tokreserved _ = Nothing
 
-    -- get the column of the current token and return the subsequent pair
-    column <- gets current
-    return (token, column)
+    -- consume whitespace and tabs
+    sptb :: T.Text -> Maybe (Int, T.Text)
+    sptb t = let (chunk, rest) = T.span pred t
+             in if T.null rest then Nothing else Just (T.length chunk, rest)
+      where
+        pred c = c == ' ' || c == '\t'
 
-updateColumn :: T.Text -> PP ()
-updateColumn t = do
-    -- is there a newline?
-    -- if no symbol matches span will not 'consume' anything
-    let (spaces, rest) = T.span (== '\n') t
-    if spaces == T.empty
-        -- if there wasn't, we count the number of spaces and add that to c
-        then modify $ \(ST t' c i) -> ST t' (c + T.length rest) i
-        -- otherwise we've encountered a newline and we set the internal counter
-        -- to c and continue with a recursive call
-        else modify (\(ST t' _ i)  -> ST t' 0 i) >> updateColumn rest
+assertB :: Bool -> Maybe ()
+assertB True  = Just ()
+assertB False = Nothing
 
--- while mb returns true, execute ma
-while :: Monad m => m Bool -> m ()
-while mb = do
-    b <- mb
-    when b (while mb)
+{-********** End of tokenizer **********-}
+{-********** Start of layout resolver (stolen from BNFC) **********-}
+
+-- | This bool says that we definitely want to apply top layout. This means that
+-- top level definitions are delimited by semi-colons.
+topLayout :: Bool
+topLayout = True
+
+-- | These words initiate/terminate layout blocks
+layoutWords, layoutStopWords :: [T.Text]
+layoutWords     = ["where","of"]
+layoutStopWords = []
+
+layoutOpen, layoutClose, layoutSep :: T.Text
+layoutOpen  = "{"
+layoutClose = "}"
+layoutSep   = ";"
+
+-- | Replace layout syntax with explicit layout tokens.
+resolveLayout :: Bool    -- ^ Whether to use top-level layout.
+              -> [TokPos] -> [TokPos]
+resolveLayout tp = res Nothing [if tl then Implicit 1 else Explicit] [0]
+  where
+  -- Do top-level layout if the function parameter and the grammar say so.
+  tl = tp && topLayout
+
+  res :: Maybe TokPos -- ^ The previous token, if any.
+      -> [Block] -- ^ A stack of layout blocks.
+      -> [Int]
+      -> [TokPos] -> [TokPos]
+
+  -- The stack should never be empty.
+  res _ [] _ ts = error $ "Layout error: stack empty. Tokens: " ++ show ts
+
+  res _ st c (t0:ts)
+    -- We found an open brace in the input,
+    -- put an explicit layout block on the stack.
+    -- This is done even if there was no layout word,
+    -- to keep opening and closing braces.
+    | isLayoutOpen t0 = moveAlong (Explicit:st) [t0] ts c
+
+  -- We are in an implicit layout block
+  res pt st@(Implicit n:ns) c (t0:ts)
+
+      -- End of implicit block by a layout stop word
+    | isStop t0 =
+           -- Exit the current block and all implicit blocks
+           -- more indented than the current token
+       let (ebs,ns') = span (`moreIndent` column t0) ns
+           moreIndent (Implicit x) y = x > y
+           moreIndent Explicit _ = False
+           -- the number of blocks exited
+           b = 1 + length ebs
+           bs = replicate b layoutClose
+           -- Insert closing braces after the previous token.
+           (ts1,ts2) = splitAt (1+b) $ addTokens (afterPrev pt) bs (t0:ts)
+        in moveAlong ns' ts1 ts2 (drop b c)
+
+    -- End of an implicit layout block
+    | newLine pt t0 && column t0 < n  =
+           -- Insert a closing brace after the previous token.
+       let b:t0':ts' = addToken (afterPrev pt) layoutClose (t0:ts)
+           -- Repeat, with the current block removed from the stack
+        in moveAlong ns [b] (t0':ts') $ tail c
+
+    -- see opening parentheses
+    | isParenthesesOpen t0 = moveAlong st [t0] ts $ incOpening c
+
+    | isParenthesesClose t0 =
+        if head c == 0
+          then let b:t0':ts' = addToken (afterPrev pt) layoutClose (t0:ts)
+               in moveAlong ns [b] (t0':ts') $ tail c
+          else moveAlong st [t0] ts $ decOpening c
+
+  res pt st c (t0:ts)
+    -- Start a new layout block if the first token is a layout word
+    | isLayout t0 =
+        case ts of
+            -- Explicit layout, just move on. The case above
+            -- will push an explicit layout block.
+            t1:_ | isLayoutOpen t1 -> moveAlong st [t0] ts c
+                 -- The column of the next token determines the starting column
+                 -- of the implicit layout block.
+                 -- However, the next block needs to be strictly more indented
+                 -- than the previous block.
+            _ -> let col = max (indentation st + 1) $
+                       -- at end of file, the start column doesn't matter
+                       if null ts then column t0 else column (head ts)
+                     -- insert an open brace after the layout word
+                     b:ts' = addToken (nextPos t0) layoutOpen ts
+                     -- save the start column
+                     st' = Implicit col:st
+                 in -- Do we have to insert an extra layoutSep?
+                case st of
+                  Implicit n:_
+                    | newLine pt t0 && column t0 == n
+                      && not (isNothing pt ||
+                              isTokenIn [layoutSep,layoutOpen] (fromJust pt)) ->
+                     let b':t0':b'':ts'' =
+                           addToken (afterPrev pt) layoutSep (t0:b:ts')
+                     in moveAlong st' [b',t0',b''] ts' (0:c)
+                  _ -> moveAlong st' [t0,b] ts' (0:c)
+
+    -- If we encounter a closing brace, exit the first explicit layout block.
+    | isLayoutClose t0 =
+          let tod = dropWhile isImplicit st
+              st' = drop 1 tod
+              c'  = drop (length c - length tod) c
+           in if null st'
+                 then error $ "Layout error: Found " ++ (T.unpack layoutClose) ++ " at ("
+                              ++ show (line t0) ++ "," ++ show (column t0)
+                              ++ ") without an explicit layout block."
+                 else moveAlong st' [t0] ts c'
+
+  -- Insert separator if necessary.
+  res pt st@(Implicit n:ns) c (t0:ts)
+    -- Encounted a new line in an implicit layout block.
+    | newLine pt t0 && column t0 == n =
+       -- Insert a semicolon after the previous token.
+       -- unless we are the beginning of the file,
+       -- or the previous token is a semicolon or open brace.
+       if isNothing pt || isTokenIn [layoutSep,layoutOpen] (fromJust pt)
+          then moveAlong st [t0] ts c
+          else let b:t0':ts' = addToken (afterPrev pt) layoutSep (t0:ts)
+                in moveAlong st [b,t0'] ts' c
+
+  -- Nothing to see here, move along.
+  res _ st c (t:ts)  = moveAlong st [t] ts c
+
+  -- At EOF: skip explicit blocks.
+  res (Just t) (Explicit:bs) c [] | null bs = []
+                                  | otherwise = res (Just t) bs c []
+
+  -- If we are using top-level layout, insert a semicolon after
+  -- the last token, if there isn't one already
+  res (Just t) [Implicit _n] _ []
+      | isTokenIn [layoutSep] t = []
+      | otherwise = addToken (nextPos t) layoutSep []
+
+  -- At EOF in an implicit, non-top-level block: close the block
+  res (Just t) (Implicit _n:bs) (_:co) [] =
+     let c = addToken (nextPos t) layoutClose []
+      in moveAlong bs c [] co
+
+  -- This should only happen if the input is empty.
+  res Nothing _st _ [] = []
+
+  -- | Move on to the next token.
+  moveAlong :: [Block] -- ^ The layout stack.
+            -> [TokPos] -- ^ Any tokens just processed.
+            -> [TokPos] -- ^ the rest of the tokens.
+            -> [Int]   -- ^ Opening counts
+            -> [TokPos]
+  moveAlong _  [] _  _ = error "Layout error: moveAlong got [] as old tokens"
+  moveAlong st ot ts c = ot ++ res (Just $ last ot) st c ts
+
+  newLine :: Maybe TokPos -> TokPos -> Bool
+  newLine pt t0 = case pt of
+    Nothing -> True
+    Just t  -> line t /= line t0
+
+data Block
+   = Implicit Int -- ^ An implicit layout block with its start column.
+   | Explicit
+   deriving Show
+
+-- | Get current indentation.  0 if we are in an explicit block.
+indentation :: [Block] -> Int
+indentation (Implicit n : _) = n
+indentation _ = 0
+
+-- | Check if s block is implicit.
+isImplicit :: Block -> Bool
+isImplicit (Implicit _) = True
+isImplicit _ = False
+
+type Position = (Int, Int)
+
+-- | Insert a number of tokens at the begninning of a list of tokens.
+addTokens :: Position -- ^ Position of the first new token.
+          -> [T.Text] -- ^ Token symbols.
+          -> [TokPos]  -- ^ The rest of the tokens. These will have their
+                      --   positions updated to make room for the new tokens .
+          -> [TokPos]
+addTokens p ss ts = foldr (addToken p) ts ss
+
+-- | Insert a new symbol token at the begninning of a list of tokens.
+addToken :: Position -- ^ Position of the new token.
+         -> T.Text   -- ^ Symbol in the new token.
+         -> [TokPos]  -- ^ The rest of the tokens. These will have their
+                     --   positions updated to make room for the new token.
+         -> [TokPos]
+addToken p s ts = sToken p s : map (incrGlobal p (T.length s)) ts
+
+-- | Get the position immediately to the right of the given token.
+--   If no token is given, gets the first position in the file.
+afterPrev :: Maybe TokPos -> Position
+afterPrev = maybe (1,1) nextPos
+
+-- | Get the position immediately to the right of the given token.
+nextPos :: TokPos -> Position
+nextPos (t,l,c) = (l, c + s + 1) --    Pn (g + s) l (c + s + 1)
+  where s = toklength t
+
+-- | Add to the global and column positions of a token.
+--   The column position is only changed if the token is on
+--   the same line as the given position.
+incrGlobal :: Position -- ^ If the token is on the same line
+                       --   as this position, update the column position.
+           -> Int      -- ^ Number of characters to add to the position.
+           -> TokPos -> TokPos
+incrGlobal (l0, _) i (t, l, c) = --(PT (Pn g l c) t) =
+  if l /= l0 then (t, l, c) --    PT (Pn (g + i) l c) t
+             else (t, l, c + i) --    PT (Pn (g + i) l (c + i)) t
+--incrGlobal _ _ p = error $ "cannot add token at " ++ show p
+
+-- | Create a symbol token.
+sToken :: Position -> T.Text -> TokPos
+sToken (l,c) s = (TS s i, l, c)
+  where
+    i = case s of
+      "!" -> 1
+      "&&" -> 2
+      "(" -> 3
+      "()" -> 4
+      ")" -> 5
+      "*" -> 6
+      "+" -> 7
+      "," -> 8
+      "-" -> 9
+      "->" -> 10
+      "/" -> 11
+      ":" -> 12
+      ";" -> 13
+      "<" -> 14
+      "=" -> 15
+      "==" -> 16
+      ">" -> 17
+      "Bool" -> 18
+      "False" -> 19
+      "Float" -> 20
+      "Int" -> 21
+      "True" -> 22
+      "\\" -> 23
+      "_" -> 24
+      "as" -> 25
+      "case" -> 26
+      "data" -> 27
+      "else" -> 28
+      "if" -> 29
+      "in" -> 30
+      "let" -> 31
+      "of" -> 32
+      "then" -> 33
+      "where" -> 34
+      "{" -> 35
+      "||" -> 36
+      "}" -> 37
+      "<=" -> 38
+      ">=" -> 39
+      _ -> error $ "not a reserved word: " ++ show s
+
+-- | Get the position of a token.
+position :: TokPos -> Position
+position (_,l,c) = (l,c)
+
+-- | Get the line number of a token.
+line :: TokPos -> Int
+line t = case position t of (l,_) -> l
+
+-- | Get the column number of a token.
+column :: TokPos -> Int
+column t = case position t of (_,c) -> c
+
+-- | Check if a token is one of the given symbols.
+isTokenIn :: [T.Text] -> TokPos -> Bool
+isTokenIn ts t = case t of
+  (TS r _, _, _) | r `elem` ts -> True
+  _                            -> False
+
+-- | Check if a word is a layout start token.
+isLayout :: TokPos -> Bool
+isLayout = isTokenIn layoutWords
+
+-- | Check if a token is a layout stop token.
+isStop :: TokPos -> Bool
+isStop = isTokenIn layoutStopWords
+
+-- | Check if a token is the layout open token.
+isLayoutOpen :: TokPos -> Bool
+isLayoutOpen = isTokenIn [layoutOpen]
+
+-- | Check if a token is the layout close token.
+isLayoutClose :: TokPos -> Bool
+isLayoutClose = isTokenIn [layoutClose]
+
+isParenthesesOpen :: TokPos -> Bool
+isParenthesesOpen = isTokenIn ["("]
+
+isParenthesesClose :: TokPos -> Bool
+isParenthesesClose = isTokenIn [")"]
+
+incOpening :: [Int] -> [Int]
+incOpening (x:xs) = (x+1:xs)
+incOpening []     = error "tried to increment opening count on empty count stack"
+
+decOpening :: [Int] -> [Int]
+decOpening (x:xs) = (x-1:xs)
+
+{-**********  End of layout resolver **********-}
 
 -- | Custom parser type - synonym for Parsec Void Text a
 type Parser a = Parsec Void T.Text a
