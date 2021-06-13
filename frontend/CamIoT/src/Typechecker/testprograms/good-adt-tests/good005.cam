@@ -1,0 +1,48 @@
+data State s a where
+  ST : (s -> (s,a)) -> State s a
+
+id x = x
+
+runState : State s a -> s -> a
+runState (ST f) s = let (_,a) = f s in a
+
+get : State s s
+get = ST (\s -> (s,s))
+
+put : s -> State s ()
+put s = ST (\_ -> (s,()))
+
+return : a -> State s a
+return a = ST (\s -> (s,a))
+
+bind : State s a -> (a -> State s b) -> State s b
+bind (ST f) k = ST (\s -> let (s',a) = f s in
+                          let (ST g) = k a in g s')
+
+blind : State s a -> State s b -> State s b
+blind f g = bind f (\_ -> g)
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+maybe : b -> (a -> b) -> Maybe a -> b
+maybe b _ Nothing  = b
+maybe _ f (Just x) = f x
+
+incMaybe : State (Maybe Int) ()
+incMaybe = bind get (\m -> case m of
+  Just i -> put (Just (i+1))
+  Nothing -> return ())
+
+decMaybe : State (Maybe Int) ()
+decMaybe = bind get (\m -> put (maybe Nothing (\i -> Just (i-1)) m))
+
+program : State (Maybe Int) Int
+program = blind incMaybe (
+          blind incMaybe (
+          blind decMaybe (
+          blind incMaybe (
+          bind get (\m -> return (maybe 0 id m))))))
+
+main = runState program (Just 5)
