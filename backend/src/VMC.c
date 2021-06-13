@@ -95,7 +95,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_NUM_CONTAINERS >= 1
   rl = heap_init(&vm_containers[VMC_CONTAINER_1].heap, vmc_container_1_heap, VMC_CONTAINER_1_HEAP_SIZE_BYTES);
 
-  if (!rl) return -1;
+  if (!rl) return -2;
 
   vm_containers[VMC_CONTAINER_1].stack_memory   = vmc_container_1_stack;
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
@@ -106,13 +106,13 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
  
   if (!init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
 			, vmc_container_1_channels)) {
-    return -1;
+    return -3;
   }
   
   if (!init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
 				, vm_containers[VMC_CONTAINER_1].stack_memory
 				, VMC_CONTAINER_1_STACK_SIZE_BYTES)){
-    return -1;
+    return -4;
   }
 
   int readyq_status = q_init(&vm_containers[VMC_CONTAINER_1].rdyQ
@@ -120,7 +120,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
                              , sizeof(UUID) * 1024 * VMC_MAX_CONTEXTS);
   if(readyq_status == -1){
     DEBUG_PRINT(("Failed to initialise ready queue"));
-    return -1;
+    return -5;
   }
 
 
