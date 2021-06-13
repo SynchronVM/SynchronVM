@@ -1,0 +1,30 @@
+
+data List a where
+  Nil : List a
+  Cons : a -> List a -> List a
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+maybe : b -> (a -> b) -> Maybe a -> b
+maybe b _ Nothing  = b
+maybe _ f (Just a) = f a
+
+id x = x
+
+map : (a -> b) -> List a -> List b
+map _ Nil         = Nil
+map f (Cons x xs) = Cons (f x) (map f xs)
+
+maybeAddOne : List (Maybe Int) -> List (Maybe Int)
+maybeAddOne xs = map (\x -> case x of
+  Just i -> Just (i + 1)
+  Nothing -> Nothing) xs
+
+maybeSum : List (Maybe Int) -> Int
+maybeSum Nil         = 0
+maybeSum (Cons x xs) = (maybe 0 id x) + maybeSum xs
+
+main : Int
+main = 3
