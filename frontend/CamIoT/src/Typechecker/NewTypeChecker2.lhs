@@ -795,6 +795,9 @@ checkDef mt d = case d of
     let functype    = apply retsub $ foldr TLam (expVar body') $ map patVar args''
     return (retsub, DEquation functype id args'' body')
 
+-- | t1 `moreGeneralThan` t2 returns True if t1 is a more general type than t2.
+-- This is used to make sure that e.g a function of type Int -> Int is not
+-- given the type signature a -> b by the developer.
 moreGeneralThan :: Type -> Type -> Bool
 moreGeneralThan (TVar _) (TVar _)     = False
 moreGeneralThan (TVar _) _            = True
