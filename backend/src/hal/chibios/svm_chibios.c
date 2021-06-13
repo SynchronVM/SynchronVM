@@ -55,6 +55,25 @@
 #error "Too many containers specified in vm-conf.h"
 #endif
 
+/************************/
+/* Debug print facility */
+
+void (*dbg_print_fun)(const char *str, ...) = NULL;
+
+void chibios_register_dbg_print(void (*f)(const char *str, ...)) {
+  dbg_print_fun = f;
+}
+
+
+void dbg_print(const char *str, ...) {
+  va_list args;
+
+  if (dbg_print_fun != NULL) {
+    dbg_print_fun(str, args);
+  }
+}
+
+
 /********************************************************/
 /* Declare stacks, threads and mailboxes for containers */
 
@@ -68,7 +87,7 @@ static ll_driver_msg_t msgs[VMC_NUM_CONTAINERS][MAX_MESSAGES] __attribute__((ali
 
 static memory_pool_t* msg_pools[VMC_NUM_CONTAINERS];
 
-#if (VMC_NUM_CONTAINERS >= 1) 
+#if (VMC_NUM_CONTAINERS >= 1)
 static MEMORYPOOL_DECL(msg_pool1, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
 #endif
 #if (VMC_NUM_CONTAINERS >= 2)
@@ -81,8 +100,6 @@ static MEMORYPOOL_DECL(msg_pool3, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, 
 static MEMORYPOOL_DECL(msg_pool4, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
 #endif
 
-
-
 chibios_interop_t chibios_interop[VMC_NUM_CONTAINERS];
 
 static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
@@ -91,13 +108,16 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
   int r = 0;
   ll_driver_msg_t *m = (ll_driver_msg_t *)chPoolAlloc(this->msg_pool);
 
+
+  *m = msg; /* set the message data */
+
   if (m) {
 
-    msg_t msg;
-    
+    msg_t msg_val;
+
     chSysLockFromISR();  /* not sure about granularity to lock here */
-    msg = chMBPostI(this->mb, (uint32_t)m);
-    if (msg != MSG_OK) {
+    msg_val = chMBPostI(this->mb, (uint32_t)m);
+    if (msg_val != MSG_OK) {
       chPoolFree(this->msg_pool, m); /* message is dropped if mailbox is full */
       r = -1;
     }
@@ -107,6 +127,30 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
 }
 
 
+static int read_message_block(vmc_t* vmc, ll_driver_msg_t *msg) {
+
+  msg_t msg_value;
+
+  chibios_interop_t* interop = (chibios_interop_t*)vmc->backend_custom;
+  int r = chMBFetchTimeout(interop->mb, &msg_value, TIME_INFINITE);
+
+  if (r == MSG_OK ) {
+
+    *msg = *(ll_driver_msg_t*)msg_value;
+
+
+    r = VMC_MESSAGE_RECEIVED;
+  } else {
+    r = VMC_NO_MESSAGE;
+  }
+
+  return r;
+}
+
+static uint32_t mailbox_num_used(vmc_t* vmc) {
+  chibios_interop_t *interop = (chibios_interop_t*)vmc->backend_custom;
+  return (uint32_t)chMBGetUsedCountI(interop->mb);
+}
 
 // A chibios message is large enough to hold a pointer.
 // So ll_driver_msg_t struct has to be stored elsewhere.
@@ -141,10 +185,21 @@ static THD_FUNCTION(chibios_container_thread, arg) {
   chibios_svm_thread_data_t *data = (chibios_svm_thread_data_t*)arg;
   vmc_t * container = data->container;
 
+  int r = 0;
+
   chRegSetThreadName(data->container_name);
 
-  // TODO: vmc_run
-  // TODO: Call scheduler
+  /* Last bit of startup that takes
+     place on a per container basis */
+
+  if (vmc_run(container, dbg_print) != 1) {
+    return;
+  }
+
+  /* TODO read_message_poll */
+  r = scheduler(container, NULL, read_message_block, mailbox_num_used, dbg_print);
+
+  /* Do something in relation to r if we return to this point!*/
 }
 
 
@@ -170,8 +225,8 @@ bool chibios_start_container_threads(void) {
 bool chibios_sensevm_init(void) {
 
   bool r = true;
-  
-#if (VMC_NUM_CONTAINERS >= 1) 
+
+#if (VMC_NUM_CONTAINERS >= 1)
   msg_pools[0] = &msg_pool1;
   chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
 #endif
@@ -188,11 +243,6 @@ bool chibios_sensevm_init(void) {
   chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
 #endif
 
-  
-
-
-  
-  
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {
      chMBObjectInit(&mb[i], b[i], MAX_MESSAGES);
 
@@ -202,5 +252,5 @@ bool chibios_sensevm_init(void) {
      vm_containers[i].backend_custom = (void*)&chibios_interop[i];
   }
 
-  return r; 
+  return r;
 }
