@@ -26,6 +26,15 @@
 #include "usbcfg.h"
 #include "chprintf.h"
 
+#include <svm_chibios.h>
+
+void print_it(const char *str, ...) {
+  va_list args;
+
+  chprintf((BaseSequentialStream *)&SDU1, str, args);
+}
+
+
 int main(void) {
   halInit();
   chSysInit();
@@ -44,7 +53,24 @@ int main(void) {
   usbConnectBus(serusbcfg.usbp);
   chThdSleepMilliseconds(500);
 
-    
+
+  chThdSleepMilliseconds(2000);
+
+
+  if (!chibios_sensevm_init()) {
+     chprintf((BaseSequentialStream *)&SDU1, "SenseVM init failed!\r\n");
+  } else {
+    chprintf((BaseSequentialStream *)&SDU1, "SenseVM initialized!\r\n");
+  }
+
+  if (!chibios_start_container_threads()) {
+     chprintf((BaseSequentialStream *)&SDU1, "SenseVM failed to start container threads!\r\n");
+  } else { 
+    chprintf((BaseSequentialStream *)&SDU1, "SenseVM container threads started!\r\n");
+  }
+
+  chibios_register_dbg_print(print_it);
+  
   while(true) {
 
     chprintf((BaseSequentialStream *)&SDU1, "Hello world\r\n");
