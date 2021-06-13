@@ -193,6 +193,7 @@ static THD_FUNCTION(chibios_container_thread, arg) {
      place on a per container basis */
 
   if (vmc_run(container, dbg_print) != 1) {
+    
     return;
   }
 
@@ -252,5 +253,7 @@ bool chibios_sensevm_init(void) {
      vm_containers[i].backend_custom = (void*)&chibios_interop[i];
   }
 
+  r = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
+  
   return r;
 }

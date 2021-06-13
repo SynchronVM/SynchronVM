@@ -57,6 +57,8 @@ int main(void) {
   chThdSleepMilliseconds(2000);
 
 
+  chibios_register_dbg_print(print_it); /* should be done first */
+  
   if (!chibios_sensevm_init()) {
      chprintf((BaseSequentialStream *)&SDU1, "SenseVM init failed!\r\n");
   } else {
@@ -69,13 +71,13 @@ int main(void) {
     chprintf((BaseSequentialStream *)&SDU1, "SenseVM container threads started!\r\n");
   }
 
-  chibios_register_dbg_print(print_it);
+  
   
   while(true) {
 
     chprintf((BaseSequentialStream *)&SDU1, "Hello world\r\n");
 
-    chThdSleepMilliseconds(500);
+    chThdSleepMilliseconds(2000);
     
   }
 
