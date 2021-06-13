@@ -25,7 +25,8 @@ module LLExample where
 
 import Assembler
 import Bytecode.LLInterpreter
-import CAM
+import CamOpt
+import Peephole
 
 example0 = Sys $ Sys2 MinusI (Sys $ LInt 5) (Sys $ LInt 4)
 
@@ -589,8 +590,11 @@ example32' =
 run :: Exp -> EnvContent
 run = evaluate . interpret
 
+run' :: Exp -> EnvContent
+run' = evaluate . optimise . interpret
+
 runAllTests =
-  if all (== True) (zipWith (==) (map run examples) results)
+  if all (== True) (zipWith (==) (map run' examples) results)
   then print "All tests passed"
   else print "There are some errors"
   where

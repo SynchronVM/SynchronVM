@@ -79,8 +79,8 @@ const uint8_t vmc_container_2_code[] = {
    to N containers. */
 
 
-static int init_all_chans(Channel_t *c, uint8_t *mem);
-static int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
+static bool init_all_chans(Channel_t *c, uint8_t *mem);
+static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
 
 int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
@@ -94,19 +94,26 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   #if VMC_NUM_CONTAINERS >= 1
   rl = heap_init(&vm_containers[VMC_CONTAINER_1].heap, vmc_container_1_heap, VMC_CONTAINER_1_HEAP_SIZE_BYTES);
-  if (!rl) return 0;
+
+  if (!rl) return -1;
+
   vm_containers[VMC_CONTAINER_1].stack_memory   = vmc_container_1_stack;
   vm_containers[VMC_CONTAINER_1].code_memory    = vmc_container_1_code;
   vm_containers[VMC_CONTAINER_1].arrays_memory  = vmc_container_1_arrays;
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
 
   vm_containers[VMC_CONTAINER_1].code_size = sizeof(vmc_container_1_code);
-  // No checks for the failure of the following two
-  init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
-                 , vmc_container_1_channels);
-  init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
-                         , vm_containers[VMC_CONTAINER_1].stack_memory
-                         , VMC_CONTAINER_1_STACK_SIZE_BYTES);
+ 
+  if (!init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
+			, vmc_container_1_channels)) {
+    return -1;
+  }
+  
+  if (!init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
+				, vm_containers[VMC_CONTAINER_1].stack_memory
+				, VMC_CONTAINER_1_STACK_SIZE_BYTES)){
+    return -1;
+  }
 
   int readyq_status = q_init(&vm_containers[VMC_CONTAINER_1].rdyQ
                              , vmc_container_1_rdyq
@@ -213,10 +220,10 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   pc += (pool_size_native * 4);
 
   uint32_t code_size;
-  code_size = container->code_memory[pc++] << 24;
+  code_size = container->code_memory[pc++]  << 24;
   code_size |= container->code_memory[pc++] << 16;
   code_size |= container->code_memory[pc++] << 8;
-  code_size |= container->code_memory[pc++];  
+  code_size |= container->code_memory[pc++];
 
 
   /* Experiments with the scheduler */
@@ -240,7 +247,7 @@ int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
   return 1; /* Maybe have some error codes in relation to this fun */
 }
 
-static int init_all_chans(Channel_t *c, uint8_t *mem){
+static bool init_all_chans(Channel_t *c, uint8_t *mem){
 
   int mem_offset = 0;
 
@@ -257,7 +264,7 @@ static int init_all_chans(Channel_t *c, uint8_t *mem){
                                      , sd_size * MAX_WAIT_PARTICIPANTS);
     if(!sq_status){
       DEBUG_PRINT(("Failed to initialise sendq for %dth channel", i));
-      return -1;
+      return false;
     }
 
     int rq_status =
@@ -266,7 +273,7 @@ static int init_all_chans(Channel_t *c, uint8_t *mem){
                        , rd_size * MAX_WAIT_PARTICIPANTS);
     if(!rq_status){
       DEBUG_PRINT(("Failed to initialise recvq for %dth channel", i));
-      return -1;
+      return false;
     }
 
     mem_offset +=   (MAX_WAIT_PARTICIPANTS * sd_size)  //a sendq elem is 20 bytes
@@ -275,38 +282,40 @@ static int init_all_chans(Channel_t *c, uint8_t *mem){
     int ch_status = channel_init(&c[i], sq, rq);
     if(ch_status == -1){
       DEBUG_PRINT(("Failed to initialise %dth channel", i));
-      return -1;
+      return false;
     }
 
   }
 
-  return 1;
+  return true;
 }
 
-static int init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
+static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
 
   /* Maybe we want a different number of max contexts on different VMC.
      I think VMC_CONTAINERX_MAX_CONTEXTS should be defined in vm-conf.
      Then also VMC_CONTAINERX_CONTEXT_STACK_SPACE could be defined in vm-conf. */
 
   if (VMC_MAX_CONTEXTS * CONTEXT_STACK_SPACE > memory_size) {
-    return -1; /* Not enough space for that many stacks */
+    return false; /* Not enough space for that many stacks */
   }
 
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
 
+    int offset = i * CONTEXT_STACK_SPACE;
+    
     int st_status = stack_init(&ctx[i].stack
-                               , (mem + i * CONTEXT_STACK_SPACE)
+                               , &mem[offset]
                                , CONTEXT_STACK_SPACE);
 
     if(!st_status){
       DEBUG_PRINT(("Failed to initialise stack for %dth context", i));
-      return -1;
+      return false;
     }
 
   }
 
-  return 1;
+  return true;
 }
 
 
@@ -344,42 +353,47 @@ static inline void mark_heap_context(Context_t *context, heap_t *heap){
 }
 
 static void heap_mark_phase(vmc_t *container) {
-  mark_heap_context
-    (  &container->contexts[container->current_running_context_id]
-       , &container->heap);
+#ifdef HEAP_COLLECT_STATS  
+  gc_stats.num_mark_phases++;
+#endif
+  //mark_heap_context
+  //  (  &container->contexts[container->current_running_context_id]
+  //     , &container->heap);
 
-  /* GC all active child contexts; children starts from 1 */
-  for(int i = 1; i < VMC_MAX_CONTEXTS; i++){
+  /* GC all active contexts */
+  for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
     if(container->context_used[i] ){
       mark_heap_context(&container->contexts[i], &container->heap);
     }
   }
-  
-  //XXX: Tests breaking because channels not initialised in the tests
-  //     PLEASE UNCOMMENT BELOW
+
   //GC all the dirty flags associated with the channels
   for(int i = 0; i < MAX_CHANNELS; i++){
     if(container->channels[i].in_use){
       // first check if channel is in use
       // and then mark all live dirty flags
       // in the sendq and then in the recvq
-      
+
       for(int j = 0; j < container->channels[i].sendq.size; j++){
 	heap_mark(  &container->heap
                     , container->channels[i].sendq.data[j].dirty_flag_pointer);
+
+	// could the message potentially be a heap structure ?
+	//heap_mark(  &container->heap
+        //            , container->channels[i].sendq.data[j].message);
       }
-      
+
       for(int j = 0; j < container->channels[i].recvq.size; j++){
 	heap_mark(  &container->heap
 		    , container->channels[i].recvq.data[j].dirty_flag_pointer);
       }
     }
-  } 
+  }
 }
 
 heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 
-  heap_index head; 
+  heap_index head = HEAP_NULL; 
 
   cam_value_t list = get_cam_val((UINT)HEAP_NULL, VALUE_PTR_BIT);
     

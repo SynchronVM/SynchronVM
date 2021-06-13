@@ -9,7 +9,6 @@ set(LLBC_Z ../../../../src/ll/os/zephyr)
 
 set(HAL_Z  ../../../../src/hal/zephyr)
 
-set(LLBH   ../../../../include/ll)
 set(LLBH_Z ../../../../include/ll/os/zephyr)
 
 set(HALH_Z  ../../../../include/hal/zephyr)

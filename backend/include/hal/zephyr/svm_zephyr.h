@@ -29,7 +29,6 @@
 
 /* backend_custom struct for zephyr integration */
 typedef struct zephyr_interop_s {
-  //struct k_mbox *mbox;
   struct k_msgq *msgq;
   
   /* Send a message to associated vm container */

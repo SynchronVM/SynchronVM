@@ -24,6 +24,7 @@
 
 #include <ll/ll_uart.h>
 
+#include <uart.h> 
 
 static uint32_t ll_uart_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   return LL_DRIVER_CONTROL_SUCCESS;
@@ -47,13 +48,14 @@ static uint32_t ll_uart_write(struct ll_driver_s *this, uint8_t *data, uint32_t 
 
 
 bool ll_uart_init(ll_driver_t* lld,
-		  uart_if_t uif,
+		  ll_uart_if_t uif,
 		  uint8_t *in_buffer,
 		  uint32_t in_size,
 		  uint8_t *out_buffer,
-		  uint32_t out_size) {
+		  uint32_t out_size,
+		  void *backend_custom) {
 
-  uart_dev_t* u = uart_init(uif, in_buffer, in_size, out_buffer, out_size);
+  uart_dev_t* u = uart_init(uif, in_buffer, in_size, out_buffer, out_size, backend_custom);
   if (u) {
     lld->driver_info = (void*) u; /* store the uart device as ll_driver internal info */
     lld->ll_control_fun = ll_uart_control;

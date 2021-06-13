@@ -7,7 +7,6 @@ project(lldriver-test)
 set(LLBC   ../../../src/ll)
 set(LLBC_Z ../../../src/ll/os/zephyr)
 
-set(LLBH   ../../../include/ll)
 set(LLBH_Z ../../../include/ll/os/zephyr)
 
 set(SENSE_VM ../../../src)       # currently unused
@@ -24,8 +23,8 @@ FILE(GLOB extra_sources
 
 target_sources(app PRIVATE ${app_sources} ${extra_sources})
 target_include_directories(app PRIVATE
-  ${LLBH}
   ${LLBH_Z}
+  ${SENSE_VM_H}
   ${ZEPHYR_BASE}/kernel/include
   ${ZEPHYR_BASE}/arch/${ARCH}/include)
 

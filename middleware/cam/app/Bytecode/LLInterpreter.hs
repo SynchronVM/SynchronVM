@@ -24,7 +24,7 @@ module Bytecode.LLInterpreter ( EnvContent (..)
                               , Val (..)
                               , evaluate) where
 
-import CAM
+import CamOpt
 import Data.Int (Int32)
 import Data.List (find)
 import GHC.Arr
@@ -191,6 +191,21 @@ eval = do
       do { gotofalse l; eval; }
     SWITCH conds ->
       do { switch conds; eval; }
+
+    -- new operands --
+    MOVE ->
+      do { incPC; move; eval }
+    POP  ->
+      do { incPC; pop; eval }
+    SNOC ->
+      do { incPC; snoc; eval }
+    COMB l ->
+      do { incPC; comb l; eval }
+    GOTOIFALSE l ->
+      do { gotoifalse l; eval; }
+    SWITCHI conds ->
+      do { switchi conds; eval; }
+
     i ->
       error $! "Unsupported Instruction : " <> show i
 
@@ -312,6 +327,24 @@ push = do
   case e of
     EV val -> S.modify $ \s -> s { stack = (SV val) : st }
     EP ptr -> S.modify $ \s -> s { stack = (SP ptr) : st }
+
+move :: Evaluate ()
+move = do
+  e  <- getEnv
+  st <- getStack
+  case e of
+    EV val -> S.modify $ \s -> s { stack = (SV val) : st }
+    EP ptr -> S.modify $ \s -> s { stack = (SP ptr) : st }
+  S.modify $ \s -> s { environment = (EV VEmpty) }
+
+pop :: Evaluate ()
+pop = do
+  (sT, sR) <- popAndRest
+  S.modify $ \s -> s { stack = sR }
+  case sT of
+    SV val -> S.modify $ \s -> s { environment = EV val }
+    SP ptr -> S.modify $ \s -> s { environment = EP ptr }
+
 
 swap :: Evaluate ()
 swap = do
@@ -450,11 +483,27 @@ cons = do
                      , stack = t
                      }
 
+snoc :: Evaluate ()
+snoc = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  ptr    <- malloc
+  allocOnHeap ptr (envHeapTag e, stackHeapTag h)
+  S.modify $ \s -> s { environment = EP ptr
+                     , stack = t
+                     }
+
 cur :: Label -> Evaluate ()
 cur l = do
   e   <- getEnv
   ptr <- malloc
   allocOnHeap ptr (envHeapTag e, L l)
+  S.modify $ \s -> s { environment = EP ptr }
+
+comb :: Label -> Evaluate ()
+comb l = do
+  ptr <- malloc
+  allocOnHeap ptr (L l, L dummyLabel)
   S.modify $ \s -> s { environment = EP ptr }
 
 pack :: Tag -> Evaluate ()
@@ -471,13 +520,21 @@ app = do
   h_     <- getHeap
   case e of
     EP ptr -> do
-      newPtr <- malloc
-      allocOnHeap newPtr (fstHeap, stackHeapTag h)
-      S.modify $ \s -> s { environment = EP newPtr
-                         , stack       = t
-                         }
       let (L label) = sndHeap -- XXX: Partial
-      jumpTo label
+      if label == dummyLabel
+      then do
+        case h of
+          SV val -> S.modify $ \s -> s { environment = EV val, stack = t }
+          SP ptr -> S.modify $ \s -> s { environment = EP ptr, stack = t }
+        let (L jl) = fstHeap
+        jumpTo jl
+      else do
+        newPtr <- malloc
+        allocOnHeap newPtr (fstHeap, stackHeapTag h)
+        S.modify $ \s -> s { environment = EP newPtr
+                           , stack       = t
+                           }
+        jumpTo label
       where
         heapcell = let HeapCell _ hc = h_ ! ptr
                     in hc
@@ -501,6 +558,33 @@ switch conds = do
       S.modify $ \s -> s { environment = EP newPtr
                          , stack       = t
                          }
+      goto label
+      where
+        heapcell = let HeapCell _ hc = h_ ! ptr
+                    in hc
+        fstHeap  = fst heapcell
+        sndHeap  = snd heapcell
+        contag   = case fstHeap of
+                     T t -> t
+                     _   -> error "non constructor patterns should be rewritten"
+        wildcardtag = "??WILDCARD??"
+    EV _   -> error "EV constructor should not arise here"
+
+
+switchi :: [(Tag, Label)] -> Evaluate ()
+switchi conds = do
+  e      <- getEnv
+  h_     <- getHeap
+  case e of
+    EP ptr -> do
+      let (_, label) =
+            case find (\(c,_) -> c == contag || c == wildcardtag) conds of
+              Just (cf, lf) -> (cf, lf)
+              Nothing -> error $ "missing constructor " <> show contag
+      case sndHeap of
+        V val -> S.modify $ \s -> s { environment = EV val }
+        P ptr -> S.modify $ \s -> s { environment = EP ptr }
+        _     -> error "Impossible to get tag or label here"
       goto label
       where
         heapcell = let HeapCell _ hc = h_ ! ptr
@@ -550,6 +634,15 @@ gotofalse l = do
                          , stack       = h : t
                          }
       error "gotofalse instuction applied to incorrect operand"
+
+
+gotoifalse :: Label -> Evaluate ()
+gotoifalse l = do
+  e  <- getEnv
+  case e of
+    EV (VBool True)  -> incPC
+    EV (VBool False) -> goto l
+    _ -> error "gotoifalse instuction applied to incorrect operand"
 
 dummyLabel = Label (-1)
 

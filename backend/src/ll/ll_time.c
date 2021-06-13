@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             		  */
+/* Copyright (c) 2022 Joel Svensson, Abhiroop Sarkar 				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,29 +22,26 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __STACK_H_
-#define __STACK_H_
+#include <ll/ll_time.h>
 
-#include <typedefs.h>
-#include <register.h>
-#include <flags.h>
+bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode tmode) {
 
-typedef struct {
-  value_flags_t *flags;
-  UINT          *data;
-  unsigned int   sp;
-  unsigned int   size;
-} cam_stack_t;
+  return true;
+}
 
-extern int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes);
 
-extern int stack_push(cam_stack_t *s, cam_value_t cvalue);
-extern int stack_pop(cam_stack_t *s, cam_register_t *r);
+/* Thoughts 
+   
+   - How to set an absolute time timeout?
+   - How to set a relative time timeout?
+  
+   - Get current time
+     - ll_read
+ 
+   - Only one outstanding timeout possible at any time per timer.
+     - This makes things very tricky. 
+     - 
+   
+   
 
-extern unsigned int stack_get_sp(cam_stack_t *s);
-
-#ifdef DEBUG
-extern void stack_show(cam_stack_t *stack, int size);
-#endif
-
-#endif
+ */ 

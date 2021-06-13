@@ -32,10 +32,17 @@ static struct gpio_callback button_cb_data;
 static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(svm_led0), gpios,
 						     {0});
 
+
+// Construct a message queue
+K_MSGQ_DEFINE(message_queue, sizeof(int), 100, 4);
+
+
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
 {
-  //printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
+  int s = gpio_pin_get(button.port, button.pin);
+
+  k_msgq_put(&message_queue,&s, K_NO_WAIT);
 }
 
 void main(void)
@@ -55,17 +62,17 @@ void main(void)
 		return;
 	}
 
-	/* ret = gpio_pin_interrupt_configure_dt(&button, */
-	/* 				      GPIO_INT_EDGE_TO_ACTIVE); */
-	/* if (ret != 0) { */
-	/* 	printk("Error %d: failed to configure interrupt on %s pin %d\n", */
-	/* 		ret, button.port->name, button.pin); */
-	/* 	return; */
-	/* } */
+	ret = gpio_pin_interrupt_configure_dt(&button,
+					      GPIO_INT_EDGE_BOTH);
+	if (ret != 0) {
+		printk("Error %d: failed to configure interrupt on %s pin %d\n",
+			ret, button.port->name, button.pin);
+		return;
+	}
 
-	/* gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin)); */
-	/* gpio_add_callback(button.port, &button_cb_data); */
-	/* printk("Set up button at %s pin %d\n", button.port->name, button.pin); */
+	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+	gpio_add_callback(button.port, &button_cb_data);
+	printk("Set up button at %s pin %d\n", button.port->name, button.pin);
 
 	if (led.port && !device_is_ready(led.port)) {
 		printk("Error %d: LED device %s is not ready; ignoring it\n",
@@ -86,13 +93,12 @@ void main(void)
 	printk("Press the button\n");
 	if (led.port) {
 		while (1) {
-			/* If we have an LED, match its state to the button's. */
-			int val = gpio_pin_get(button.port, button.pin);
 
-			if (val >= 0) {
-				gpio_pin_set(led.port, led.pin, val);
-			}
-			//k_msleep(SLEEP_TIME_MS);
+		  int s = 1;
+		  
+		  int r = k_msgq_get(&message_queue, (void*)&s, K_FOREVER);
+		  gpio_pin_set(led.port, led.pin, s);
+		  
 		}
 	}
 }

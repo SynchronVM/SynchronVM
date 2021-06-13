@@ -76,6 +76,11 @@ int stack_pop(cam_stack_t *s, cam_register_t *r) {
   return 1;
 }
 
+// Maybe should be uint32_t
+unsigned int stack_get_sp(cam_stack_t *s) {
+  return s->sp;
+}
+
 #ifdef DEBUG
 void stack_show(cam_stack_t *stack, int size){
   int num_cells;

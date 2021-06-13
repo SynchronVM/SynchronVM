@@ -31,6 +31,7 @@
 #include <sys/ring_buffer.h>
 
 /*********************/
+/* stdlib includes   */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -97,16 +98,16 @@ zephyr_interop_t zephyr_interop[4];
 /* Message Queues */
 
 #if VMC_NUM_CONTAINERS >= 1
-K_MSGQ_DEFINE(message_queue_0, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_0, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 2
-K_MSGQ_DEFINE(message_queue_1, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_1, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 3
-K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 4
-K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 
 struct k_msgq *message_queues[4];
@@ -140,6 +141,12 @@ int read_message_block(vmc_t *vmc, ll_driver_msg_t *msg) {
     return VMC_NO_MESSAGE;
   }
   return VMC_MESSAGE_RECEIVED;
+}
+
+uint32_t message_queue_num_used(vmc_t *vmc) {
+  zephyr_interop_t* interop = (zephyr_interop_t*)vmc->backend_custom;
+
+  return k_msgq_num_used_get(interop->msgq);
 }
 
 /***********************************************/
@@ -189,7 +196,7 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
     return;
   }
 
-  r = scheduler(container, read_message_poll, read_message_block, printk);
+  r = scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
 
   /* do something related to r? */
 

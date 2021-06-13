@@ -30,13 +30,15 @@
 // to make it run on for example ChibiOs a compatible reimplementation
 // of uart.h/uart.c is needed. But if that exists, it should just be about
 // Makefile tweaking to use the chibios implementation instead.
-#include <uart.h>
 #include <ll/ll_driver.h>
 
-extern bool ll_uart_init(ll_driver_t* lld, uart_if_t uif,
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;
+
+extern bool ll_uart_init(ll_driver_t* lld, ll_uart_if_t uif,
 			 uint8_t *in_buffer,
 			 uint32_t in_size,
 			 uint8_t *out_buffer,
-			 uint32_t out_size);
+			 uint32_t out_size,
+			 void *backend_custom);
 
 #endif

@@ -77,11 +77,12 @@ static void uart_isr(const struct device *dev, void *args)
 
 /* ******************************** */
 /* Initialization and configuration */
-uart_dev_t* uart_init(uart_if_t uif,
-	       uint8_t *in_buffer,
-	       uint32_t in_size,
-	       uint8_t *out_buffer,
-	       uint32_t out_size) {
+uart_dev_t* uart_init(ll_uart_if_t uif,
+		      uint8_t *in_buffer,
+		      uint32_t in_size,
+		      uint8_t *out_buffer,
+		      uint32_t out_size,
+		      void *backend_custom) {
   int uart_id = -1;
   switch(uif) {
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_uart0), okay)    
@@ -145,6 +146,8 @@ uart_dev_t* uart_init(uart_if_t uif,
     
     uart_irq_callback_user_data_set(uarts[uart_id].dev, uart_isr, (void*)&uarts[uart_id]);
     uart_irq_rx_enable(uarts[uart_id].dev);
+
+    uarts[uart_id].interop = (zephyr_interop_t*)backend_custom;
     
     return &uarts[uart_id];
   }

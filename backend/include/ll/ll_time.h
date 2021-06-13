@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             		  */
+/* Copyright (c) 2022 Joel Svensson, Abhiroop Sarkar 				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,29 +22,16 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __STACK_H_
-#define __STACK_H_
+#ifndef LL_TIME_H_
+#define LL_TIME_H_
 
-#include <typedefs.h>
-#include <register.h>
-#include <flags.h>
+#include <ll/ll_driver.h>
 
-typedef struct {
-  value_flags_t *flags;
-  UINT          *data;
-  unsigned int   sp;
-  unsigned int   size;
-} cam_stack_t;
+typedef enum { TIME_IF0, TIME_IF1, TIME_IF2, TIME_IF3 } ll_time_if_t;
 
-extern int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes);
+typedef enum { TIME_32BIT_MODE , TIME_64BIT_MODE } ll_time_mode_t;
 
-extern int stack_push(cam_stack_t *s, cam_value_t cvalue);
-extern int stack_pop(cam_stack_t *s, cam_register_t *r);
+extern bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode_t tmode);
 
-extern unsigned int stack_get_sp(cam_stack_t *s);
-
-#ifdef DEBUG
-extern void stack_show(cam_stack_t *stack, int size);
-#endif
 
 #endif

@@ -43,6 +43,11 @@ int mock_read_message_block(vmc_t *vmc, ll_driver_msg_t *msg){
   return -1;
 }
 
+uint32_t mock_message_queue_num_used(vmc_t *vmc) {
+  (void)vmc;
+  return 0;
+}
+
 void mock_debug_print(const char* str, ...){ (void)str; }
 
 
@@ -68,6 +73,7 @@ static int setup_and_run(vmc_t *container, uint8_t *code, uint32_t c_size){
   int scheduler_status = scheduler(  container
                                      , mock_read_message_poll
                                      , mock_read_message_block
+                                     , mock_message_queue_num_used
                                      , mock_debug_print);
 
   if (scheduler_status == -1){
