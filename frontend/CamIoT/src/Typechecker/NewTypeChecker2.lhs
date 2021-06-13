@@ -502,6 +502,7 @@ data TCError = UnboundVariable Ident
              | PartiallyAppliedTycon UIdent Int Int
              | UnboundADTVariable UIdent [Ident] UIdent Type Ident
              | NonADTConstruction UIdent Type Type
+             | TypeSignatureTooGeneral Ident Type Type
 
 instance Show TCError where
   show e = case e of
@@ -531,6 +532,10 @@ instance Show TCError where
     NonADTConstruction datacon expected actual ->
       concat [ "The data constructor ", printTree datacon, " constructs a value of type "
              , printTree actual, ", but the expected type is ", printTree expected]
+    TypeSignatureTooGeneral fun declared inferred ->
+      concat [ "The type signature of ", printTree fun, " is too general:\n"
+             , "  declared: ", printTree declared, "\n"
+             , "  inferred: ", printTree inferred]
 
 data TCState = TCState { namegen :: Int
                        , tycons  :: Map.Map UIdent Int  -- ^ ADT arity
@@ -790,6 +795,20 @@ checkDef mt d = case d of
     let functype    = apply retsub $ foldr TLam (expVar body') $ map patVar args''
     return (retsub, DEquation functype id args'' body')
 
+-- | t1 `moreGeneralThan` t2 returns True if t1 is a more general type than t2.
+-- This is used to make sure that e.g a function of type Int -> Int is not
+-- given the type signature a -> b by the developer.
+moreGeneralThan :: Type -> Type -> Bool
+moreGeneralThan (TVar _) (TVar _)     = False
+moreGeneralThan (TVar _) _            = True
+moreGeneralThan (TTup ts1) (TTup ts2) =
+  or $ zipWith moreGeneralThan ts1 ts2
+moreGeneralThan (TAdt _ ts1) (TAdt _ ts2) =
+  or $ zipWith moreGeneralThan ts1 ts2
+moreGeneralThan (TLam t1 t2) (TLam t1' t2') =
+  moreGeneralThan t1 t1' || moreGeneralThan t2 t2'
+moreGeneralThan _ _ = False
+
 checkFunction :: Function () -> TC (Subst, Function Type)
 checkFunction f = do
   -- typecheck equations and fetch their types
@@ -808,6 +827,10 @@ checkFunction f = do
   sub'            <- unifyAll (maybe types (: types) (typesig f))
   let eqs'        = apply sub' eqs
   let eqt         = fromJust $ defVar $ head eqs'
+
+  if isJust (typesig f) && fromJust (typesig f) `moreGeneralThan` eqt
+    then throwError $ TypeSignatureTooGeneral (name f) (fromJust (typesig f)) eqt
+    else return ()
 
   let f'          = f { equations = eqs'
                       , typesig = maybe (Just eqt) Just (typesig f)
@@ -1118,8 +1141,9 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
     nextToken t = fetchToken [ tokuiden t
                              , tokint t
                              , tokfloat t
+                             , tokiden t
                              , tokreserved t
-                             , tokiden t]
+                             ]
       where
         fetchToken :: [Maybe (Tok, T.Text)] -> Maybe (Tok, T.Text)
         fetchToken []     = Nothing
@@ -1143,6 +1167,7 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
     tokiden t = do
       assertB $ isLetter $ T.head t
       let (token, rest) = T.span pred t
+      assertB $ not (T.unpack token `elem` pkeywords)
       return (TV token, rest)
       where
         pred c = isLetter c || isDigit c || c == '\'' || c == '_'
@@ -1810,7 +1835,9 @@ pkeywords = [
   , "in"
   , "if"
   , "then"
-  , "else"]
+  , "else"
+  , "as"
+  ]
 
 printTree :: Print a => a -> String
 printTree = render . prt 0
