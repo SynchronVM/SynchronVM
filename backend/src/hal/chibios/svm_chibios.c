@@ -55,6 +55,11 @@
 #error "Too many containers specified in vm-conf.h"
 #endif
 
+#if VMC_NUM_CONTAINERS <= 0
+#error "At least one container must be specified in vm-conf.h"
+#endif
+
+
 /************************/
 /* Debug print facility */
 
@@ -69,7 +74,9 @@ void dbg_print(const char *str, ...) {
   va_list args;
 
   if (dbg_print_fun != NULL) {
+    va_start(args, str);
     dbg_print_fun(str, args);
+    va_end(args);
   }
 }
 
@@ -162,6 +169,7 @@ static THD_WORKING_AREA(thread_wa[VMC_NUM_CONTAINERS],
 static thread_t *threads[VMC_NUM_CONTAINERS];
 
 vmc_t vm_containers[4];
+
 const char* container_names[4] = { "C0", "C1", "C2", "C3" };
 
 #define CONTAINER_PRIORITY  (tprio_t)(NORMALPRIO-20)
@@ -185,6 +193,9 @@ static THD_FUNCTION(chibios_container_thread, arg) {
   chibios_svm_thread_data_t *data = (chibios_svm_thread_data_t*)arg;
   vmc_t * container = data->container;
 
+  dbg_print("Container thread starting\r\n");
+  dbg_print("Containter address = %u\r\n", (uint32_t)container);
+  
   int r = 0;
 
   chRegSetThreadName(data->container_name);
@@ -213,6 +224,9 @@ bool chibios_start_container_threads(void) {
     thread_data[i].container = &vm_containers[i];
     thread_data[i].container_name = container_names[i];
 
+    dbg_print("Container launcher: Container addr = %u\r\n", (uint32_t)&vm_containers[i]);
+
+    
     threads[i] = chThdCreateStatic(thread_wa[i],
 				   sizeof thread_wa[i],
 				   CONTAINER_PRIORITY,
@@ -225,7 +239,8 @@ bool chibios_start_container_threads(void) {
 
 bool chibios_sensevm_init(void) {
 
-  bool r = true;
+  int res = 0;
+  bool r = false;
 
 #if (VMC_NUM_CONTAINERS >= 1)
   msg_pools[0] = &msg_pool1;
@@ -253,7 +268,12 @@ bool chibios_sensevm_init(void) {
      vm_containers[i].backend_custom = (void*)&chibios_interop[i];
   }
 
-  r = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
+  res = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
+
+  if (res == VMC_NUM_CONTAINERS) r = true;
+
+  dbg_print("Number of containers: %d\r\n", VMC_NUM_CONTAINERS);
+  dbg_print("Result of vmc_init: %d\r\n", res);
   
   return r;
 }

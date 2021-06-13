@@ -30,8 +30,9 @@
 
 void print_it(const char *str, ...) {
   va_list args;
-
+  va_start(args, str);
   chprintf((BaseSequentialStream *)&SDU1, str, args);
+  va_end(args);
 }
 
 
