@@ -28,7 +28,6 @@
 # define DEBUG_PRINT(x) do {} while (0)
 #endif
 
-
 #include <stddef.h>
 #include <VMC.h>
 #include <heap.h>
@@ -43,7 +42,9 @@
 #if VMC_CONTAINER_1_USE_LED_0
 #include <ll/ll_led.h>
 #endif
-
+#if VMC_CONTAINER_1_USE_UART_0
+#include <ll/ll_uart.h>
+#endif
 
 
 /* This is just an experiment and if we end up building on it, the

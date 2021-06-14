@@ -24,18 +24,11 @@
 
 /*******************/
 /* Zephyr includes */
-#include <zephyr/types.h>
 #include <zephyr.h>
-#include <sys/printk.h>
-#include <sys/byteorder.h>
-#include <sys/ring_buffer.h>
 
 /*********************/
 /* stdlib includes   */
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <errno.h>
 
 /********************/
 /* SenseVM Includes */
