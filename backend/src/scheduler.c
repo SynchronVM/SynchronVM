@@ -132,8 +132,6 @@ int scheduler(vmc_t *container,
 #endif
 
   while (true) {
-
-    dbg_print("scheduler tick\r\n");
     
 #ifdef TRACE_ON
     uint32_t num_msgs = msgq_num_used(container);
@@ -181,7 +179,6 @@ int scheduler(vmc_t *container,
 /*       trace_print(dbg_print, 25); */
 /* #endif	 */
 
-      dbg_print("scheduler blocking\r\n");
       block_msg(container, &msg);      
 #ifdef TRACE_ON
       total_msgs ++;

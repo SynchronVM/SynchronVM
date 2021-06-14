@@ -29,15 +29,9 @@ uint32_t button_num(void){
   return gpio_num_buttons();
 }
 
-int led_flip = 0;
-
 static void button_cb(void *arg) {
 
   chSysLockFromISR();
-
-  led_flip = 1 - led_flip;
-  palWritePad(GPIOD, 12, led_flip);
-  
   
   button_driver_t *button = (chibios_interop_t*)arg;
 
@@ -50,10 +44,10 @@ static void button_cb(void *arg) {
   msg.timestamp = 0; //ll_driver_timestamp();
   msg.data = state;  // 1 or 0
 
-  //if (button->interop->send_message(button->interop, msg) == -1) {
-  //  /* Message was not send due to queue being full. 
-  //     What do we do in this case?  */ 
-  //}
+  if (button->interop->send_message(button->interop, msg) == -1) {
+    /* Message was not send due to queue being full. 
+       What do we do in this case?  */ 
+  }
 
   chSysUnlockFromISR();
 }

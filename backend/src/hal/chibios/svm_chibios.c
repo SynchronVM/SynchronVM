@@ -72,8 +72,8 @@ void chibios_register_dbg_print(void (*f)(const char *str, ...)) {
 
 
 /* TODO: This is broken
-   possibly resolve by using some function stdarg 
-   vsnprintf for example.  
+   possibly resolve by using some function stdarg
+   vsnprintf for example.
 */
 void dbg_print(const char *str, ...) {
   va_list args;
@@ -118,20 +118,21 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
   /* Called from within an interrupt routine */
 
   int r = 0;
-  ll_driver_msg_t *m = (ll_driver_msg_t *)chPoolAlloc(this->msg_pool);
+  ll_driver_msg_t *m = (ll_driver_msg_t *)chPoolAllocI(this->msg_pool);
 
-
-  *m = msg; /* set the message data */
+  *m = msg;
 
   if (m) {
 
     msg_t msg_val;
     msg_val = chMBPostI(this->mb, (uint32_t)m);
     if (msg_val != MSG_OK) {
-      chPoolFree(this->msg_pool, m); /* message is dropped if mailbox is full */
+      chPoolFree(this->msg_pool, m);
       r = -1;
     }
   }
+
+
   return r;
 }
 
@@ -147,7 +148,7 @@ static int read_message_block(vmc_t* vmc, ll_driver_msg_t *msg) {
 
     *msg = *(ll_driver_msg_t*)msg_value;
 
-
+    chPoolFree(interop->msg_pool, msg_value);
     r = VMC_MESSAGE_RECEIVED;
   } else {
     r = VMC_NO_MESSAGE;
@@ -198,8 +199,7 @@ static THD_FUNCTION(chibios_container_thread, arg) {
 
   dbg_print("Container thread starting\r\n");
   dbg_print("Container address = %u\r\n", (uint32_t)container);
-  
-  
+
   int r = 0;
 
   chRegSetThreadName(data->container_name);
@@ -208,7 +208,7 @@ static THD_FUNCTION(chibios_container_thread, arg) {
      place on a per container basis */
 
   if (vmc_run(container, dbg_print) != 1) {
-    
+
     return;
   }
 
@@ -231,7 +231,7 @@ bool chibios_start_container_threads(void) {
     dbg_print("Container launcher: Container addr = %u\r\n", (uint32_t)&vm_containers[i]);
     dbg_print("Container launcher: Container addr data = %u\r\n", (uint32_t)thread_data[i].container);
 
-    
+
     threads[i] = chThdCreateStatic(thread_wa[i],
 				   sizeof thread_wa[i],
 				   CONTAINER_PRIORITY,
@@ -279,6 +279,6 @@ bool chibios_sensevm_init(void) {
 
   dbg_print("Number of containers: %d\r\n", VMC_NUM_CONTAINERS);
   dbg_print("Result of vmc_init: %d\r\n", res);
-  
+
   return r;
 }
