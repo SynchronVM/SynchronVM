@@ -189,22 +189,20 @@ static THD_FUNCTION(chibios_container_thread, arg) {
   chibios_svm_thread_data_t *data = (chibios_svm_thread_data_t*)arg;
   vmc_t *container = data->container;
 
-  int r = 0;
-
   chRegSetThreadName(data->container_name);
 
   /* Last bit of startup that takes
      place on a per container basis */
 
   if (vmc_run(container, dbg_print) != 1) {
-
     return;
   }
 
   /* TODO read_message_poll */
-  r = scheduler(container, NULL, read_message_block, mailbox_num_used, dbg_print);
+  scheduler(container, NULL, read_message_block, mailbox_num_used, dbg_print);
 
-  /* Do something in relation to r if we return to this point!*/
+  /* If we return to here, do something in relation to the
+     return value of the scheduler function.*/
 }
 
 

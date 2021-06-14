@@ -183,8 +183,6 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
   vmc_t *container = (vmc_t *)vmc;
 
   printk("container address: %u\r\n", (uint32_t)container);
-  
-  int r = 0;
 
   if (vmc_run(container, printk) != 1) {
     /* error state */
@@ -193,10 +191,10 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
     return;
   }
 
-  r = scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
+  scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
 
-  /* do something related to r? */
-
+  /* If we return to this point, do something with the 
+     return value of scheduler*/
 }
 
 /* Must intialize before starting threads.

@@ -26,10 +26,10 @@
 #include <ll/ll_driver.h>
 
 void (*ll_driver_sleep_ms_fun)(uint32_t ms);
-uint64_t (*ll_driver_timestamp_fun)();
+uint64_t (*ll_driver_timestamp_fun)(void);
 
 bool ll_driver_init(void (*sleep_ms)(uint32_t),
-		    uint64_t (*timestamp)()) {
+		    uint64_t (*timestamp)(void)) {
   ll_driver_sleep_ms_fun = sleep_ms;
   ll_driver_timestamp_fun = timestamp;
   return true; /* maybe something will need a status indicator in the future */
@@ -41,7 +41,7 @@ void ll_driver_sleep_ms(uint32_t ms) {
   }
 }
 
-uint64_t ll_driver_timestamp() {
+uint64_t ll_driver_timestamp(void) {
   uint64_t ts = 0;
   if (ll_driver_timestamp_fun) {
     ts = ll_driver_timestamp_fun();
