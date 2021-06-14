@@ -29,11 +29,16 @@ uint32_t button_num(void){
   return gpio_num_buttons();
 }
 
+int led_flip = 0;
 
 static void button_cb(void *arg) {
 
   chSysLockFromISR();
 
+  led_flip = 1 - led_flip;
+  palWritePad(GPIOD, 12, led_flip);
+  
+  
   button_driver_t *button = (chibios_interop_t*)arg;
 
   bool state = palReadPad(button->port, button->pad);
@@ -45,10 +50,10 @@ static void button_cb(void *arg) {
   msg.timestamp = 0; //ll_driver_timestamp();
   msg.data = state;  // 1 or 0
 
-  if (button->interop->send_message(button->interop, msg) == -1) {
-    /* Message was not send due to queue being full. 
-       What do we do in this case?  */ 
-  }
+  //if (button->interop->send_message(button->interop, msg) == -1) {
+  //  /* Message was not send due to queue being full. 
+  //     What do we do in this case?  */ 
+  //}
 
   chSysUnlockFromISR();
 }
@@ -64,12 +69,12 @@ button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t ide
 		  buttons[identifier].pad,
 		  buttons[identifier].mode);
 
-    button_drivers[identifier].port = leds[identifier].port;
-    button_drivers[identifier].pad = leds[identifier].pad;
+    button_drivers[identifier].port = buttons[identifier].port;
+    button_drivers[identifier].pad = buttons[identifier].pad;
     button_drivers[identifier].id = identifier;
     button_drivers[identifier].state = false;
     button_drivers[identifier].interop = (chibios_interop_t*)backend_custom;
-    palEnablePadEvent(buttons[identifier].port, buttons[identifier].pad, PAL_EVENT_MODE_BOTH_EDGES);
+    palEnablePadEvent(buttons[identifier].port, buttons[identifier].pad, buttons[identifier].event_mode);
     palSetPadCallback(buttons[identifier].port, buttons[identifier].pad, button_cb, &button_drivers[identifier]);
     
     r = &button_drivers[identifier];
