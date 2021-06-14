@@ -175,6 +175,22 @@ twoOPRule i1       i2     = ([i1, i2], 0) -- try oneOPRules now
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 data FlatCAM = Plain CAM
              | Labeled Label CAM
              deriving (Ord, Show, Eq)

@@ -39,11 +39,13 @@ module CamOpt ( Exp (..)
 import Control.Monad (replicateM)
 import Data.Foldable (fold)
 import Data.Int (Int32)
+import Data.List (sortBy)
 import Data.Word (Word8)
 import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
 import qualified Data.Set as Set
 
+import Debug.Trace
 -- XXX: When adding new primitives like RTS3 do not forget
 --      to ensure the rFreeSys function is extended as well
 
@@ -253,7 +255,10 @@ freshLabel = do
 
 
 interpret :: Exp -> CAM
-interpret e = instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
+interpret e =  instrs
+           <+> Ins STOP
+           <+> fold (sortByLabel thunks_)
+           <+> labelGraveyard
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
@@ -312,14 +317,14 @@ codegen (App e1 e2) env
     env' = markEnv env
 codegen expr@(Lam pat e) env
   | rClosed expr (env2Eta env) = do
-      is <- codegenR e (EnvPair Normal env' pat)
       l  <- freshLabel
+      is <- codegenR e (EnvPair Normal env' pat)
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ COMB l)
   | otherwise = do
-      is <- codegenR e (EnvPair Normal env pat)
       l  <- freshLabel
+      is <- codegenR e (EnvPair Normal env pat)
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ CUR l)
@@ -608,7 +613,9 @@ zipWith3A ::   Applicative t
           -> t [d]
 zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
 
-
+sortByLabel :: [CAM] -> [CAM]
+sortByLabel =
+  sortBy (\(Lab l1 _) (Lab l2 _) -> compare l1 l2) . concat . map splitLabels
 
 ------- r-free and r-closed expressions--------
 
@@ -723,3 +730,57 @@ The difference occurs in the type
 The `lookup` function has a special case for this
 pattern.
 -}
+
+
+
+
+
+
+
+
+
+
+
+
+data FlatCAM = Plain CAM
+             | Labeled Label CAM
+             deriving (Ord, Show, Eq)
+
+flattenCAM :: CAM -> [FlatCAM]
+flattenCAM (Ins i) = [Plain $ Ins i]
+flattenCAM (Seq c1 c2) = flattenCAM c1 ++ flattenCAM c2
+flattenCAM (Lab l c1)  =
+  case (head f) of
+    (Plain (Ins instr)) -> Labeled l (Ins instr) : tail f
+    _ -> error "Failure in flattening"
+  where
+    f = flattenCAM c1
+
+rebuildCAM :: [FlatCAM] -> CAM
+rebuildCAM [] = error "Failure when rebuilding CAM"
+rebuildCAM [(Plain c)] = c
+rebuildCAM [(Labeled l c)] = Lab l c
+rebuildCAM (x:xs) =
+  case x of
+    Plain c -> Seq c (rebuildCAM xs)
+    Labeled l c -> Lab l (Seq c (rebuildCAM xs))
+
+-- The `show` is necessary because `rebuildCAM` simplifies the
+-- structure of the CAM tree made of `Seq`. `rebuildCAM` essentially
+-- makes CAM a fully right leaning linked list. The original
+-- CAM data type might have had some more complex structure.
+verify :: CAM -> Bool
+verify c = (show . rebuildCAM . flattenCAM) c == (show c)
+
+
+splitLabels :: CAM -> [CAM]
+splitLabels cam = map rebuildCAM flatcam'
+  where
+    flatcam  = flattenCAM cam
+    flatcam' = splitLabels' [] [head flatcam] (tail flatcam)
+
+splitLabels' :: [[FlatCAM]] -> [FlatCAM] -> [FlatCAM] -> [[FlatCAM]]
+splitLabels' xs ys [] = xs ++ [ys]
+splitLabels' xs ys (Labeled l c:zs) =
+  splitLabels' (xs ++ [ys]) [(Labeled l c)] zs
+splitLabels' xs ys (z:zs) = splitLabels' xs (ys ++ [z]) zs
