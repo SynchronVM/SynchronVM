@@ -27,15 +27,10 @@
 /* Chibios includes */
 #include "ch.h"
 #include "hal.h"
-//#include "chmempools.h"
 
 /*********************/
 /* stdlib includes   */
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <errno.h>
-
 
 /********************/
 /* SenseVM Includes */
@@ -59,7 +54,6 @@
 #error "At least one container must be specified in vm-conf.h"
 #endif
 
-
 /************************/
 /* Debug print facility */
 
@@ -68,7 +62,6 @@ void (*dbg_print_fun)(const char *str, ...) = NULL;
 void chibios_register_dbg_print(void (*f)(const char *str, ...)) {
   dbg_print_fun = f;
 }
-
 
 
 /* TODO: This is broken
@@ -89,7 +82,7 @@ void dbg_print(const char *str, ...) {
 /********************************************************/
 /* Declare stacks, threads and mailboxes for containers */
 
-#define STACK_SIZE  1024 // 2048 //1024
+#define STACK_SIZE  1024
 #define MAX_MESSAGES 64
 
 static mailbox_t mb[VMC_NUM_CONTAINERS];
@@ -194,11 +187,7 @@ chibios_svm_thread_data_t thread_data[VMC_NUM_CONTAINERS];
 static THD_FUNCTION(chibios_container_thread, arg) {
 
   chibios_svm_thread_data_t *data = (chibios_svm_thread_data_t*)arg;
-  dbg_print("Container address data = %u\r\n", (uint32_t)data->container);
   vmc_t *container = data->container;
-
-  dbg_print("Container thread starting\r\n");
-  dbg_print("Container address = %u\r\n", (uint32_t)container);
 
   int r = 0;
 
@@ -227,10 +216,6 @@ bool chibios_start_container_threads(void) {
 
     thread_data[i].container = &vm_containers[i];
     thread_data[i].container_name = container_names[i];
-
-    dbg_print("Container launcher: Container addr = %u\r\n", (uint32_t)&vm_containers[i]);
-    dbg_print("Container launcher: Container addr data = %u\r\n", (uint32_t)thread_data[i].container);
-
 
     threads[i] = chThdCreateStatic(thread_wa[i],
 				   sizeof thread_wa[i],
@@ -276,9 +261,6 @@ bool chibios_sensevm_init(void) {
   res = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
 
   if (res == VMC_NUM_CONTAINERS) r = true;
-
-  dbg_print("Number of containers: %d\r\n", VMC_NUM_CONTAINERS);
-  dbg_print("Result of vmc_init: %d\r\n", res);
 
   return r;
 }
