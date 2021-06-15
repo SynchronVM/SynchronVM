@@ -1111,7 +1111,7 @@ inferPrim l t = do
   return (s2 `compose` s1, reverse exps, apply s2 tv)
   where
   inferStep (s, tf, env, exps) exp = do
-    (s', t) <- local (apply s) $ checkExp exp
+    (s', t) <- local (const (apply s env)) $ checkExp exp
     return (s' `compose` s, tf . (TLam (expVar t)), env, t:exps)
 
 {-********** Start of tokenizer **********-}
