@@ -1,0 +1,8 @@
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+f (x as (Just i)) = if i then x+1 else x-1
+
+main = 5
