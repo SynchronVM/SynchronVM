@@ -1,0 +1,39 @@
+data List a where
+  Nil : List a
+  Cons : a -> List a -> List a
+
+length : List a -> Int
+length Nil         = 0
+length (Cons _ xs) = 1 + length xs
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+isJust : Maybe a -> Bool
+isJust Nothing  = False
+isJust (Just _) = True
+
+fromJust : Maybe a -> a
+fromJust (Just a) = a
+
+maybe : b -> (a -> b) -> Maybe a -> b
+maybe b _ Nothing  = b
+maybe _ f (Just x) = f x
+
+map : (a -> b) -> List a -> List b
+map _ Nil         = Nil
+map f (Cons x xs) = Cons (f x) (map f xs)
+
+filter : (a -> Bool) -> List a -> List a
+filter _ Nil = Nil
+filter f (Cons x xs) = if f x then Cons x (filter f xs) else filter f xs
+
+filtermaybes : List (Maybe a) -> List a
+filtermaybes xs = map fromJust (filter isJust xs)
+
+incOne : List (Maybe a) -> List (Maybe a)
+incOne xs = map (maybe Nothing (\i -> Just (i + 1))) xs
+
+main : Int
+main = length (filtermaybes (Cons (Just 5) (Cons Nothing Nil)))

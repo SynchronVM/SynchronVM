@@ -1,0 +1,4 @@
+
+f i = if i then i+1 else i-1
+
+main = 5

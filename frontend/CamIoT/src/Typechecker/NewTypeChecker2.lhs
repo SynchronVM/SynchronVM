@@ -503,6 +503,7 @@ data TCError = UnboundVariable Ident
              | UnboundADTVariable UIdent [Ident] UIdent Type Ident
              | NonADTConstruction UIdent Type Type
              | TypeSignatureTooGeneral Ident Type Type
+             | TypesigError Ident Type Type
 
 instance Show TCError where
   show e = case e of
@@ -535,6 +536,10 @@ instance Show TCError where
     TypeSignatureTooGeneral fun declared inferred ->
       concat [ "The type signature of ", printTree fun, " is too general:\n"
              , "  declared: ", printTree declared, "\n"
+             , "  inferred: ", printTree inferred]
+    TypesigError fun declared inferred ->
+      concat [ "Type error in function ", printTree fun, ":\n"
+             , "  declared type: ", printTree declared, "\n"
              , "  inferred: ", printTree inferred]
 
 data TCState = TCState { namegen :: Int
@@ -765,35 +770,24 @@ checkPatAndBindings p = do
   let bindings = patBindings p'
   return (p', bindings)
 
-checkDef :: Maybe Type -> Def () -> TC (Subst, Def Type)
-checkDef mt d = case d of
+checkDef :: Def () -> TC (Subst, Def Type)
+checkDef d = case d of
   DTypeSig id t             -> return $ (unitsub, DTypeSig id t)
   DEquation () id pargs body -> do
     -- annotate arguments with type information
-    args'  <- mapM checkPat pargs
-    
-    -- if there was a declared type signature, create a substitution
-    -- that unifies the annotated argument types with it
-    patsub <- case mt of
-      Just tsig -> do env       <- ask
-                      let tsig' = generalize tsig env
-                      instsig   <- instantiate tsig'
-                      unifyMany (map patVar args') (args instsig)
-      Nothing   -> return unitsub
-    
-    -- annotate the argument types
-    let args''      = apply patsub args'
+    args'           <- mapM checkPat pargs
     -- fetch the declared variables and their types from the arguments
-    let argbindings = concat $ map patBindings args''
+    let argbindings = concat $ map patBindings args'
     -- convert them to schemas, to extend the environment with
     let argschemas  = map (\(id,t) -> (id, Forall [] t)) argbindings
     -- typecheck the equation body
     (sub, body')    <- inEnvMany argschemas $ checkExp body
-    -- combine all substitution information
-    let retsub = patsub `compose` sub
+--    liftIO $ putStrLn $ printTree args'
+--    liftIO $ putStrLn $ printTree $ map patVar args'
+--    liftIO $ putStrLn $ show sub
     -- create the inferred type of the entire definition
-    let functype    = apply retsub $ foldr TLam (expVar body') $ map patVar args''
-    return (retsub, DEquation functype id args'' body')
+    let functype    = apply sub $ foldr TLam (expVar body') $ map patVar args'
+    return (sub, DEquation functype id args' body')
 
 -- | t1 `moreGeneralThan` t2 returns True if t1 is a more general type than t2.
 -- This is used to make sure that e.g a function of type Int -> Int is not
@@ -809,35 +803,70 @@ moreGeneralThan (TLam t1 t2) (TLam t1' t2') =
   moreGeneralThan t1 t1' || moreGeneralThan t2 t2'
 moreGeneralThan _ _ = False
 
+-- | Check if the declared type of a function is more general than the
+-- inferred type. If that is the case, raise a type error.
+checkTooGeneralType :: Ident -> Maybe Type -> Type -> TC ()
+checkTooGeneralType _ Nothing _      = return ()
+checkTooGeneralType fun (Just sig) t = do
+  e <- ask
+  let sch = generalize sig e
+  sig' <- instantiate sch
+  if sig' `moreGeneralThan` t
+    then do let inft = renameTVars sig t
+            throwError $ TypeSignatureTooGeneral fun sig inft 
+    else return ()
+  where
+    renameTVars :: Type -> Type -> Type
+    renameTVars t1 t2 = case (t1, t2) of
+      (TVar id, TVar _)          -> TVar id
+      (TTup ts1, TTup ts2)       -> TTup (zipWith renameTVars ts1 ts2)
+      (TAdt uid ts1, TAdt _ ts2) -> TAdt uid $ zipWith renameTVars ts1 ts2
+      (TLam t1 t2, TLam t1' t2') -> TLam (renameTVars t1 t1') (renameTVars t2 t2')
+      (_,t)                      -> t
+
+-- | Make sure that an inferred type can unify with a type signature, if
+-- any exist.
+unifyWithTypesig :: Ident -> Maybe Type -> Type -> TC ()
+unifyWithTypesig _ Nothing _      = return ()
+unifyWithTypesig fun (Just sig) t = do
+  catchError (unify sig t >> return ()) $ \_ ->
+    throwError $ TypesigError fun sig t
+
 checkFunction :: Function () -> TC (Subst, Function Type)
 checkFunction f = do
   -- typecheck equations and fetch their types
   subneqs <- case (typesig f) of
-    Just t -> do env <- ask
-                 let sch = generalize t env
-                 inEnv (name f) sch $ mapM (checkDef (typesig f)) $ equations f
-    Nothing -> mapM (checkDef (typesig f)) $ equations f
+    Just t -> do
+      env     <- ask
+      let sch = generalize t env
+      inEnv (name f) sch $ mapM checkDef $ equations f
+    Nothing -> mapM checkDef $ equations f
+  -- [(substitutions for each equation, the equation)]
   let (subs, eqs) = unzip subneqs
+  -- [inferred Type of equation]
   let types       = map (fromJust . defVar) $ filter (isJust . defVar) eqs
-  
-  let sub         = foldl compose unitsub subs
 
-  -- unify all the types of the equations and with the typesig, if
-  -- one exists
-  sub'            <- unifyAll (maybe types (: types) (typesig f))
-  let eqs'        = apply sub' eqs
+  -- create the mega-substitution for everything by unification
+  let sub    = foldl compose unitsub subs
+  sub'       <- unifyAll types
+  let finsub = sub `compose` sub'
+
+  -- apply the substitution to the equations and fetch the finished type
+  -- of the entire function
+  let eqs'        = apply finsub eqs
   let eqt         = fromJust $ defVar $ head eqs'
 
-  if isJust (typesig f) && fromJust (typesig f) `moreGeneralThan` eqt
-    then throwError $ TypeSignatureTooGeneral (name f) (fromJust (typesig f)) eqt
-    else return ()
+  -- does the inferred type unify with the type signature, if any exist?
+  unifyWithTypesig    (name f) (typesig f) eqt
+  -- is the declared type not more general than the inferred one?
+  checkTooGeneralType (name f) (typesig f) eqt
 
   let f'          = f { equations = eqs'
-                      , typesig = maybe (Just eqt) Just (typesig f)
+                      , typesig   = maybe (Just eqt) Just (typesig f)
                       }
 
-  -- return annotated, substituted functions
-  return $ (sub', f')
+  -- return annotated, substituted function
+  return $ (finsub, f')
 
 -- | Check that the declaration of an ADT is okay.
 checkDataDeclaration :: ADT -> TC ()
@@ -1058,14 +1087,32 @@ checkExp e = case e of
       return (s1 `compose` s2 `compose` s3, ELet (expVar e2') p' e1' e2')
 
   EIf () e1 e2 e3 -> do
-    (s1,e1') <- checkExp e1
-    (s2,e2') <- checkExp e2
-    (s3,e3') <- checkExp e3
-    s4 <- unify (expVar e1') TBool
-    s5 <- unify (expVar e2') (expVar e3')
-    let sub = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
-    return (sub, EIf (expVar e2') e1' e2' e3')
+--    (s1,e1') <- checkExp e1
+--    (s2,e2') <- checkExp e2
+--    (s3,e3') <- checkExp e3
+--    s4 <- unify (expVar e1') TBool
+--    s5 <- unify (expVar e2') (expVar e3')
+--    let sub = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
+    tv <- fresh
+    (sub, [e1',e2',e3'], t) <- inferPrim [e1,e2,e3] (TLam TBool (TLam tv (TLam tv tv)))
+    return (sub, EIf t e1' e2' e3')
 
+-- | The code that's commented out on the checkExp-if case is from stephen diehls blog,
+-- but it clearly does not work. If e1 decides the type of some variable i to be bool and
+-- then i is used as an integer in the branches, this is not detected. Clearly the
+-- substitutions need to be applied as we go. This code below is borrowed and modified
+-- from his repository.
+inferPrim :: [Exp ()] -> Type -> TC (Subst, [Exp Type], Type)
+inferPrim l t = do
+  env <- ask
+  tv <- fresh
+  (s1, tf, _, exps) <- foldM inferStep (unitsub, id, env, []) l
+  s2 <- unify (apply s1 (tf tv)) t
+  return (s2 `compose` s1, reverse exps, apply s2 tv)
+  where
+  inferStep (s, tf, env, exps) exp = do
+    (s', t) <- local (const (apply s env)) $ checkExp exp
+    return (s' `compose` s, tf . (TLam (expVar t)), env, t:exps)
 
 {-********** Start of tokenizer **********-}
 

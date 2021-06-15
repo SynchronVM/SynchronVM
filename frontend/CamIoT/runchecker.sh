@@ -64,7 +64,7 @@ done
 
 echo "********************"
 echo ""
-echo "running working ADT tests"
+echo "running working datatype declaration tests"
 echo ""
 echo "********************"
 
