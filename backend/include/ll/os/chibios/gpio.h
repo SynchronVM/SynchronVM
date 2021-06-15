@@ -29,7 +29,6 @@
 #include <hal.h>
 #include <hal_pal.h>
 
-
 typedef struct {
   stm32_gpio_t *port;
   uint16_t pad;

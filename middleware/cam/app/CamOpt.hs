@@ -253,7 +253,7 @@ freshLabel = do
 
 
 interpret :: Exp -> CAM
-interpret e = instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
+interpret e =  instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
   where
     (instrs, CodegenState {thunks = thunks_} ) =
       S.runState
@@ -312,14 +312,14 @@ codegen (App e1 e2) env
     env' = markEnv env
 codegen expr@(Lam pat e) env
   | rClosed expr (env2Eta env) = do
-      is <- codegenR e (EnvPair Normal env' pat)
       l  <- freshLabel
+      is <- codegenR e (EnvPair Normal env' pat)
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ COMB l)
   | otherwise = do
-      is <- codegenR e (EnvPair Normal env pat)
       l  <- freshLabel
+      is <- codegenR e (EnvPair Normal env pat)
       ts <- S.gets thunks
       S.modify $ \s -> s {thunks = ts ++ [(Lab l is)]}
       pure (Ins $ CUR l)
@@ -607,8 +607,6 @@ zipWith3A ::   Applicative t
           ->   [c]
           -> t [d]
 zipWith3A f xs ys zs = sequenceA (zipWith3 f xs ys zs)
-
-
 
 ------- r-free and r-closed expressions--------
 

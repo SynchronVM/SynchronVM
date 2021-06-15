@@ -25,12 +25,15 @@
 #ifndef BUTTON_H_
 #define BUTTON_H_
 
-#include <gpio.h>  
+#include <gpio.h>
+#include <hal/chibios/svm_chibios.h>
 
 typedef struct {
-  uint32_t pin;
+  stm32_gpio_t *port;
+  uint16_t pad;
   uint32_t id;
   uint32_t state;
+  chibios_interop_t *interop;
 } button_driver_t;
 
 extern uint32_t button_num(void);

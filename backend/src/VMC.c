@@ -28,7 +28,6 @@
 # define DEBUG_PRINT(x) do {} while (0)
 #endif
 
-
 #include <stddef.h>
 #include <VMC.h>
 #include <heap.h>
@@ -43,7 +42,9 @@
 #if VMC_CONTAINER_1_USE_LED_0
 #include <ll/ll_led.h>
 #endif
-
+#if VMC_CONTAINER_1_USE_UART_0
+#include <ll/ll_uart.h>
+#endif
 
 
 /* This is just an experiment and if we end up building on it, the
@@ -184,8 +185,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
 int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {
 
-
-  dbg_print("vcm_run container address: %u\r\n", (uint32_t)container);
+  dbg_print("vmc_run container address: %u\r\n", (uint32_t)container);
 
   for (int i = 0; i < VMC_MAX_CONTEXTS; i++) {
     container->context_used[i] = false; //XXX: should move to vmc_init

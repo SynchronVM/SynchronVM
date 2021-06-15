@@ -132,7 +132,7 @@ int scheduler(vmc_t *container,
 #endif
 
   while (true) {
-
+    
 #ifdef TRACE_ON
     uint32_t num_msgs = msgq_num_used(container);
 

@@ -24,18 +24,11 @@
 
 /*******************/
 /* Zephyr includes */
-#include <zephyr/types.h>
 #include <zephyr.h>
-#include <sys/printk.h>
-#include <sys/byteorder.h>
-#include <sys/ring_buffer.h>
 
 /*********************/
 /* stdlib includes   */
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <errno.h>
 
 /********************/
 /* SenseVM Includes */
@@ -55,6 +48,10 @@
 #error "Too many containers specified in vm-conf.h"
 #endif
 
+#if VMC_NUM_CONTAINERS <= 0
+#error "Too few containers specified in vm-conf.h"
+#endif
+
 /*********************************************/
 /* Declare stacks and threads for containers */
 
@@ -62,10 +59,10 @@
 #define MAX_MESSAGES 100
 #define MSG_ALIGNMENT 4
 
-struct k_thread vmc_zephyr_thread[4];
-k_thread_stack_t *vmc_zephyr_stack[4];
+struct k_thread vmc_zephyr_thread[VMC_NUM_CONTAINERS];
+k_thread_stack_t *vmc_zephyr_stack[VMC_NUM_CONTAINERS];
 
-vmc_t vm_containers[4]; /* SenseVM containers */
+vmc_t vm_containers[VMC_NUM_CONTAINERS]; /* SenseVM containers */
 
 const char* container_names[4] = { "C0", "C1", "C2", "C3" };
 
@@ -110,7 +107,7 @@ K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNME
 K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 
-struct k_msgq *message_queues[4];
+struct k_msgq *message_queues[VMC_NUM_CONTAINERS];
 
 /*******************************/
 /* Send_message implementation */
@@ -186,8 +183,6 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
   vmc_t *container = (vmc_t *)vmc;
 
   printk("container address: %u\r\n", (uint32_t)container);
-  
-  int r = 0;
 
   if (vmc_run(container, printk) != 1) {
     /* error state */
@@ -196,10 +191,10 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
     return;
   }
 
-  r = scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
+  scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
 
-  /* do something related to r? */
-
+  /* If we return to this point, do something with the 
+     return value of scheduler*/
 }
 
 /* Must intialize before starting threads.
@@ -234,23 +229,20 @@ bool zephyr_sensevm_init(void) {
   bool r = false;
 
   /* Stacks are null if not initialized */
-  vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
-  vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
-  vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
-  vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
-
-
-
 #if VMC_NUM_CONTAINERS >= 1
+  vmc_zephyr_stack[0] = vmc_zephyr_stack_0;
   message_queues[0] = &message_queue_0;
 #endif
 #if VMC_NUM_CONTAINERS >= 2
+  vmc_zephyr_stack[1] = vmc_zephyr_stack_1;
   message_queues[1] = &message_queue_1;
 #endif
 #if VMC_NUM_CONTAINERS >= 3
+  vmc_zephyr_stack[2] = vmc_zephyr_stack_2;
   message_queues[2] = &message_queue_2;
 #endif
 #if VMC_NUM_CONTAINERS >= 4
+  vmc_zephyr_stack[3] = vmc_zephyr_stack_3;
   message_queues[3] = &message_queue_3;
 #endif
 
@@ -267,7 +259,7 @@ bool zephyr_sensevm_init(void) {
   }
 
   /* Initialize VM containers */
-  r = vmc_init(vm_containers, 4);
+  r = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
 
   return r;
 }
