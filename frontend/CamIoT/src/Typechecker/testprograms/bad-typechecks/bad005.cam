@@ -1,0 +1,15 @@
+
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+fromJust : Maybe a -> a
+fromJust (Just a) = a
+
+f : Maybe Bool -> Maybe Int
+f Nothing = Nothing
+f (Just 1) = Just 1
+f (Just 0) = Just 0
+
+main = fromJust (f (Just True))

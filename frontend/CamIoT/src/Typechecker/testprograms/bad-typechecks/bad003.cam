@@ -1,0 +1,5 @@
+
+f : Bool -> Int
+f 5 = 10
+
+main = f True
