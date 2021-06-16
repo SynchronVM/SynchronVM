@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a9e02b04ac39e9109ab3689b1e786388b118100f4e7f4e94dbad0690d3cfa053
+-- hash: 5078e12fa6953e04cfd6d7c284f2c73d2e1a7df89b2799c457b049f953487fa1
 
 name:           cam
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Assembler
       Bytecode.InterpreterModel
       Bytecode.LLInterpreter
+      Bytecode.StaticMemoryManagedInterpreter
       CAM
       CamOpt
       Examples
@@ -57,6 +58,7 @@ executable cam-exe
       Assembler
       Bytecode.InterpreterModel
       Bytecode.LLInterpreter
+      Bytecode.StaticMemoryManagedInterpreter
       CAM
       CamOpt
       Examples
