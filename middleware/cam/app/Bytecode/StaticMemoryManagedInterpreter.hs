@@ -45,9 +45,28 @@ gc = True
 data PointerType
   = Inherited
   | Private
+  | Free -- pointers used by the free list; XXX: might be useless
   deriving (Ord, Show, Eq)
 
-type Pointer = Int
+
+{- NOTE:
+
+A pointer is plainly a number. That number will either be an index of the
+heap array or it will be -1 (null). What the `PointerType` associated with that
+number indicates is to which stack frame does that heap cell belong?
+
+Inherited pointer - belongs atleast to the parent of the previous stack frame
+Private pointer   - belongs to the current stack frame
+Free pointer      - not associated with any stack frame
+
+-}
+
+data Pointer = Pointer PointerType Int deriving (Ord, Eq)
+
+instance Show Pointer where
+  show (Pointer Inherited i) = show i <> "i"
+  show (Pointer Private   i) = show i <> "p"
+  show (Pointer Free      i) = show i <> "f"
 
 data CellContent = V Val
                  | P Pointer
@@ -67,12 +86,12 @@ data HeapCell = HeapCell (CellContent, CellContent)
               deriving (Show, Eq)
 
 
-nullPointer = -1
+nullPointer = Pointer Free (-1)
 emptyCell   = HeapCell (P nullPointer, P nullPointer)
 heapSize    = 70 --heap cells
 
 
-type Heap  = Array Pointer HeapCell
+type Heap  = Array Int HeapCell
 
 data StackContent = SV Val | SP Pointer deriving (Show, Eq)
 
@@ -96,7 +115,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , environment :: Environment
                  , stack       :: Stack
                  , heap        :: Heap
-                 , nextFreeIdx    :: Pointer
+                 , nextFreeIdx    :: Index
                  , programCounter :: Index
                  } deriving Show
 
@@ -151,7 +170,7 @@ initHeap = listArray (1, heapSize) finalHeap
   where
     nullHeap = replicate heapSize emptyCell
     tempHeap =
-      zipWith (\i (HeapCell (P x, _)) -> HeapCell (P x, P i))
+      zipWith (\i (HeapCell (P x, _)) -> HeapCell (P x, P (Pointer Free i)))
       (take heapSize [2..]) nullHeap
     (restcells, _) = splitAt (heapSize - 1) tempHeap
     finalHeap = restcells ++ [emptyCell]
@@ -299,7 +318,8 @@ fstEnv = do
   e <- getEnv
   h <- getHeap
   case e of
-    EP pointer -> let HeapCell heapcell = h ! pointer
+    EP (Pointer _ pointer) ->
+                  let HeapCell heapcell = h ! pointer
                       fstHeap  = fst heapcell
                    in case fstHeap of
                         V val -> S.modify $ \s -> s { environment = EV val }
@@ -314,7 +334,8 @@ sndEnv = do
   e <- getEnv
   h <- getHeap
   case e of
-    EP pointer -> let HeapCell heapcell = h ! pointer
+    EP (Pointer _ pointer) ->
+                  let HeapCell heapcell = h ! pointer
                       sndHeap  = snd heapcell
                    in case sndHeap of
                         V val -> S.modify $ \s -> s { environment = EV val }
@@ -537,7 +558,7 @@ app = do
   (h, t) <- popAndRest
   h_     <- getHeap
   case e of
-    EP ptr -> do
+    EP (Pointer _ ptr) -> do
       let (L label) = sndHeap -- XXX: Partial
       if label == dummyLabel
       then do
@@ -566,7 +587,7 @@ switch conds = do
   (h, t) <- popAndRest
   h_     <- getHeap
   case e of
-    EP ptr -> do
+    EP (Pointer _ ptr) -> do
       let (_, label) =
             case find (\(c,_) -> c == contag || c == wildcardtag) conds of
               Just (cf, lf) -> (cf, lf)
@@ -594,7 +615,7 @@ switchi conds = do
   e      <- getEnv
   h_     <- getHeap
   case e of
-    EP ptr -> do
+    EP (Pointer _ ptr) -> do
       let (_, label) =
             case find (\(c,_) -> c == contag || c == wildcardtag) conds of
               Just (cf, lf) -> (cf, lf)
@@ -666,33 +687,35 @@ dummyLabel = Label (-1)
 
 
 malloc :: Evaluate Pointer
-malloc = do
-  h   <- getHeap
-  i   <- S.gets nextFreeIdx
-  idx <- findFreeIdx h i
-  S.modify $ \s -> s { nextFreeIdx = idx }
-  pure idx
-  where
-    findFreeIdx h_ i
-      | i > heapSize && (not gc) = error "Heap overflow! GC!! GC!! GC!!"
-      | i > heapSize && gc = do
-          mark
-          lazySweep
-      | (h_ ! i) == emptyCell || unmarked i = pure i
-      | otherwise  = findFreeIdx h_ (i + 1)
-      where
-        unmarked ptr = undefined
-          -- let (HeapCell _) = (h_ ! ptr)
-          --               in (not markbit) -- if the heap cell is unmarked
+malloc = undefined
+--   do
+--   h   <- getHeap
+--   i   <- S.gets nextFreeIdx
+--   idx <- findFreeIdx h i
+--   S.modify $ \s -> s { nextFreeIdx = idx }
+--   pure idx
+--   where
+--     findFreeIdx h_ i
+--       | i > heapSize && (not gc) = error "Heap overflow! GC!! GC!! GC!!"
+--       | i > heapSize && gc = do
+--           mark
+--           lazySweep
+--       | (h_ ! i) == emptyCell || unmarked i = pure i
+--       | otherwise  = findFreeIdx h_ (i + 1)
+--       where
+--         unmarked ptr = undefined
+--           -- let (HeapCell _) = (h_ ! ptr)
+--           --               in (not markbit) -- if the heap cell is unmarked
 
 allocOnHeap :: Pointer -> (CellContent, CellContent) -> Evaluate ()
-allocOnHeap ptr hc = do
-  h <- getHeap
-  S.modify $ \s -> s { heap = mutHeap h (HeapCell hc) ptr }
-  S.modify $ \s -> s { nextFreeIdx = ptr + 1 }
+allocOnHeap ptr hc = undefined
+  -- do
+  -- h <- getHeap
+  -- S.modify $ \s -> s { heap = mutHeap h (HeapCell hc) ptr }
+  -- S.modify $ \s -> s { nextFreeIdx = ptr + 1 }
 
-mutHeap :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
-mutHeap arr hc i = arr // [(i,hc)]
+-- mutHeap :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
+-- mutHeap arr hc i = arr // [(i,hc)]
 
 envHeapTag :: EnvContent -> CellContent
 envHeapTag (EV val) = V val
@@ -702,54 +725,54 @@ stackHeapTag :: StackContent -> CellContent
 stackHeapTag (SV val) = V val
 stackHeapTag (SP ptr) = P ptr
 
--- We mark the live data and don't sweep
--- The sweeping is lazily done when allocating.
--- If any data is unmarked it is dead and allocation
--- can happen in that cell
-mark :: Evaluate ()
-mark = do
-  st  <- getStack
-  env <- getEnv
-  markE env
-  mapM_ mark' st
-  where
-    markE :: EnvContent   -> Evaluate ()
-    markE (EV _)   = pure ()
-    markE (EP ptr) = mark'' ptr
+-- -- We mark the live data and don't sweep
+-- -- The sweeping is lazily done when allocating.
+-- -- If any data is unmarked it is dead and allocation
+-- -- can happen in that cell
+-- mark :: Evaluate ()
+-- mark = do
+--   st  <- getStack
+--   env <- getEnv
+--   markE env
+--   mapM_ mark' st
+--   where
+--     markE :: EnvContent   -> Evaluate ()
+--     markE (EV _)   = pure ()
+--     markE (EP ptr) = mark'' ptr
 
-    mark' :: StackContent -> Evaluate ()
-    mark' (SV _) = pure ()
-    mark' (SP ptr) = mark'' ptr
+--     mark' :: StackContent -> Evaluate ()
+--     mark' (SV _) = pure ()
+--     mark' (SP ptr) = mark'' ptr
 
-    mark'' :: Pointer -> Evaluate ()
-    mark'' ptr = do
-      h_ <- getHeap
-      let (HeapCell (fH, sH)) =  h_ ! ptr
-      if undefined--mb -- if cell already marked; STOP
-      then pure ()
-      else do
-        S.modify $ \s -> s { heap = mutHeap h_ (HeapCell (fH, sH)) ptr }
-        case fH of
-           P p -> mark'' p
-           _   -> pure ()
-        case sH of
-          P p -> mark'' p
-          _   -> pure ()
+--     mark'' :: Pointer -> Evaluate ()
+--     mark'' ptr = do
+--       h_ <- getHeap
+--       let (HeapCell (fH, sH)) =  h_ ! ptr
+--       if undefined--mb -- if cell already marked; STOP
+--       then pure ()
+--       else do
+--         S.modify $ \s -> s { heap = mutHeap h_ (HeapCell (fH, sH)) ptr }
+--         case fH of
+--            P p -> mark'' p
+--            _   -> pure ()
+--         case sH of
+--           P p -> mark'' p
+--           _   -> pure ()
 
--- Marked bits are live; Return the first
--- unmarked bit that you encounter
-lazySweep :: Evaluate Pointer
-lazySweep = do
-  h <- getHeap
-  let idx = findUnMarkedAndFree h 1
-  pure idx
-  where
-    findUnMarkedAndFree h_ i
-      | i > heapSize =
-        error "RESIZE HEAP! Impossible memory requirements despite GC"
-      | otherwise =
-          let (HeapCell _) = h_ ! i
-          in undefined
+-- -- Marked bits are live; Return the first
+-- -- unmarked bit that you encounter
+-- lazySweep :: Evaluate Pointer
+-- lazySweep = do
+--   h <- getHeap
+--   let idx = findUnMarkedAndFree h 1
+--   pure idx
+--   where
+--     findUnMarkedAndFree h_ i
+--       | i > heapSize =
+--         error "RESIZE HEAP! Impossible memory requirements despite GC"
+--       | otherwise =
+--           let (HeapCell _) = h_ ! i
+--           in undefined
 
 
 
