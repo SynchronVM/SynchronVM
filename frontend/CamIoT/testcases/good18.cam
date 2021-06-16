@@ -1,15 +1,8 @@
 fst : (Int, Int) -> Int
 fst = \(x,y) -> x
 
-f : (Int, Int) -> Int
-f p = let i = \(x,y) -> x + y in
-      (i p)
+foo : Int -> (Int, Int)
+foo = let x = (2, 3) in
+      (\y -> ((fst x), y))
 
-g : (Int, Int) -> Int
-g p = let e1 = fst p   in
-      let p1 = (e1, 3) in
-      f p1
-
-main = let m = (3,2) in
-       let a = (g m) in
-       a
+main = foo 5
