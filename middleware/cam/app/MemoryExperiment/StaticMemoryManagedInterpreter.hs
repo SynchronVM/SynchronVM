@@ -20,12 +20,12 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-module Bytecode.StaticMemoryManagedInterpreter ( EnvContent (..)
-                                               , Val (..)
-                                               , evaluate) where
+module MemoryExperiment.StaticMemoryManagedInterpreter ( EnvContent (..)
+                                                       , Val (..)
+                                                       , evaluate) where
 
-import CamOpt
-import Peephole
+import MemoryExperiment.CamOptMem
+import MemoryExperiment.PeepholeMem
 import Data.Int (Int32)
 import Data.List (find, delete)
 import Data.Word (Word8)
@@ -36,12 +36,10 @@ import Debug.Trace
 
 {-
 
-The low level interpreter with an explicit heap
+A low level interpreter with an explicit heap and
+stack based memory management
 
 -}
-
-gc :: Bool
-gc = True
 
 data PointerType
   = Frame Word8
@@ -262,6 +260,12 @@ eval = do
       do { gotoifalse l; eval; }
     SWITCHI conds ->
       do { switchi conds; eval; }
+
+    -- memory mangement operations --
+    CONSP -> do { incPC; consp; eval }
+    SNOCP -> do { incPC; snocp; eval }
+    CURP  l -> do { incPC; curp l; eval }
+    COMBP l -> do { incPC; combp l; eval }
 
     i ->
       error $! "Unsupported Instruction : " <> show i
@@ -548,11 +552,29 @@ cons = do
                      , stack = t
                      }
 
+consp :: Evaluate ()
+consp = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  ptr    <- palloc (stackHeapTag h, envHeapTag e)
+  S.modify $ \s -> s { environment = EP ptr
+                     , stack = t
+                     }
+
 snoc :: Evaluate ()
 snoc = do
   e      <- getEnv
   (h, t) <- popAndRest
   ptr    <- stalloc (envHeapTag e, stackHeapTag h)
+  S.modify $ \s -> s { environment = EP ptr
+                     , stack = t
+                     }
+
+snocp :: Evaluate ()
+snocp = do
+  e      <- getEnv
+  (h, t) <- popAndRest
+  ptr    <- palloc (envHeapTag e, stackHeapTag h)
   S.modify $ \s -> s { environment = EP ptr
                      , stack = t
                      }
@@ -563,9 +585,20 @@ cur l = do
   ptr <- stalloc (envHeapTag e, L l)
   S.modify $ \s -> s { environment = EP ptr }
 
+curp :: Label -> Evaluate ()
+curp l = do
+  e   <- getEnv
+  ptr <- palloc (envHeapTag e, L l)
+  S.modify $ \s -> s { environment = EP ptr }
+
 comb :: Label -> Evaluate ()
 comb l = do
   ptr <- stalloc (L l, L dummyLabel)
+  S.modify $ \s -> s { environment = EP ptr }
+
+combp :: Label -> Evaluate ()
+combp l = do
+  ptr <- palloc (L l, L dummyLabel)
   S.modify $ \s -> s { environment = EP ptr }
 
 pack :: Tag -> Evaluate ()
@@ -921,6 +954,8 @@ example1 =
   (Let (PatVar "v4") (Pair (Sys (LInt 3)) (Sys (LInt 2)))
    (Let (PatVar "v5") (App (Var "v0") (Var "v4"))
     (Var "v5")))
+
+--example1cam = Seq (Ins (COMB (Label 1))) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 3))) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 2))) (Seq (Ins CONS) (Seq (Ins CONS) (Seq (Ins PUSH) (Seq (Ins SND) (Seq (Ins SWAP) (Seq (Ins FST) (Seq (Ins APP) (Seq (Ins STOP) (Seq (Lab (Label 1) (Ins (REST 0))) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 5))) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 6))) (Seq (Ins CONSP) (Seq (Ins CONS) (Seq (Ins PUSH) (Seq (Ins FST) (Seq (Ins CONS) (Seq (Ins (ACC 1)) (Seq (Ins RETURN) (Lab (Label 65535) (Ins STOP))))))))))))))))))))))))))
 
 
 run = evaluate . optimise . interpret
