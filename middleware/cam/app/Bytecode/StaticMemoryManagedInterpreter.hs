@@ -27,7 +27,7 @@ module Bytecode.StaticMemoryManagedInterpreter ( EnvContent (..)
 import CamOpt
 import Peephole
 import Data.Int (Int32)
-import Data.List (find)
+import Data.List (find, delete)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
 
@@ -88,7 +88,7 @@ data HeapCell = HeapCell (CellContent, CellContent)
 
 nullPointer = Pointer Free (-1)
 emptyCell   = HeapCell (P nullPointer, P nullPointer)
-heapSize    = 70 --heap cells
+heapSize    = 10 --heap cells
 
 
 type Heap  = Array Int HeapCell
@@ -117,6 +117,8 @@ data Code = Code { instrs :: Array Index Instruction
                  , heap        :: Heap
                  , nextFreeIdx    :: Index
                  , programCounter :: Index
+                 , currentStackFramePtrs :: [Index]
+                 , prevStackFramePtrs    :: [[Index]]
                  } deriving Show
 
 newtype Evaluate a =
@@ -156,6 +158,8 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , heap        = initHeap
                     , nextFreeIdx = 1
                     , programCounter = 1
+                    , currentStackFramePtrs = []
+                    , prevStackFramePtrs = []
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -293,6 +297,13 @@ jumpTo l = do
 -- and increment the program counter by 1
 retBack :: Evaluate ()
 retBack = do
+  freeStackAllocs
+  psfp <- S.gets prevStackFramePtrs
+  let h:_ = psfp -- XXX: Partial but there will always be atleast one stack
+                 -- and we never return from the base caller
+  S.modify $ \s -> s { currentStackFramePtrs = h
+                     , prevStackFramePtrs = psfp }
+
   pj <- S.gets prevJump
   S.modify $ \s -> s { programCounter = head pj + 1
                      , prevJump = tail pj
@@ -516,8 +527,7 @@ cons :: Evaluate ()
 cons = do
   e      <- getEnv
   (h, t) <- popAndRest
-  ptr    <- malloc
-  allocOnHeap ptr (stackHeapTag h, envHeapTag e)
+  ptr    <- stalloc (stackHeapTag h, envHeapTag e)
   S.modify $ \s -> s { environment = EP ptr
                      , stack = t
                      }
@@ -526,8 +536,7 @@ snoc :: Evaluate ()
 snoc = do
   e      <- getEnv
   (h, t) <- popAndRest
-  ptr    <- malloc
-  allocOnHeap ptr (envHeapTag e, stackHeapTag h)
+  ptr    <- stalloc (envHeapTag e, stackHeapTag h)
   S.modify $ \s -> s { environment = EP ptr
                      , stack = t
                      }
@@ -535,21 +544,18 @@ snoc = do
 cur :: Label -> Evaluate ()
 cur l = do
   e   <- getEnv
-  ptr <- malloc
-  allocOnHeap ptr (envHeapTag e, L l)
+  ptr <- stalloc (envHeapTag e, L l)
   S.modify $ \s -> s { environment = EP ptr }
 
 comb :: Label -> Evaluate ()
 comb l = do
-  ptr <- malloc
-  allocOnHeap ptr (L l, L dummyLabel)
+  ptr <- stalloc (L l, L dummyLabel)
   S.modify $ \s -> s { environment = EP ptr }
 
 pack :: Tag -> Evaluate ()
 pack t = do
   e   <- getEnv
-  ptr <- malloc
-  allocOnHeap ptr (T t, envHeapTag e)
+  ptr <- stalloc (T t, envHeapTag e)
   S.modify $ \s -> s { environment = EP ptr }
 
 app :: Evaluate ()
@@ -564,12 +570,18 @@ app = do
       then do
         case h of
           SV val -> S.modify $ \s -> s { environment = EV val, stack = t }
-          SP ptr -> S.modify $ \s -> s { environment = EP ptr, stack = t }
+          SP ptr -> do
+              ptr' <- markParent ptr
+              S.modify $ \s -> s { environment = EP ptr'
+                                 , stack = t }
+        csfp <- S.gets currentStackFramePtrs
+        psfp <- S.gets prevStackFramePtrs
+        S.modify $ \s -> s { currentStackFramePtrs = []
+                           , prevStackFramePtrs = csfp:psfp }
         let (L jl) = fstHeap
         jumpTo jl
       else do
-        newPtr <- malloc
-        allocOnHeap newPtr (fstHeap, stackHeapTag h)
+        newPtr <- stalloc (fstHeap, stackHeapTag h)
         S.modify $ \s -> s { environment = EP newPtr
                            , stack       = t
                            }
@@ -592,8 +604,7 @@ switch conds = do
             case find (\(c,_) -> c == contag || c == wildcardtag) conds of
               Just (cf, lf) -> (cf, lf)
               Nothing -> error $ "missing constructor " <> show contag
-      newPtr <- malloc
-      allocOnHeap newPtr (stackHeapTag h, sndHeap)
+      newPtr <- stalloc (stackHeapTag h, sndHeap)
       S.modify $ \s -> s { environment = EP newPtr
                          , stack       = t
                          }
@@ -686,36 +697,92 @@ gotoifalse l = do
 dummyLabel = Label (-1)
 
 
-malloc :: Evaluate Pointer
-malloc = undefined
---   do
---   h   <- getHeap
---   i   <- S.gets nextFreeIdx
---   idx <- findFreeIdx h i
---   S.modify $ \s -> s { nextFreeIdx = idx }
---   pure idx
---   where
---     findFreeIdx h_ i
---       | i > heapSize && (not gc) = error "Heap overflow! GC!! GC!! GC!!"
---       | i > heapSize && gc = do
---           mark
---           lazySweep
---       | (h_ ! i) == emptyCell || unmarked i = pure i
---       | otherwise  = findFreeIdx h_ (i + 1)
---       where
---         unmarked ptr = undefined
---           -- let (HeapCell _) = (h_ ! ptr)
---           --               in (not markbit) -- if the heap cell is unmarked
+stalloc ::(CellContent, CellContent) ->  Evaluate Pointer
+stalloc hc = do
+  h   <- getHeap
+  i   <- S.gets nextFreeIdx
+  if i == -1
+  then error "Free List ran out!"
+  else do
+   let (HeapCell (_, sptr)) = (h ! i)
+   csfp <- S.gets currentStackFramePtrs
+   S.modify $ \s -> s { currentStackFramePtrs = i:csfp }
+   S.modify $ \s -> s { heap = mutHeapCell h (HeapCell hc) i }
+   case sptr of
+      (P (Pointer Free j)) -> do -- for the last cell j = -1
+          S.modify $ \s -> s { nextFreeIdx = j }
+          pure (Pointer Private i)
+      _ -> error "Error in stalloc: Free list cell labeled incorrectly"
 
-allocOnHeap :: Pointer -> (CellContent, CellContent) -> Evaluate ()
-allocOnHeap ptr hc = undefined
-  -- do
-  -- h <- getHeap
-  -- S.modify $ \s -> s { heap = mutHeap h (HeapCell hc) ptr }
-  -- S.modify $ \s -> s { nextFreeIdx = ptr + 1 }
 
--- mutHeap :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
--- mutHeap arr hc i = arr // [(i,hc)]
+palloc ::(CellContent, CellContent) ->  Evaluate Pointer
+palloc hc = do
+  h   <- getHeap
+  i   <- S.gets nextFreeIdx
+  if i == -1
+  then error "Free List ran out!"
+  else do
+   let (HeapCell (_, sptr)) = (h ! i)
+   psfp <- S.gets prevStackFramePtrs
+   let prevStallocs = head psfp
+   S.modify $ \s -> s { prevStackFramePtrs = (i:prevStallocs):psfp }
+   S.modify $ \s -> s { heap = mutHeapCell h (HeapCell hc) i }
+   case sptr of
+      (P (Pointer Free j)) -> do -- for the last cell j = -1
+          S.modify $ \s -> s { nextFreeIdx = j }
+          pure (Pointer Inherited i)
+      _ -> error "Error in palloc: Free list cell labeled incorrectly"
+
+
+mutHeapCell :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
+mutHeapCell arr hc i = arr // [(i,hc)]
+
+freeStackAllocs :: Evaluate ()
+freeStackAllocs = do
+  csfp <- S.gets currentStackFramePtrs
+  case csfp of
+    []      -> pure ()
+    (idx:_) -> do
+      -- free internally mutates the csfp list
+      -- so we might end up with an empty list
+      -- in the next round of recursion
+      free idx
+      freeStackAllocs
+
+free :: Index -> Evaluate ()
+free idx = do
+  h <- S.gets heap
+  let (HeapCell (c1, c2)) = h ! idx
+
+  -- The above cell goes to the free list --
+  freeIdx <- S.gets nextFreeIdx
+  let freeCell = HeapCell (P nullPointer, P (Pointer Free freeIdx))
+  S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
+  S.modify $ \s -> s { nextFreeIdx = idx }
+  -- Free List addition ends --
+  -- After freeing the cell remove it from the csfp list--
+  csfp <- S.gets currentStackFramePtrs
+  S.modify $ \s -> s { currentStackFramePtrs = delete idx csfp }
+  --------------------------------------------------------
+
+  {-
+   We have already mutated the heap cell but because of the
+   immutability of Haskell we are holding on to c1 and c2
+   which themselves could be pointers worth tracing out and
+   freeing
+  -}
+  freeCellContent c1
+  freeCellContent c2
+  where
+    -- Don't free inherited pointers or their children as well
+    -- -- I hope the children are also all inherited ptrs but hard to verify this
+    -- Free pointers are already freed
+    -- Only free private pointers
+    freeCellContent :: CellContent -> Evaluate ()
+    freeCellContent (P (Pointer Inherited _)) = pure ()
+    freeCellContent (P (Pointer Private idx)) = free idx
+    freeCellContent (P (Pointer Free _)) = pure ()
+    freeCellContent _     = pure ()
 
 envHeapTag :: EnvContent -> CellContent
 envHeapTag (EV val) = V val
@@ -725,56 +792,45 @@ stackHeapTag :: StackContent -> CellContent
 stackHeapTag (SV val) = V val
 stackHeapTag (SP ptr) = P ptr
 
--- -- We mark the live data and don't sweep
--- -- The sweeping is lazily done when allocating.
--- -- If any data is unmarked it is dead and allocation
--- -- can happen in that cell
--- mark :: Evaluate ()
--- mark = do
---   st  <- getStack
---   env <- getEnv
---   markE env
---   mapM_ mark' st
---   where
---     markE :: EnvContent   -> Evaluate ()
---     markE (EV _)   = pure ()
---     markE (EP ptr) = mark'' ptr
 
---     mark' :: StackContent -> Evaluate ()
---     mark' (SV _) = pure ()
---     mark' (SP ptr) = mark'' ptr
+{-
+ You have to mark the entire structure with inherited pointers
+ otherwise the new call stack might create some nested structure
+ with a child pointer and then end up deallocating it. Eg;
 
---     mark'' :: Pointer -> Evaluate ()
---     mark'' ptr = do
---       h_ <- getHeap
---       let (HeapCell (fH, sH)) =  h_ ! ptr
---       if undefined--mb -- if cell already marked; STOP
---       then pure ()
---       else do
---         S.modify $ \s -> s { heap = mutHeap h_ (HeapCell (fH, sH)) ptr }
---         case fH of
---            P p -> mark'' p
---            _   -> pure ()
---         case sH of
---           P p -> mark'' p
---           _   -> pure ()
+-i-> inherited pointer
+---> private pointer
 
--- -- Marked bits are live; Return the first
--- -- unmarked bit that you encounter
--- lazySweep :: Evaluate Pointer
--- lazySweep = do
---   h <- getHeap
---   let idx = findUnMarkedAndFree h 1
---   pure idx
---   where
---     findUnMarkedAndFree h_ i
---       | i > heapSize =
---         error "RESIZE HEAP! Impossible memory requirements despite GC"
---       | otherwise =
---           let (HeapCell _) = h_ ! i
---           in undefined
+-i->(3, -)->(5,6)
+
+Take the second of above and create a new structure
+--->(7, -)->(5,6)
+
+Now when stack unwinds (5,6) will also be deallocated.
 
 
+-i->(3, -)i->(5,6) -- note the child is also annotated
+
+So now the new structure is
+
+--->(7, -)i->(5,6)
+
+-i->(5,6) won't be deallocated.
+
+-}
+markParent :: Pointer -> Evaluate Pointer
+markParent (Pointer _ p) = do
+  h <- S.gets heap
+  let (HeapCell (c1, c2)) = h ! p
+  markCellContent c1
+  markCellContent c2
+  pure $ Pointer Inherited p
+  where
+    markCellContent :: CellContent -> Evaluate ()
+    markCellContent (P p@(Pointer _ _)) = do
+      markParent p
+      pure ()
+    markCellContent _ = pure ()
 
 
 
@@ -869,3 +925,6 @@ example1 =
   (Let (PatVar "v4") (Pair (Sys (LInt 3)) (Sys (LInt 2)))
    (Let (PatVar "v5") (App (Var "v0") (Var "v4"))
     (Var "v5")))
+
+
+run = evaluate . optimise . interpret
