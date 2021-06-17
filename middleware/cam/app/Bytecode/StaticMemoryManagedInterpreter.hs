@@ -85,7 +85,9 @@ data CellContent = V Val
 instance Show CellContent where
   show (V val) = show val
   show (P p) = "*"  <> show p
-  show (L l) = "l:" <> show l
+  show (L l)
+    | getLabel l == -1 = "l:dummy"
+    | otherwise = "l:" <> show l
   show (T t) = "T:" <> show t
 
 --type MarkBit = Bool
@@ -577,6 +579,18 @@ app = do
   e      <- getEnv
   (h, t) <- popAndRest
   h_     <- getHeap
+  -- Memory management book-keeping ------
+  -- XXX: Should the next 4 lines happen after
+  -- the APP happens on a closure? For a combinator
+  -- no new cell created so doesn't matter; For a closure
+  -- a new cell is created so which stack frame owns that?
+  -- Currently it is the child stack frame
+  incFrameNo
+  csfp <- S.gets currentStackFramePtrs
+  psfp <- S.gets prevStackFramePtrs
+  S.modify $ \s -> s { currentStackFramePtrs = []
+                     , prevStackFramePtrs = csfp:psfp }
+  -- Memory management book-keeping ends --
   case e of
     EP (Pointer _ ptr) -> do
       let (L label) = sndHeap -- XXX: Partial
@@ -585,11 +599,6 @@ app = do
         case h of
           SV val -> S.modify $ \s -> s { environment = EV val, stack = t }
           SP ptr -> S.modify $ \s -> s { environment = EP ptr, stack = t }
-        incFrameNo
-        csfp <- S.gets currentStackFramePtrs
-        psfp <- S.gets prevStackFramePtrs
-        S.modify $ \s -> s { currentStackFramePtrs = []
-                           , prevStackFramePtrs = csfp:psfp }
         let (L jl) = fstHeap
         jumpTo jl
       else do
