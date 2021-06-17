@@ -28,6 +28,7 @@ import CamOpt
 import Peephole
 import Data.Int (Int32)
 import Data.List (find, delete)
+import Data.Word (Word8)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
 
@@ -43,9 +44,8 @@ gc :: Bool
 gc = True
 
 data PointerType
-  = Inherited
-  | Private
-  | Free -- pointers used by the free list; XXX: might be useless
+  = Frame Word8
+  | Free -- pointers used by the free list;
   deriving (Ord, Show, Eq)
 
 
@@ -55,18 +55,26 @@ A pointer is plainly a number. That number will either be an index of the
 heap array or it will be -1 (null). What the `PointerType` associated with that
 number indicates is to which stack frame does that heap cell belong?
 
-Inherited pointer - belongs atleast to the parent of the previous stack frame
-Private pointer   - belongs to the current stack frame
-Free pointer      - not associated with any stack frame
+Frame <n> pointer - belongs to the stack frame number n
+                    Eg : *2{st0}
+                          ^
+                         Pointer to heap cell number 2 and
+                         the pointer originated at stack frame #0
+
+Free pointer - not associated with any stack frame; part of the free list
 
 -}
 
 data Pointer = Pointer PointerType Int deriving (Ord, Eq)
 
 instance Show Pointer where
-  show (Pointer Inherited i) = show i <> "i"
-  show (Pointer Private   i) = show i <> "p"
-  show (Pointer Free      i) = show i <> "f"
+  show (Pointer Free i)
+    | i == -1   = "null"
+    | otherwise = show i <> "f"
+  show (Pointer (Frame ui) i)
+    | i == -1 = "null"
+    | otherwise =
+        show i <> "{st" <> show ui <> "}"
 
 data CellContent = V Val
                  | P Pointer
@@ -83,7 +91,10 @@ instance Show CellContent where
 --type MarkBit = Bool
 
 data HeapCell = HeapCell (CellContent, CellContent)
-              deriving (Show, Eq)
+              deriving Eq
+
+instance Show HeapCell where
+  show (HeapCell (c1,c2)) = "<" <> show (c1,c2) <> ">"
 
 
 nullPointer = Pointer Free (-1)
@@ -119,6 +130,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , programCounter :: Index
                  , currentStackFramePtrs :: [Index]
                  , prevStackFramePtrs    :: [[Index]]
+                 , currentFrameNo :: Word8
                  } deriving Show
 
 newtype Evaluate a =
@@ -160,6 +172,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , programCounter = 1
                     , currentStackFramePtrs = []
                     , prevStackFramePtrs = []
+                    , currentFrameNo = 0
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -189,8 +202,9 @@ genInstrs (Lab l c) _   = genInstrs c l
 
 eval :: Evaluate EnvContent
 eval = do
+  h <- getHeap
   currentInstr <- readCurrent
-  case currentInstr of
+  case trace ("\n\n" <> show h <> "\n" <> show currentInstr) $ currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
     SND ->
@@ -303,7 +317,7 @@ retBack = do
                  -- and we never return from the base caller
   S.modify $ \s -> s { currentStackFramePtrs = h
                      , prevStackFramePtrs = psfp }
-
+  decFrameNo
   pj <- S.gets prevJump
   S.modify $ \s -> s { programCounter = head pj + 1
                      , prevJump = tail pj
@@ -570,10 +584,8 @@ app = do
       then do
         case h of
           SV val -> S.modify $ \s -> s { environment = EV val, stack = t }
-          SP ptr -> do
-              ptr' <- markParent ptr
-              S.modify $ \s -> s { environment = EP ptr'
-                                 , stack = t }
+          SP ptr -> S.modify $ \s -> s { environment = EP ptr, stack = t }
+        incFrameNo
         csfp <- S.gets currentStackFramePtrs
         psfp <- S.gets prevStackFramePtrs
         S.modify $ \s -> s { currentStackFramePtrs = []
@@ -711,7 +723,8 @@ stalloc hc = do
    case sptr of
       (P (Pointer Free j)) -> do -- for the last cell j = -1
           S.modify $ \s -> s { nextFreeIdx = j }
-          pure (Pointer Private i)
+          cfn <- S.gets currentFrameNo
+          pure (Pointer (Frame cfn) i)
       _ -> error "Error in stalloc: Free list cell labeled incorrectly"
 
 
@@ -730,7 +743,8 @@ palloc hc = do
    case sptr of
       (P (Pointer Free j)) -> do -- for the last cell j = -1
           S.modify $ \s -> s { nextFreeIdx = j }
-          pure (Pointer Inherited i)
+          cfn <- S.gets currentFrameNo
+          pure (Pointer (Frame (cfn - 1)) i)
       _ -> error "Error in palloc: Free list cell labeled incorrectly"
 
 
@@ -774,13 +788,17 @@ free idx = do
   freeCellContent c1
   freeCellContent c2
   where
-    -- Don't free inherited pointers or their children as well
-    -- -- I hope the children are also all inherited ptrs but hard to verify this
+    -- Don't free parent pointers or their constituents as well
+    -- -- I hope the constituents also stay alive past this
+    -- -- stack frame but hard to verify this
     -- Free pointers are already freed
-    -- Only free private pointers
+    -- Only free pointers of the current and higher stack frames
     freeCellContent :: CellContent -> Evaluate ()
-    freeCellContent (P (Pointer Inherited _)) = pure ()
-    freeCellContent (P (Pointer Private idx)) = free idx
+    freeCellContent (P (Pointer (Frame f) idx)) = do
+      cfn <- S.gets currentFrameNo
+      if (f < cfn)
+      then pure () -- don't free parent allocs
+      else free idx -- (f >= cfn)
     freeCellContent (P (Pointer Free _)) = pure ()
     freeCellContent _     = pure ()
 
@@ -793,46 +811,15 @@ stackHeapTag (SV val) = V val
 stackHeapTag (SP ptr) = P ptr
 
 
-{-
- You have to mark the entire structure with inherited pointers
- otherwise the new call stack might create some nested structure
- with a child pointer and then end up deallocating it. Eg;
+incFrameNo :: Evaluate ()
+incFrameNo = do
+  cfn <- S.gets currentFrameNo
+  S.modify $ \s -> s {currentFrameNo = cfn + 1}
 
--i-> inherited pointer
----> private pointer
-
--i->(3, -)->(5,6)
-
-Take the second of above and create a new structure
---->(7, -)->(5,6)
-
-Now when stack unwinds (5,6) will also be deallocated.
-
-
--i->(3, -)i->(5,6) -- note the child is also annotated
-
-So now the new structure is
-
---->(7, -)i->(5,6)
-
--i->(5,6) won't be deallocated.
-
--}
-markParent :: Pointer -> Evaluate Pointer
-markParent (Pointer _ p) = do
-  h <- S.gets heap
-  let (HeapCell (c1, c2)) = h ! p
-  markCellContent c1
-  markCellContent c2
-  pure $ Pointer Inherited p
-  where
-    markCellContent :: CellContent -> Evaluate ()
-    markCellContent (P p@(Pointer _ _)) = do
-      markParent p
-      pure ()
-    markCellContent _ = pure ()
-
-
+decFrameNo :: Evaluate ()
+decFrameNo = do
+  cfn <- S.gets currentFrameNo
+  S.modify $ \s -> s {currentFrameNo = cfn - 1}
 
 -- NOTE:
 {-
