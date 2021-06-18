@@ -187,3 +187,5 @@ example3 =
   (Let (PatVar "v0") (Let (PatVar "v1") (Sys (LInt 5))
                       (App (Var "v5") (Var "v1")))
     (App (Var "v0") (Sys (LInt 3))))
+
+--example3cam = Seq (Ins (COMB (Label 1))) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 5))) (Seq (Ins CONS) (Seq (Ins PUSH) (Seq (Ins SND) (Seq (Ins SWAP) (Seq (Ins FST) (Seq (Ins APP) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 3))) (Seq (Ins SWAP) (Seq (Ins APP) (Seq (Ins STOP) (Seq (Lab (Label 2) (Ins PUSH)) (Seq (Ins FST) (Seq (Ins SWAP) (Seq (Ins SND) (Seq (Ins CONS) (Seq (Ins PUSH) (Seq (Ins SND) (Seq (Ins SWAP) (Seq (Ins FST) (Seq (Ins (PRIM2 PlusI)) (Seq (Ins RETURN) (Seq (Lab (Label 1) (Ins (CURP (Label 2)))) (Seq (Ins RETURN) (Lab (Label 65535) (Ins STOP))))))))))))))))))))))))))))
