@@ -15,3 +15,6 @@
 #### Real-Time GC
 - [List processing in real time on a serial computer](https://dl.acm.org/doi/abs/10.1145/359460.359470)
 - [A real-time garbage collector based on the lifetime of objects](https://dl.acm.org/doi/abs/10.1145/358141.358147)
+
+#### Stack vs Heap for closures
+- [An Empirical and Analytic Study of Stack vs. Heap Costfor Languages with Closures](https://www.cs.princeton.edu/~appel/papers/stack2.pdf)
