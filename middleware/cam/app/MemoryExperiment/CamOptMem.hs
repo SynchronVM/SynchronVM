@@ -225,14 +225,14 @@ markEnv (EnvAnn  _ e pl) = EnvAnn   Star e pl
 data CAM = Ins Instruction  -- instructions
          | Seq CAM CAM      -- sequence
          | Lab Label CAM    -- labeled sequence
-         deriving (Ord, Eq, Show)
+         deriving (Ord, Eq)
 
--- instance Show CAM where
---   show (Ins i) = show i
---   show (Seq c1 c2) =
---     show c1 <> ";\n" <> show c2
---   show (Lab label cam) =
---     "lab_"  <> show label <> " : " <> show cam
+instance Show CAM where
+  show (Ins i) = show i
+  show (Seq c1 c2) =
+    show c1 <> ";\n" <> show c2
+  show (Lab label cam) =
+    "lab_"  <> show label <> " : " <> show cam
 
 instance Semigroup CAM where
   (<>) = (<+>)
