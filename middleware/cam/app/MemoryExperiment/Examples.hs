@@ -189,3 +189,50 @@ example3 =
     (App (Var "v0") (Sys (LInt 3))))
 
 --example3cam = Seq (Ins (COMB (Label 1))) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 5))) (Seq (Ins CONS) (Seq (Ins PUSH) (Seq (Ins SND) (Seq (Ins SWAP) (Seq (Ins FST) (Seq (Ins APP) (Seq (Ins MOVE) (Seq (Ins (QUOTE (LInt 3))) (Seq (Ins SWAP) (Seq (Ins APP) (Seq (Ins STOP) (Seq (Lab (Label 2) (Ins PUSH)) (Seq (Ins FST) (Seq (Ins SWAP) (Seq (Ins SND) (Seq (Ins CONS) (Seq (Ins PUSH) (Seq (Ins SND) (Seq (Ins SWAP) (Seq (Ins FST) (Seq (Ins (PRIM2 PlusI)) (Seq (Ins RETURN) (Seq (Lab (Label 1) (Ins (CURP (Label 2)))) (Seq (Ins RETURN) (Lab (Label 65535) (Ins STOP))))))))))))))))))))))))))))
+
+
+{-
+
+
+foo x = case x of
+             1 -> 1
+             _ -> let m = (x,2) in
+                  foo (x - 1)
+main = foo 3
+
+-- REWRITTEN --
+
+letrec v0 = \ v3 -> case v3 of {
+  v1 -> case v1 of {
+    1 -> 1;
+    _ -> let v2 = (v1, 2) in v0 (v1 - 1)
+  }
+  }
+in v0 3
+
+-- REWRITTEN --
+
+letrec v0 = \ v3 ->
+              let v1 = v3
+              if v1 == 1
+              then 1
+              else
+                let _ = v1 in
+                let v2 = (v1, 2) in
+                v0 (v1 - 1)
+    in v0 3
+
+-}
+
+example4 =
+  Letrec
+  [(PatVar "v0",
+    Lam (PatVar "v3")
+    (Let (PatVar "v1") (Var "v3")
+     (If (Sys (Sys2 BEQ (Var "v1") (Sys (LInt 1))))
+      (Sys (LInt 1))
+      (Let Empty (Var "v1")
+       (Let (PatVar "v2") (Pair (Var "v1") (Sys (LInt 2)))
+        (App (Var "v0") (Sys (Sys2 MinusI (Var "v1") (Sys (LInt 1))))))))))
+  ]
+  (App (Var "v0") (Sys (LInt 3)))
