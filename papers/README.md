@@ -12,6 +12,7 @@
 - [Towards region-based memory management for Go](https://dl.acm.org/doi/abs/10.1145/2247684.2247695)
 - Static Analysis
   - [Higher Order Escape Analysis](https://link.springer.com/content/pdf/10.1007/3-540-52592-0_61.pdf)
+  - [Escape Analysis on Lists](https://cs.nyu.edu/~goldberg/pubs/pg92.pdf)
 
 
 #### Real-Time GC
