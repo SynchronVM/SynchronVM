@@ -74,6 +74,7 @@ static void button_pressed(const struct device *dev,
   msg.driver_id = driver->id; 
   msg.timestamp = ll_driver_timestamp();
   msg.data = driver->state;  // 1 or 0
+  msg.msg_type = 0;
 
   if (interop->send_message(interop, msg) == -ENOMSG) {
     /* Message was not send due to queue being full. 
