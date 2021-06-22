@@ -13,6 +13,7 @@
 - Static Analysis
   - [Higher Order Escape Analysis](https://link.springer.com/content/pdf/10.1007/3-540-52592-0_61.pdf)
   - [Escape Analysis on Lists](https://cs.nyu.edu/~goldberg/pubs/pg92.pdf)
+  - [Escape analysis: correctness proof, implementation and experimental results](https://dl.acm.org/doi/abs/10.1145/268946.268949)
 
 
 #### Real-Time GC
