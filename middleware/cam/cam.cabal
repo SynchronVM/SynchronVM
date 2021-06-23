@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5078e12fa6953e04cfd6d7c284f2c73d2e1a7df89b2799c457b049f953487fa1
+-- hash: f95582c376ae05df79c9c1915a2c158d1a8257e08534996592c2a73f96e5e857
 
 name:           cam
 version:        0.1.0.0
@@ -30,12 +30,16 @@ library
       Assembler
       Bytecode.InterpreterModel
       Bytecode.LLInterpreter
-      Bytecode.StaticMemoryManagedInterpreter
       CAM
       CamOpt
       Examples
       LLExample
       Main
+      MemoryExperiment.CamOptMem
+      MemoryExperiment.Examples
+      MemoryExperiment.Interpreter2
+      MemoryExperiment.PeepholeMem
+      MemoryExperiment.StaticMemoryManagedInterpreter
       Peephole
   other-modules:
       Paths_cam
@@ -58,11 +62,15 @@ executable cam-exe
       Assembler
       Bytecode.InterpreterModel
       Bytecode.LLInterpreter
-      Bytecode.StaticMemoryManagedInterpreter
       CAM
       CamOpt
       Examples
       LLExample
+      MemoryExperiment.CamOptMem
+      MemoryExperiment.Examples
+      MemoryExperiment.Interpreter2
+      MemoryExperiment.PeepholeMem
+      MemoryExperiment.StaticMemoryManagedInterpreter
       Peephole
       Paths_cam
   hs-source-dirs:
