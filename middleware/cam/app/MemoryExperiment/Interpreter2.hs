@@ -30,36 +30,14 @@ import Data.List (find, delete)
 import Data.Word (Word8)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
-import qualified Data.Map.Strict as Map
+import qualified Data.IntMap.Strict as IMap
 
 import Debug.Trace
 
 {-
 
 A low level interpreter with an explicit heap and
-stack based memory management
-
--}
-
-data PointerType
-  = Frame Word8
-  | Free -- pointers used by the free list;
-  deriving (Ord, Show, Eq)
-
-
-{- NOTE:
-
-A pointer is plainly a number. That number will either be an index of the
-heap array or it will be -1 (null). What the `PointerType` associated with that
-number indicates is to which stack frame does that heap cell belong?
-
-Frame <n> pointer - belongs to the stack frame number n
-                    Eg : *2{st0}
-                          ^
-                         Pointer to heap cell number 2 and
-                         the pointer originated at stack frame #0
-
-Free pointer - not associated with any stack frame; part of the free list
+timely memory management
 
 -}
 
@@ -123,7 +101,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , heap        :: Heap
                  , nextFreeIdx    :: Index
                  , programCounter :: Index
-                 , ptrCopies :: Map.Map Pointer NumCopies
+                 , ptrCopies   :: IMap.IntMap NumCopies -- key = Pointer
                  } deriving Show
 
 newtype Evaluate a =
@@ -163,7 +141,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , heap        = initHeap
                     , nextFreeIdx = 1
                     , programCounter = 1
-                    , ptrCopies     = Map.empty
+                    , ptrCopies     = IMap.empty
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -326,11 +304,17 @@ fstEnv = do
   h <- getHeap
   case e of
     EP pointer ->
-      let HeapCell heapcell = h ! pointer
-          fstHeap  = fst heapcell
-      in case fstHeap of
-           V val -> S.modify $ \s -> s { environment = EV val }
-           P ptr -> S.modify $ \s -> s { environment = EP ptr }
+      let HeapCell (fcell, scell) = h ! pointer
+      in case fcell of
+           V val -> do
+             S.modify $ \s -> s { environment = EV val }
+             free pointer
+           P ptr -> do
+             S.modify $ \s -> s { environment = EP ptr }
+             freeCellOnly ptr -- attempt to free cell containing pointer
+             case scell of
+               P ptr2 -> free ptr2 -- follow the second pointer and free
+               _      -> pure ()
            L _   -> error "first cant be applied on a label"
            T _   -> error "first cant be applied on a tag"
     EV _ -> error "EV constructor should not arise here"
@@ -342,11 +326,17 @@ sndEnv = do
   h <- getHeap
   case e of
     EP pointer ->
-      let HeapCell heapcell = h ! pointer
-          sndHeap  = snd heapcell
-      in case sndHeap of
-           V val -> S.modify $ \s -> s { environment = EV val }
-           P ptr -> S.modify $ \s -> s { environment = EP ptr }
+      let HeapCell (fcell, scell) = h ! pointer
+      in case scell of
+           V val -> do
+             S.modify $ \s -> s { environment = EV val }
+             free pointer
+           P ptr -> do
+             S.modify $ \s -> s { environment = EP ptr }
+             freeCellOnly ptr
+             case fcell of
+               P ptr1 -> free ptr1 -- follow the first pointer and free
+               _      -> pure ()
            L _   -> error "second cant be applied on a label"
            T _   -> error "second cant be applied on a tag"
     EV _ -> error "EV constructor should not arise here"
@@ -374,8 +364,15 @@ push = do
     EV val -> S.modify $ \s -> s { stack = (SV val) : st }
     EP ptr -> do
       pcopy <- S.gets ptrCopies
-      
-      S.modify $ \s -> s { stack = (SP ptr) : st }
+      case IMap.lookup ptr pcopy of
+        Nothing -> do
+          S.modify $ \s -> s { ptrCopies = IMap.insert ptr 2 pcopy }
+          S.modify $ \s -> s { stack = (SP ptr) : st }
+        Just n -> do -- n >= 2
+          S.modify $ \s -> s { ptrCopies = IMap.adjust inc ptr pcopy }
+          S.modify $ \s -> s { stack = (SP ptr) : st }
+  where
+    inc k = k + 1
 
 move :: Evaluate ()
 move = do
@@ -722,43 +719,69 @@ freeCell idx = do
   S.modify $ \s -> s { nextFreeIdx = idx }
 
 
+
+
+-- Dont follow pointers; Just attempt to free the requested cell
+freeCellOnly :: Index -> Evaluate ()
+freeCellOnly idx = do
+  pcopy <- S.gets ptrCopies
+  case IMap.lookup idx pcopy of
+    Nothing -> do
+      h <- S.gets heap
+      let (HeapCell (_, _)) = h ! idx
+      -- The above cell goes to the free list --
+      freeIdx <- S.gets nextFreeIdx
+      let freeCell = HeapCell (P nullPointer, P freeIdx)
+      S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
+      S.modify $ \s -> s { nextFreeIdx = idx }
+      -- Free List addition ends --
+    Just 2  ->
+      {- We remove the cell from the map and
+         it can be freed the next time -}
+      S.modify $ \s -> s { ptrCopies = IMap.delete idx pcopy }
+    Just n  ->
+      {- n > 2 we simply decrement the count -}
+      S.modify $ \s -> s { ptrCopies = IMap.adjust dec idx pcopy }
+  where
+    dec k = k - 1
+
+-- Attempt to free the requested cell and follow pointers
 free :: Index -> Evaluate ()
 free idx = do
-  h <- S.gets heap
-  let (HeapCell (c1, c2)) = h ! idx
+  pcopy <- S.gets ptrCopies
+  case IMap.lookup idx pcopy of
+    Nothing -> do
+      h <- S.gets heap
+      let (HeapCell (c1, c2)) = h ! idx
+      -- The above cell goes to the free list --
+      freeIdx <- S.gets nextFreeIdx
+      let freeCell = HeapCell (P nullPointer, P freeIdx)
+      S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
+      S.modify $ \s -> s { nextFreeIdx = idx }
+      -- Free List addition ends --
 
-  -- The above cell goes to the free list --
-  freeIdx <- S.gets nextFreeIdx
-  let freeCell = HeapCell (P nullPointer, P freeIdx)
-  S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
-  S.modify $ \s -> s { nextFreeIdx = idx }
-  -- Free List addition ends --
-
-  {-
-   We have already mutated the heap cell but because of the
-   immutability of Haskell we are holding on to c1 and c2
-   which themselves could be pointers worth tracing out and
-   freeing
-  -}
-  freeCellContent c1
-  freeCellContent c2
+      {-
+       We have already mutated the heap cell but because of the
+       immutability of Haskell we are holding on to c1 and c2 which
+       themselves could be pointers worth tracing out and freeing
+      -}
+      freeCellContent c1
+      freeCellContent c2
+    Just 2  ->
+      {- We remove the cell from the map and
+         it can be freed the next time -}
+      S.modify $ \s -> s { ptrCopies = IMap.delete idx pcopy }
+    Just n  ->
+      {- n > 2 we simply decrement the count -}
+      S.modify $ \s -> s { ptrCopies = IMap.adjust dec idx pcopy }
   where
+    dec k = k - 1
+
     -- We want to trace out pointers and free them
     freeCellContent :: CellContent -> Evaluate ()
-    freeCellContent (P ptr) = do
-      pcopy <- S.gets ptrCopies
-      case Map.lookup ptr pcopy of
-        Nothing -> free ptr
-        Just 2  ->
-          {- We remove the cell from the map and
-             it can be freed the next time -}
-          S.modify $ \s -> s { ptrCopies = Map.delete ptr pcopy }
-        Just n  ->
-          {- n > 2 we simply decrement the count -}
-          S.modify $ \s -> s { ptrCopies = Map.adjust dec ptr pcopy }
-      where
-        dec k = k - 1
+    freeCellContent (P ptr) = free ptr
     freeCellContent _     = pure ()
+
 
 envHeapTag :: EnvContent -> CellContent
 envHeapTag (EV val) = V val
