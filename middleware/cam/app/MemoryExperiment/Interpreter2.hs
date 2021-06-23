@@ -123,7 +123,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , heap        :: Heap
                  , nextFreeIdx    :: Index
                  , programCounter :: Index
-                 , ptrCopy :: Map.Map Pointer NumCopies
+                 , ptrCopies :: Map.Map Pointer NumCopies
                  } deriving Show
 
 newtype Evaluate a =
@@ -163,7 +163,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , heap        = initHeap
                     , nextFreeIdx = 1
                     , programCounter = 1
-                    , ptrCopy     = Map.empty
+                    , ptrCopies     = Map.empty
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -372,7 +372,10 @@ push = do
   st <- getStack
   case e of
     EV val -> S.modify $ \s -> s { stack = (SV val) : st }
-    EP ptr -> S.modify $ \s -> s { stack = (SP ptr) : st }
+    EP ptr -> do
+      pcopy <- S.gets ptrCopies
+      
+      S.modify $ \s -> s { stack = (SP ptr) : st }
 
 move :: Evaluate ()
 move = do
@@ -706,56 +709,56 @@ malloc hc = do
 mutHeapCell :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
 mutHeapCell arr hc i = arr // [(i,hc)]
 
--- freeStackAllocs :: Evaluate ()
--- freeStackAllocs = do
---   csfp <- S.gets currentStackFramePtrs
---   case csfp of
---     []      -> pure ()
---     (idx:_) -> do
---       -- free internally mutates the csfp list
---       -- so we might end up with an empty list
---       -- in the next round of recursion
---       free idx
---       freeStackAllocs
+
+freeCell :: Index -> Evaluate ()
+freeCell idx = do
+  h <- S.gets heap
+  let (HeapCell (c1, c2)) = h ! idx
+
+  -- The above cell goes to the free list --
+  freeIdx <- S.gets nextFreeIdx
+  let freeCell = HeapCell (P nullPointer, P freeIdx)
+  S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
+  S.modify $ \s -> s { nextFreeIdx = idx }
+
 
 free :: Index -> Evaluate ()
-free idx = undefined -- do
-  -- h <- S.gets heap
-  -- let (HeapCell (c1, c2)) = h ! idx
+free idx = do
+  h <- S.gets heap
+  let (HeapCell (c1, c2)) = h ! idx
 
-  -- -- The above cell goes to the free list --
-  -- freeIdx <- S.gets nextFreeIdx
-  -- let freeCell = HeapCell (P nullPointer, P (Pointer Free freeIdx))
-  -- S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
-  -- S.modify $ \s -> s { nextFreeIdx = idx }
-  -- -- Free List addition ends --
-  -- -- After freeing the cell remove it from the csfp list--
-  -- csfp <- S.gets currentStackFramePtrs
-  -- S.modify $ \s -> s { currentStackFramePtrs = delete idx csfp }
-  -- --------------------------------------------------------
+  -- The above cell goes to the free list --
+  freeIdx <- S.gets nextFreeIdx
+  let freeCell = HeapCell (P nullPointer, P freeIdx)
+  S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
+  S.modify $ \s -> s { nextFreeIdx = idx }
+  -- Free List addition ends --
 
-  -- {-
-  --  We have already mutated the heap cell but because of the
-  --  immutability of Haskell we are holding on to c1 and c2
-  --  which themselves could be pointers worth tracing out and
-  --  freeing
-  -- -}
-  -- freeCellContent c1
-  -- freeCellContent c2
-  -- where
-  --   -- Don't free parent pointers or their constituents as well
-  --   -- -- I hope the constituents also stay alive past this
-  --   -- -- stack frame but hard to verify this
-  --   -- Free pointers are already freed
-  --   -- Only free pointers of the current and higher stack frames
-  --   freeCellContent :: CellContent -> Evaluate ()
-  --   freeCellContent (P (Pointer (Frame f) idx)) = do
-  --     cfn <- S.gets currentFrameNo
-  --     if (f < cfn)
-  --     then pure () -- don't free parent allocs
-  --     else free idx -- (f >= cfn)
-  --   freeCellContent (P (Pointer Free _)) = pure ()
-  --   freeCellContent _     = pure ()
+  {-
+   We have already mutated the heap cell but because of the
+   immutability of Haskell we are holding on to c1 and c2
+   which themselves could be pointers worth tracing out and
+   freeing
+  -}
+  freeCellContent c1
+  freeCellContent c2
+  where
+    -- We want to trace out pointers and free them
+    freeCellContent :: CellContent -> Evaluate ()
+    freeCellContent (P ptr) = do
+      pcopy <- S.gets ptrCopies
+      case Map.lookup ptr pcopy of
+        Nothing -> free ptr
+        Just 2  ->
+          {- We remove the cell from the map and
+             it can be freed the next time -}
+          S.modify $ \s -> s { ptrCopies = Map.delete ptr pcopy }
+        Just n  ->
+          {- n > 2 we simply decrement the count -}
+          S.modify $ \s -> s { ptrCopies = Map.adjust dec ptr pcopy }
+      where
+        dec k = k - 1
+    freeCellContent _     = pure ()
 
 envHeapTag :: EnvContent -> CellContent
 envHeapTag (EV val) = V val
