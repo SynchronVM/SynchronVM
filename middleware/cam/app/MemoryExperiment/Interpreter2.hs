@@ -30,6 +30,7 @@ import Data.List (find, delete)
 import Data.Word (Word8)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
+import qualified Data.Map.Strict as Map
 
 import Debug.Trace
 
@@ -62,7 +63,8 @@ Free pointer - not associated with any stack frame; part of the free list
 
 -}
 
-type Pointer = Int
+type Pointer   = Int
+type NumCopies = Int
 
 
 data CellContent = V Val
@@ -121,9 +123,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , heap        :: Heap
                  , nextFreeIdx    :: Index
                  , programCounter :: Index
-                 , currentStackFramePtrs :: [Index]
-                 , prevStackFramePtrs    :: [[Index]]
-                 , currentFrameNo :: Word8
+                 , ptrCopy :: Map.Map Pointer NumCopies
                  } deriving Show
 
 newtype Evaluate a =
@@ -163,9 +163,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , heap        = initHeap
                     , nextFreeIdx = 1
                     , programCounter = 1
-                    , currentStackFramePtrs = []
-                    , prevStackFramePtrs = []
-                    , currentFrameNo = 0
+                    , ptrCopy     = Map.empty
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -184,8 +182,6 @@ initHeap = listArray (1, heapSize) finalHeap
       (take heapSize [2..]) nullHeap
     (restcells, _) = splitAt (heapSize - 1) tempHeap
     finalHeap = restcells ++ [emptyCell]
-
-
 
 
 genInstrs :: CAM -> Label -> [(Instruction, Label)]
@@ -304,13 +300,6 @@ jumpTo l = do
 -- and increment the program counter by 1
 retBack :: Evaluate ()
 retBack = do
-  freeStackAllocs
-  psfp <- S.gets prevStackFramePtrs
-  let h:_ = psfp -- XXX: Partial but there will always be atleast one stack
-                 -- and we never return from the base caller
-  S.modify $ \s -> s { currentStackFramePtrs = h
-                     , prevStackFramePtrs = psfp }
-  decFrameNo
   pj <- S.gets prevJump
   S.modify $ \s -> s { programCounter = head pj + 1
                      , prevJump = tail pj
@@ -534,7 +523,7 @@ cons :: Evaluate ()
 cons = do
   e      <- getEnv
   (h, t) <- popAndRest
-  ptr    <- stalloc (stackHeapTag h, envHeapTag e)
+  ptr    <- malloc (stackHeapTag h, envHeapTag e)
   S.modify $ \s -> s { environment = EP ptr
                      , stack = t
                      }
@@ -543,7 +532,7 @@ snoc :: Evaluate ()
 snoc = do
   e      <- getEnv
   (h, t) <- popAndRest
-  ptr    <- stalloc (envHeapTag e, stackHeapTag h)
+  ptr    <- malloc (envHeapTag e, stackHeapTag h)
   S.modify $ \s -> s { environment = EP ptr
                      , stack = t
                      }
@@ -551,18 +540,18 @@ snoc = do
 cur :: Label -> Evaluate ()
 cur l = do
   e   <- getEnv
-  ptr <- stalloc (envHeapTag e, L l)
+  ptr <- malloc (envHeapTag e, L l)
   S.modify $ \s -> s { environment = EP ptr }
 
 comb :: Label -> Evaluate ()
 comb l = do
-  ptr <- stalloc (L l, L dummyLabel)
+  ptr <- malloc (L l, L dummyLabel)
   S.modify $ \s -> s { environment = EP ptr }
 
 pack :: Tag -> Evaluate ()
 pack t = do
   e   <- getEnv
-  ptr <- stalloc (T t, envHeapTag e)
+  ptr <- malloc (T t, envHeapTag e)
   S.modify $ \s -> s { environment = EP ptr }
 
 app :: Evaluate ()
@@ -570,18 +559,6 @@ app = do
   e      <- getEnv
   (h, t) <- popAndRest
   h_     <- getHeap
-  -- Memory management book-keeping ------
-  -- XXX: Should the next 4 lines happen after
-  -- the APP happens on a closure? For a combinator
-  -- no new cell created so doesn't matter; For a closure
-  -- a new cell is created so which stack frame owns that?
-  -- Currently it is the child stack frame
-  incFrameNo
-  csfp <- S.gets currentStackFramePtrs
-  psfp <- S.gets prevStackFramePtrs
-  S.modify $ \s -> s { currentStackFramePtrs = []
-                     , prevStackFramePtrs = csfp:psfp }
-  -- Memory management book-keeping ends --
   case e of
     EP ptr -> do
       let (L label) = sndHeap -- XXX: Partial
@@ -593,7 +570,7 @@ app = do
         let (L jl) = fstHeap
         jumpTo jl
       else do
-        newPtr <- stalloc (fstHeap, stackHeapTag h)
+        newPtr <- malloc (fstHeap, stackHeapTag h)
         S.modify $ \s -> s { environment = EP newPtr
                            , stack       = t
                            }
@@ -616,7 +593,7 @@ switch conds = do
             case find (\(c,_) -> c == contag || c == wildcardtag) conds of
               Just (cf, lf) -> (cf, lf)
               Nothing -> error $ "missing constructor " <> show contag
-      newPtr <- stalloc (stackHeapTag h, sndHeap)
+      newPtr <- malloc (stackHeapTag h, sndHeap)
       S.modify $ \s -> s { environment = EP newPtr
                          , stack       = t
                          }
@@ -709,59 +686,37 @@ gotoifalse l = do
 dummyLabel = Label (-1)
 
 
-stalloc ::(CellContent, CellContent) ->  Evaluate Pointer
-stalloc hc = undefined -- do
-  -- h   <- getHeap
-  -- i   <- S.gets nextFreeIdx
-  -- if i == -1
-  -- then error "Free List ran out!"
-  -- else do
-  --  let (HeapCell (_, sptr)) = (h ! i)
-  --  csfp <- S.gets currentStackFramePtrs
-  --  S.modify $ \s -> s { currentStackFramePtrs = i:csfp }
-  --  S.modify $ \s -> s { heap = mutHeapCell h (HeapCell hc) i }
-  --  case sptr of
-  --     (P (Pointer Free j)) -> do -- for the last cell j = -1
-  --         S.modify $ \s -> s { nextFreeIdx = j }
-  --         cfn <- S.gets currentFrameNo
-  --         pure (Pointer (Frame cfn) i)
-  --     _ -> error "Error in stalloc: Free list cell labeled incorrectly"
+malloc ::(CellContent, CellContent) ->  Evaluate Pointer
+malloc hc = do
+  h   <- getHeap
+  i   <- S.gets nextFreeIdx
+  if i == -1
+  then error "Free List ran out!"
+  else do
+   let (HeapCell (_, sptr)) = (h ! i)
+   S.modify $ \s -> s { heap = mutHeapCell h (HeapCell hc) i }
+   case sptr of
+      (P j) -> do -- for the last cell j = -1
+          S.modify $ \s -> s { nextFreeIdx = j }
+          pure i
+      _ -> error "Error in malloc: Free list cell labeled incorrectly"
 
-
--- palloc ::(CellContent, CellContent) ->  Evaluate Pointer
--- palloc hc = do
---   h   <- getHeap
---   i   <- S.gets nextFreeIdx
---   if i == -1
---   then error "Free List ran out!"
---   else do
---    let (HeapCell (_, sptr)) = (h ! i)
---    psfp <- S.gets prevStackFramePtrs
---    let prevStallocs = head psfp
---    S.modify $ \s -> s { prevStackFramePtrs = (i:prevStallocs):psfp }
---    S.modify $ \s -> s { heap = mutHeapCell h (HeapCell hc) i }
---    case sptr of
---       (P (Pointer Free j)) -> do -- for the last cell j = -1
---           S.modify $ \s -> s { nextFreeIdx = j }
---           cfn <- S.gets currentFrameNo
---           pure (Pointer (Frame (cfn - 1)) i)
---       _ -> error "Error in palloc: Free list cell labeled incorrectly"
 
 
 mutHeapCell :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
 mutHeapCell arr hc i = arr // [(i,hc)]
 
-freeStackAllocs :: Evaluate ()
-freeStackAllocs = do
-  csfp <- S.gets currentStackFramePtrs
-  case csfp of
-    []      -> pure ()
-    (idx:_) -> do
-      -- free internally mutates the csfp list
-      -- so we might end up with an empty list
-      -- in the next round of recursion
-      free idx
-      freeStackAllocs
+-- freeStackAllocs :: Evaluate ()
+-- freeStackAllocs = do
+--   csfp <- S.gets currentStackFramePtrs
+--   case csfp of
+--     []      -> pure ()
+--     (idx:_) -> do
+--       -- free internally mutates the csfp list
+--       -- so we might end up with an empty list
+--       -- in the next round of recursion
+--       free idx
+--       freeStackAllocs
 
 free :: Index -> Evaluate ()
 free idx = undefined -- do
@@ -810,16 +765,6 @@ stackHeapTag :: StackContent -> CellContent
 stackHeapTag (SV val) = V val
 stackHeapTag (SP ptr) = P ptr
 
-
-incFrameNo :: Evaluate ()
-incFrameNo = do
-  cfn <- S.gets currentFrameNo
-  S.modify $ \s -> s {currentFrameNo = cfn + 1}
-
-decFrameNo :: Evaluate ()
-decFrameNo = do
-  cfn <- S.gets currentFrameNo
-  S.modify $ \s -> s {currentFrameNo = cfn - 1}
 
 -- NOTE:
 {-
