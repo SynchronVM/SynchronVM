@@ -236,3 +236,93 @@ example4 =
         (App (Var "v0") (Sys (Sys2 MinusI (Var "v1") (Sys (LInt 1))))))))))
   ]
   (App (Var "v0") (Sys (LInt 3)))
+
+
+
+
+
+{-
+(\ s ->
+case s of
+   Nil -> 5
+   Cons _ _ -> 10) Nil
+-}
+
+example5helper =
+  Lam (PatVar "s") $
+      Case (Var "s") [ (("Empty", Empty), (Sys $ LInt 5))
+                     , (("::"   , Empty), (Sys $ LInt 10))
+                     ]
+example5 = App example5helper (Con "Empty" Void)
+
+
+
+
+
+{-
+let foo = \x ->
+              let y = \k -> k+3 -- memory allocation; should be deallocated once the stack unfolds
+               in let y_1 = y 11
+                   in (x + y_1)
+ in let r = 2
+     in let baz = foo r -- deallocate at this point as well
+         in (baz + 4)
+-}
+
+example6 =
+  Let (PatVar "foo") (Lam (PatVar "x")
+                      (Let (PatVar "y") (Lam (PatVar "k") (Sys $ Sys2 PlusI (Var "k") three))
+                       (Let (PatVar "y_1") (App (Var "y") eleven)
+                        (Sys $ Sys2 PlusI (Var "x") (Var "y_1")))))
+   (Let (PatVar "r") two
+    (Let (PatVar "baz") (App (Var "foo") (Var "r"))
+      (Sys $ Sys2 PlusI (Var "baz") four)
+    )
+   )
+  where
+    four = Sys $ LInt 4
+    two  = Sys $ LInt 2
+    three  = Sys $ LInt 3
+    eleven = Sys $ LInt 11
+
+
+-- 54 cells
+{-
+letrec not = \b -> if b == True then False else True
+       even = \n -> if (n == 0) then true else not (even (n - 1))
+in even 53
+-}
+
+example7 =
+  Letrec
+  [ (PatVar "not"
+    ,Lam (PatVar "b") (If (Sys $ Sys2 BEQ (Var "b") (Sys $ LBool True))
+                          (Sys $ LBool False)
+                          (Sys $ LBool True)))
+  , ((PatVar "even")
+    , (Lam (PatVar "n") (If (Sys $ Sys2 BEQ (Var "n") (Sys $ LInt 0))
+                          (Sys $ LBool True)
+                          (App (Var "not") (App (Var "even") (Sys $ Sys1 DEC (Var "n")))))))
+  ]
+  (App (Var "even") (Sys $ LInt 53))
+
+
+
+{-
+let foo = let m = 11
+           in \x -> x + m
+  in let r = 2
+      in let baz_1 = foo
+          in let baz = baz_1 r
+              in (baz + 4)
+-}
+
+example8 =
+  Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11)
+                      (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "m"))))
+  (Let (PatVar "r") (Sys $ LInt 2)
+   (Let (PatVar "baz_1") (Var "foo")
+    (Let (PatVar "baz") (App (Var "baz_1") (Var "r"))
+      (Sys $ Sys2 PlusI (Var "baz") (Sys $ LInt 4)))
+   )
+  )

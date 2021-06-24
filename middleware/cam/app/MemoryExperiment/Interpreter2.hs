@@ -61,8 +61,6 @@ instance Show CellContent where
     | otherwise = "l:" <> show l
   show (T t) = "T:" <> show t
 
---type MarkBit = Bool
-
 data HeapCell = HeapCell (CellContent, CellContent)
               deriving Eq
 
@@ -141,7 +139,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , heap        = initHeap
                     , nextFreeIdx = 1
                     , programCounter = 1
-                    , ptrCopies     = IMap.empty
+                    , ptrCopies      = IMap.empty
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -171,7 +169,8 @@ eval :: Evaluate EnvContent
 eval = do
   h <- getHeap
   currentInstr <- readCurrent
-  case trace ("\n\n" <> show h <> "\n" <> show currentInstr) $ currentInstr of
+  --case trace ("\n\n" <> show h <> "\n\n" <> show currentInstr) $ currentInstr of
+  case currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
     SND ->
