@@ -308,16 +308,29 @@ fstEnv = do
       in case fcell of
            V val -> do
              S.modify $ \s -> s { environment = EV val }
-             free pointer
+             free pointer Both
            P ptr -> do
              S.modify $ \s -> s { environment = EP ptr }
-             freeCellOnly ptr -- attempt to free cell containing pointer
-             case scell of
-               P ptr2 -> free ptr2 -- follow the second pointer and free
-               _      -> pure ()
+             -- free pointer Second
+
+
+             pcopy <- S.gets ptrCopies
+             case IMap.lookup pointer pcopy of
+               Nothing -> do
+                 free pointer Second
+               Just n -> do -- n >= 2
+                 -- root is going to point to something which
+                 -- has a copy; now need to update the copy count
+                 -- of the child cells in the map
+                 S.modify $ \s -> s { ptrCopies = IMap.insert ptr n pcopy }
+                 free pointer Second
+
+
            L _   -> error "first cant be applied on a label"
            T _   -> error "first cant be applied on a tag"
     EV _ -> error "EV constructor should not arise here"
+    where
+      inc k = k + 1
 
 
 sndEnv :: Evaluate ()
@@ -330,16 +343,30 @@ sndEnv = do
       in case scell of
            V val -> do
              S.modify $ \s -> s { environment = EV val }
-             free pointer
+             free pointer Both
            P ptr -> do
              S.modify $ \s -> s { environment = EP ptr }
-             freeCellOnly ptr
-             case fcell of
-               P ptr1 -> free ptr1 -- follow the first pointer and free
-               _      -> pure ()
+             -- free pointer First
+
+
+
+             pcopy <- S.gets ptrCopies
+             case IMap.lookup pointer pcopy of
+               Nothing -> do
+                 free pointer First
+               Just n -> do -- n >= 2
+                 -- root is going to point to something which
+                 -- has a copy; now need to update the copy count
+                 -- of the child cells in the map
+                 S.modify $ \s -> s { ptrCopies = IMap.insert ptr n pcopy }
+                 free pointer First
+
+
            L _   -> error "second cant be applied on a label"
            T _   -> error "second cant be applied on a tag"
     EV _ -> error "EV constructor should not arise here"
+    where
+      inc k = k + 1
 
 
 accessnth :: Int -> Evaluate ()
@@ -404,7 +431,12 @@ swap = do
     SP ptr -> S.modify $ \s -> s { environment = EP ptr }
 
 loadi :: Int32 -> Evaluate ()
-loadi i = S.modify $ \s -> s { environment = EV (VInt i) }
+loadi i = do
+  e <- getEnv
+  case e of
+    EP ptr -> free ptr Both
+    _      -> pure ()
+  S.modify $ \s -> s { environment = EV (VInt i) }
 
 loadf :: Float -> Evaluate ()
 loadf f = S.modify $ \s -> s { environment = EV (VFloat f) }
@@ -568,6 +600,7 @@ app = do
           SV val  -> S.modify $ \s -> s { environment = EV  val, stack = t }
           SP sptr -> S.modify $ \s -> s { environment = EP sptr, stack = t }
         let (L jl) = fstHeap
+        free ptr Both -- Added freeing!!
         jumpTo jl
       else do
         newPtr <- malloc (fstHeap, stackHeapTag h)
@@ -720,34 +753,15 @@ freeCell idx = do
 
 
 
-
--- Dont follow pointers; Just attempt to free the requested cell
-freeCellOnly :: Index -> Evaluate ()
-freeCellOnly idx = do
-  pcopy <- S.gets ptrCopies
-  case IMap.lookup idx pcopy of
-    Nothing -> do
-      h <- S.gets heap
-      let (HeapCell (_, _)) = h ! idx
-      -- The above cell goes to the free list --
-      freeIdx <- S.gets nextFreeIdx
-      let freeCell = HeapCell (P nullPointer, P freeIdx)
-      S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
-      S.modify $ \s -> s { nextFreeIdx = idx }
-      -- Free List addition ends --
-    Just 2  ->
-      {- We remove the cell from the map and
-         it can be freed the next time -}
-      S.modify $ \s -> s { ptrCopies = IMap.delete idx pcopy }
-    Just n  ->
-      {- n > 2 we simply decrement the count -}
-      S.modify $ \s -> s { ptrCopies = IMap.adjust dec idx pcopy }
-  where
-    dec k = k - 1
+data FollowPath
+  = None
+  | First
+  | Second
+  | Both
 
 -- Attempt to free the requested cell and follow pointers
-free :: Index -> Evaluate ()
-free idx = do
+free :: Index -> FollowPath-> Evaluate ()
+free idx fp = do
   pcopy <- S.gets ptrCopies
   case IMap.lookup idx pcopy of
     Nothing -> do
@@ -765,8 +779,16 @@ free idx = do
        immutability of Haskell we are holding on to c1 and c2 which
        themselves could be pointers worth tracing out and freeing
       -}
-      freeCellContent c1
-      freeCellContent c2
+
+
+      case fp of
+        None   -> pure ()
+        First  -> freeCellContent c1
+        Second -> freeCellContent c2
+        Both   -> do
+          freeCellContent c1
+          freeCellContent c2
+
     Just 2  ->
       {- We remove the cell from the map and
          it can be freed the next time -}
@@ -779,7 +801,7 @@ free idx = do
 
     -- We want to trace out pointers and free them
     freeCellContent :: CellContent -> Evaluate ()
-    freeCellContent (P ptr) = free ptr
+    freeCellContent (P ptr) = free ptr Both
     freeCellContent _     = pure ()
 
 
