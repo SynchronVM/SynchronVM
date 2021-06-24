@@ -414,6 +414,12 @@ pop :: Evaluate ()
 pop = do
   (sT, sR) <- popAndRest
   S.modify $ \s -> s { stack = sR }
+  -- free the environment first --
+  e <- getEnv
+  case e of
+    EP ptr -> free ptr Both
+    _      -> pure ()
+  -- freeing ends here --
   case sT of
     SV val -> S.modify $ \s -> s { environment = EV val }
     SP ptr -> S.modify $ \s -> s { environment = EP ptr }
@@ -439,13 +445,28 @@ loadi i = do
   S.modify $ \s -> s { environment = EV (VInt i) }
 
 loadf :: Float -> Evaluate ()
-loadf f = S.modify $ \s -> s { environment = EV (VFloat f) }
+loadf f = do
+  e <- getEnv
+  case e of
+    EP ptr -> free ptr Both
+    _      -> pure ()
+  S.modify $ \s -> s { environment = EV (VFloat f) }
 
 loadb :: Bool -> Evaluate ()
-loadb b = S.modify $ \s -> s { environment = EV (VBool b) }
+loadb b = do
+  e <- getEnv
+  case e of
+    EP ptr -> free ptr Both
+    _      -> pure ()
+  S.modify $ \s -> s { environment = EV (VBool b) }
 
 clear :: Evaluate ()
-clear = S.modify $ \s -> s { environment = EV VEmpty }
+clear = do
+  e <- getEnv
+  case e of
+    EP ptr -> free ptr Both
+    _      -> pure ()
+  S.modify $ \s -> s { environment = EV VEmpty }
 
 unaryop :: UnaryOp -> Evaluate ()
 unaryop uop = do
@@ -610,10 +631,12 @@ app = do
         free ptr Both -- Added freeing!!
         jumpTo jl
       else do
-        newPtr <- malloc (fstHeap, stackHeapTag h)
-        S.modify $ \s -> s { environment = EP newPtr
-                           , stack       = t
-                           }
+        -- newPtr <- malloc (fstHeap, stackHeapTag h)
+        -- S.modify $ \s -> s { environment = EP newPtr
+        --                    , stack       = t
+        --                    }
+        fstEnv
+        snoc
         jumpTo label
       where
         heapcell = let HeapCell hc = h_ ! ptr
@@ -633,10 +656,12 @@ switch conds = do
             case find (\(c,_) -> c == contag || c == wildcardtag) conds of
               Just (cf, lf) -> (cf, lf)
               Nothing -> error $ "missing constructor " <> show contag
-      newPtr <- malloc (stackHeapTag h, sndHeap)
-      S.modify $ \s -> s { environment = EP newPtr
-                         , stack       = t
-                         }
+      -- newPtr <- malloc (stackHeapTag h, sndHeap)
+      -- S.modify $ \s -> s { environment = EP newPtr
+      --                    , stack       = t
+      --                    }
+      sndEnv
+      cons
       goto label
       where
         heapcell = let HeapCell hc = h_ ! ptr
@@ -660,10 +685,12 @@ switchi conds = do
             case find (\(c,_) -> c == contag || c == wildcardtag) conds of
               Just (cf, lf) -> (cf, lf)
               Nothing -> error $ "missing constructor " <> show contag
-      case sndHeap of
-        V val  -> S.modify $ \s -> s { environment = EV val  }
-        P ptr1 -> S.modify $ \s -> s { environment = EP ptr1 }
-        _     -> error "Impossible to get tag or label here"
+      -- case sndHeap of
+      --   V val  -> S.modify $ \s -> s { environment = EV val  }
+      --   P ptr1 -> S.modify $ \s -> s { environment = EP ptr1 }
+      --   _     -> error "Impossible to get tag or label here"
+
+      sndEnv
       goto label
       where
         heapcell = let HeapCell hc = h_ ! ptr
