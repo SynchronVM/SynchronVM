@@ -577,6 +577,13 @@ cur l = do
 
 comb :: Label -> Evaluate ()
 comb l = do
+  -- freeing logic begins --
+  e <- getEnv
+  case e of
+    EP ptr -> free ptr Both
+    _      -> pure ()
+  -- freeing logic ends --
+
   ptr <- malloc (L l, L dummyLabel)
   S.modify $ \s -> s { environment = EP ptr }
 
@@ -738,18 +745,6 @@ malloc hc = do
 
 mutHeapCell :: Array Int HeapCell -> HeapCell -> Int -> Array Int HeapCell
 mutHeapCell arr hc i = arr // [(i,hc)]
-
-
-freeCell :: Index -> Evaluate ()
-freeCell idx = do
-  h <- S.gets heap
-  let (HeapCell (c1, c2)) = h ! idx
-
-  -- The above cell goes to the free list --
-  freeIdx <- S.gets nextFreeIdx
-  let freeCell = HeapCell (P nullPointer, P freeIdx)
-  S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
-  S.modify $ \s -> s { nextFreeIdx = idx }
 
 
 
