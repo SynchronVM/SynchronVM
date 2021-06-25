@@ -183,8 +183,8 @@ example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x
 {-
 
 Example14
-With GC can be evaluated with 64 heap cells
-Without GC requires 214 heap cells
+With GC can be evaluated with minimum 56 heap cells
+Without GC requires minimum 161 heap cells
 
 -}
 
