@@ -326,3 +326,27 @@ example8 =
       (Sys $ Sys2 PlusI (Var "baz") (Sys $ LInt 4)))
    )
   )
+
+
+{-
+eager languages cannot run this
+
+let fst = \(x,y) -> x in
+letrec a = (5,b)
+       b = (4,a) in
+(fst a) + (fst b)
+
+-}
+
+-- example9 =
+--   Let (PatVar "fst") (Lam (PatPair (PatVar "x") (PatVar "y")) (Var "x"))
+--   (Letrec [ (PatVar "a", (Pair five (Var "b")))
+--           , (PatVar "b", (Pair four (Var "a")))
+--           ]
+--     (Sys $ Sys2 PlusI
+--       (App (Var "fst") (Var "a"))
+--       (App (Var "fst") (Var "b"))))
+--   where
+--     five = Sys $ LInt 5
+--     four = Sys $ LInt 4
+

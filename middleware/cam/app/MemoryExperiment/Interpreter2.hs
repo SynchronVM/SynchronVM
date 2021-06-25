@@ -159,6 +159,15 @@ initHeap = listArray (1, heapSize) finalHeap
     (restcells, _) = splitAt (heapSize - 1) tempHeap
     finalHeap = restcells ++ [emptyCell]
 
+-- XXX: For testing purposes
+cyclicHeap :: Heap
+cyclicHeap = listArray (1, heapSize) finalHeap
+  where
+    finalHeap = [ HeapCell (V (VInt 5), P 2)
+                , HeapCell (V (VInt 3), P 1)
+                , HeapCell (P nullPointer, P 4) --freeList
+                , emptyCell
+                ]
 
 genInstrs :: CAM -> Label -> [(Instruction, Label)]
 genInstrs (Ins i) l = [(i, l)]
@@ -169,8 +178,8 @@ eval :: Evaluate EnvContent
 eval = do
   h <- getHeap
   currentInstr <- readCurrent
-  --case trace ("\n\n" <> show h <> "\n\n" <> show currentInstr) $ currentInstr of
-  case currentInstr of
+  case trace ("\n\n" <> show h <> "\n\n" <> show currentInstr) $ currentInstr of
+  -- case currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
     SND ->
@@ -782,33 +791,37 @@ data FollowPath
 
 -- Attempt to free the requested cell and follow pointers
 free :: Index -> FollowPath-> Evaluate ()
+free (-1) _ = pure ()
 free idx fp = do
   pcopy <- S.gets ptrCopies
   case IMap.lookup idx pcopy of
     Nothing -> do
       h <- S.gets heap
       let (HeapCell (c1, c2)) = h ! idx
-      -- The above cell goes to the free list --
-      freeIdx <- S.gets nextFreeIdx
-      let freeCell = HeapCell (P nullPointer, P freeIdx)
-      S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
-      S.modify $ \s -> s { nextFreeIdx = idx }
-      -- Free List addition ends --
 
-      {-
-       We have already mutated the heap cell but because of the
-       immutability of Haskell we are holding on to c1 and c2 which
-       themselves could be pointers worth tracing out and freeing
-      -}
+      case c1 of
+        (P (-1)) -> pure () -- Landed on the free list. STOP Recursion!
+        _ -> do
+          -- The above cell goes to the free list --
+          freeIdx <- S.gets nextFreeIdx
+          let freeCell = HeapCell (P nullPointer, P freeIdx)
+          S.modify $ \s -> s { heap = mutHeapCell h freeCell idx }
+          S.modify $ \s -> s { nextFreeIdx = idx }
+          -- Free List addition ends --
 
+          {-
+           We have already mutated the heap cell but because of the
+           immutability of Haskell we are holding on to c1 and c2 which
+           themselves could be pointers worth tracing out and freeing
+          -}
 
-      case fp of
-        None   -> pure ()
-        First  -> freeCellContent c1
-        Second -> freeCellContent c2
-        Both   -> do
-          freeCellContent c1
-          freeCellContent c2
+          case fp of
+            None   -> pure ()
+            First  -> freeCellContent c1
+            Second -> freeCellContent c2
+            Both   -> do
+              freeCellContent c1
+              freeCellContent c2
 
     Just 2  ->
       {- We remove the cell from the map and
@@ -822,6 +835,7 @@ free idx fp = do
 
     -- We want to trace out pointers and free them
     freeCellContent :: CellContent -> Evaluate ()
+    freeCellContent (P (-1)) = pure ()
     freeCellContent (P ptr) = free ptr Both
     freeCellContent _     = pure ()
 
