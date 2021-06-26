@@ -70,7 +70,7 @@ instance Show HeapCell where
 
 nullPointer = (-1)
 emptyCell   = HeapCell (P nullPointer, P nullPointer)
-heapSize    = 10 --heap cells
+heapSize    = 20 --heap cells
 
 
 type Heap  = Array Int HeapCell
@@ -178,8 +178,13 @@ eval :: Evaluate EnvContent
 eval = do
   h <- getHeap
   currentInstr <- readCurrent
-  case trace ("\n\n" <> show h <> "\n\n" <> show currentInstr) $ currentInstr of
-  -- case currentInstr of
+  st <- getStack
+  e  <- getEnv
+  -- case trace ("\n\n"  <>
+  --             show st <> " env :" <> show e <> "\n" <>
+  --             "\n\n"  <>
+  --             show currentInstr) $ currentInstr of
+  case currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
     SND ->
@@ -319,7 +324,6 @@ fstEnv = do
              free pointer Both
            P ptr -> do
              S.modify $ \s -> s { environment = EP ptr }
-             -- free pointer Second
 
 
              pcopy <- S.gets ptrCopies
@@ -330,7 +334,14 @@ fstEnv = do
                  -- root is going to point to something which
                  -- has a copy; now need to update the copy count
                  -- of the child cells in the map
-                 S.modify $ \s -> s { ptrCopies = IMap.insert ptr n pcopy }
+                 case IMap.lookup ptr pcopy of
+                   Nothing ->
+                     -- n + k - 1 ;
+                     -- Here k is 1 by being referred through "pointer" so n
+                     S.modify $ \s -> s { ptrCopies = IMap.insert ptr n pcopy }
+                   Just k  ->
+                     S.modify $
+                     \s -> s { ptrCopies = IMap.adjust (upd n) ptr pcopy }
                  free pointer Second
 
 
@@ -338,7 +349,7 @@ fstEnv = do
            T _   -> error "first cant be applied on a tag"
     EV _ -> error "EV constructor should not arise here"
     where
-      inc k = k + 1
+      upd n k = n + k - 1
 
 
 sndEnv :: Evaluate ()
@@ -354,7 +365,6 @@ sndEnv = do
              free pointer Both
            P ptr -> do
              S.modify $ \s -> s { environment = EP ptr }
-             -- free pointer First
 
 
 
@@ -366,7 +376,14 @@ sndEnv = do
                  -- root is going to point to something which
                  -- has a copy; now need to update the copy count
                  -- of the child cells in the map
-                 S.modify $ \s -> s { ptrCopies = IMap.insert ptr n pcopy }
+                 case IMap.lookup ptr pcopy of
+                   -- n + k - 1 ;
+                   -- Here k is 1 by being referred through "pointer" so n
+                   Nothing ->
+                     S.modify $ \s -> s { ptrCopies = IMap.insert ptr n pcopy }
+                   Just k  ->
+                     S.modify $
+                     \s -> s { ptrCopies = IMap.adjust (upd n) ptr pcopy }
                  free pointer First
 
 
@@ -374,7 +391,7 @@ sndEnv = do
            T _   -> error "second cant be applied on a tag"
     EV _ -> error "EV constructor should not arise here"
     where
-      inc k = k + 1
+      upd n k = n + k - 1
 
 
 accessnth :: Int -> Evaluate ()

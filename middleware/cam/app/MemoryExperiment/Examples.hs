@@ -350,3 +350,81 @@ letrec a = (5,b)
 --     five = Sys $ LInt 5
 --     four = Sys $ LInt 4
 
+
+{-
+let m = 3 in
+letrec foo = \_ -> (let f = \x -> x + m in
+                    let _ = f 6 in
+                    foo ()) in
+foo ()
+-}
+
+example9 =
+  Let (PatVar "m") three
+  (Letrec [((PatVar "foo"), (Lam Empty foofunc))]
+   (App (Var "foo") Void))
+  where
+    three = Sys $ LInt 3
+    six   = Sys $ LInt 6
+    foofunc =
+      Let (PatVar "f") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "m")))
+       (Let Empty (App (Var "f") six)
+        (App (Var "foo") Void)
+       )
+
+
+
+{-
+letrec foo = \_ -> (let f = \x -> x + 3 in
+                    let _ = f 6 in
+                    foo ()) in
+foo ()
+-}
+
+example10 =
+  Letrec [((PatVar "foo"), (Lam Empty foofunc))]
+   (App (Var "foo") Void)
+  where
+    three = Sys $ LInt 3
+    six   = Sys $ LInt 6
+    foofunc =
+      Let (PatVar "f") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") three))
+       (Let Empty (App (Var "f") six)
+        (App (Var "foo") Void)
+       )
+
+{-
+
+letrec even = \n -> if n == 0
+                    then True
+                    else odd (dec n)
+       odd  = \n -> if n == 0
+                    then False
+                    else even (dec n)
+    in even 56
+
+-}
+
+example11 =
+  Letrec
+  [((PatVar "even"), (Lam (PatVar "n")
+                      (If (Sys $ Sys2 BEQ n zero)
+                       true
+                       (App (Var "odd") (Sys $ Sys1 DEC n))
+                      )
+                     ))
+  ,((PatVar "odd"), (Lam (PatVar "n")
+                      (If (Sys $ Sys2 BEQ n zero)
+                       false
+                       (App (Var "even") (Sys $ Sys1 DEC n))
+                      )
+                     ))
+
+  ]
+  (App (Var "even") fiftysix)
+  where
+    fiftysix = Sys $ LInt 56
+    n = Var "n"
+    zero = Sys $ LInt 0
+    true = Sys $ LBool True
+    false = Sys $ LBool False

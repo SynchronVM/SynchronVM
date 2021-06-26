@@ -63,7 +63,7 @@ data HeapCell = HeapCell MarkBit (CellContent, CellContent)
 
 nullPointer = -1
 emptyCell   = HeapCell False (P nullPointer, P nullPointer)
-heapSize    = 70 --heap cells
+heapSize    = 20 --heap cells
 
 
 type Heap  = Array Pointer HeapCell
@@ -149,6 +149,16 @@ genInstrs (Lab l c) _   = genInstrs c l
 eval :: Evaluate EnvContent
 eval = do
   currentInstr <- readCurrent
+  st <- getStack
+  e  <- getEnv
+  h  <- getHeap
+  -- case trace ("\n\n"  <>
+  --             show st <> " env : " <> show e <>
+  --             "\n\n"  <>
+  --             show h  <>
+  --             "\n\n"  <>
+  --             show currentInstr) $ currentInstr of
+
   case currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
@@ -734,13 +744,29 @@ lazySweep = do
              then findUnMarkedAndFree h_ (i + 1)
              else i
 
-
-
-
-
 -- NOTE:
 {-
 1. Use the stack for intermediate storage of environment;
    Always PUSH before beginning computation
 2. BinOp (s(2)) expects first argument on stack and second on register
 -}
+
+-- sweep :: Evaluate Pointer
+-- sweep = do
+--   unmark heapSize
+--   i <- S.gets nextFreeIdx
+--   pure i
+
+-- unmark :: Index -> Evaluate ()
+-- unmark 0 = pure ()
+-- unmark i = do
+--   h_ <- getHeap
+--   let (HeapCell markbit (fH, sH)) = h_ ! i
+--   if markbit
+--   then do
+--     S.modify $ \s -> s { heap = mutHeap h_ (HeapCell False (fH, sH)) i }
+--     S.modify $ \s -> s { nextFreeIdx = i }
+--     unmark (i - 1)
+--   else unmark (i - 1)
+
+

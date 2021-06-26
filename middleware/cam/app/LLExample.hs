@@ -301,7 +301,6 @@ example19 =
 case s of
    Cons x xs -> 10) (Cons 5 Nil)
 -}
-
 example20helper =
   Lam (PatVar "s") $
       Case (Var "s") [ (("Cons", (PatPair (PatVar "x") (PatVar "xs")))
@@ -587,6 +586,29 @@ example32' =
       ) (Pair (Sys $ LInt 5) (Sys $ LInt 6))
 
 
+
+{-
+let m = 3 in
+letrec foo = \_ -> (let f = \x -> x + m in
+                    let _ = f 6 in
+                    foo ()) in
+foo ()
+-}
+
+example33 =
+  Let (PatVar "m") three
+  (Letrec [((PatVar "foo"), (Lam Empty foofunc))]
+   (App (Var "foo") Void))
+  where
+    three = Sys $ LInt 3
+    six   = Sys $ LInt 6
+    foofunc =
+      Let (PatVar "f") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "m")))
+       (Let Empty (App (Var "f") six)
+        (App (Var "foo") Void)
+       )
+
+
 run :: Exp -> EnvContent
 run = evaluate . interpret
 
@@ -615,4 +637,3 @@ runAllTests =
       , VInt 10, VInt 8,  VInt 2 , VInt 5
       , VInt 5,  VInt 11
       ]
-
