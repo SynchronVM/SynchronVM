@@ -22,6 +22,7 @@
 
 module MemoryExperiment.BenchmarkInterpreter ( EnvContent (..)
                                              , Val (..)
+                                             , Stat (..)
                                              , evaluate) where
 
 import MemoryExperiment.CamOptMem
@@ -31,6 +32,7 @@ import Data.Word (Word8, Word64)
 import GHC.Arr
 import qualified Control.Monad.State.Strict as S
 import qualified Data.IntMap.Strict as IMap
+import qualified Data.Set as Set
 
 import Debug.Trace
 
@@ -105,6 +107,7 @@ data Code = Code { instrs :: Array Index Instruction
                  , mallocs :: Int
                  , frees :: Int
                  , maxMapSize :: Int
+                 , allocFreeOrder :: [AllocFree]
                  } deriving Show
 
 newtype Evaluate a =
@@ -137,13 +140,31 @@ evaluate cam = (val, stat)
     stat = Stat { totalMallocs   = mallocs s
                 , totalFrees     = frees s
                 , highestMapSize = maxMapSize s
+                -- , allocFreeSequence = reverse $ allocFreeOrder s
+                , allocSeqOk =
+                  isOk (reverse $ allocFreeOrder s) (Set.fromList [1,2,3,4])
                 }
 
+
+isOk :: [AllocFree] -> Set.Set Int -> Bool
+isOk [] s = True
+isOk ((Alloc idx):xs) s
+  | idx `Set.member` s = isOk xs (Set.delete idx s)
+  | otherwise = False
+isOk ((Free  idx):xs) s
+  | idx `Set.member` s = False
+  | otherwise = isOk xs (Set.insert idx s)
 
 data Stat = Stat { totalMallocs :: Int
                  , totalFrees   :: Int
                  , highestMapSize :: Int
+                 -- , allocFreeSequence :: [AllocFree]
+                 , allocSeqOk :: Bool
                  } deriving (Ord, Show, Eq)
+
+data AllocFree = Alloc Int
+               | Free  Int
+               deriving (Ord, Show, Eq)
 
 initCode :: CAM -> Code
 initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
@@ -160,6 +181,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , mallocs = 0
                     , frees = 0
                     , maxMapSize = 0
+                    , allocFreeOrder = []
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -198,7 +220,7 @@ eval :: Evaluate EnvContent
 eval = do
   currentInstr <- readCurrent
   cs <- S.gets computationSteps
-  if cs == 1000000
+  if cs == 1000
   then getEnv
   else do
     {- Benchmarking -}
@@ -815,6 +837,8 @@ malloc hc = do
    {- Benchmarking -}
    ms <- S.gets mallocs
    S.modify $ \s -> s { mallocs = ms + 1 }
+   afo <- S.gets allocFreeOrder
+   S.modify $ \s -> s { allocFreeOrder = (Alloc i):afo }
    {- Benchmarking -}
    let (HeapCell (_, sptr)) = (h ! i)
    S.modify $ \s -> s { heap = mutHeapCell h (HeapCell hc) i }
@@ -853,6 +877,9 @@ free idx fp = do
           {- Benchmarking -}
           fs <- S.gets frees
           S.modify $ \s -> s { frees = fs + 1 }
+          afo <- S.gets allocFreeOrder
+          S.modify $ \s -> s { allocFreeOrder = (Free idx):afo }
+
           {- Benchmarking -}
 
           -- The above cell goes to the free list --
