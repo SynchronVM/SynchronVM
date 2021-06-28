@@ -161,13 +161,24 @@ initHeap = listArray (1, heapSize) finalHeap
 
 -- XXX: For testing purposes
 cyclicHeap :: Heap
-cyclicHeap = listArray (1, heapSize) finalHeap
+cyclicHeap = listArray (1, 4) finalHeap
   where
     finalHeap = [ HeapCell (V (VInt 5), P 2)
                 , HeapCell (V (VInt 3), P 1)
                 , HeapCell (P nullPointer, P 4) --freeList
                 , emptyCell
                 ]
+
+cyclicHeap2 :: Heap
+cyclicHeap2 = listArray (1, 5) finalHeap
+  where
+    finalHeap = [ HeapCell (V (VInt 5), P 2)
+                , HeapCell (V (VInt 3), P 3)
+                , HeapCell (V (VInt 2), P 1)
+                , HeapCell (P nullPointer, P 4) --freeList
+                , emptyCell
+                ]
+
 
 genInstrs :: CAM -> Label -> [(Instruction, Label)]
 genInstrs (Ins i) l = [(i, l)]
@@ -180,11 +191,11 @@ eval = do
   currentInstr <- readCurrent
   st <- getStack
   e  <- getEnv
-  -- case trace ("\n\n"  <>
-  --             show st <> " env :" <> show e <> "\n" <>
-  --             "\n\n"  <>
-  --             show currentInstr) $ currentInstr of
-  case currentInstr of
+  case trace ("\n\n"  <>
+              show h  <> --st <> " env :" <> show e <> "\n" <>
+              "\n\n"  <>
+              show currentInstr) $ currentInstr of
+  -- case currentInstr of
     FST ->
       do { incPC; fstEnv; eval }
     SND ->
@@ -872,3 +883,6 @@ stackHeapTag (SP ptr) = P ptr
    Always PUSH before beginning computation
 2. BinOp (s(2)) expects first argument on stack and second on register
 -}
+
+-- cyclic heap
+-- evaluate (Seq (Ins PUSH) (Seq (Ins FST) (Seq (Ins SWAP) (Seq (Ins FST) (Ins STOP)))))
