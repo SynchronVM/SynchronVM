@@ -24,7 +24,8 @@ module MemoryExperiment.Examples where
 
 import MemoryExperiment.CamOptMem
 import MemoryExperiment.PeepholeMem
-import MemoryExperiment.Interpreter2
+--import MemoryExperiment.Interpreter2
+import MemoryExperiment.BenchmarkInterpreter
 -- Examples
 {-
 
