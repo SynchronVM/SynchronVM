@@ -24,8 +24,8 @@ module MemoryExperiment.Examples where
 
 import MemoryExperiment.CamOptMem
 import MemoryExperiment.PeepholeMem
---import MemoryExperiment.Interpreter2
-import MemoryExperiment.BenchmarkInterpreter
+import MemoryExperiment.Interpreter2
+-- import MemoryExperiment.BenchmarkInterpreter
 -- Examples
 {-
 
@@ -429,3 +429,18 @@ example11 =
     zero = Sys $ LInt 0
     true = Sys $ LBool True
     false = Sys $ LBool False
+
+{-
+datatype node = NODE of unit -> node
+val recursiveNode : node =
+    let fun mkRecursiveNode () = NODE mkRecursiveNode
+    in mkRecursiveNode () end
+
+-}
+
+example12 =
+  Letrec
+  [ (PatVar "node", Con "NODE" (Lam Empty (Var "node")))
+  , (PatVar "mkRecursiveNode", Lam Empty (Con "NODE" (Var "mkRecursiveNode")))
+  ]
+  (App (Var "mkRecursiveNode") Void)
