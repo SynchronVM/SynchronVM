@@ -33,4 +33,7 @@
     benchmarks translate to a functional language.
 - [Dynamic storage allocation : A survey and critical review](https://link.springer.com/chapter/10.1007/3-540-60368-9_19)
 - [An efficient, incremental, automatic garbage collector](https://dl.acm.org/doi/abs/10.1145/360336.360345)
+  - Uses two tables MRT(Mutireference table) and ZCT(Zero count table) two segregate references based on their count. There is an additonal
+    variable reference table (VRT) "which contains in a hash table all those pointers referenced from the stack. Then the ZCT can be scanned, 
+    and any cell not referenced from the VRT can be reclaimed.". It doesn't account for cycles and uses GC to collect them.
 - [Ulterior Reference Counting: Fast Garbage collection without a long wait](https://users.cecs.anu.edu.au/~steveb/pubs/papers/urc-oopsla-2003.pdf)
