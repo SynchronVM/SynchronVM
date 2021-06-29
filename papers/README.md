@@ -27,6 +27,10 @@
 ### RELATED WORK 2
 
 - [The Space Cost of Lazy Reference Counting](https://dl.acm.org/doi/10.1145/982962.964019)
+  - Section 3 summarizes lazy deletion of garbage. While the problems associated with lazy deletion might not immediately occur
+    in our heap, but when we introduce arrays and other forms of contiguous allocations we will encounter the issues listed in the paper.
+    The paper also includes a good benchmark on the pause times of reference counting (while freeing). Note it remains to be seen how these
+    benchmarks translate to a functional language.
 - [Dynamic storage allocation : A survey and critical review](https://link.springer.com/chapter/10.1007/3-540-60368-9_19)
 - [An efficient, incremental, automatic garbage collector](https://dl.acm.org/doi/abs/10.1145/360336.360345)
 - [Ulterior Reference Counting: Fast Garbage collection without a long wait](https://users.cecs.anu.edu.au/~steveb/pubs/papers/urc-oopsla-2003.pdf)
