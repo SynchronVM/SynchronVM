@@ -22,3 +22,11 @@
 
 #### Stack vs Heap for closures
 - [An Empirical and Analytic Study of Stack vs. Heap Costfor Languages with Closures](https://www.cs.princeton.edu/~appel/papers/stack2.pdf)
+
+
+### RELATED WORK 2
+
+- [The Space Cost of Lazy Reference Counting](https://dl.acm.org/doi/10.1145/982962.964019)
+- [Dynamic storage allocation : A survey and critical review](https://link.springer.com/chapter/10.1007/3-540-60368-9_19)
+- [An efficient, incremental, automatic garbage collector](https://dl.acm.org/doi/abs/10.1145/360336.360345)
+- [Ulterior Reference Counting: Fast Garbage collection without a long wait](https://users.cecs.anu.edu.au/~steveb/pubs/papers/urc-oopsla-2003.pdf)
