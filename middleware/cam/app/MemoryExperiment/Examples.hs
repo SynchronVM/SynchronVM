@@ -444,3 +444,48 @@ example12 =
   , (PatVar "mkRecursiveNode", Lam Empty (Con "NODE" (Var "mkRecursiveNode")))
   ]
   (App (Var "mkRecursiveNode") Void)
+
+
+{-
+
+letrec xs = Cons 1 (\() -> ys)
+       ys = Cons 2 (\() -> xs)
+    in let head = \s -> case s of -- this is strict
+                           Empty -> 0
+                           Cons x _ -> x
+         in head xs
+
+-}
+example13 =
+  Letrec [ (PatVar "xs", Con "Cons" (Pair one (Lam Empty (Var "ys"))))
+         , (PatVar "ys", Con "Cons" (Pair two (Lam Empty (Var "xs"))))
+         ]
+  (Let (PatVar "head") headfunc
+   (App (Var "head") (Var "xs"))
+  )
+  where
+    one = Sys $ LInt 1
+    two = Sys $ LInt 2
+    headfunc =
+      Lam (PatVar "s")
+      (Case (Var "s")
+       [ (("Empty", Empty), (Sys $ LInt 0))
+       , (("Cons" , (PatPair (PatVar "x") Empty)), (Var "x"))
+       ])
+
+{-
+let f _ =
+  letrec g _ = k () 
+         k = g
+      in k ()
+ in f
+-}
+
+example14 =
+  Let (PatVar "f")
+   (Lam Empty
+    (Letrec [ (PatVar "g", (Lam Empty (App (Var "k") Void)))
+            , (PatVar "k", Var "g")]
+      (App (Var "k") Void)
+    ))
+  (Var "f")
