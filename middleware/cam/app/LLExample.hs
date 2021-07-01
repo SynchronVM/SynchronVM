@@ -183,7 +183,7 @@ example13 = Let (PatVar "foo") (Let (PatVar "m") (Sys $ LInt 11) (Lam (PatVar "x
 {-
 
 Example14
-With GC can be evaluated with minimum 56 heap cells
+With GC can be evaluated with minimum 55 heap cells
 Without GC requires minimum 161 heap cells
 
 -}
@@ -637,3 +637,17 @@ runAllTests =
       , VInt 10, VInt 8,  VInt 2 , VInt 5
       , VInt 5,  VInt 11
       ]
+
+-- Non terminating
+ntexample1 =
+  Let (PatVar "m") three
+  (Letrec [((PatVar "foo"), (Lam Empty foofunc))]
+   (App (Var "foo") Void))
+  where
+    three = Sys $ LInt 3
+    six   = Sys $ LInt 6
+    foofunc =
+      Let (PatVar "f") (Lam (PatVar "x") (Sys $ Sys2 PlusI (Var "x") (Var "m")))
+       (Let Empty (App (Var "f") six)
+        (App (Var "foo") Void)
+       )
