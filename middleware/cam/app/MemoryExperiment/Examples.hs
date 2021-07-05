@@ -24,8 +24,8 @@ module MemoryExperiment.Examples where
 
 import MemoryExperiment.CamOptMem
 import MemoryExperiment.PeepholeMem
-import MemoryExperiment.Interpreter2
--- import MemoryExperiment.BenchmarkInterpreter
+-- import MemoryExperiment.Interpreter2
+import MemoryExperiment.BenchmarkInterpreter
 -- Examples
 {-
 
@@ -489,3 +489,80 @@ example14 =
       (App (Var "k") Void)
     ))
   (Var "f")
+
+{-
+{-
+
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+reverse2 : List Int -> (List Int, List Int)
+reverse2 xs =
+  case xs of
+    Nil -> (Nil, Nil)
+    (Cons x (Cons y ys)) -> (Cons y (Cons x Nil), xs)
+
+main = reverse2 (Cons 1 (Cons 2 Nil))
+
+-}
+
+
+-}
+
+example15 =
+  Let (PatVar "v10") (Lam (PatVar "v8")
+                      (Lam (PatVar "v9")
+                       (Con "Cons6" (Pair (Var "v8") (Var "v9")))))
+  (Let (PatVar "v11") (Con "Nil5" Void)
+   (Let (PatVar "v0")
+    (Lam (PatVar "v12")
+     (Let (PatVar "v1") (Var "v12")
+      (Case (Var "v1")
+       [(("Nil5",Empty),Pair (Var "v11") (Var "v11"))
+       ,(("Cons6",PatPair (PatVar "v2") (PatVar "temp_0"))
+        ,Case (Var "temp_0")
+         [(("Cons6",PatPair (PatVar "v3") (PatVar "v4")),
+           Pair
+            (App
+             (App (Var "v10") (Var "v3"))
+             (App (App (Var "v10") (Var "v2")) (Var "v11")))
+            (Var "v1"))])])))
+     (App (Var "v0")
+      (App (App (Var "v10") (Sys (LInt 1)))
+       (App (App (Var "v10") (Sys (LInt 2))) (Var "v11"))))))
+
+{-
+
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+reverse2 : List Int -> List Int
+reverse2 xs =
+  case xs of
+    Nil -> Nil
+    (Cons x (Cons y ys)) -> Cons y (Cons x Nil)
+
+main = reverse2 (Cons 1 (Cons 2 Nil))
+
+-}
+
+example16 =
+  Let (PatVar "v10") (Lam (PatVar "v8")
+                      (Lam (PatVar "v9")
+                       (Con "Cons6" (Pair (Var "v8") (Var "v9")))))
+  (Let (PatVar "v11") (Con "Nil5" Void)
+   (Let (PatVar "v0")
+    (Lam (PatVar "v12")
+     (Let (PatVar "v1") (Var "v12")
+      (Case (Var "v1")
+       [(("Nil5",Empty),Var "v11")
+       ,(("Cons6",PatPair (PatVar "v2") (PatVar "temp_0"))
+        ,Case (Var "temp_0")
+         [(("Cons6",PatPair (PatVar "v3") (PatVar "v4"))
+          ,App (App (Var "v10") (Var "v3"))
+           (App (App (Var "v10") (Var "v2")) (Var "v11")))]
+        )])))
+     (App (Var "v0") (App (App (Var "v10") (Sys (LInt 1)))
+                      (App (App (Var "v10") (Sys (LInt 2))) (Var "v11"))))))

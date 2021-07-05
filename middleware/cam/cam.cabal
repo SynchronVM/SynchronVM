@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f95582c376ae05df79c9c1915a2c158d1a8257e08534996592c2a73f96e5e857
+-- hash: 2dd2e33d3a3af8f8176d6f968d45531b93034ec96cd633eaf0be0b866cf04d98
 
 name:           cam
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
       Examples
       LLExample
       Main
+      MemoryExperiment.BenchmarkInterpreter
       MemoryExperiment.CamOptMem
       MemoryExperiment.Examples
       MemoryExperiment.Interpreter2
@@ -66,6 +67,7 @@ executable cam-exe
       CamOpt
       Examples
       LLExample
+      MemoryExperiment.BenchmarkInterpreter
       MemoryExperiment.CamOptMem
       MemoryExperiment.Examples
       MemoryExperiment.Interpreter2

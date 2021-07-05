@@ -141,8 +141,8 @@ evaluate cam = (val, stat)
                 , totalFrees     = frees s
                 , highestMapSize = maxMapSize s
                 -- , allocFreeSequence = reverse $ allocFreeOrder s
-                , allocSeqOk =
-                  isOk (reverse $ allocFreeOrder s) (Set.fromList [1,2,3,4])
+                , allocSeqOk = isOk (reverse $ allocFreeOrder s)
+                               (Set.fromList $ take heapSize [1..])
                 }
 
 
