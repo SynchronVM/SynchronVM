@@ -12,6 +12,7 @@
 \begin{code}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Typechecker.NewTypeChecker2 where
 
@@ -1273,30 +1274,41 @@ typecheck defs = do
 
       -- | The initial typechecking environment
       initialEnv :: Env
-      initialEnv = Env (Map.fromList entries) Map.empty
+      initialEnv = Env (Map.fromList getPrimitiveEntries) Map.empty
 
-      {- | Language primitives which are implemented by the runtime system, and not
-      declared in the source program. -}
-      entries :: [(Ident, Schema)]
-      entries = [ (Ident "channel", Forall [a] $ TLam unit channel )
-                , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
-                , (Ident "recv"   , Forall [a] $ TLam channel event)
-                , (Ident "sync"   , Forall [a] $ TLam event ta)
-                , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
-                , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
-                , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
-                , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
-                ]
-        where
-            a         = Ident "a"
-            b         = Ident "b"
-            ta        = TVar a
-            tb        = TVar b
-            unit      = TNil
-            channel   = TAdt (UIdent "Channel") [ta]
-            event     = TAdt (UIdent "Event")   [ta]
-            eventb    = TAdt (UIdent "Event")   [tb]
-            unitevent = TAdt (UIdent "Event") [unit]
+{- | Get the entries for the environment to use while typechecking, regarding
+the primitive operations offered by the compiler. -}
+getPrimitiveEntries :: [(Ident, Schema)]
+getPrimitiveEntries = primitives
+
+{- | Get the entries for the environment to use while alpha renaming, regarding
+the primitive operations offered by the compiler. The default that is implemented
+right now is that they are not renamed at all. -}
+getPrimitiveNameMappings :: [(Ident, Ident)]
+getPrimitiveNameMappings = map (\(id,_) -> (id, id)) primitives
+
+-- | Information about the primitives. Add as needed.
+primitives :: [(Ident, Schema)]
+primitives =
+  [ (Ident "channel", Forall [a] $ TLam unit channel )
+  , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
+  , (Ident "recv"   , Forall [a] $ TLam channel event)
+  , (Ident "sync"   , Forall [a] $ TLam event ta)
+  , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
+  , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
+  , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
+  , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
+  ]
+  where
+     a         = Ident "a"
+     b         = Ident "b"
+     ta        = TVar a
+     tb        = TVar b
+     unit      = TNil
+     channel   = TAdt (UIdent "Channel") [ta]
+     event     = TAdt (UIdent "Event")   [ta]
+     eventb    = TAdt (UIdent "Event")   [tb]
+     unitevent = TAdt (UIdent "Event") [unit]
 
 -- | Helper instance
 instance {-# OVERLAPPING #-} Show ([Function Type], Subst) where
@@ -2611,5 +2623,186 @@ instance Print a => Print (Program a) where
     where
         datadecs :: [Def a]
         datadecs = map (\(uid, vars, cons) -> DDataDec uid vars cons) (datatypes p)
+
+
+
+
+
+
+
+
+
+
+
+
+
+{- ***** Start of Alpha Renamer ***** -}
+
+{- | Take an initial state to generate fresh names from, and a program, and return an
+alpha renamed version of the program. In the alpha renamed version all declared names
+are unique. We can declare & bind variable names in two places - function definitions
+and patterns.
+
+Apart from returning the alpha renamed program, a new name-generating state is returned
+which can be passed in to the subsequent compiler passes, if they need to generate fresh
+names. -}
+alpharename :: Int -> Program a -> IO (Program a, Int)
+alpharename state p = do
+  let (rd) = runStateT (renameProgram p) state
+      ex           = runReaderT rd $ Map.fromList getPrimitiveNameMappings
+  io <- runExceptT ex
+  case io of
+    Left e -> error "insert better exit here"
+    Right p' -> return p'
+
+{- | Reader state used while alpha renaming a program. It maps old identifier names to
+new identifier names. -}
+type RenameState = Map.Map Ident Ident
+
+{- | Datatype declaring the different types of errors that can arise during alpha
+renaming. -}
+data RenameError
+    = NotRenamed Ident
+
+-- | Show instance for renaming errors
+instance Show RenameError where
+  show x = case x of
+    NotRenamed id -> concat ["renaming error: asked for the new name of ", printTree id,
+                             " but no new name was found in the renaming environment"]
+
+-- | Alpha renaming monad
+type Rename a = StateT Int (
+                ReaderT RenameState (
+                ExceptT RenameError
+                IO))
+                a
+
+-- | Generate a fresh identifier
+freshIdentifier :: (MonadState Int m) => m Ident
+freshIdentifier = do
+  i <- get
+  put $ i + 1
+  return $ Ident $ "v" ++ show i
+
+{- | Takes an identifier and returns the new name of that identifier, if any exist.
+If there's no new name to be found, an error has occured and an error is subsequently
+raised. -}
+rename :: Ident -> Rename Ident
+rename id = do
+  env <- ask
+  case Map.lookup id env of
+    Just id' -> return id'
+    Nothing  -> throwError $ NotRenamed id
+
+{- | Perform a renaming computation where the renaming environment has been extended with
+the mappings given as the first parameter to this function. -}
+withMappings :: [(Ident, Ident)] -> Rename a -> Rename a
+withMappings ids = local (inserted . deleted)
+  where
+     {- | Take the renaming state and delete any occurence of the new mappings from this
+     state. -}
+     deleted :: RenameState -> RenameState
+     deleted env = foldl (\e' (to,_) -> Map.delete to e') env ids
+
+     -- | Take the renaming state and insert all the new mappings into it
+     inserted :: RenameState -> RenameState
+     inserted env = foldl (\e' (to, from) -> Map.insert to from e') env ids
+
+-- | Alpha rename a program in the language
+renameProgram :: Program a -> Rename (Program a)
+renameProgram p = do
+  functions' <- mapM renameFunction (functions p)
+  main'      <- renameFunction (main p)
+  return $ p { functions = functions'
+             , main      = main'
+             }
+
+-- | Alpha rename a function in the language
+renameFunction :: Function a -> Rename (Function a)
+renameFunction f = do
+  id <- freshIdentifier
+  eqs <- mapM (renameDef id) (equations f)
+  return $ f { equations = eqs
+             , name      = id
+             }
+  where
+     {- | Alpha rename a definition in the language, giving it a new name and
+     renaming its arguments before rewriting the equation body. -}
+     renameDef :: Ident -> Def a -> Rename (Def a)
+     renameDef id' (DEquation a id args body) = do
+       (args', mappings) <- unzip <$> mapM renamePat args
+       body' <- withMappings (concat mappings) $ renameExp body
+       return $ DEquation a id' args' body'
+
+{- | Take a pattern and return the same pattern but alpha renamed. Also return all the
+new mappings generated while renaming the pattern, so that the environment can be
+extended with this information before proceeding. -}
+renamePat :: Pat a -> Rename (Pat a, [(Ident, Ident)])
+renamePat p = case p of
+    PConst a ct    -> return (p, [])
+    PVar a id      -> do
+      id' <- freshIdentifier
+      return (PVar a id', [(id, id')])
+    PNil a         -> return (p, [])
+    PWild a        -> return (p, [])
+    PAs a id p     -> do
+      id' <- freshIdentifier
+      (p', names) <- renamePat p
+      return (PAs a id' p', (id,id'):names)
+    PAdt a uid aps -> do
+      (aps', names) <- unzip <$> mapM renamePat aps
+      return (PAdt a uid aps', concat names)
+    PTup a ps      -> do
+      (ps', names) <- unzip <$> mapM renamePat ps
+      return (PTup a ps', concat names)
+
+{- | Alpha rename a pattern match clause. Rename the bound variables in the pattern and
+extend the environment with the new information before renaming the expression. -}
+renamePatternMatch :: (Pat a, Exp a) -> Rename (Pat a, Exp a)
+renamePatternMatch (p,e) = do
+  (p', mappings) <- renamePat p
+  e' <- withMappings mappings $ renameExp e
+  return (p', e')
+
+-- | Alpha rename an expression
+renameExp :: Exp a -> Rename (Exp a)
+renameExp e = case e of
+    ELet a p e1 e2 -> do
+      (p', mappings) <- renamePat p
+      e1' <- renameExp e1
+      e2' <- withMappings mappings $ renameExp e2
+      return $ ELet a p' e1' e2'
+    ELam a p e     -> do
+      (p', mappings) <- renamePat p
+      e' <- withMappings mappings $ renameExp e
+      return $ ELam a p' e'
+    EApp a e1 e2   -> do
+      e1' <- renameExp e1
+      e2' <- renameExp e2
+      return $ EApp a e1' e2'
+    EBin a e1 e2 o -> do
+      e1' <- renameExp e1
+      e2' <- renameExp e2
+      return $ EBin a e1' e2' o
+    EUn a e o      -> do
+      e' <- renameExp e
+      return $ EUn a e' o
+    ETup a es      -> do
+      es' <- mapM renameExp es
+      return $ ETup a es'
+    EVar a id      -> do
+      id' <- rename id
+      return $ EVar a id'
+    ECon a uid     -> return $ ECon a uid
+    ELit a c       -> return $ ELit a c
+    ECase a e pms  -> do
+      e' <- renameExp e
+      pms' <- mapM renamePatternMatch pms
+      return $ ECase a e' pms'
+    EIf a e1 e2 e3 -> do
+      e1' <- renameExp e1
+      e2' <- renameExp e2
+      e3' <- renameExp e3
+      return $ EIf a e1' e2' e3'
 
 \end{code}
