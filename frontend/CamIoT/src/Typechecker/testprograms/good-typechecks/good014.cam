@@ -1,0 +1,10 @@
+chan : Channel Int
+chan = channel ()
+
+plus3 : Int -> Int
+plus3 x = x + 3
+
+main =
+  let _ = spawnExternal chan 0 in
+  let v = sync (wrap (recv chan) plus3) in
+  v

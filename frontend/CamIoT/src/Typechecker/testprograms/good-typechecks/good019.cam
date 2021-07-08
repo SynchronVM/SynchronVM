@@ -1,0 +1,8 @@
+fst : (Int, Int) -> Int
+fst = \(x,y) -> x
+
+foo : Int -> (Int, Int)
+foo = let x = (2, 3) in
+      (\y -> ((fst x), y))
+
+main = foo 5

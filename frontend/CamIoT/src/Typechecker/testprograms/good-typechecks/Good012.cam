@@ -1,0 +1,51 @@
+
+
+data Proxy a where
+  Proxy : Proxy a
+
+intToBoolVar : Proxy Int -> Proxy Bool
+intToBoolVar p = Proxy
+
+intToBoolWild : Proxy Int -> Proxy Bool
+intToBoolWild _ = Proxy
+
+intToIntVar : Proxy Int -> Proxy Int
+intToIntVar p = p
+
+intToIntNew : Proxy Int -> Proxy Int
+intToIntNew p = Proxy
+
+intToIntWild : Proxy Int -> Proxy Int
+intToIntWild _ = Proxy
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+maybeProxy : Maybe (Proxy Int) -> Proxy Int
+maybeProxy Nothing  = Proxy
+maybeProxy (Just p) = p
+
+maybeProxy2 : Maybe (Proxy Bool) -> Proxy Int
+maybeProxy2 Nothing  = Proxy
+maybeProxy2 (Just p) = Proxy
+maybeProxy2 (Just _) = Proxy
+
+caseProxy : Maybe (Proxy Bool) -> Proxy Int
+caseProxy x = case x of
+  Nothing -> Proxy
+  Just p  -> Proxy
+  Just _  -> Proxy
+
+caseProxy2 : Maybe (Proxy Int) -> Proxy Int
+caseProxy2 x = case x of
+  Nothing -> Proxy
+  Just p  -> p
+  Just _  -> Proxy
+
+nestedProxy : Maybe (Proxy (Proxy Bool)) -> Proxy Int
+nestedProxy x = case x of
+  Nothing -> Proxy
+  Just p  -> Proxy
+
+main = 5

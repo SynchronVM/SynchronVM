@@ -49,43 +49,84 @@ trace x = unsafePerformIO $ putStrLn (show x) >> return x
 }
 
 \begin{code}
-data Type = TVar Ident
-          | TInt
-          | TFloat
-          | TBool
-          | TNil
-          | TTup [Type]
-          | TAdt UIdent [Type]
-          | TLam Type Type
-  deriving (Eq, Show)
 
+-- | The types that are supported by the surface language
+data Type
+    = TVar Ident          -- ^ Type variables
+    | TInt                -- ^ Integers
+    | TFloat              -- ^ Floating point numbers
+    | TBool               -- ^ Booleans
+    | TNil                -- ^ Unit type
+    | TTup [Type]         -- ^ Arbitrarily sizes tuples
+    | TAdt UIdent [Type]  -- ^ Algebraic data types
+    | TLam Type Type      -- ^ Function types
+    deriving (Eq, Show)
+
+{- | Get the arguments of a function type. E.g
+
+@
+> args (Int -> Bool -> Maybe a -> Float)
+[Int, Bool, Maybe a]
+@
+
+-}
 args :: Type -> [Type]
 args (TLam t1 t2) = t1 : args t2
 args _            = []
 
+{- | Returns what a function type constructs. E.g
+
+@
+> construction (Int -> Bool -> Maybe a -> Float)
+Float
+@
+
+and
+
+@
+> construction Float
+Float
+@
+
+-}
 construction :: Type -> Type
 construction (TLam t1 t2) = construction t2
 construction t            = t
 
+{- | Create a function type of a list of types. E.g
+
+@
+> funtype [Int, Bool, Maybe a]
+Int -> Bool -> Maybe a
+@
+
+-}
 funtype :: [Type] -> Type
 funtype [t]        = t
 funtype (t1:t2:ts) = TLam t1 (funtype (t2:ts))
 
-data Ident = Ident String
-  deriving (Eq, Show, Ord)
+-- | Identifiers in the source language
+data Ident
+    = Ident String
+    deriving (Eq, Show, Ord)
 
-data UIdent = UIdent String
-  deriving (Eq, Show, Ord)
+-- | Uppercase identifiers. Used for algebraic data types and constructors.
+data UIdent
+    = UIdent String
+    deriving (Eq, Show, Ord)
 
-data Pat a = PVar a Ident
-           | PNil a
-           | PConst a Lit
-           | PWild a
-           | PAs a Ident (Pat a)
-           | PAdt a UIdent [Pat a]
-           | PTup a [Pat a]
-  deriving (Eq, Show)
+-- | Patterns supported by the surface language
+data Pat a
+    = PVar a Ident           -- ^ Variables
+    | PNil a                 -- ^ Unit constant
+    | PConst a Lit           -- ^ Constants
+    | PWild a                -- ^ Wild cards
+    | PAs a Ident (Pat a)    -- ^ As-patterns, e.g (x as (Just i))
+    | PAdt a UIdent [Pat a]  -- ^ Algebraic data constructors
+    | PTup a [Pat a]         -- ^ Arbitrarily sized tuples
+    deriving (Eq, Show)
 
+-- | Get the value of the type variable @a@ out of a @Pat a@.
 patVar :: Pat a -> a
 patVar p = case p of
   PVar a _   -> a
@@ -96,25 +137,30 @@ patVar p = case p of
   PAdt a _ _ -> a
   PTup a _   -> a
 
-data Lit = LInt Int
-         | LFloat Double
-         | LBool Bool
-         | LNil
-  deriving (Eq, Show)
+-- | Literals in the surface language
+data Lit
+    = LInt Int       -- ^ Integers
+    | LFloat Double  -- ^ Floating point numbers
+    | LBool Bool     -- ^ Booleans
+    | LNil           -- ^ Unit constant
+    deriving (Eq, Show)
 
-data Exp a = EVar a Ident
-           | ECon a UIdent
-           | ELit a Lit
-           | ECase a (Exp a) [(Pat a, Exp a)]
-           | ETup a [(Exp a)]
-           | EBin a (Exp a) (Exp a) (Binop a)
-           | EUn a (Exp a) (Unop a)
-           | ELam a (Pat a) (Exp a)
-           | EApp a (Exp a) (Exp a)
-           | ELet a (Pat a) (Exp a) (Exp a)
-           | EIf a (Exp a) (Exp a) (Exp a)
-  deriving (Eq, Show)
+-- | Expressions in the surface language
+data Exp a
+    = EVar a Ident                      -- ^ Variables
+    | ECon a UIdent                     -- ^ Algebraic datatype constructors
+    | ELit a Lit                        -- ^ Literals
+    | ECase a (Exp a) [(Pat a, Exp a)]  -- ^ Case expressions
+    | ETup a [(Exp a)]                  -- ^ Arbitrarily sizes tuples
+    | EBin a (Exp a) (Exp a) (Binop a)  -- ^ Binary operators applied to two expressions
+    | EUn a (Exp a) (Unop a)            -- ^ Unary operators applied to one expression
+    | ELam a (Pat a) (Exp a)            -- ^ Lambda abstractions
+    | EApp a (Exp a) (Exp a)            -- ^ Function application
+    | ELet a (Pat a) (Exp a) (Exp a)    -- ^ Let-bindings. let x = 5 in y
+    | EIf a (Exp a) (Exp a) (Exp a)     -- ^ Conditional execution
+    deriving (Eq, Show)
 
+-- | Get the value of the type variable @a@ out of an @Exp a@.
 expVar :: Exp a -> a
 expVar e = case e of
   EVar a _     -> a
@@ -129,19 +175,24 @@ expVar e = case e of
   ELet a _ _ _ -> a
   EIf a _ _ _  -> a
 
-data Binop a = Add a
-             | Sub a
-             | Mul a
-             | Div a
-             | OLT a
-             | OLE a
-             | OGT a
-             | OGE a
-             | OEQ a
-             | And a
-             | Or a
-  deriving (Eq, Ord, Show)
+-- | Binary operators in the surface language
+data Binop a
+    = Add a  -- ^ +,  either (Float -> Float -> Float) or (Int -> Int -> Int)
+    | Sub a  -- ^ -,  either (Float -> Float -> Float) or (Int -> Int -> Int)
+    | Mul a  -- ^ *,  either (Float -> Float -> Float) or (Int -> Int -> Int)
+    | Div a  -- ^ /,  either (Float -> Float -> Float) or (Int -> Int -> Int)
+    | OLT a  -- ^ <,  either (Float -> Float -> Bool) or (Int -> Int -> Bool)
+    | OLE a  -- ^ <=, either (Float -> Float -> Bool) or (Int -> Int -> Bool)
+    | OGT a  -- ^ >,  either (Float -> Float -> Bool) or (Int -> Int -> Bool)
+    | OGE a  -- ^ >=, either (Float -> Float -> Bool) or (Int -> Int -> Bool)
+    {- | ==, a -> a -> Bool, might need to change this since it is not obvious
+    how to compare all types. -}
+    | OEQ a
+    | And a  -- ^ &&, Bool -> Bool -> Bool
+    | Or a  -- ^  ||, Bool -> Bool -> Bool
+    deriving (Eq, Ord, Show)
 
+-- | Get the value of the type variable @a@ out of a @Binop a@.
 binopVar :: Binop a -> a
 binopVar op = case op of
   Add a -> a
@@ -156,6 +207,7 @@ binopVar op = case op of
   And a -> a
   Or  a -> a
 
+-- | Set the value of the type variable @a@ of a @Binop a@.
 setBinopVar :: a -> Binop b -> Binop a
 setBinopVar a op = case op of
   Add _ -> Add a
@@ -170,52 +222,133 @@ setBinopVar a op = case op of
   And _ -> And a
   Or _  -> Or a
 
-data Unop a = Not a
-  deriving (Eq, Show, Ord)
+-- | Unary operators in the surface language
+data Unop a
+    = Not a  -- ^ Boolean negation
+    deriving (Eq, Show, Ord)
 
+-- | Get the value of the type variable @a@ out of a @Unop a@.
 unopVar :: Unop a -> a
 unopVar op = case op of
   Not a -> a
 
+-- | Set the value of the type variable @a@ of a @Unop a@.
 setUnopVar :: a -> Unop b -> Unop a
 setUnopVar a op = case op of
   Not _ -> Not a
 
-data Def a = DTypeSig Ident Type
-           | DEquation a Ident [Pat a] (Exp a)
-           | DDataDec UIdent [Ident] [(UIdent, Type)]
-  deriving (Eq, Show)
+{- | Top level definitions in the language. A top level definition is either a
+type signature, a function equation or a data type declaration.
 
+@
+> f : Int -> Int
+DTypeSig (Ident "f") (TLam TInt TInt)
+@
+
+@
+> f x = x
+DEquation (TLam (TVar "a") (TVar "a")) (Ident "f") [PVar "x"] (EVar (Ident "x")))
+@
+
+@
+> f x = x
+> f 5 = 3
+[ DEquation (TLam (TVar "a") (TVar "a")) (Ident "f") [PVar "x"] (EVar (Ident "x")))
+, DEquation TInt (Ident "f") [PConst (LInt 5)] (ELit (LInt 3)))
+]
+@
+
+@
+> data Test a where
+>   TestConstructor : Test a
+DDataDec
+  (UIdent "Test")
+  [Ident "a"]
+  [(UIdent "TestConstructor", TAdt (UIdent "Test") [Ident "a"])]
+@
+
+-}
+data Def a
+    = DTypeSig Ident Type                       -- ^ Type signatures
+    | DEquation a Ident [Pat a] (Exp a)         -- ^ Function definitions
+    | DDataDec UIdent [Ident] [(UIdent, Type)]  -- ^ Data type declarations
+    deriving (Eq, Show)
+
+{- | Get the name of a top level definition. Partial function which has no equation
+for the case when it is applied to a data type declaration. -}
 getName :: Def a -> Ident
 getName (DTypeSig id _)      = id
 getName (DEquation _ id _ _) = id
 
+-- | Get the value of the type variable @a@ out of a @Def a@.
 defVar :: Def a -> Maybe a
 defVar d = case d of
   DTypeSig _ _      -> Nothing
   DEquation a _ _ _ -> Just a
 
+{-| Functions in the surface language. After parsing, a program is represented as a list
+of @Def ()@. Just by looking at this list it is not clear which definitions belong to
+which functions. E.g the program
+
+@
+f 5 = 5
+f 3 = 4
+g x = x
+@
+
+is parsed as
+
+@
+[ DEquation TInt (Ident "f") [PConst (LInt 5)] (ELit (LInt 5)))
+, DEquation TInt (Ident "f") [PConst (LInt 3)] (ELit (LInt 4)))
+, DEquation (TLam (TVar "a") (TVar "a")) (Ident "g") [PVar "x"] (EVar (Ident "x")))
+]
+@
+
+A better representation is to group functions together, like this:
+
+@
+[ [ DEquation TInt (Ident "f") [PConst (LInt 5)] (ELit (LInt 5)))
+  , DEquation TInt (Ident "f") [PConst (LInt 3)] (ELit (LInt 4)))
+  ]
+, [ DEquation (TLam (TVar "a") (TVar "a")) (Ident "g") [PVar "x"] (EVar (Ident "x"))) ]
+]
+@
+
+It is essentially this that a `Function` represent. The `Function` data type also houses
+information about the type signature (if any exists) and the name of the function. After
+type checking, the @typesig@ field should always be @Just x@ where x is the type of the
+function.
+-}
 data Function a = Function
-  { name      :: Ident
-  , equations :: [Def a]
-  , typesig   :: Maybe Type
+  { name      :: Ident       -- ^ Name of the function
+  , equations :: [Def a]     -- ^ Equations that makes up the function definition
+  , typesig   :: Maybe Type  -- ^ Type signature of the function, if any exists
   }
   deriving (Eq)
 
+-- | `Print` instance for `Function`s. Please refer to the pretty printer for details.
 instance Print a => Show (Function a) where
   show = printTree
 
+{- | A program in the surface language consists of three things. Zero or more datatype
+declarations, zero or more functions and exactly 1 'main' function. -}
 data Program a = Program
-  { datatypes :: [ADT]
-  , functions :: [Function a]
-  , main      :: Function a
+  { datatypes :: [ADT]         -- ^ Declared datatypes
+  , functions :: [Function a]  -- ^ Functions
+  , main      :: Function a    -- ^ Main
   }
 
+{- | Type synonym for Algebraic Datatypes (ADT). An ADT has a type constructor, zero or
+more type parameters and one or more data constructors. -}
 type ADT = (UIdent, [Ident], [(UIdent, Type)])
 
+-- | `Print` instance for `Program`s. Please refer to the pretty printer for details.
 instance Print a => Show (Program a) where
   show = printTree
 
+{- | Take a @[Def ()]@ from the parser and turn it into a @Program ()@. Please read
+the documentation for `Function` to see what this step is doing. -}
 mkProgram :: Eq a => [Def a] -> Program a
 mkProgram defs =
   let (datadecs,funs)    = partitionDataDecs defs
@@ -225,6 +358,8 @@ mkProgram defs =
   where
       unwrapDataDec (DDataDec uid vars cons) = (uid, vars, cons)
 
+{- | Partition a @[Def a]@ into two lists where the first list contains all the
+datatype declarations and the other contains all the functions. -}
 partitionDataDecs :: [Def a] -> ([Def a], [Def a])
 partitionDataDecs ds = partition pred ds
   where
@@ -232,22 +367,33 @@ partitionDataDecs ds = partition pred ds
         DDataDec _ _ _ -> True
         _              -> False
 
+{- | Take a @[Def a]@ and turn it into a @[Function a]@, which is explained in a bit
+more detail in the documentation for `Function`. -}
 mkFunctions :: [Def a] -> [Function a]
 mkFunctions defs = map toFunction $ groups defs
 
+{- | Take a list of the functions that makes up a program and separate out the main
+function from them. Will crash with a @fromJust@ error if there is no declared main
+function. -}
 partitionMain :: Eq a => [Function a] -> (Function a, [Function a])
 partitionMain funs = let main  = find ((==) (Ident "main") . name) funs
                          funs' = delete (fromJust main) funs
                      in (fromJust main, funs')
 
+{- | Predicate to check if two named top level definitions are the same. Will
+crash if the top level definition is a datatype declaration. -}
 pred :: Def a -> Def a -> Bool
 pred d1 d2 = getName d1 == getName d2
 
+{- | Take a @[Def a]@ and turn it into a @[[Def a]]@, where each inner @[Def a]@ contains
+the definitions that makes up a single function. -}
 groups :: [Def a] -> [[Def a]]
 groups defs = groupBy Typechecker.NewTypeChecker2.pred defs
 
--- assuming a singleton list is a DEquation, and that there are no
--- type signatures without equations
+{- | Takes a list of definitions that make up a single function and turns it into a
+`Function` object. If the list if definitions begins with a type signature, it is assumed
+that the following definitions are not empty, that there are no signatures without
+function definitions. -}
 toFunction :: [Def a] -> Function a
 toFunction [x]    = Function (getName x) [x] Nothing
 toFunction (d:ds) = case d of
@@ -256,6 +402,9 @@ toFunction (d:ds) = case d of
   _             -> Function (getName d) (d:ds) Nothing
 
 {-
+Try to compile a program. Will return different error codes depending on the
+outcome of the process.
+
 exitcodes:
   1 - parse error
   2 - typecheck error
@@ -292,11 +441,17 @@ tryProcess fp = do
   contents <- TIO.readFile fp
   TIO.putStrLn $ process contents
 
+{- | A substitution is used during type checking and unification. A substitution is a
+map from identifiers (type variables) to types. -}
 type Subst = Map.Map Ident Type
 
+-- | The trivial substitution is just an empty map. It has no mappings at all.
 unitsub :: Subst
 unitsub = Map.empty
 
+{- | Show instance for `Subst`. Since `Subst` is a type synonym for `Map Ident Type`,
+which already has a `Show` instance, we must annotate this instance with
+@{-# OVERLAPPING#-}@ to give this once precedense. -}
 instance {-# OVERLAPPING #-} Show Subst where
   show s = unlines $
            map (\(t1,t2) -> concat [ printTree t1
@@ -304,19 +459,29 @@ instance {-# OVERLAPPING #-} Show Subst where
                                    , printTree t2]) $
            Map.toList s
 
+{- | A class of types that are substitutable. Being substitutable means at the very
+least that you can apply a substitution to it. Some of them will also be able to
+tell you which their free type variables are, but not all of them. This should in
+all fairness be turned into two type classes. -}
 class Substitutable a where
-  apply :: Subst -> a -> a
-  ftv :: a -> Set.Set Ident -- free type variables
+  apply :: Subst -> a -> a   -- ^ Apply a substitution to an object of type @a@
+  ftv :: a -> Set.Set Ident  -- ^ Get the free type variables in the object of type @a@
 
+-- | If @a@ is @Substitutable@, so if a list of @a@s.
 instance Substitutable a => Substitutable [a] where
   apply s = map (apply s)
   ftv     = foldr (Set.union . ftv) Set.empty
 
--- Left biased substitution
+{- | Composition of substitutions, which is left-biased. Being left-biased means that
+we apply the substitution @s1@ to @s2@ before we perform the union of that with @s1@. -}
 compose :: Subst -> Subst -> Subst
 s1 `compose` s2 = Map.map (apply s1) s2 `Map.union` s1
 
+-- | Types are substitutable.
 instance Substitutable Type where
+  {- | Applying a substitution to a type only does something in the case that the type
+  is a type variable and the type variable has a mapping in the substitution. In that
+  case, the type variable i replaced with the mapping in the substitution. -}
   apply s t = case t of
     TVar id     -> Map.findWithDefault (TVar id) id s
     TInt        -> TInt
@@ -327,6 +492,8 @@ instance Substitutable Type where
     TAdt uid ts -> TAdt uid (apply s ts)
     TTup ts     -> TTup $ map (apply s) ts
 
+  {- | The free type variables of a type is simply the set of type variables, as
+  in a type there are no places where a type variable can be bound. -}
   ftv t = case t of
     TVar id     -> Set.singleton id
     TInt        -> Set.empty
@@ -337,6 +504,7 @@ instance Substitutable Type where
     TAdt uid ts -> Set.unions $ map ftv ts
     TTup ts     -> Set.unions $ map ftv ts
 
+-- | Patterns are substitutable.
 instance Substitutable (Pat Type) where
   apply s p = case p of
     PVar a id     -> PVar (apply s a) id
@@ -347,10 +515,10 @@ instance Substitutable (Pat Type) where
     PAdt a uid ps -> PAdt (apply s a) uid $ map (apply s) ps
     PTup a ps     -> PTup (apply s a) $ map (apply s) ps
 
-  -- We will never actually need this function for patterns, or anything other
-  -- than types for that matter.
+  -- We will never actually need this function for patterns
   ftv p = undefined
 
+-- | Expressions are substitutable
 instance Substitutable (Exp Type) where
   apply s e = case e of
     EVar a id      -> EVar (apply s a) id
@@ -367,6 +535,7 @@ instance Substitutable (Exp Type) where
 
   ftv e = undefined
 
+-- | Binary operators are substitutable.
 instance Substitutable (Binop Type) where
   apply s op = case op of
     Add a -> Add $ apply s a
@@ -383,12 +552,15 @@ instance Substitutable (Binop Type) where
 
   ftv op = undefined
 
+-- | Unary operators are substitutable.
 instance Substitutable (Unop Type) where
   apply s op = case op of
     Not a -> Not $ apply s a
 
   ftv op = undefined
 
+{- | Top level definitions are substitutable. Will throw an error if @apply@ is applied
+to a datatype declaration. -}
 instance Substitutable (Def Type) where
   apply s d = case d of
     DTypeSig id t         -> DTypeSig id t
@@ -396,6 +568,7 @@ instance Substitutable (Def Type) where
 
   ftv = undefined
 
+-- | Functions are substitutable.
 instance Substitutable (Function Type) where
   apply s f = f { equations = map (apply s) (equations f)
                 , typesig   = maybe Nothing (Just . apply s) (typesig f)
@@ -403,6 +576,7 @@ instance Substitutable (Function Type) where
 
   ftv = undefined
 
+-- | An entire program is substitutable.
 instance Substitutable (Program Type) where
   apply s p = p { functions = map (apply s) (functions p)
                 , main      = apply s (main p)
@@ -410,9 +584,20 @@ instance Substitutable (Program Type) where
 
   ftv = undefined
 
-refine :: [Function Type] -> Subst -> [Function Type]
-refine funs subst = map (apply subst) funs
+{- | Unify two types, possibly returning a substitution. Unification turns out to be
+much more simpler than I had initially anticipated. To unify two types mean to check
+if there exist some substitution that when it is applied to the two types makes them
+equal. If the two types have a different shape, e.g @(Int, Int)@ and @(Int, Int, Int)@,
+they can obviously not be unified. You can always unify two identical types. 
 
+When we see that one of the types is a type variable, we bind the type variable to the
+other type in a substitution. However, before we do this we are performing an occurs
+check. The occurs check makes sure than the type variable we are associating with the
+other type does not appear in the associated type. E.g
+>>> unify a (Maybe a)
+does not work as we are binding the @a@ to a type that contains @a@. When we apply the
+substitution to these two types the first one is never going to get any smaller or
+terminate. It will unwind to @Maybe (Maybe (Maybe ...@. -}
 unify :: Type -> Type -> TC Subst
 unify (TTup ts1) (TTup ts2) = unifyMany ts1 ts2
 
@@ -433,12 +618,14 @@ unify TBool TBool   = return unitsub
 unify TNil TNil     = return unitsub
 unify t1 t2         = throwError $ UnificationError t1 t2
 
+-- | Bind an identifier to a type variable
 bind :: Ident -> Type -> TC Subst
 bind id t
   | t == TVar id          = return unitsub
   | id `Set.member` ftv t = throwError $ OccursError id t
   | otherwise             = return $ Map.singleton id t
 
+-- | Try to unify many types, pairwise.
 unifyMany :: [Type] -> [Type] -> TC Subst
 unifyMany [] [] = return unitsub
 unifyMany [] _ = error ""
@@ -448,11 +635,13 @@ unifyMany (t1:ts1) (t2:ts2) = do
   sub' <- unifyMany (apply sub ts1) (apply sub ts2)
   return $ sub `compose` sub'
 
+-- | Try to unify the first type with at least one type in the second argument.
 unifyWithAtleastOne :: Type -> [Type] -> TC Subst
 unifyWithAtleastOne t []       = error "can not unify with empty list of types"
 unifyWithAtleastOne t1 [t2]    = unify t1 t2
 unifyWithAtleastOne t1 (t2:ts) = catchError (unify t1 t2) $ \_ -> unifyWithAtleastOne t1 ts
 
+-- | Take a list of types and make sure that they can all be unified.
 unifyAll :: [Type] -> TC Subst
 unifyAll []         = return unitsub
 unifyAll [t]        = return unitsub
@@ -461,23 +650,45 @@ unifyAll (t1:t2:ts) = do
   sub' <- unifyAll $ apply sub (t2:ts)
   return $ sub `compose` sub'
 
+{- | A schema is a type that also contains information about which type variables are
+bound and which are free. E.g the type schema of @id x = x@ is @forall x . x -> x@.
+If we did not use type schemas like this we would not be able to use @id@ with more
+than one distinct type. We would in the case of @id True@ query the environment for
+the type of @id@, and get @x -> x@ back. We would then unify the type @x@ with @Bool@
+and record that in our substitution. When we now do @id 5@ we get the type of @id@, but
+it has now been unified to be of type @Bool -> Bool@, so the application @id 5@ is no
+longer valid. Schemas solve this by abstracting over the free type variables.
+
+If we query the environment for the type @id : forall x . x -> x@ the bound type
+variables will be instantiated with fresh type variables, e.g @id : a -> a@. We can
+unify @a@ with @Bool@ perfectly fine, still, but when we try to typecheck the application
+@id 5@, we get a new, fresh type of id @id : b -> b@, which we can unify with
+@Int -> Int@.
+-}
 data Schema = Forall [Ident] Type
   deriving Show
 
+{- | Schemas can be substituted by first removing any mapping from type variables
+in the substitution which are bound by the type schema. E.g if the substitution
+contains a mapping from @a@ to @Int@, and the schema is @forall a . a -> Int@, then
+the mapping from @a@ to @Int@ is removed before substituting. -}
 instance Substitutable Schema where
-  -- Since the variable in `vars` are bound by the forall any mapping involving
-  -- them in the substitution must be removed before the substitution is applied.
   apply s (Forall vars t) = Forall vars $ apply s' t
     where s' = foldr Map.delete s vars
 
   ftv (Forall vars t) = ftv t `Set.difference` Set.fromList vars
 
-data Env = Env (Map.Map Ident Schema) (Map.Map UIdent Schema)
-  deriving Show
+{- | Typing environent. The typing environment contains a mapping from identifiers to
+schemas and from uppercase identifiers to schemas (constructors). -}
+data Env
+    = Env (Map.Map Ident Schema) (Map.Map UIdent Schema)
+    deriving Show
 
+-- | The empty environment
 emptyEnv :: Env
 emptyEnv = Env Map.empty Map.empty
 
+-- | Environments are substitutable.
 instance Substitutable Env where
   apply s (Env m1 m2) = Env (Map.map (apply s) m1) m2
 
@@ -485,26 +696,75 @@ instance Substitutable Env where
   -- be constant
   ftv (Env m1 m2) = ftv $ Map.elems m1
 
+{- | To generalize a type means to bind the free type variables and turn it into
+a type schema. E.g in the environment @["f" ~> a]@,
+
+@
+> generalize $ a -> b
+forall b . a -> b
+@ -}
 generalize :: Type -> Env -> Schema
 generalize t env = Forall vars t
   where
       vars :: [Ident]
       vars = Set.toList $ ftv t `Set.difference` ftv env
 
-data TCError = UnboundVariable Ident
-             | UnknownConstructor UIdent
-             | UnknownBinop (Binop ())
-             | OccursError Ident Type
-             | UnificationError Type Type
-             | UndeclaredTycon UIdent
-             | DuplicateTycon UIdent
-             | DuplicateDataConstructor UIdent
-             | PartiallyAppliedTycon UIdent Int Int
-             | UnboundADTVariable UIdent [Ident] UIdent Type Ident
-             | NonADTConstruction UIdent Type Type
-             | TypeSignatureTooGeneral Ident Type Type
-             | TypesigError Ident Type Type
+{- | To instantiate a type schema means to replace the bound type variables with
+freshly generated type variables. E.g
 
+@
+> instantiate $ forall b . a -> b
+a -> c
+@
+
+where @c@ is a previously unseen type variable. -}
+instantiate :: Schema -> TC Type
+instantiate (Forall vars t) = do
+  freshtypevars <- mapM (const fresh) vars
+  let s = Map.fromList $ zip vars freshtypevars
+  return $ apply s t
+
+{- | This datatype declaration declares all the different kinds of type errors that
+can be thrown during type checking. -}
+data TCError
+    {- | @UnboundVariable x@ reports that during type checking we have seen the
+    variable @x@, but that @x@ has not been declared anywhere. -}
+    = UnboundVariable Ident
+    {- | @UnknownConstructor c@ reports that we have seen a data constructor which
+    was not declared in any of the datatype declarations. -}
+    | UnknownConstructor UIdent
+    -- | @UnknownBinop op@ says that the binary oprator @op@ is unknown.
+    | UnknownBinop (Binop ())
+    -- | This error is thrown during unification to report that an occurs check failed.
+    | OccursError Ident Type
+    {- | @UnificationError t1 t2@ reports that the two types @t1@ and @t2@ could not be
+    unified, while the typechecker requires them to be. -}
+    | UnificationError Type Type
+    {- | @UndeclaredTycon tc@ says that the type constructor @tc@ was not declared in any
+    datatype declarations. -}
+    | UndeclaredTycon UIdent
+    -- | @DuplicateTycon tc@ says that the type constructor @tc@ has been declared twice.
+    | DuplicateTycon UIdent
+    {- | @DuplicateDataConstructor dc@ is the same as @DuplicateTycon@, but for data
+    constructors. -}
+    | DuplicateDataConstructor UIdent
+    {- | @PartiallyAppliedTycon tc i1 i2@ says that the type constructor @tc@ was applied
+    to @i1@ type arguments, but it expected @i2@. @i2@ is strictly greater than @i1@. -}
+    | PartiallyAppliedTycon UIdent Int Int
+    {- | TODO -}
+    | UnboundADTVariable UIdent [Ident] UIdent Type Ident
+    {- | This error is related to GADTs. If a datatype declaration declares something
+    that is not an algebraic data type, but more closely resembles a GADT, this error
+    is thrown. -}
+    | NonADTConstruction UIdent Type Type
+    {- | If the inferred type of a function is less general than that of the declared
+    type signature, this error is reported. -}
+    | TypeSignatureTooGeneral Ident Type Type
+    {- | This error is thrown when the inferred type and the declared type is
+    different. -}
+    | TypesigError Ident Type Type
+
+-- | Show instance for type errors
 instance Show TCError where
   show e = case e of
     UnboundVariable id     -> "can not resolve symbol: " ++ show id
@@ -542,32 +802,30 @@ instance Show TCError where
              , "  declared type: ", printTree declared, "\n"
              , "  inferred: ", printTree inferred]
 
-data TCState = TCState { namegen :: Int
-                       , tycons  :: Map.Map UIdent Int  -- ^ ADT arity
-                       }
+-- | The state maintained during type checking
+data TCState = TCState
+    { namegen :: Int                 -- ^ Counter used to generate fresh names
+    , tycons  :: Map.Map UIdent Int  -- ^ Arity of the different algebraic datatypes
+    }
 
-type TC a = ExceptT TCError (
-            StateT TCState (
-            ReaderT Env IO))
+-- | The type checking monad
+type TC a = ExceptT TCError (  -- Error reporting
+            StateT TCState (   -- Type checking state
+            ReaderT Env IO))   -- Typing information
             a
 
+-- | Infinite string of unique words
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
 
+-- | Generate a fresh type variable
 fresh :: TC Type
 fresh = do
   s <- get
   put $ s { namegen = namegen s + 1}
   return $ TVar (Ident (letters !! namegen s))
 
--- Notice that if the Schema doesn't contain any free variables the result of this
--- function is just the type `t` in `Forall vars t`, unchanged
-instantiate :: Schema -> TC Type
-instantiate (Forall vars t) = do
-  freshtypevars <- mapM (const fresh) vars
-  let s = Map.fromList $ zip vars freshtypevars
-  return $ apply s t
-
+-- | Look up the type of an identifier
 lookupVar :: Ident -> TC Type
 lookupVar id = do
   (Env env _) <- ask
@@ -575,6 +833,7 @@ lookupVar id = do
     Just schema -> instantiate schema
     Nothing     -> throwError $ UnboundVariable id
 
+-- | Look up the type of a data constructor
 lookupCon :: UIdent -> TC Type
 lookupCon uid = do
   (Env _ env) <- ask
@@ -582,8 +841,8 @@ lookupCon uid = do
     Just schema -> instantiate schema
     Nothing -> throwError $ UnknownConstructor uid
 
--- | Does a constructor already exist? Used for verifying data type declarations,
--- that the constructors are unique.
+{- | Does a constructor already exist? This is used for verifying the correctness
+of datatype declarations, that the constructors are unique. -}
 existsCon :: UIdent -> TC Bool
 existsCon uid = do
   (Env _ env) <- ask
@@ -591,6 +850,7 @@ existsCon uid = do
     Just _  -> return True
     Nothing -> return False 
 
+-- | Look up the arity of a data constructor
 lookupTyconArity :: UIdent -> TC Int
 lookupTyconArity uid = do
   st <- get
@@ -598,6 +858,7 @@ lookupTyconArity uid = do
     Just i  -> return i
     Nothing -> throwError $ UndeclaredTycon uid
 
+-- | Record the arity of a data costructor
 extendTyconArity :: UIdent -> Int -> TC ()
 extendTyconArity uid arity = do
   st <- get
@@ -605,12 +866,14 @@ extendTyconArity uid arity = do
     Just _ -> throwError $ DuplicateTycon uid
     Nothing -> put $ st { tycons = Map.insert uid arity (tycons st) }
 
+-- | Look up the type of a binary operator
 lookupBinop :: Binop () -> TC Type
 lookupBinop op =
   case Map.lookup op binoptypes of
     Just schema -> instantiate schema
     Nothing     -> throwError $ UnknownBinop op
 
+-- | A map that maps binary operators to their type schemas
 binoptypes :: Map.Map (Binop ()) Schema
 binoptypes = Map.fromList $
      [ (Add (), Forall [a] $ TLam ta (TLam ta ta))
@@ -632,6 +895,9 @@ binoptypes = Map.fromList $
      ta :: Type
      ta = TVar a
 
+{- | Candidate types for binary operators. When a binary operator has had an inferred
+type, that type needs to be unified with any of the entries in the list of candidate
+types of a binary operator. -}
 binopCandidates :: Binop () -> [Type]
 binopCandidates op = case op of
   Add _ -> [intintint, floatfloatfloat]
@@ -652,32 +918,43 @@ binopCandidates op = case op of
     floatfloatbool  = TLam TFloat (TLam TFloat TBool)
     boolboolbool    = TLam TBool  (TLam TBool  TBool)
 
+-- | Look up the type of a unary operator
 lookupUnop :: Unop () -> TC Type
 lookupUnop op = undefined
 
+-- | Map that maps unary operators to their type schemas
 unoptypes :: Map.Map (Unop ()) Schema
 unoptypes = Map.fromList $
   [ (Not (), Forall [] $ TLam TBool TBool)
   ]
 
+{- | Candidate types of unary operators. The same conditions that are described in the
+documentation for `binopCandidates` apply here as well. -}
 unopCandidates :: Unop () -> [Type]
 unopCandidates op = case op of
   Not () -> [TLam TBool TBool]
 
+-- | Extend the typing environment with a new mapping from an identifier to a schema
 extend :: Env -> Ident -> Schema -> Env
 extend (Env m1 m2) id schema = Env (Map.insert id schema m1) m2
 
+-- | Restrict the typing environment by removing a mapping from an identifer
 restrict :: Env -> Ident -> Env
 restrict (Env m1 m2) id = Env (Map.delete id m1) m2
 
+-- | Perform a typechecking computation in an extended environment
 inEnv :: Ident -> Schema -> TC a -> TC a
 inEnv id schema ma = inEnvMany [(id,schema)] ma
 
+{- | Perform a typechecking computation in an environment that has been extended with
+zero or more mappings from identifiers to schemas. -}
 inEnvMany :: [(Ident, Schema)] -> TC a -> TC a
 inEnvMany xs ma =
   let scope e = foldl (\e' (id,schema) -> extend (restrict e' id) id schema) e xs
   in local scope ma
 
+{- | Perform a typechecking computation after having extended the environment with
+the data constructors that are in scope. -}
 withConstructors :: [ADT] -> TC a -> TC a
 withConstructors adts = local (\(Env m1 m2) -> Env m1 $ Map.fromList allConsSchemas)
   where
@@ -687,8 +964,8 @@ withConstructors adts = local (\(Env m1 m2) -> Env m1 $ Map.fromList allConsSche
       allConsSchemas :: [(UIdent, Schema)]
       allConsSchemas = concat $ map adtToCons adts
 
--- | Can use this for type signatures to make sure all types are
--- fully applied.
+{- | This function verifies that a type has all fully applied type constructors. If
+it does not, an error is thrown. -}
 containsFullyAppliedTycons :: Type -> TC ()
 containsFullyAppliedTycons t = case t of
   TAdt uid ts -> do
@@ -701,6 +978,8 @@ containsFullyAppliedTycons t = case t of
   TLam t1 t2  -> containsFullyAppliedTycons t1 >> containsFullyAppliedTycons t2
   _           -> return ()
 
+{- | Utility function that performs a monadic computation if the first monadic
+result is @True@. If not, the default value (third argument) is returned. -}
 whenM :: Monad m => m Bool -> m a -> a -> m a
 whenM mb ma d = do
   b <- mb
@@ -708,6 +987,8 @@ whenM mb ma d = do
     then ma
     else return d
 
+{- | Typecheck a pattern. The patterns are annotated with types, and any variables are
+annotated with fresh type variables. -}
 checkPat :: Pat () -> TC (Pat Type)
 checkPat p = case p of
   PVar () id    -> do
@@ -748,12 +1029,15 @@ checkPat p = case p of
     let tuptype = TTup $ map patVar ps'
     return $ PTup tuptype ps'
 
+-- | `constType` returns the type of a literal
 constType :: Lit -> Type
 constType (LInt _)   = TInt
 constType (LFloat _) = TFloat
 constType (LBool _)  = TBool
 constType LNil       = TNil
 
+{- | Given a pattern, `patBindings` will return a list of variables and the types
+they have. -}
 patBindings :: Pat Type -> [(Ident, Type)]
 patBindings p = case p of
   PVar t id     -> [(id,t)]
@@ -764,12 +1048,15 @@ patBindings p = case p of
   PAdt _ uid ps -> concat $ map patBindings ps
   PTup _ ps     -> concat $ map patBindings ps
 
+{- | Utility function which first typechecks a pattern and then also retrieves the
+bindings of variables and types from the pattern. -}
 checkPatAndBindings :: Pat () -> TC (Pat Type, [(Ident, Type)])
 checkPatAndBindings p = do
   p' <- checkPat p
   let bindings = patBindings p'
   return (p', bindings)
 
+-- | Typecheck a definition and return the annotated definition and a substitution
 checkDef :: Def () -> TC (Subst, Def Type)
 checkDef d = case d of
   DTypeSig id t             -> return $ (unitsub, DTypeSig id t)
@@ -782,16 +1069,14 @@ checkDef d = case d of
     let argschemas  = map (\(id,t) -> (id, Forall [] t)) argbindings
     -- typecheck the equation body
     (sub, body')    <- inEnvMany argschemas $ checkExp body
---    liftIO $ putStrLn $ printTree args'
---    liftIO $ putStrLn $ printTree $ map patVar args'
---    liftIO $ putStrLn $ show sub
     -- create the inferred type of the entire definition
     let functype    = apply sub $ foldr TLam (expVar body') $ map patVar args'
     return (sub, DEquation functype id args' body')
 
--- | t1 `moreGeneralThan` t2 returns True if t1 is a more general type than t2.
--- This is used to make sure that e.g a function of type Int -> Int is not
--- given the type signature a -> b by the developer.
+{- | @moreGeneralThan t1 t2@ returns @True@ of the type @t1@ is more general than
+the type @t2@. This function is used to ensure that the declared type of a function
+is not more general than the inferred type of the function. If a function @f@ actually
+has the type @Int -> Int@, it can not be declared to be of type @a -> a@. -}
 moreGeneralThan :: Type -> Type -> Bool
 moreGeneralThan (TVar _) (TVar _)     = False
 moreGeneralThan (TVar _) _            = True
@@ -803,19 +1088,27 @@ moreGeneralThan (TLam t1 t2) (TLam t1' t2') =
   moreGeneralThan t1 t1' || moreGeneralThan t2 t2'
 moreGeneralThan _ _ = False
 
--- | Check if the declared type of a function is more general than the
--- inferred type. If that is the case, raise a type error.
+{- | Checks that the declared type of a function is not more general than the inferred
+type. If that is the case a type error is raised. -}
 checkTooGeneralType :: Ident -> Maybe Type -> Type -> TC ()
 checkTooGeneralType _ Nothing _      = return ()
 checkTooGeneralType fun (Just sig) t = do
+  -- fetch the environment and generalize the type signature, and then instantiate it
   e <- ask
   let sch = generalize sig e
   sig' <- instantiate sch
+
+  {- perform the actual check. If it is the case that the type signature is too general,
+  the inferred is included in the raised error. Before this is done the type variables
+  in the instantiated type signature are replaced with those in the declared type
+  signature, to make it easier to read. -}
   if sig' `moreGeneralThan` t
     then do let inft = renameTVars sig t
             throwError $ TypeSignatureTooGeneral fun sig inft 
     else return ()
   where
+    {- | Rename the type variables in the second argument with the corresponding
+    type variables in the first type. -}
     renameTVars :: Type -> Type -> Type
     renameTVars t1 t2 = case (t1, t2) of
       (TVar id, TVar _)          -> TVar id
@@ -824,14 +1117,15 @@ checkTooGeneralType fun (Just sig) t = do
       (TLam t1 t2, TLam t1' t2') -> TLam (renameTVars t1 t1') (renameTVars t2 t2')
       (_,t)                      -> t
 
--- | Make sure that an inferred type can unify with a type signature, if
--- any exist.
+{- | Make sure than an inferred type can unify the the declared type, if any type was
+declared. Raises a type error if the check failed. -}
 unifyWithTypesig :: Ident -> Maybe Type -> Type -> TC ()
 unifyWithTypesig _ Nothing _      = return ()
 unifyWithTypesig fun (Just sig) t = do
   catchError (unify sig t >> return ()) $ \_ ->
     throwError $ TypesigError fun sig t
 
+-- | Typecheck a function and return the annotated function and a substitution
 checkFunction :: Function () -> TC (Subst, Function Type)
 checkFunction f = do
   -- typecheck equations and fetch their types
@@ -868,7 +1162,9 @@ checkFunction f = do
   -- return annotated, substituted function
   return $ (finsub, f')
 
--- | Check that the declaration of an ADT is okay.
+{- | Check that the declaration of a datatype is okay. Being okay means that it is not
+only well formed, but that it is also an ordinary ADT, and not a GADT. If the check
+fails, a type error is raised. -}
 checkDataDeclaration :: ADT -> TC ()
 checkDataDeclaration (tycon, vars, cons) = do
   extendTyconArity tycon (length vars)
@@ -906,9 +1202,11 @@ checkDataDeclaration (tycon, vars, cons) = do
           ()
 
   where
+      -- | Returns all uniqye type variables in a type
       tvars :: Type -> [Ident]
       tvars t = nub $ allvars t
 
+      -- | Returns all type variables in a type
       allvars :: Type -> [Ident]
       allvars t = case t of
         TVar a      -> [a]
@@ -917,6 +1215,7 @@ checkDataDeclaration (tycon, vars, cons) = do
         TLam t1 t2  -> tvars t1 ++ tvars t2
         _           -> []
 
+-- | Typecheck a program and return the annotated program and a substitution
 checkProgram :: Program () -> TC (Subst, Program Type)
 checkProgram p = do
   -- check that the declared ADTs are not GADTs and that they are
@@ -970,13 +1269,28 @@ typecheck defs = do
       initialEnv :: Env
       initialEnv = Env (Map.fromList entries) Map.empty
 
+      {- | Language primitives which are implemented by the runtime system, and not
+      declared in the source program. -}
       entries :: [(Ident, Schema)]
-      entries = [ (Ident "add2", Forall [] $ TLam TInt TInt)
-                , (Ident "prim_id", Forall [a] $ TLam ta ta)
+      entries = [ (Ident "channel", Forall [a] $ TLam unit channel )
+                , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
+                , (Ident "recv"   , Forall [a] $ TLam channel event)
+                , (Ident "sync"   , Forall [a] $ TLam event ta)
+                , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
+                , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
+                , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
+                , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
                 ]
         where
-            a = Ident "a"
-            ta = TVar a
+            a         = Ident "a"
+            b         = Ident "b"
+            ta        = TVar a
+            tb        = TVar b
+            unit      = TNil
+            channel   = TAdt (UIdent "Channel") [ta]
+            event     = TAdt (UIdent "Event")   [ta]
+            eventb    = TAdt (UIdent "Event")   [tb]
+            unitevent = TAdt (UIdent "Event") [unit]
 
 instance {-# OVERLAPPING #-} Show ([Function Type], Subst) where
   show (funs, subst) = unlines [pfuns, psubs]
@@ -1094,7 +1408,8 @@ checkExp e = case e of
 --    s5 <- unify (expVar e2') (expVar e3')
 --    let sub = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
     tv <- fresh
-    (sub, [e1',e2',e3'], t) <- inferPrim [e1,e2,e3] (TLam TBool (TLam tv (TLam tv tv)))
+--    (sub, [e1',e2',e3'], t) <- inferPrim [e1,e2,e3] (TLam TBool (TLam tv (TLam tv tv)))
+    (sub, [e1',e2',e3'], t) <- inferPrim' [e1,e2,e3] [TBool, tv, tv] tv
     return (sub, EIf t e1' e2' e3')
 
 -- | The code that's commented out on the checkExp-if case is from stephen diehls blog,
@@ -1104,15 +1419,38 @@ checkExp e = case e of
 -- from his repository.
 inferPrim :: [Exp ()] -> Type -> TC (Subst, [Exp Type], Type)
 inferPrim l t = do
-  env <- ask
-  tv <- fresh
+  env               <- ask
+  tv                <- fresh
   (s1, tf, _, exps) <- foldM inferStep (unitsub, id, env, []) l
-  s2 <- unify (apply s1 (tf tv)) t
+  s2                <- unify (apply s1 (tf tv)) t
   return (s2 `compose` s1, reverse exps, apply s2 tv)
   where
-  inferStep (s, tf, env, exps) exp = do
-    (s', t) <- local (const (apply s env)) $ checkExp exp
-    return (s' `compose` s, tf . (TLam (expVar t)), env, t:exps)
+    {- | `inferStep` will take a substitution, a function that takes a type, the
+    typing environment, the list of type checked expressions and an expression to
+    type check, and will return the new substitution acquired after composing the input
+    substitution with the one acquired by typechecking the expression, the input
+    function substituted with a lambda, the input environment and the list if expressions
+    but with the newly typechecked expression at the head. -}
+    inferStep (s, tf, env, exps) exp = do
+      liftIO $ putStrLn $ concat ["expression is: ", printTree exp]
+      liftIO $ putStrLn $ concat ["substitution is: ", show s]
+      liftIO $ putStrLn $ concat ["envirnoment is: ", show env]
+      (s', t) <- local (const (apply s env)) $ checkExp exp
+      liftIO $ putStrLn $ concat ["new substitution is: ", show s']
+      return (s' `compose` s, tf . (TLam (expVar t)), env, t:exps)
+
+inferPrim' :: [Exp ()] -> [Type] -> Type -> TC (Subst, [Exp Type], Type)
+inferPrim' l ts typ = do
+  env               <- ask
+--  tv                <- fresh
+  (s, _, exps) <- foldM inferStep (unitsub, env, []) $ zip l ts
+--  s2                <- unify (apply s1 (tf tv)) t
+  return (s, reverse exps, apply s typ)
+  where
+    inferStep (s, env, exps) (exp, typ) = do
+      (s', t) <- local (const (apply s env)) $ checkExp exp
+      s'' <- unify (expVar t) typ
+      return (s'' `compose` s' `compose` s, env, t:exps)
 
 {-********** Start of tokenizer **********-}
 
@@ -1186,8 +1524,8 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
     -- | Tries the tokenize functions one by one until one succeeds
     nextToken :: T.Text -> Maybe (Tok, T.Text)
     nextToken t = fetchToken [ tokuiden t
-                             , tokint t
                              , tokfloat t
+                             , tokint t
                              , tokiden t
                              , tokreserved t
                              ]
@@ -1205,9 +1543,11 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
     tokfloat :: T.Text -> Maybe (Tok, T.Text)
     tokfloat t = do
       (TI big, rest)  <- tokint t
-      assertB $ T.head rest == '.'
-      (TI low, rest') <- tokint $ T.tail rest
-      return (TD $ T.concat [big, ".", low], rest')
+      if T.null rest
+        then Nothing
+        else do assertB $ T.head rest == '.'
+                (TI low, rest') <- tokint $ T.tail rest
+                return (TD $ T.concat [big, ".", low], rest')
 
     -- identifiers    
     tokiden :: T.Text -> Maybe (Tok, T.Text)
@@ -1347,6 +1687,17 @@ resolveLayout tp = res Nothing [if tl then Implicit 1 else Explicit] [0]
        let b:t0':ts' = addToken (afterPrev pt) layoutClose (t0:ts)
            -- Repeat, with the current block removed from the stack
         in moveAlong ns [b] (t0':ts') $ tail c
+
+    -- Encounted a new line in an implicit layout block, and that new line
+    -- character was a parenthesis.
+    | isParenthesesOpen t0 && newLine pt t0 && column t0 == n =
+       -- Insert a semicolon after the previous token.
+       -- unless we are the beginning of the file,
+       -- or the previous token is a semicolon or open brace.
+       if isNothing pt || isTokenIn [layoutSep,layoutOpen] (fromJust pt)
+          then moveAlong st [t0] ts c
+          else let b:t0':ts' = addToken (afterPrev pt) layoutSep (t0:ts)
+                in moveAlong st [b,t0'] ts' $ incOpening c
 
     -- see opening parentheses
     | isParenthesesOpen t0 = moveAlong st [t0] ts $ incOpening c

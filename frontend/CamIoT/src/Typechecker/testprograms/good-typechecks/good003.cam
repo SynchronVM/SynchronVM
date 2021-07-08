@@ -1,0 +1,4 @@
+applyTwice : (a -> a) -> a -> a
+applyTwice f a = f (f a)
+
+main = applyTwice (\x -> 10 + x) 10

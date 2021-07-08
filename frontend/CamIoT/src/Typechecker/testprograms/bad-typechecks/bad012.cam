@@ -1,0 +1,14 @@
+
+data Proxy a where
+  Proxy : Proxy a
+
+data Maybe a where
+  Just    : a -> Maybe a
+  Nothing : Maybe a
+
+nestedProxy : Maybe (Proxy (Proxy Bool)) -> Proxy Int
+nestedProxy x = case x of
+  Nothing -> Proxy
+  Just p  -> p
+
+main = 5

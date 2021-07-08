@@ -1,0 +1,9 @@
+
+data Proxy a where
+  Proxy : Proxy a
+
+badIntToBool : Proxy Int -> Proxy Bool
+badIntToBool p = case p of
+  Proxy -> p
+
+main = 5
