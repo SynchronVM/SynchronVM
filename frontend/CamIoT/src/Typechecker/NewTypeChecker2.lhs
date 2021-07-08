@@ -1237,20 +1237,23 @@ checkProgram p = do
                  }
          )
 
+-- | Typecheck functions and return the annotated functions and a substitution
 checkFunctions :: [Function ()] -> TC (Subst, [Function Type])
 checkFunctions fs = checkFunctions_ fs unitsub
+  where
+     checkFunctions_ :: [Function ()] -> Subst -> TC (Subst, [Function Type])
+     checkFunctions_ [] s     = return (s, [])
+     checkFunctions_ (f:fs) s = do
+       (sub, f')   <- checkFunction f
+       let id      = name f'
+       let ty      = fromJust $ defVar $ head $ equations f'
+       env         <- ask
+       let schema  = generalize (apply (s `compose` sub) ty) env
+       (sub', fs') <- inEnv id schema $ checkFunctions_ fs (s `compose` sub)
+       return $ (sub', f' : fs')
 
-checkFunctions_ :: [Function ()] -> Subst -> TC (Subst, [Function Type])
-checkFunctions_ [] s     = return (s, [])
-checkFunctions_ (f:fs) s = do
-  (sub, f')   <- checkFunction f
-  let id      = name f'
-  let ty      = fromJust $ defVar $ head $ equations f'
-  env         <- ask
-  let schema  = generalize (apply (s `compose` sub) ty) env
-  (sub', fs') <- inEnv id schema $ checkFunctions_ fs (s `compose` sub)
-  return $ (sub', f' : fs')
-
+{- | Entry-point after the parser. Takes a list of top level definitions and return
+an annotated program and a substitution. -}
 typecheck :: [Def ()] -> IO (Either String (Program Type, Subst))
 typecheck defs = do
   let excepted = runExceptT $ checkProgram program
@@ -1260,12 +1263,15 @@ typecheck defs = do
     Left err -> return $ Left $ show err
     Right (subs,annotated) -> return (Right (annotated, subs))
   where
+      -- | The program before typechecking
       program :: Program ()
       program = mkProgram defs
 
+      -- | The functions in a program
       funs :: [Function ()]
       funs = mkFunctions defs
 
+      -- | The initial typechecking environment
       initialEnv :: Env
       initialEnv = Env (Map.fromList entries) Map.empty
 
@@ -1292,6 +1298,7 @@ typecheck defs = do
             eventb    = TAdt (UIdent "Event")   [tb]
             unitevent = TAdt (UIdent "Event") [unit]
 
+-- | Helper instance
 instance {-# OVERLAPPING #-} Show ([Function Type], Subst) where
   show (funs, subst) = unlines [pfuns, psubs]
     where
@@ -1304,28 +1311,39 @@ instance {-# OVERLAPPING #-} Show ([Function Type], Subst) where
 instance {-# OVERLAPPING #-} Print a => Show [Function a] where
   show funs = intercalate "\n\n" $ map printTree funs
 
+{- | Run a typechecking computation and get back an IO action producing either an error
+or a result. -}
 runTC :: TC a -> IO (Either TCError a)
 runTC tca = let excepted = runExceptT tca
                 stated   = evalStateT excepted (TCState 0 Map.empty)
             in runReaderT stated (Env Map.empty Map.empty)
 
+{- | Typecheck the case clauses of a case-expression. @checkCaseClauses t clauses@
+will return a substitution and the annotated clauses. @t@ is the type the expression
+that was cased over has. The pattern in all case clauses must unify with this type. -}
 checkCaseClauses :: Type -> [(Pat (), Exp ())] -> TC (Subst, [(Pat Type, Exp Type)])
 checkCaseClauses t []     = return (unitsub, [])
 checkCaseClauses t (c:cs) = do
   (sub,c')   <- checkCaseClause t c
   (sub',cs') <- checkCaseClauses t cs
   return (sub `compose` sub', c':cs')
+  where
+     checkCaseClause :: Type -> (Pat (), Exp ()) -> TC (Subst, (Pat Type, Exp Type))
+     checkCaseClause ct (p,e) = do
+       {- Typecheck the pattern and unify it with the case type. Apply the resulting
+       substitution to the pattern before typechecking the expression. -}
+       p'          <- checkPat p
+       s1          <- unify ct (patVar p')
+       let p''     = apply s1 p'
+       let vars    = patBindings p''
 
-checkCaseClause :: Type -> (Pat (), Exp ()) -> TC (Subst, (Pat Type, Exp Type))
-checkCaseClause ct (p,e) = do
-  p'          <- checkPat p
-  s1          <- unify ct (patVar p')
-  let p''     = apply s1 p'
-  let vars    = patBindings p''
-  let schemas = map (\(id,t) -> (id, Forall [] t)) vars
-  (s2,e')     <- inEnvMany schemas $ checkExp e
-  return (s1 `compose` s2, (p'', e'))
+       {- Extend the environment with the variables bound in the pattern before checking
+       the expression. -}
+       let schemas = map (\(id,t) -> (id, Forall [] t)) vars
+       (s2,e')     <- inEnvMany schemas $ checkExp e
+       return (s1 `compose` s2, (p'', e'))
 
+-- | Typecheck an expression and return the annotated expression and a substitution
 checkExp :: Exp () -> TC (Subst, Exp Type)
 checkExp e = case e of
   EVar () id      -> do
@@ -1401,60 +1419,64 @@ checkExp e = case e of
       return (s1 `compose` s2 `compose` s3, ELet (expVar e2') p' e1' e2')
 
   EIf () e1 e2 e3 -> do
---    (s1,e1') <- checkExp e1
---    (s2,e2') <- checkExp e2
---    (s3,e3') <- checkExp e3
---    s4 <- unify (expVar e1') TBool
---    s5 <- unify (expVar e2') (expVar e3')
---    let sub = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
     tv <- fresh
---    (sub, [e1',e2',e3'], t) <- inferPrim [e1,e2,e3] (TLam TBool (TLam tv (TLam tv tv)))
-    (sub, [e1',e2',e3'], t) <- inferPrim' [e1,e2,e3] [TBool, tv, tv] tv
+    (sub, [e1',e2',e3'], t) <- inferPrim [e1,e2,e3] [TBool, tv, tv] tv
     return (sub, EIf t e1' e2' e3')
 
--- | The code that's commented out on the checkExp-if case is from stephen diehls blog,
--- but it clearly does not work. If e1 decides the type of some variable i to be bool and
--- then i is used as an integer in the branches, this is not detected. Clearly the
--- substitutions need to be applied as we go. This code below is borrowed and modified
--- from his repository.
-inferPrim :: [Exp ()] -> Type -> TC (Subst, [Exp Type], Type)
-inferPrim l t = do
-  env               <- ask
-  tv                <- fresh
-  (s1, tf, _, exps) <- foldM inferStep (unitsub, id, env, []) l
-  s2                <- unify (apply s1 (tf tv)) t
-  return (s2 `compose` s1, reverse exps, apply s2 tv)
-  where
-    {- | `inferStep` will take a substitution, a function that takes a type, the
-    typing environment, the list of type checked expressions and an expression to
-    type check, and will return the new substitution acquired after composing the input
-    substitution with the one acquired by typechecking the expression, the input
-    function substituted with a lambda, the input environment and the list if expressions
-    but with the newly typechecked expression at the head. -}
-    inferStep (s, tf, env, exps) exp = do
-      liftIO $ putStrLn $ concat ["expression is: ", printTree exp]
-      liftIO $ putStrLn $ concat ["substitution is: ", show s]
-      liftIO $ putStrLn $ concat ["envirnoment is: ", show env]
-      (s', t) <- local (const (apply s env)) $ checkExp exp
-      liftIO $ putStrLn $ concat ["new substitution is: ", show s']
-      return (s' `compose` s, tf . (TLam (expVar t)), env, t:exps)
-
-inferPrim' :: [Exp ()] -> [Type] -> Type -> TC (Subst, [Exp Type], Type)
-inferPrim' l ts typ = do
-  env               <- ask
---  tv                <- fresh
+{- |  This code below is borrowed and modified from Stephen Diehl's repository. It takes
+a list of expressions and a list of types, where the types and expressions must pairwise
+unify after inferring the type of the expression. The third argument is the type of
+the entire expression that was typechecked initially. Please see e.g how this is used
+with `EIf` to understand what I mean by this. The result is a substitution, the list of
+annotated expressions and the annotated type (the third argument). -}
+inferPrim :: [Exp ()] -> [Type] -> Type -> TC (Subst, [Exp Type], Type)
+inferPrim l ts typ = do
+  env          <- ask
   (s, _, exps) <- foldM inferStep (unitsub, env, []) $ zip l ts
---  s2                <- unify (apply s1 (tf tv)) t
   return (s, reverse exps, apply s typ)
   where
+    {- | Infers the type of the expression in the pair and unifies it with the type in
+    the pair, by applying the input substitution to the input environment before
+    inference. The result is the input substitution composed with the substitutitons
+    produced during typechecking, the same environment and the list of expressions that
+    was given as a parameter, but with the newly typechecked expression as the head. -}
+    inferStep :: (Subst, Env, [Exp Type])
+              -> (Exp (), Type)
+              -> TC (Subst, Env, [Exp Type])
     inferStep (s, env, exps) (exp, typ) = do
       (s', t) <- local (const (apply s env)) $ checkExp exp
-      s'' <- unify (expVar t) typ
+      s''     <- unify (expVar t) typ
       return (s'' `compose` s' `compose` s, env, t:exps)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 {-********** Start of tokenizer **********-}
 
--- | To preprocess a file, apply layout resolution
+{- | Takes a `Text` representing the program before layout resolution, and returns a
+`Text` representing the same program after layout resolution. -}
 process :: T.Text -> T.Text
 process t = printTokPos $ resolveLayout True $ tokenize t
 
@@ -1465,11 +1487,13 @@ data Tok =
  | TI T.Text         -- integer literals
  | TV T.Text         -- identifiers
  | TD T.Text         -- double precision float literals
- | T_UIdent T.Text
+ | T_UIdent T.Text   -- uppercase identifiers
  deriving Show
 
+-- | A Token with a position
 type TokPos = (Tok, Int, Int)
 
+-- | Takes a `TokPos` and returns the `Text` hidden within it.
 toktext :: TokPos -> T.Text
 toktext (t,_,_) = case t of
   TS t _     -> t
@@ -1479,16 +1503,17 @@ toktext (t,_,_) = case t of
   TD t       -> t
   T_UIdent t -> t
 
--- | Turn a list of TokPos into a line of Text. Prepend the line with the
--- indentation level as specified by the first token. The list of tokens are
--- assumed to all be on the same line.
+{- | Turn a list of TokPos into a line of Text. Prepend the line with the indentation
+level as specified by the first token. The list of tokens are assumed to all be on the
+same line. Used for turning a token-stream back into a `Text` for the parser to
+handle. -}
 tokline :: [TokPos] -> T.Text
 tokline [] = ""
 tokline (tok@(_,_,c):ts) = T.append first $ T.unwords $ map toktext ts
   where
     first = T.snoc (T.append (T.replicate (c-1) " ") (toktext tok)) ' '
 
--- | Turn a list of tokens back into a source file
+-- | Turn a list of tokens back into a source file `Text` object.
 printTokPos :: [TokPos] -> T.Text
 printTokPos ts = T.unlines $ map tokline $ groupBy pred ts
   where
@@ -1514,6 +1539,8 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
       Just (count, rest) -> go line (count + 1) rest
       Nothing            -> []
       where
+        {- | Takes a line number, column number and a row and returns a list of tokens
+        that was tokenized from that row. -}
         go :: Int -> Int -> T.Text -> [TokPos]
         go line col row = case nextToken row of
           Just (tok, rest) -> case sptb rest of
@@ -1534,12 +1561,12 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
         fetchToken []     = Nothing
         fetchToken (x:xs) = if isJust x then x else fetchToken xs
 
-    -- int literals
+    -- | int literals
     tokint :: T.Text -> Maybe (Tok, T.Text)
     tokint t = let (token, rest) = T.span (\c -> isDigit c) t
                in if T.null token then Nothing else Just (TI token, rest)
     
-    -- float literals
+    -- | float literals
     tokfloat :: T.Text -> Maybe (Tok, T.Text)
     tokfloat t = do
       (TI big, rest)  <- tokint t
@@ -1549,7 +1576,7 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
                 (TI low, rest') <- tokint $ T.tail rest
                 return (TD $ T.concat [big, ".", low], rest')
 
-    -- identifiers    
+    -- | identifiers    
     tokiden :: T.Text -> Maybe (Tok, T.Text)
     tokiden t = do
       assertB $ isLetter $ T.head t
@@ -1559,7 +1586,7 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
       where
         pred c = isLetter c || isDigit c || c == '\'' || c == '_'
 
-    -- uppercase identifiers
+    -- | uppercase identifiers
     tokuiden :: T.Text -> Maybe (Tok, T.Text)
     tokuiden t = do
       assertB $ isUpper $ T.head t
@@ -1568,7 +1595,8 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
       where
         pred c = isLetter c || isUpper c || c == '\'' || c == '_'
 
-    -- reserved words and keywords
+    {- | reserved words and keywords -- I am not entirely sure what the numbers are
+    for, this code is in large piece borrowed from the stuff generated by BNFC. -}
     tokreserved :: T.Text -> Maybe (Tok, T.Text)
     tokreserved t
       | "Bool"  `T.isPrefixOf` t = Just (TS "Bool" 18,  T.drop (T.length "Bool") t)
@@ -1612,22 +1640,57 @@ tokenize t = concat $ zipWith tokenizeLine [1..] (T.lines t)
       | "as"    `T.isPrefixOf` t = Just (TS "as" 25,    T.drop (T.length "as") t)
     tokreserved _ = Nothing
 
-    -- consume whitespace and tabs
+    {- | Consumes whitespace and tabs, and returns the number of items that were dropepd
+    together with the remainder of the `Text`. -}
     sptb :: T.Text -> Maybe (Int, T.Text)
     sptb t = let (chunk, rest) = T.span pred t
              in if T.null rest then Nothing else Just (T.length chunk, rest)
       where
         pred c = c == ' ' || c == '\t'
 
+-- | Return @Nothing@ if the boolean is @False@, otherwise @Just ()@
 assertB :: Bool -> Maybe ()
 assertB True  = Just ()
 assertB False = Nothing
 
 {-********** End of tokenizer **********-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 {-********** Start of layout resolver (stolen from BNFC) **********-}
 
--- | This bool says that we definitely want to apply top layout. This means that
--- top level definitions are delimited by semi-colons.
+{- | This bool says that we definitely want to apply top layout. This means that
+top level definitions are delimited by semi-colons. -}
 topLayout :: Bool
 topLayout = True
 
@@ -1945,6 +2008,33 @@ decOpening (x:xs) = (x-1:xs)
 
 {-**********  End of layout resolver **********-}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- | Custom parser type - synonym for Parsec Void Text a
 type Parser a = Parsec Void T.Text a
 
@@ -1952,7 +2042,7 @@ type Parser a = Parsec Void T.Text a
 pProgram :: Parser [Def ()]
 pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation
 
--- parse types
+-- | A parser of closed types, aka types with infinite presedence.
 pClosed :: Parser Type
 pClosed = choice [ TInt    <$ pSymbol "Int"
                  , TFloat  <$ pSymbol "Float"
@@ -1967,19 +2057,24 @@ pClosed = choice [ TInt    <$ pSymbol "Int"
                           (_:_:_) -> pure (TTup ts)
                  ]
 
+{- | Parser that parses an algebraic data type (An uppercase constructor followed by
+zero or more types). -}
 pApp :: Parser Type
 pApp = choice [ TAdt <$> pUIdent <*> many pClosed
               , pClosed
               ]
 
+-- | Parser that parses function types
 pFun :: Parser Type
 pFun = foldr1 TLam <$> sepBy1 pApp (pSymbol "->")
 
+-- | A parser that parses a type
 pType :: Parser Type
 pType = pSpace *> pFun
 
 -- parse expressions
 
+-- | A parser that parses closed expressions, aka expressions of infinite presedence
 pExpClosed :: Parser (Exp ())
 pExpClosed = choice [ ELit () <$> pConst
                     , EVar () <$> pIdent
@@ -1992,9 +2087,11 @@ pExpClosed = choice [ ELit () <$> pConst
                              (_:_:_) -> pure (ETup () es)
                     ]
 
+-- | Parser that parses function applications
 pExpApp :: Parser (Exp ())
 pExpApp = foldl1 (EApp ()) <$> some pExpClosed
 
+-- | Parser that parses boolean negation expressions
 pExpNot :: Parser (Exp ())
 pExpNot = choice [ do pChar '!'
                       e <- pExpApp
@@ -2002,6 +2099,7 @@ pExpNot = choice [ do pChar '!'
                  , pExpApp
                  ]
 
+-- | Parser that parses multiplication or divisions of expressions
 pExpMul :: Parser (Exp ())
 pExpMul = pExpNot >>= go where
   go e1 = choice [ do pChar '*'
@@ -2013,6 +2111,7 @@ pExpMul = pExpNot >>= go where
                  , pure e1
                  ]
 
+-- | Parser that parses addition or subtraction of expressions
 pExpAdd :: Parser (Exp ())
 pExpAdd = pExpMul >>= go where
   go e1 = choice [ do pChar '+'
@@ -2024,6 +2123,7 @@ pExpAdd = pExpMul >>= go where
                  , pure e1
                  ]
 
+-- | Parser that parses relational binary operations on expressions
 pExpRel :: Parser (Exp ())
 pExpRel = pExpAdd >>= go where
     go e1 = choice [ do pChar '<'
@@ -2046,12 +2146,15 @@ pExpRel = pExpAdd >>= go where
                    , pure e1
                    ]
 
+-- | Parser that parses boolean conjunction of expressions
 pExpAnd :: Parser (Exp ())
 pExpAnd = foldr1 (\e1 e2 -> EBin () e1 e2 (And ())) <$> sepBy1 pExpRel (pSymbol "&&")
 
+-- | Parser that parses boolean disjunction of expressions
 pExpOr :: Parser (Exp ())
 pExpOr = foldr1 (\e1 e2 -> EBin () e1 e2 (Or ())) <$> sepBy1 pExpAnd (pSymbol "||")
 
+-- | Parser that parses verbose expressions. These expressions has the lowest presedence.
 pExpVerbose :: Parser (Exp ())
 pExpVerbose = choice [
     do pSymbol "let"
@@ -2084,10 +2187,11 @@ pExpVerbose = choice [
        return $ ECase () e branches
   , pExpOr]
 
+-- | A parser that parses an expressions
 pExp :: Parser (Exp ())
 pExp = pSpace *> pExpVerbose
 
-  -- parse type signatures
+-- | A parser that parses a type signature
 pTypeSignature :: Parser (Def ())
 pTypeSignature = do
     name <- pIdent
@@ -2096,6 +2200,7 @@ pTypeSignature = do
     pChar ';'
     return $ DTypeSig name t
 
+-- | A parser that parses a datatype declaration
 pDataDec :: Parser (Def ())
 pDataDec = do
   pSymbol "data"
@@ -2112,7 +2217,7 @@ pDataDec = do
   pChar ';'
   return $ DDataDec uid vars constructors
 
-  -- parse function clauses
+-- | A parser that parses a function definition
 pEquation :: Parser (Def ())
 pEquation = do
     name <- pIdent
@@ -2124,6 +2229,31 @@ pEquation = do
 
 -- parse patterns
 
+{- | A parser that parses a closed pattern. The first boolean specifies wether constants
+are allowed in the pattern. E.g should we allow @\5 -> 2@? Probably yes, as this should
+be rejected by the type checker (if at all). The second boolean specifies wether we allow
+N-ary data constructors to be parsed. If they are not, we must wrap them in parentheses.
+This is because for case clauses we'd like to be allowed to omit the parentheses around
+the @Just@ case in this example:
+
+@
+case x of
+  Just x  -> undefined
+  Nothing -> undefined
+@
+
+In this case the second boolean would be @True@. E.g when we are parsing a function
+definition, however, the boolean is @False@ as it will parse the wrong thing.
+
+This is wrong since @Just@ has arity 1
+@
+f Just x Nothing = undefined
+@
+
+While this is parsed correctly.
+@
+f (Just x) Nothing = undefined
+@ -}
 pPatClosed :: Bool -> Bool -> Parser (Pat ())
 pPatClosed allowConstants allowNary = choice $ maybe ++ always
   where maybe  = [PConst ()          <$> pConst | allowConstants]
@@ -2138,6 +2268,7 @@ pPatClosed allowConstants allowNary = choice $ maybe ++ always
                         (_:_:_) -> pure (PTup () ps)
                  ]
 
+-- | A parses that parse patterns of data constructors
 pPatApp :: Bool -> Bool -> Parser (Pat ())
 pPatApp allowconstants allowNary = choice $ pAdt ++ [pPatClosed allowconstants allowNary]
   where
@@ -2150,6 +2281,7 @@ pPatApp allowconstants allowNary = choice $ pAdt ++ [pPatClosed allowconstants a
                vars <- many (pPatClosed allowconstants allowNary)
                return $ PAdt () con vars
 
+-- | A parser that parses as-patterns
 pPatAs :: Bool -> Bool -> Parser (Pat ())
 pPatAs allowConstants allowNary = choice
   [ try $ do x <- pIdent
@@ -2158,11 +2290,13 @@ pPatAs allowConstants allowNary = choice
              return $ PAs () x p
   , pPatApp allowConstants allowNary]
 
+-- | A parser that parses a single pattern
 pPat :: Bool -> Bool -> Parser (Pat ())
 pPat allowConstants allowNary = pSpace *> pPatAs allowConstants allowNary
 
 -- parse constants
 
+-- | A parser that parses a constant literal
 pConst :: Parser Lit
 pConst = choice [
     try $ LFloat  <$> Lexer.lexeme pSpace Lexer.float
@@ -2173,6 +2307,8 @@ pConst = choice [
 
 -- parser utilities
 
+{- | A parser that takes a parser as input and produces a parser that behaves like the
+input parser but which requires the parsed item to be wrapped in parentheses. -}
 parens :: Parser a -> Parser a
 parens p = label "parse a type wrapped in parentheses" $ do
     pSymbol "("
@@ -2180,6 +2316,7 @@ parens p = label "parse a type wrapped in parentheses" $ do
     pSymbol ")"
     return a
 
+-- | A parser of identifiers
 pIdent :: Parser Ident
 pIdent = try $ do
     a <- lowerChar
@@ -2191,6 +2328,7 @@ pIdent = try $ do
         then fail "found keyword, expected identifier"
         else return $ Ident x
 
+-- | A parser of uppercase identifiers
 pUIdent :: Parser UIdent
 pUIdent = try $ do
     a <- upperChar
@@ -2201,18 +2339,22 @@ pUIdent = try $ do
         then fail "found keyword, expected uppercase identifier"
         else pure $ UIdent x
 
+-- | A parser of symbols
 pSymbol :: T.Text -> Parser T.Text
 pSymbol = Lexer.symbol pSpace
 
+-- | A parser of characters
 pChar :: Char -> Parser ()
 pChar c = void (char c <* pSpace)
 
+-- | A parser that consumes whitespace and some other fluff
 pSpace :: Parser ()
 pSpace = Lexer.space 
            (void spaceChar) 
            (Lexer.skipLineComment "--") 
            (Lexer.skipBlockComment "{-" "-}")
 
+-- | Reserved words in the language
 pkeywords :: [String]
 pkeywords = [
   -- types
@@ -2236,6 +2378,13 @@ pkeywords = [
   , "else"
   , "as"
   ]
+
+
+
+
+
+{- ***** Pretty-printer - stolen & modified from BNFC ***** -}
+
 
 printTree :: Print a => a -> String
 printTree = render . prt 0
