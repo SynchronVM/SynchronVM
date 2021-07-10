@@ -1418,7 +1418,6 @@ checkExp e = case e of
     t <- lookupVar id
     env <- ask
 --    liftIO $ putStrLn $ concat ["type of variable ", printTree id, " : ", printTree t]
-    liftIO $ putStrLn $ show env
     return (unitsub, EVar t id)
 
   ECon () uid     -> do
