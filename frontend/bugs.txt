@@ -1,0 +1,15 @@
+This program is buggy
+
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+reverse2 xs = case xs of
+    Nil -> (Nil, Nil)
+    (Cons x (Cons y ys)) -> (Cons y (Cons x Nil), xs)
+
+main = reverse2 (Cons 1 (Cons 2 Nil))
+
+
+Inferred result type of reverse2 is `(List p, List d)`, while they should obviously
+be of the same type.
