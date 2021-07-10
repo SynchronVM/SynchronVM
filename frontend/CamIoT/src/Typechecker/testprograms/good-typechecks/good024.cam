@@ -1,0 +1,5 @@
+
+f k = let (x, g) = k 5 in
+      g True
+
+main = 5

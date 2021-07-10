@@ -323,7 +323,8 @@ function.
 -}
 data Function a = Function
   { name      :: Ident       -- ^ Name of the function
-  , equations :: [Def a]     -- ^ Equations that makes up the function definition
+--  , equations :: [Def a]     -- ^ Equations that makes up the function definition
+  , equations :: [([Pat a], Exp a)]
   , typesig   :: Maybe Type  -- ^ Type signature of the function, if any exists
   }
   deriving (Eq)
@@ -396,11 +397,19 @@ groups defs = groupBy Typechecker.NewTypeChecker2.pred defs
 that the following definitions are not empty, that there are no signatures without
 function definitions. -}
 toFunction :: [Def a] -> Function a
-toFunction [x]    = Function (getName x) [x] Nothing
 toFunction (d:ds) = case d of
-  DTypeSig id t -> Function id ds (Just t)
-  -- In this case there was no declared type signature
-  _             -> Function (getName d) (d:ds) Nothing
+  DTypeSig id t      -> Function id (map defToPair ds) (Just t)
+  DEquation _ id _ _ -> Function id (map defToPair (d:ds)) Nothing
+  where
+     defToPair :: Def a -> ([Pat a], Exp a)
+     defToPair (DEquation _ _ args body) = (args, body)
+
+
+--toFunction [x]    = Function (getName x) [x] Nothing
+--toFunction (d:ds) = case d of
+--  DTypeSig id t -> Function id ds (Just t)
+--  -- In this case there was no declared type signature
+--  _             -> Function (getName d) (d:ds) Nothing
 
 {-
 Try to compile a program. Will return different error codes depending on the
@@ -571,9 +580,20 @@ instance Substitutable (Def Type) where
 
 -- | Functions are substitutable.
 instance Substitutable (Function Type) where
-  apply s f = f { equations = map (apply s) (equations f)
-                , typesig   = maybe Nothing (Just . apply s) (typesig f)
-                }
+--  apply s f = f { equations = map (apply s) (equations f)
+--                , typesig   = maybe Nothing (Just . apply s) (typesig f)
+--                }
+
+  apply s f =
+    f { equations = map (\(as, b) -> (map (apply s) as, apply s b)) (equations f)
+--      , typesig   = maybe Nothing (Just . apply s) (typesig f)
+      }
+
+  ftv = undefined
+
+-- | A function definition is substitutable.
+instance Substitutable ([Pat Type], Exp Type) where
+  apply s (args, body) = (map (apply s) args, apply s body)
 
   ftv = undefined
 
@@ -667,7 +687,10 @@ unify @a@ with @Bool@ perfectly fine, still, but when we try to typecheck the ap
 @Int -> Int@.
 -}
 data Schema = Forall [Ident] Type
-  deriving Show
+  --deriving Show
+
+instance Show Schema where
+  show (Forall vars typ) = concat [ "forall [", intercalate "," (map printTree vars), "] . ", printTree typ]
 
 {- | Schemas can be substituted by first removing any mapping from type variables
 in the substitution which are bound by the type schema. E.g if the substitution
@@ -683,11 +706,20 @@ instance Substitutable Schema where
 schemas and from uppercase identifiers to schemas (constructors). -}
 data Env
     = Env (Map.Map Ident Schema) (Map.Map UIdent Schema)
-    deriving Show
+    --deriving Show
 
 -- | The empty environment
 emptyEnv :: Env
 emptyEnv = Env Map.empty Map.empty
+
+instance Show Env where
+  show (Env identifiers constructors) =
+    concat [ "Identifiers:\n"
+           , intercalate "\n" (map (\(id,t) -> printTree id ++ " : " ++ show t) (Map.toList identifiers))
+           , "\n"
+           , "Constructors:\n"
+           , intercalate "\n" (map (\(id,t) -> printTree id ++ " : " ++ show t) (Map.toList constructors))
+           ]
 
 -- | Environments are substitutable.
 instance Substitutable Env where
@@ -778,7 +810,7 @@ instance Show TCError where
              ]
     UnificationError t1 t2 ->
       concat ["Can not unify the two types "
-             , show t1, " and ", show t2
+             , printTree t1, " and ", printTree t2
              ]
     UndeclaredTycon uid    -> concat ["Undeclared type constructor: ", printTree uid]
     DuplicateTycon uid     -> concat ["Type constructor ", printTree uid, " already declared"]
@@ -1058,7 +1090,21 @@ checkPatAndBindings p = do
   return (p', bindings)
 
 -- | Typecheck a definition and return the annotated definition and a substitution
-checkDef :: Def () -> TC (Subst, Def Type)
+checkDef :: ([Pat ()], Exp ()) -> TC (Subst, ([Pat Type], Exp Type), Type)
+checkDef (args, body) = do
+  -- annotate arguments with type information
+  args'           <- mapM checkPat args
+  -- fetch the declared variables and their types from the arguments
+  let argbindings = concat $ map patBindings args'
+  -- convert them to schemas, to extend the environment with
+  let argschemas  = map (\(id,t) -> (id, Forall [] t)) argbindings
+  -- typecheck the equation body
+  (sub, body')    <- inEnvMany argschemas $ checkExp body
+  -- create the inferred type of the entire definition
+  let functype    = apply sub $ foldr TLam (expVar body') $ map patVar args'
+  return (sub, (args', body'), functype)
+
+{-checkDef :: Def () -> TC (Subst, Def Type)
 checkDef d = case d of
   DTypeSig id t             -> return $ (unitsub, DTypeSig id t)
   DEquation () id pargs body -> do
@@ -1073,6 +1119,7 @@ checkDef d = case d of
     -- create the inferred type of the entire definition
     let functype    = apply sub $ foldr TLam (expVar body') $ map patVar args'
     return (sub, DEquation functype id args' body')
+    -}
 
 {- | @moreGeneralThan t1 t2@ returns @True@ of the type @t1@ is more general than
 the type @t2@. This function is used to ensure that the declared type of a function
@@ -1137,9 +1184,12 @@ checkFunction f = do
       inEnv (name f) sch $ mapM checkDef $ equations f
     Nothing -> mapM checkDef $ equations f
   -- [(substitutions for each equation, the equation)]
-  let (subs, eqs) = unzip subneqs
+  let subs = map (\(x,_,_) -> x) subneqs
+  let eqs  = map (\(_,x,_) -> x) subneqs
+  let types = map (\(_,_,x) -> x) subneqs
+--  let (subs, eqs) = unzip subneqs
   -- [inferred Type of equation]
-  let types       = map (fromJust . defVar) $ filter (isJust . defVar) eqs
+--  let types       = map (fromJust . defVar) $ filter (isJust . defVar) eqs
 
   -- create the mega-substitution for everything by unification
   let sub    = foldl compose unitsub subs
@@ -1149,7 +1199,9 @@ checkFunction f = do
   -- apply the substitution to the equations and fetch the finished type
   -- of the entire function
   let eqs'        = apply finsub eqs
-  let eqt         = fromJust $ defVar $ head eqs'
+  let eqt         = apply finsub (head types) --fromJust $ defVar $ head eqs'
+--  let eqt         = fromJust $ defVar $ head eqs'
+--  liftIO $ putStrLn $ printTree $ map (apply finsub) $ types
 
   -- does the inferred type unify with the type signature, if any exist?
   unifyWithTypesig    (name f) (typesig f) eqt
@@ -1157,7 +1209,8 @@ checkFunction f = do
   checkTooGeneralType (name f) (typesig f) eqt
 
   let f'          = f { equations = eqs'
-                      , typesig   = maybe (Just eqt) Just (typesig f)
+                      , typesig   = maybe (Just (apply finsub eqt)) Just (typesig f)
+--                      , typesig   = maybe (Just eqt) Just (typesig f)
                       }
 
   -- return annotated, substituted function
@@ -1247,9 +1300,10 @@ checkFunctions fs = checkFunctions_ fs unitsub
      checkFunctions_ (f:fs) s = do
        (sub, f')   <- checkFunction f
        let id      = name f'
-       let ty      = fromJust $ defVar $ head $ equations f'
+       let ty      = fromJust $ typesig f' --fromJust $ defVar $ head $ equations f'
+--       let ty      = fromJust $ defVar $ head $ equations f'
        env         <- ask
-       let schema  = generalize (apply (s `compose` sub) ty) env
+       let schema  = generalize ty env
        (sub', fs') <- inEnv id schema $ checkFunctions_ fs (s `compose` sub)
        return $ (sub', f' : fs')
 
@@ -1289,16 +1343,16 @@ getPrimitiveNameMappings = map (\(id,_) -> (id, id)) primitives
 
 -- | Information about the primitives. Add as needed.
 primitives :: [(Ident, Schema)]
-primitives =
-  [ (Ident "channel", Forall [a] $ TLam unit channel )
-  , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
-  , (Ident "recv"   , Forall [a] $ TLam channel event)
-  , (Ident "sync"   , Forall [a] $ TLam event ta)
-  , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
-  , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
-  , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
-  , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
-  ]
+primitives = []
+--  [ (Ident "channel", Forall [a] $ TLam unit channel )
+--  , (Ident "send"   , Forall [a] $ TLam channel (TLam ta unitevent))
+--  , (Ident "recv"   , Forall [a] $ TLam channel event)
+--  , (Ident "sync"   , Forall [a] $ TLam event ta)
+--  , (Ident "choose" , Forall [a] $ TLam event (TLam event event))
+--  , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
+--  , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
+--  , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
+--  ]
   where
      a         = Ident "a"
      b         = Ident "b"
@@ -1353,6 +1407,8 @@ checkCaseClauses t (c:cs) = do
        the expression. -}
        let schemas = map (\(id,t) -> (id, Forall [] t)) vars
        (s2,e')     <- inEnvMany schemas $ checkExp e
+--       liftIO $ putStrLn $ concat ["type of pattern: ", printTree (patVar p'')]
+--       liftIO $ putStrLn $ concat ["type of expression: ", printTree (expVar e')]
        return (s1 `compose` s2, (p'', e'))
 
 -- | Typecheck an expression and return the annotated expression and a substitution
@@ -1360,6 +1416,9 @@ checkExp :: Exp () -> TC (Subst, Exp Type)
 checkExp e = case e of
   EVar () id      -> do
     t <- lookupVar id
+    env <- ask
+--    liftIO $ putStrLn $ concat ["type of variable ", printTree id, " : ", printTree t]
+    liftIO $ putStrLn $ show env
     return (unitsub, EVar t id)
 
   ECon () uid     -> do
@@ -1420,15 +1479,32 @@ checkExp e = case e of
     return (sub, EApp (apply sub tv) e1' e2')
 
   ELet () p e1 e2 -> do
+      -- let p = e1 in e2
+
+      -- typecheck e1 and acquire the substitution for it
       (s1, e1')      <- checkExp e1
+
+      -- typecheck p and grab the variables it binds
       (p', vars)     <- checkPatAndBindings p
+
+      -- unify the type of p with that of e1
       s2             <- unify (patVar p') (expVar e1')
+
+      -- fetch the environment and apply the composition (s1 `compose` s2) on it
       env            <- ask
-      let env'       = apply (s1 `compose` s2) env
-      let varschemas = map (\(id,t) -> (id, generalize (apply (s1 `compose` s2) t) env')) vars
+      let sub        = s1 `compose` s2
+      let env'       = apply sub env
+
+      --  generalize the types in the pattern using this substituted environment
+      let varschemas = map (\(id,t) -> (id, Forall [] t)) vars --generalize (apply sub t) env')) vars
       let env''      = foldl (\e' (id,sc) -> extend (restrict e' id) id sc) env' varschemas
+
+      -- after having extended the environment with the variables in pat, check e2
       (s3,e2')       <- local (const env'') $ checkExp e2
-      return (s1 `compose` s2 `compose` s3, ELet (expVar e2') p' e1' e2')
+
+      -- return the annotated expression and the composition of all substitutions
+      return (s3 `compose` s2 `compose` s1, ELet (expVar e2') p' e1' e2')
+--      return (s1 `compose` s2 `compose` s3, ELet (expVar e2') p' e1' e2')
 
   EIf () e1 e2 e3 -> do
     tv <- fresh
@@ -2570,7 +2646,7 @@ instance Print a => Print [Exp a] where
 
 instance Print a => Print (Binop a) where
   prt i op = case op of
-    Add a -> prPrec i 2 (concatD [doc (showString "+")])
+    Add a -> prPrec i 4 (concatD [doc (showString "+")])
     Sub a -> prPrec i 2 (concatD [doc (showString "-")])
     Mul a -> prPrec i 2 (concatD [doc (showString "*")])
     Div a -> prPrec i 2 (concatD [doc (showString "/")])
@@ -2614,7 +2690,21 @@ instance Print [Pat a] where
   prt = prtList
 
 instance Print a => Print (Function a) where
-  prt i f = prtList 0 $ concat [maybe [] (\t -> [DTypeSig (name f) t]) (typesig f), equations f]
+--  prt i f = prtList 0 $ concat [maybe [] (\t -> [DTypeSig (name f) t]) (typesig f), equations f]
+  prt i f = concatD (tsig:defs)
+    where
+       tsig = concatD [ prt 0 (name f)
+                      , doc (showString ":")
+                      , prt 0 $ fromJust $ typesig f
+                      , doc (showString ";")
+                      ]
+       defs = (flip map) (equations f) $ \(args, body) ->
+         concatD [ prt 0 (name f)
+                 , prtList 0 args
+                 , doc (showString "=")
+                 , prt 0 body
+                 , doc (showString ";")
+                 ]
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
@@ -2677,11 +2767,25 @@ type Rename a = StateT Int (
                 IO))
                 a
 
+{- | Class of types that can produce and consume an integer. Used in conjunction with
+`MonadState a m` where `a` has an `IntState` constraint. We can use this to reuse
+e.g the `freshIdentifier` function with many different type of states, as long as we
+can figure out how to get an int from the state and how to write an int to the state. -}
+class IntState a where
+  getInt :: a -> Int
+  setInt :: Int -> a -> a
+
+-- | Trivial instance for a simple integer state
+instance IntState Int where
+  getInt     = id
+  setInt i _ = i
+
 -- | Generate a fresh identifier
-freshIdentifier :: (MonadState Int m) => m Ident
+freshIdentifier :: (IntState a, MonadState a m) => m Ident
 freshIdentifier = do
-  i <- get
-  put $ i + 1
+  st <- get
+  let i = getInt st
+  put $ setInt (i + 1) st
   return $ Ident $ "v" ++ show i
 
 {- | Takes an identifier and returns the new name of that identifier, if any exist.
@@ -2720,7 +2824,7 @@ renameProgram p = do
 -- | Alpha rename a function in the language
 renameFunction :: Function a -> Rename (Function a)
 renameFunction f = do
-  id <- freshIdentifier
+  id  <- freshIdentifier
   eqs <- mapM (renameDef id) (equations f)
   return $ f { equations = eqs
              , name      = id
@@ -2728,11 +2832,16 @@ renameFunction f = do
   where
      {- | Alpha rename a definition in the language, giving it a new name and
      renaming its arguments before rewriting the equation body. -}
-     renameDef :: Ident -> Def a -> Rename (Def a)
-     renameDef id' (DEquation a id args body) = do
+     renameDef :: Ident -> ([Pat a], Exp a) -> Rename ([Pat a], Exp a)
+     renameDef id' (args, body) = do
        (args', mappings) <- unzip <$> mapM renamePat args
        body' <- withMappings (concat mappings) $ renameExp body
-       return $ DEquation a id' args' body'
+       return (args', body')
+
+--     renameDef id' (DEquation a id args body) = do
+--       (args', mappings) <- unzip <$> mapM renamePat args
+--       body' <- withMappings (concat mappings) $ renameExp body
+--       return $ DEquation a id' args' body'
 
 {- | Take a pattern and return the same pattern but alpha renamed. Also return all the
 new mappings generated while renaming the pattern, so that the environment can be
@@ -2804,5 +2913,62 @@ renameExp e = case e of
       e2' <- renameExp e2
       e3' <- renameExp e3
       return $ EIf a e1' e2' e3'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{- ***** Beginning of Lambda-lifter ***** -}
+
+{- | Takes an initial state to generate names from and a program, and return the same
+program but where lambdas has been lifted to the top level. After this, there will be
+no anonymous functions left in the program. Also returns the final name generation
+state so that it can be passed in to subsequent compiler passes. -}
+lambdalift :: Int -> Program Type -> IO (Program Type, Int)
+lambdalift state p = do
+  let rd = runStateT (liftProgram p) (state, [])
+  (p, st) <- runReaderT rd []
+  return (p, getInt st)
+
+{- | The lambda lifting state maintains a counter used to generate fresh names, and also
+maintains the list of lifted lambda functions. -}
+type LambdaLiftState = (Int, [Function Type])
+
+{- | We can both read and write an integer to and from this type of state, so the
+instance of `IntState` is quite trivial. Since we can implement this instance we can
+reuse the `freshIdentifier` function which has already been declared. -}
+instance IntState LambdaLiftState where
+  getInt (i,_)   = i
+  setInt i (_,f) = (i,f)
+
+-- | Lambda lifting monad
+type LambdaLift a = StateT LambdaLiftState (  -- State used to generate fresh names
+                    {- State maintained to keep track of which variables are in scope,
+                    and what types they have. -}
+                    ReaderT [(Ident, Type)]
+                    IO)
+                    a
+
+
+-- | Lambda lift a program
+liftProgram :: Program Type -> LambdaLift (Program Type)
+liftProgram p = undefined
+
+liftExp :: Exp Type -> LambdaLift (Exp Type)
+liftExp e = undefined
 
 \end{code}

@@ -1,0 +1,8 @@
+data State s a where
+  ST : (s -> (a,s)) -> State s a
+
+bind : State s a -> (a -> State s b) -> State s b
+bind (ST f) k = ST (\s -> let (a,s') = f s in
+                          let (ST g) = k a in g s')
+
+main = 5

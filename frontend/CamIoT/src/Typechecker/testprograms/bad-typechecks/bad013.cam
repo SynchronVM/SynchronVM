@@ -1,0 +1,8 @@
+
+data TwoValues a b where
+  TwoValues : a -> b -> TwoValues a b
+
+test : TwoValues a b -> a
+test (TwoValues a) = a
+
+main = 5

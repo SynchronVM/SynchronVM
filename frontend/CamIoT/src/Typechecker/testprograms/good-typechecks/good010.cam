@@ -2,7 +2,6 @@ data List a where
   Nil  : List a
   Cons : a -> List a -> List a
 
-reverse2 : List Int -> (List Int, List Int)
 reverse2 xs = case xs of
     Nil -> (Nil, Nil)
     (Cons x (Cons y ys)) -> (Cons y (Cons x Nil), xs)
