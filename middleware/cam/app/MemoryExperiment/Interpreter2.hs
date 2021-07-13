@@ -175,10 +175,18 @@ cyclicHeap2 = listArray (1, 5) finalHeap
     finalHeap = [ HeapCell (V (VInt 5), P 2)
                 , HeapCell (V (VInt 3), P 3)
                 , HeapCell (V (VInt 2), P 1)
-                , HeapCell (P nullPointer, P 4) --freeList
+                , HeapCell (P nullPointer, P 5) --freeList
                 , emptyCell
                 ]
 
+
+testHeap :: Heap
+testHeap = listArray (1,3) finalHeap
+  where
+    finalHeap = [ HeapCell (V (VInt 5), V (VInt 2))
+                , HeapCell (P nullPointer, P 3) --freeList
+                , emptyCell
+                ]
 
 genInstrs :: CAM -> Label -> [(Instruction, Label)]
 genInstrs (Ins i) l = [(i, l)]
@@ -886,3 +894,12 @@ stackHeapTag (SP ptr) = P ptr
 
 -- cyclic heap
 -- evaluate (Seq (Ins PUSH) (Seq (Ins FST) (Seq (Ins SWAP) (Seq (Ins FST) (Ins STOP)))))
+
+-- testHeap
+-- evaluate testInstrs
+-- testInstrs = Seq i1 (Seq i2 (Seq i3 (Seq i4 i5)))
+-- i1 = Ins PUSH
+-- i2 = Ins $ QUOTE $ LInt 1
+-- i3 = Ins SNOC
+-- i4 = Ins $ QUOTE $ LInt 2
+-- i5 = Ins STOP
