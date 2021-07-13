@@ -1,0 +1,12 @@
+data Reader s a where
+  RD : (s -> a) -> Reader s a
+
+return : a -> Reader s a
+return x = RD (\_ -> x)
+
+bind : Reader s a -> (a -> Reader s b) -> Reader s b
+bind (RD f) g = RD (\s -> let x      = f s in
+                          let (RD k) = g x in
+                          k s)
+
+main = 5

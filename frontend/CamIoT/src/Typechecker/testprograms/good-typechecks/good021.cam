@@ -1,0 +1,11 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+reverse2 : List Int -> List Int
+reverse2 xs =
+  case xs of
+    Nil -> Nil
+    (Cons x (Cons y ys)) -> Cons y (Cons x Nil)
+
+main = reverse2 (Cons 1 (Cons 2 Nil))

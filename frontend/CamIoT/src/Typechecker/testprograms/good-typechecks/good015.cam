@@ -1,0 +1,15 @@
+chan1 : Channel Int
+chan1 = channel ()
+
+chan2 : Channel Int
+chan2 = channel ()
+
+process1 : () -> ()
+process1 void = sync (send chan2 5)
+
+main =
+  let _  = spawn process1 in
+  let e1 = recv  chan1    in
+  let e2 = recv  chan2    in
+  let v  = sync  (choose e1 e2) in
+  v

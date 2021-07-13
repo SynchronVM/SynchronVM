@@ -1,0 +1,31 @@
+data Reader s a where
+  RD : (s -> a) -> Reader s a
+
+return : a -> Reader s a
+return x = RD (\_ -> x)
+
+bind : Reader s a -> (a -> Reader s b) -> Reader s b
+bind (RD f) g = RD (\s -> let x      = f s in
+                          let (RD k) = g x in
+                          k s)
+
+runReader : Reader s a -> s -> a
+runReader (RD f) s = f s
+
+ask : Reader s s
+ask = RD (\s -> s)
+
+local : (s -> s) -> Reader s a -> Reader s a
+local f (RD g) = RD (\s -> g (f s))
+
+isEven : Int -> Bool
+isEven 0 = True
+isEven 1 = False
+isEven x = isEven (x-2)
+
+program1 : Reader Int Bool
+program1 = local (\s -> s + 1) (
+           local (\s -> s + 1) (
+           bind ask (\x -> return (isEven x))))
+
+main = runReader program1 5

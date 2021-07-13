@@ -6,35 +6,6 @@ failing_tests="failed tests: \n"
 
 echo "********************"
 echo ""
-echo "running good tests"
-echo ""
-echo "********************"
-
-#for file in `ls src/Typechecker/testprograms/`
-#do
-#	if [ $(basename $file) != $(basename $0) ]
-#        then
-#		var=$(CamIoT-exe $file 2>&1)
-#		res=$?
-#	        if [ "$res" -eq 0 ]
-#                then
-#		    success_count=$((success_count+1))
-#		    echo "file: $file typechecked successfully"
-#	        fi
-#		if [ "$res" -eq 1 ]
-#		then
-#		    fail_count=$((fail_count+1))
-#		    failing_tests="$failing_tests $file \n"
-#		    echo "\noops!"
-#		    echo "file: $file did not parse successfully"
-#		    echo $var
-#			echo ""
-#		fi
-#        fi
-#done
-
-echo "********************"
-echo ""
 echo "running failing datatype declaration tests"
 echo ""
 echo "********************"
@@ -114,6 +85,35 @@ do
 		    failing_tests="$failing_tests $file \n"
 		    echo "\noops!"
 		    echo "file: $file passed typechecking, which was unexpected..."
+		    echo $var
+			echo ""
+		fi
+        fi
+done
+
+echo "********************"
+echo ""
+echo "running good tests"
+echo ""
+echo "********************"
+
+for file in `ls src/Typechecker/testprograms/good-typechecks/`
+do
+	if [ $(basename $file) != $(basename $0) ]
+        then
+		var=$(camiotc src/Typechecker/testprograms/good-typechecks/$file 2>&1)
+		res=$?
+	        if [ "$res" -eq 0 ]
+                then
+		    success_count=$((success_count+1))
+		    echo "file: $file passed typechecking, as expected"
+	        fi
+		if [ "$res" -ne 0 ]
+		then
+		    fail_count=$((fail_count+1))
+		    failing_tests="$failing_tests $file \n"
+		    echo "\noops!"
+		    echo "file: $file failed typechecking, which was unexpected..."
 		    echo $var
 			echo ""
 		fi

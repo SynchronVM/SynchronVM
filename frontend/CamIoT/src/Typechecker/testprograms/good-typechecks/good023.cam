@@ -1,0 +1,8 @@
+
+data State s a where
+  ST : (s -> (a,s)) -> State s a
+
+fmap : (a -> b) -> State s a -> State s b
+fmap f (ST g) = ST (\s -> let (a,s') = g s in (f a, s'))
+
+main = 5
