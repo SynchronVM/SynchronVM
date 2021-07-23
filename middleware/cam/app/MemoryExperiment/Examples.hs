@@ -22,10 +22,11 @@
 
 module MemoryExperiment.Examples where
 
+
 import MemoryExperiment.CamOptMem
 import MemoryExperiment.PeepholeMem
--- import MemoryExperiment.Interpreter2
-import MemoryExperiment.BenchmarkInterpreter
+import MemoryExperiment.Interpreter2
+-- import MemoryExperiment.BenchmarkInterpreter
 -- Examples
 {-
 
@@ -566,3 +567,20 @@ example16 =
         )])))
      (App (Var "v0") (App (App (Var "v10") (Sys (LInt 1)))
                       (App (App (Var "v10") (Sys (LInt 2))) (Var "v11"))))))
+
+
+{-
+
+letrec xs = Cons 1 ys
+       ys = Cons 2 xs
+    in 1
+
+-}
+example17 =
+  Letrec [ (PatVar "xs", Con "Cons" (Pair one (Var "ys")))
+         , (PatVar "ys", Con "Cons" (Pair two (Var "xs")))
+         ]
+  one
+  where
+    one = Sys $ LInt 1
+    two = Sys $ LInt 2

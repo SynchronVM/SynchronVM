@@ -64,7 +64,7 @@ data Exp = Var Var  -- variable
          | Letrec [(Pat,Exp)] Exp -- letrec
          | Case Exp [(TaggedField, Exp)]
          | Sequence Exp Exp -- ;
-         deriving (Ord, Show, Eq)
+         deriving (Ord, Show, Eq, Read)
 
 data Sys = Sys2 BinOp Exp Exp -- BinOp
          | Sys1 UnaryOp Exp   -- UnaryOp
@@ -73,49 +73,49 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | LBool Bool   -- Bool s(0) in cam
          | RTS2 RTS2 Exp Exp
          | RTS1 RTS1 Exp
-         deriving (Ord, Show, Eq)
+         deriving (Ord, Show, Eq, Read)
 
 data RTS2 = SEND
           | CHOOSE
           | SPAWNEXTERNAL
           | WRAP
-          deriving (Ord, Show, Eq)
+          deriving (Ord, Show, Eq, Read)
 
 data RTS1 = CHANNEL | RECV
           | SPAWN   | SYNC
-          deriving (Ord, Show, Eq)
+          deriving (Ord, Show, Eq, Read)
 
 data BinOp = PlusI | MultiplyI  | MinusI |
              PlusF | MultiplyF  | MinusF |
                BGT | BLT | BEQ  | BGE    | BLE
-           deriving (Ord, Eq)
+           deriving (Ord, Eq, Show, Read)
 
-instance Show BinOp where
-  show PlusI     = "+"
-  show MultiplyI = "*"
-  show MinusI    = "-"
-  show PlusF     = "+."
-  show MultiplyF = "*."
-  show MinusF    = "-."
-  show BGT       = ">"
-  show BLT       = "<"
-  show BEQ       = "=="
-  show BGE       = ">="
-  show BLE       = "<="
+-- instance Show BinOp where
+--   show PlusI     = "+"
+--   show MultiplyI = "*"
+--   show MinusI    = "-"
+--   show PlusF     = "+."
+--   show MultiplyF = "*."
+--   show MinusF    = "-."
+--   show BGT       = ">"
+--   show BLT       = "<"
+--   show BEQ       = "=="
+--   show BGE       = ">="
+--   show BLE       = "<="
 
-data UnaryOp = Abs | Neg | NOT | DEC deriving (Ord, Eq)
+data UnaryOp = Abs | Neg | NOT | DEC deriving (Ord, Eq, Show, Read)
 
-instance Show UnaryOp where
-  show Abs = "abs"
-  show Neg = "-"
-  show NOT = "~"
-  show DEC = "dec"
+-- instance Show UnaryOp where
+--   show Abs = "abs"
+--   show Neg = "-"
+--   show NOT = "~"
+--   show DEC = "dec"
 
 data Pat = PatVar Var
          | Empty
          | PatPair Pat Pat
          | As Var Pat      -- var `as` pat; equivalent to @ in Haskell
-         deriving (Ord, Show, Eq)
+         deriving (Ord, Show, Eq, Read)
 
 data Instruction
    = -- ACCESS INSTRUCTIONS
@@ -166,7 +166,7 @@ data Instruction
    | SNOCP
    | CURP  Label
    | COMBP Label
-   deriving (Ord, Show, Eq)
+   deriving (Ord, Show, Eq, Read)
 
 -- Used to encode the operation number of the RTS
 
@@ -200,10 +200,10 @@ wrap      = 7
 -- labels to identify a subroutine
 newtype Label =
   Label { getLabel :: Int }
-  deriving (Ord, Eq)
+  deriving (Ord, Eq, Show, Read)
 
-instance Show Label where
-  show (Label i) = show i
+-- instance Show Label where
+--   show (Label i) = show i
 
 -- See NOTE 1 to undersand the notion of marking
 data EnvMark = Star

@@ -51,23 +51,23 @@ data CellContent = V Val
                  | P Pointer
                  | L Label
                  | T Tag
-                 deriving Eq
+                 deriving (Eq, Show, Read)
 
-instance Show CellContent where
-  show (V val) = show val
-  show (P p)
-    | p == -1 = "*null"
-    | otherwise = "*" <> show p
-  show (L l)
-    | getLabel l == -1 = "l:dummy"
-    | otherwise = "l:" <> show l
-  show (T t) = "T:" <> show t
+-- instance Show CellContent where
+--   show (V val) = show val
+--   show (P p)
+--     | p == -1 = "*null"
+--     | otherwise = "*" <> show p
+--   show (L l)
+--     | getLabel l == -1 = "l:dummy"
+--     | otherwise = "l:" <> show l
+--   show (T t) = "T:" <> show t
 
 data HeapCell = HeapCell (CellContent, CellContent)
-              deriving Eq
+              deriving (Eq, Show, Read)
 
-instance Show HeapCell where
-  show (HeapCell (c1,c2)) = "<" <> show (c1,c2) <> ">"
+-- instance Show HeapCell where
+--   show (HeapCell (c1,c2)) = "<" <> show (c1,c2) <> ">"
 
 
 nullPointer = (-1)
@@ -108,11 +108,12 @@ data Code = Code { instrs :: Array Index Instruction
                  , frees :: Int
                  , maxMapSize :: Int
                  , allocFreeOrder :: [AllocFree]
+                 , heapTransitions :: [(Instruction, Heap)]
                  } deriving Show
 
 newtype Evaluate a =
   Evaluate
-    { runEvaluate :: S.State Code a
+    { runEvaluate :: S.StateT Code IO a
     }
   deriving (Functor, Applicative, Monad, S.MonadState Code)
 
@@ -122,29 +123,45 @@ data Val = VInt  Int32   -- constants s(0)
          | VFloat Float  -- constants s(0)
          | VBool Bool    -- constants s(0)
          | VEmpty        -- empty tuple
-         deriving (Ord, Eq)
+         deriving (Ord, Eq, Read, Show)
 
 -- using Hinze's notation
-instance Show Val where
-  show (VInt i)   = show i
-  show (VFloat f) = show f
-  show (VBool b)  = show b
-  show  VEmpty    = "()"
+-- instance Show Val where
+--   show (VInt i)   = show i
+--   show (VFloat f) = show f
+--   show (VBool b)  = show b
+--   show  VEmpty    = "()"
 -- Take a sequence of stack machine instructions
 -- and evaluate them to their normal form
-evaluate :: CAM -> (EnvContent, Stat)
-evaluate cam = (val, stat)
+-- evaluate :: CAM -> (EnvContent, Stat)
+-- evaluate cam = (val, stat)
+--   where
+--     code = initCode cam
+--     (val, s) = S.runState (runEvaluate eval) code
+--     stat = Stat { totalMallocs   = mallocs s
+--                 , totalFrees     = frees s
+--                 , highestMapSize = maxMapSize s
+--                 -- , allocFreeSequence = reverse $ allocFreeOrder s
+--                 , allocSeqOk = isOk (reverse $ allocFreeOrder s)
+--                                (Set.fromList $ take heapSize [1..])
+--                 }
+
+evaluate :: CAM -> IO (EnvContent, Stat)
+evaluate cam = do
+  (val, s) <- S.runStateT (runEvaluate eval) code
+  writeFile "foo.txt" (show (heapTransitions s))
+  let stat =
+        Stat { totalMallocs   = mallocs s
+             , totalFrees     = frees s
+             , highestMapSize = maxMapSize s
+             -- , allocFreeSequence = reverse $ allocFreeOrder s
+             , allocSeqOk = isOk (reverse $ allocFreeOrder s)
+                            (Set.fromList $ take heapSize [1..])
+             }
+
+  pure (val, stat)
   where
     code = initCode cam
-    (val, s) = S.runState (runEvaluate eval) code
-    stat = Stat { totalMallocs   = mallocs s
-                , totalFrees     = frees s
-                , highestMapSize = maxMapSize s
-                -- , allocFreeSequence = reverse $ allocFreeOrder s
-                , allocSeqOk = isOk (reverse $ allocFreeOrder s)
-                               (Set.fromList $ take heapSize [1..])
-                }
-
 
 isOk :: [AllocFree] -> Set.Set Int -> Bool
 isOk [] s = True
@@ -160,7 +177,7 @@ data Stat = Stat { totalMallocs :: Int
                  , highestMapSize :: Int
                  -- , allocFreeSequence :: [AllocFree]
                  , allocSeqOk :: Bool
-                 } deriving (Ord, Show, Eq)
+                 } deriving (Show, Eq)
 
 data AllocFree = Alloc Int
                | Free  Int
@@ -182,6 +199,7 @@ initCode cam = Code { instrs = listArray (1, totalInstrs) caminstrs
                     , frees = 0
                     , maxMapSize = 0
                     , allocFreeOrder = []
+                    , heapTransitions = []
                     }
   where
     instrsLabs = genInstrs cam dummyLabel
@@ -218,7 +236,11 @@ genInstrs (Lab l c) _   = genInstrs c l
 
 eval :: Evaluate EnvContent
 eval = do
+  h <- getHeap
+  hts <- S.gets heapTransitions
+
   currentInstr <- readCurrent
+  S.modify $ \s -> s { heapTransitions = hts ++ [(currentInstr,h)] }
   cs <- S.gets computationSteps
   if cs == 1000
   then getEnv
