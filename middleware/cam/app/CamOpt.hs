@@ -70,9 +70,12 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | LInt Int32   -- Int s(0) in cam
          | LFloat Float -- Float s(0) in cam
          | LBool Bool   -- Bool s(0) in cam
+         | RTS3 RTS3 Exp Exp Exp
          | RTS2 RTS2 Exp Exp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
+
+data RTS3 = SYNCT deriving (Ord, Show, Eq)
 
 data RTS2 = SEND
           | CHOOSE
@@ -170,12 +173,14 @@ sync      - 4
 choose    - 5
 spawnExternal - 6
 wrap      - 7
+synct     - 8
 -}
 type OperationNumber = Word8
 
 
-spawnop, channelop, sendevtop, recvevtop :: Word8
-syncop, chooseop, spawnexternalop, wrap  :: Word8
+spawnop, channelop, sendevtop, recvevtop  :: Word8
+syncop, chooseop, spawnexternalop, wrapop :: Word8
+synctop :: Word8
 
 spawnop   = 0
 channelop = 1
@@ -184,7 +189,8 @@ recvevtop = 3
 syncop    = 4
 chooseop  = 5
 spawnexternalop = 6
-wrap      = 7
+wrapop    = 7
+synctop   = 8
 
 
 -- labels to identify a subroutine
@@ -282,6 +288,9 @@ codegen (Sys (RTS1 rts1 e)) env = do
 codegen (Sys (RTS2 rts2 e1 e2)) env = do
   is <- codegen2 e1 e2 env
   pure $! is <+> genrts2 rts2
+codegen (Sys (RTS3 rts3 e1 e2 e3)) env = do
+  is <- codegen3 e1 e2 e3 env
+  pure $! is <+> genrts3 SYNCT
 codegen Void _ = pure $! Ins CLEAR
 codegen (Pair e1 e2) env = do
   is <- codegen2 e1 e2 env
@@ -521,6 +530,25 @@ codegen2 e1 e2 env
   where
     env' = markEnv env
 
+codegen3 :: Exp -> Exp -> Exp -> Env -> Codegen CAM
+codegen3 e1 e2 e3 env
+  | rClosed e3 (env2Eta env) = do
+      i3 <- codegen e3 env'
+      is <- codegen2 e2 e1 env
+      pure $! Ins MOVE
+          <+> i3
+          <+> Ins SWAP
+          <+> is
+  | otherwise = do
+      i3 <- codegen e3 env
+      is <- codegen2 e2 e1 env
+      pure $! Ins PUSH
+          <+> i3
+          <+> Ins SWAP
+          <+> is
+  where
+    env' = markEnv env
+
 
 lookup :: Var -> Env -> Int -> CAM
 lookup var (EnvEmpty _ ) _ = Ins FAIL
@@ -580,11 +608,14 @@ nofail (Lab _ cam)  = nofail cam
 
 callrts = Ins . CALLRTS
 
+genrts3 :: RTS3 -> CAM
+genrts3 SYNCT = callrts synctop
+
 genrts2 :: RTS2 -> CAM
 genrts2 SEND          = callrts sendevtop
 genrts2 CHOOSE        = callrts chooseop
 genrts2 SPAWNEXTERNAL = callrts spawnexternalop
-genrts2 WRAP          = callrts wrap
+genrts2 WRAP          = callrts wrapop
 
 genrts1 :: RTS1 -> CAM
 genrts1 CHANNEL = callrts channelop
@@ -675,6 +706,10 @@ rFreeSys :: Sys -> EtaEnv -> PSet Var
 rFreeSys (Sys2 _ e1 e2) etaenv =
   rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFreeSys (Sys1 _ e) etaenv = rFree e etaenv
+rFreeSys (RTS3 _ e1 e2 e3) etaenv =
+  rFree e1 etaenv `Set.union`
+  rFree e2 etaenv `Set.union`
+  rFree e3 etaenv
 rFreeSys (RTS2 _ e1 e2) etaenv =
   rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFreeSys (RTS1 _ e) etaenv =
@@ -721,3 +756,16 @@ The difference occurs in the type
 The `lookup` function has a special case for this
 pattern.
 -}
+
+-- XXX : Simple RTS3 implementation
+-- codegen (Sys (RTS3 rts3 e1 e2 e3)) env = do
+--   i1 <- codegen e1 env
+--   i2 <- codegen e2 env
+--   i3 <- codegen e3 env
+--   pure $! Ins PUSH
+--       <+> i3
+--       <+> Ins SWAP
+--       <+> i2
+--       <+> Ins SWAP
+--       <+> i1
+--       <+> genrts3 SYNCT
