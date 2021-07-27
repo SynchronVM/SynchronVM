@@ -12,6 +12,46 @@
 
 BaseSequentialStream *chp = NULL;
 
+
+/* Audio DAC */
+
+/* Analog in or LRCK */
+/* LRCK - Left Right Clock 
+   Determines if data on serial line goes to left or right channel */
+#define AUDIO_LRCK_GPIO GPIOA
+#define AUDIO_LRCK_PIN  4
+
+#define AUDIO_AIN1X_GPIO GPIOA
+#define AUDIO_AIN1X_PIN  4
+
+/* Serial Control Clock */
+#define AUDIO_SCL_GPIO GPIOB
+#define AUDIO_SCL_PIN  6
+
+/* Serial Control Data */
+#define AUDIO_SDA_GPIO GPIOB
+#define AUDIO_SDA_PIN  9
+
+/* Master clock input - clocks the delta-sigma modulators */
+#define AUDIO_MCLK_GPIO GPIOC
+#define AUDIO_MCLK_PIN  7
+
+/* Serial clock (audio data interface clock) */
+#define AUDIO_SCLK_GPIO GPIOC
+#define AUDIO_SCLK_PIN  10
+
+/* Serial data (audio data input - two's complement serial audio data) */
+#define AUDIO_SDIN_GPIO GPIOC
+#define AUDIO_SDIN_PIN  12
+
+/* Reset pin. Resets when pin is LOW. */ 
+#define AUDIO_RESET_GPIO GPIOD
+#define AUDIO_RESET_PIN  4
+
+
+
+
+
 int main(void) {
   halInit();
   chSysInit();
