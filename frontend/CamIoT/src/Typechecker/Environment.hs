@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2020 Robert Krook
+-- Copyright (c) 2020 Robert Krook, Abhiroop Sarkar
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -96,8 +96,10 @@ emptyEnv = TEnv $ Map.fromList $
   , (Ident "spawn"  , Forall []  $ TLam (TLam unit unit) TInt)
   , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
   , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
+  , (Ident "syncT", Forall [a]    $ TLam TInt (TLam TInt (TLam event ta)))
   ]
-  --  wrap : Event a -> (a -> b) -> Event b
+  --  syncT : Time -> Time -> Event a -> a
+  --  wrap  : Event a -> (a -> b) -> Event b
   where
     a       = Ident "a"
     b       = Ident "b"

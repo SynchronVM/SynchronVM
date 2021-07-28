@@ -31,7 +31,8 @@ runR ra =
                                 ,((Ident "choose") , (Ident "choose"))
                                 ,((Ident "channel"), (Ident "channel"))
                                 ,((Ident "spawnExternal"), (Ident "spawnExternal"))
-                                ,((Ident "wrap"), (Ident "wrap"))
+                                ,((Ident "wrap") , (Ident "wrap"))
+                                ,((Ident "syncT"), (Ident "syncT"))
                                 ]
 
 

@@ -481,7 +481,7 @@ byteCompile verbose path = do
 
 
 -- Experiments --
-path = "testcases/good19.cam"
+path = "testcases/good20.cam"
 
 test :: IO ()
 test = do
@@ -965,7 +965,11 @@ rewriteCaseConstants expr@(SECase casety econd ((SPM (SPConst cty const) e):eres
 rewriteCaseConstants e = e
 
 
+
 runtimeFuncs :: SExp SType -> Bool
+runtimeFuncs (SEApp _ (SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _) _) _)
+  | rtsfunc == syncT = True
+  | otherwise = False
 runtimeFuncs (SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) _) _)
   | rtsfunc == send   = True
   | rtsfunc == choose = True
@@ -989,8 +993,12 @@ choose  = "choose"
 channel = "channel"
 spawnExternal = "spawnExternal"
 wrap    = "wrap"
+syncT   = "syncT"
 
 genrtsfunc :: SExp SType -> C.Exp
+genrtsfunc e@(SEApp _ (SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2) e3) e4)
+  | rtsfunc == syncT = C.Sys $ C.RTS3 C.SYNCT (translate e2) (translate e3) (translate e4)
+  | otherwise = error $ "Incorrect expression type: " <> show e
 genrtsfunc e@(SEApp _ (SEApp _ (SEVar   _ (AST.Ident rtsfunc)) e2) e3)
   | rtsfunc == send   = C.Sys $ C.RTS2 C.SEND   (translate e2) (translate e3)
   | rtsfunc == choose = C.Sys $ C.RTS2 C.CHOOSE (translate e2) (translate e3)
