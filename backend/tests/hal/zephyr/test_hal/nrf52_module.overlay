@@ -27,7 +27,7 @@
 	     svm-button2 = &button2;
 	     svm-button3 = &button3;
 
-	     svm-timer = &timer4;
+	     svm-sys-timer = &timer4;
      };
 };
 
