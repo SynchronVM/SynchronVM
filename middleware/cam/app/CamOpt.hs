@@ -31,6 +31,7 @@ module CamOpt ( Exp (..)
               , CAM (..)
               , Pat (..)
               , TaggedField
+              , RTS3 (..)
               , RTS2 (..)
               , RTS1 (..)
               , interpret
