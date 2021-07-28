@@ -22,50 +22,38 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
+#include <zephyr.h>
 
-#include <ll/ll_driver.h>
+#include <ll/ll_sys_time.h>
+#include <hal/zephyr/svm_zephyr.h>
 
-void (*ll_driver_sleep_ms_fun)(uint32_t ms);
-uint64_t (*ll_driver_timestamp_fun)(void);
+static zephyr_interop_t *zephyr_interop;
 
-bool ll_driver_init(void) {
-  return true; /* maybe something will need a status indicator in the future */
+bool ll_sys_time_init(void *os_interop) {
+  zephyr_interop = (zephyr_interop_t*)os_interop;
+  return (bool)zephyr_interop; 
 }
 
-/* void ll_driver_sleep_ms(uint32_t ms) { */
-/*   if (ll_driver_sleep_ms_fun) { */
-/*     ll_driver_sleep_ms_fun(ms); */
-/*   } */
-/* } */
+ll_sys_time_t ll_sys_time_get_current_ticks(void) {
 
-/* uint64_t ll_driver_timestamp(void) { */
-/*   uint64_t ts = 0; */
-/*   if (ll_driver_timestamp_fun) { */
-/*     ts = ll_driver_timestamp_fun(); */
-/*   } */
-/*   return ts; */
-/* } */
+  ll_sys_time_t time;
+  time.low_word = 0;
+  time.high_word = 0;
 
-uint32_t ll_read(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
-  return drv->ll_read_fun((struct ll_driver_s*)drv, data, data_size);
+  return time;
+  
 }
 
-uint32_t ll_write(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
-  return drv->ll_write_fun((struct ll_driver_s*)drv, data, data_size);
+
+uint32_t ll_sys_time_get_clock_freq(void) {
+  return 0;
 }
 
-uint32_t ll_data_readable(ll_driver_t *drv) { /* bytes available */
-  return drv->ll_data_readable_fun((struct ll_driver_s*)drv);
+
+bool ll_sys_time_set_wake_up(ll_sys_time_t absolute) {
+  return false;
 }
 
-uint32_t ll_data_writeable(ll_driver_t *drv) { /* bytes writeable */
-  return drv->ll_data_writeable_fun((struct ll_driver_s*)drv);
-}
-
-bool ll_is_synchronous(ll_driver_t *drv) {
-  bool b = false;
-  if (drv->ll_is_synchronous_fun != NULL) {
-    b = drv->ll_is_synchronous_fun((struct ll_driver_s*)drv);
-  }
-  return b;
+void ll_sys_sleep_ms(uint32_t ms) {
+  
 }

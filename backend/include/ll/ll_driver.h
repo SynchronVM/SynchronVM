@@ -30,6 +30,8 @@
 #include <stddef.h>
 #include <typedefs.h>
 
+#include <ll/ll_sys_time.h>
+
 #define LL_DRIVER_CONTROL_FAILURE 0x0
 #define LL_DRIVER_CONTROL_SUCCESS 0x1
 
@@ -37,12 +39,7 @@
    sleep_ms  : pointer to sleep function or NULL 
    timestamp : pointer to timestamp function of NULL 
 */ 
-extern bool ll_driver_init(void (*sleep_ms)(uint32_t),
-			   uint64_t (*timestamp)(void));
-
-/* Sleep and timestamp functions for use in driver implementation */
-extern void ll_driver_sleep_ms(uint32_t ms);
-extern uint64_t ll_driver_timestamp(void);
+extern bool ll_driver_init(void);
 
 /* Driver interface */
 typedef struct ll_driver_s{
@@ -75,7 +72,7 @@ typedef struct ll_driver_msg_s{
   uint32_t driver_id;     // Index into an array of drivers maintained by "low-level"
   uint32_t msg_type;      // Encode what kind of message ? (this could be 2 bytes, if driver_id is also 2 bytes)
   uint32_t data;          // Data payload, driver specific message or pointer  
-  uint64_t timestamp;
+  ll_sys_time_t timestamp;
 } ll_driver_msg_t;
 
 

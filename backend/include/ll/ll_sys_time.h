@@ -28,15 +28,19 @@
 /* ll_sys is at a slightly lower level in the "tree of abstractions"
    as ll_driver may come to depend upon these things. */
 
-/* Each port should implement these operations */
+/* Each port must implement these operations */
+
+#include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
-  uint32_t time_low_word;
-  uint32_t time_high_word;
+  uint32_t high_word;
+  uint32_t low_word;
 } ll_sys_time_t;
 
 /* initialize the timers, takes an os_interop pointer 
-   to enable sending of messages to the scheduler message queue */
+   to enable sending of messages to the scheduler message queue
+*/
 extern bool ll_sys_time_init(void *os_interop);
 
 extern ll_sys_time_t ll_sys_time_get_current_ticks(void);
