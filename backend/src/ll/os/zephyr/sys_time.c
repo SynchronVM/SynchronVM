@@ -91,7 +91,10 @@ bool ll_sys_time_init(void *os_interop) {
 ll_sys_time_t ll_sys_time_get_current_ticks(void) {
 
   ll_sys_time_t time;
-  
+
+  /* May need more sophisticated approach here 
+     to really rule out overflow interleaving with 
+     reading of low and high word */
   uint32_t key = irq_lock();
   counter_get_value(counter_dev, &time.low_word);
   time.high_word = counter_high_word;
