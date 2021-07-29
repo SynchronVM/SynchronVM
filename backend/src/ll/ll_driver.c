@@ -62,10 +62,3 @@ uint32_t ll_data_writeable(ll_driver_t *drv) { /* bytes writeable */
   return drv->ll_data_writeable_fun((struct ll_driver_s*)drv);
 }
 
-bool ll_is_synchronous(ll_driver_t *drv) {
-  bool b = false;
-  if (drv->ll_is_synchronous_fun != NULL) {
-    b = drv->ll_is_synchronous_fun((struct ll_driver_s*)drv);
-  }
-  return b;
-}

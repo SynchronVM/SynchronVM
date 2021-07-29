@@ -58,12 +58,12 @@ bool ll_uart_init(ll_driver_t* lld,
   uart_dev_t* u = uart_init(uif, in_buffer, in_size, out_buffer, out_size, backend_custom);
   if (u) {
     lld->driver_info = (void*) u; /* store the uart device as ll_driver internal info */
+    lld->is_synchronous = true;   /* TODO: implement an asynch version of uart */
     lld->ll_control_fun = ll_uart_control;
     lld->ll_read_fun = ll_uart_read;
     lld->ll_write_fun = ll_uart_write;
     lld->ll_data_readable_fun = ll_uart_data_available;
     lld->ll_data_writeable_fun = ll_uart_data_writeable;
-    lld->ll_is_synchronous_fun = NULL;
   }
   return (bool)u;
 }
