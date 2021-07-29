@@ -1369,7 +1369,7 @@ static int handle_spawnExternal(vmc_t *vmc){
   }
   UUID chan_id = (UUID)hold_reg.value;
 
-  if(ll_is_synchronous(&vmc->drivers[driver_details.value])){
+  if(vmc->drivers[driver_details.value].is_synchronous){
     // synchronous driver like LEDs
     vmc->channels[chan_id].sync_driver_no = (UUID)driver_details.value;
   } else {

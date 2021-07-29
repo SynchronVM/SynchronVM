@@ -44,12 +44,12 @@ extern bool ll_driver_init(void);
 /* Driver interface */
 typedef struct ll_driver_s{
   void *driver_info;
+  bool is_synchronous;
   uint32_t (*ll_read_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_write_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_data_readable_fun)(struct ll_driver_s *this);
   uint32_t (*ll_data_writeable_fun)(struct ll_driver_s *this);
-  bool (*ll_is_synchronous_fun)(struct ll_driver_s *this);
   
   UUID channel_id;
 } ll_driver_t;
@@ -61,8 +61,6 @@ extern uint32_t ll_write(ll_driver_t *drv, uint8_t *data, uint32_t data_size);
 extern uint32_t ll_data_readable(ll_driver_t *drv);
 
 extern uint32_t ll_data_writeable(ll_driver_t *drv);
-
-extern bool ll_is_synchronous(ll_driver_t *drv);
 
 /* Message format for messages from driver to RTS */
 /* The message must be a multiple of 4 bytes in  size to ensure 

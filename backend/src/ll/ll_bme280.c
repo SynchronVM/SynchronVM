@@ -104,12 +104,12 @@ bool ll_bme280_init(ll_driver_t* lld) {
 
   if (r) {
     lld->driver_info = NULL;
+    lld->is_synchronous = false;
     lld->ll_control_fun = ll_bme280_control;
     lld->ll_read_fun = ll_bme280_read;
     lld->ll_write_fun = ll_bme280_write;
     lld->ll_data_readable_fun = ll_bme280_data_available;
     lld->ll_data_writeable_fun = ll_bme280_data_writeable;
-    lld->ll_is_synchronous_fun = NULL;
   }
   
   return r;
