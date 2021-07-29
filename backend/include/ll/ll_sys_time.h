@@ -22,26 +22,34 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#include <ll/ll_time.h>
+#ifndef LL_SYS_TIME_H_
+#define LL_SYS_TIME_H_
 
-bool ll_time_init(ll_driver_t* lld, ll_time_if_t tif, ll_time_mode tmode) {
+/* ll_sys is at a slightly lower level in the "tree of abstractions"
+   as ll_driver may come to depend upon these things. */
 
-  return true;
-}
+/* Each port must implement these operations */
 
+#include <stdint.h>
+#include <stdbool.h>
 
-/* Thoughts 
-   
-   - How to set an absolute time timeout?
-   - How to set a relative time timeout?
-  
-   - Get current time
-     - ll_read
- 
-   - Only one outstanding timeout possible at any time per timer.
-     - This makes things very tricky. 
-     - 
-   
-   
+typedef struct {
+  uint32_t high_word;
+  uint32_t low_word;
+} ll_sys_time_t;
 
- */ 
+/* initialize the timers, takes an os_interop pointer 
+   to enable sending of messages to the scheduler message queue
+*/
+extern bool ll_sys_time_init(void *os_interop);
+
+extern ll_sys_time_t ll_sys_time_get_current_ticks(void);
+extern uint32_t      ll_sys_time_get_clock_freq(void);
+
+/* Sends a timestamped message to the scheduler message queue at an absolute time */
+extern bool          ll_sys_time_set_wake_up(ll_sys_time_t absolute);
+
+/* put OS thread to sleep, risky operation */
+extern void          ll_sys_sleep_ms(uint32_t ms); 
+
+#endif

@@ -113,12 +113,9 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
   int r = 0;
   ll_driver_msg_t *m = (ll_driver_msg_t *)chPoolAllocI(this->msg_pool);
 
-  *m = msg;
-
   if (m) {
-
-    msg_t msg_val;
-    msg_val = chMBPostI(this->mb, (uint32_t)m);
+    *m = msg;
+    msg_t msg_val = chMBPostI(this->mb, (uint32_t)m);
     if (msg_val != MSG_OK) {
       chPoolFree(this->msg_pool, m);
       r = -1;
@@ -236,15 +233,15 @@ bool chibios_sensevm_init(void) {
 #endif
 #if (VMC_NUM_CONTAINERS >= 2)
   msg_pools[1] = &msg_pool2;
-  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+  chPoolLoadArray(&msg_pool2,&msgs[1] , MAX_MESSAGES);
 #endif
 #if (VMC_NUM_CONTAINERS >= 3)
   msg_pools[2] = &msg_pool3;
-  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+  chPoolLoadArray(&msg_pool3,&msgs[2] , MAX_MESSAGES);
 #endif
 #if (VMC_NUM_CONTAINERS >= 4)
   msg_pools[3] = &msg_pool4;
-  chPoolLoadArray(&msg_pool1,&msgs[0] , MAX_MESSAGES);
+  chPoolLoadArray(&msg_pool4,&msgs[3] , MAX_MESSAGES);
 #endif
 
   for (int i = 0; i < VMC_NUM_CONTAINERS; i ++) {

@@ -28,26 +28,23 @@
 void (*ll_driver_sleep_ms_fun)(uint32_t ms);
 uint64_t (*ll_driver_timestamp_fun)(void);
 
-bool ll_driver_init(void (*sleep_ms)(uint32_t),
-		    uint64_t (*timestamp)(void)) {
-  ll_driver_sleep_ms_fun = sleep_ms;
-  ll_driver_timestamp_fun = timestamp;
+bool ll_driver_init(void) {
   return true; /* maybe something will need a status indicator in the future */
 }
 
-void ll_driver_sleep_ms(uint32_t ms) {
-  if (ll_driver_sleep_ms_fun) {
-    ll_driver_sleep_ms_fun(ms);
-  }
-}
+/* void ll_driver_sleep_ms(uint32_t ms) { */
+/*   if (ll_driver_sleep_ms_fun) { */
+/*     ll_driver_sleep_ms_fun(ms); */
+/*   } */
+/* } */
 
-uint64_t ll_driver_timestamp(void) {
-  uint64_t ts = 0;
-  if (ll_driver_timestamp_fun) {
-    ts = ll_driver_timestamp_fun();
-  }
-  return ts;
-}
+/* uint64_t ll_driver_timestamp(void) { */
+/*   uint64_t ts = 0; */
+/*   if (ll_driver_timestamp_fun) { */
+/*     ts = ll_driver_timestamp_fun(); */
+/*   } */
+/*   return ts; */
+/* } */
 
 uint32_t ll_read(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {
   return drv->ll_read_fun((struct ll_driver_s*)drv, data, data_size);
