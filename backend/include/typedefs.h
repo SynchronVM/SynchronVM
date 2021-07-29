@@ -31,6 +31,7 @@
 typedef uint32_t UINT;
 typedef int32_t  INT;
 typedef uint8_t  UUID;
+typedef uint64_t Time;
 
 #define UUID_NONE 0xFF
 #define DRIVER_NULL 0xFF

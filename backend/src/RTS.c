@@ -741,6 +741,16 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
 }
 
 
+int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
+  (void)container;
+  (void)baseline;
+  (void)deadline;
+  (void)evts;
+  return -1;
+}
+
+
+
 /********** IO operation **********/
 static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
   base_event_t bevt = cev.bev;

@@ -1415,6 +1415,38 @@ static int handle_wrap(vmc_t *vmc){
 
 }
 
+static int handle_synct(vmc_t *vmc){
+
+  //syncT : Time -> Time -> Event a -> a
+
+  cam_value_t baseline = vmc->contexts[vmc->current_running_context_id].env;
+
+  cam_register_t deadline;
+  int i =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &deadline);
+  if(i == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+
+  cam_register_t timed_evt;
+  int j =
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &timed_evt);
+  if(j == 0){
+    DEBUG_PRINT(("Stack pop has failed"));
+    return -1;
+  }
+
+  (void)baseline;
+  (void)deadline;
+  (void)timed_evt;
+
+  //TODO: index of 64 bit ints of int pool
+  //TODO: Call syncT
+
+  return 1;
+}
+
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
@@ -1426,8 +1458,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
     /* recvEvt   - 3 */
     /* sync      - 4 */
     /* choose    - 5 */
-    /* spawndriverop - 6 */
+    /* spawnExternal - 6 */
     /* wrap      - 7 */
+    /* syncT     - 8 */
 
   int ret_code = -1; 
   switch(rts_op_no){
@@ -1454,6 +1487,9 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       break;
     case 7:
       ret_code = handle_wrap(vmc);
+      break;
+    case 8:
+      ret_code = handle_synct(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));
