@@ -442,7 +442,7 @@ condPutStrLn :: Bool -> String -> IO ()
 condPutStrLn b s =
   case b of
     True -> putStrLn s
-    False -> return () 
+    False -> return ()
 
 byteCompile :: Bool -> FilePath -> IO [Word8]
 byteCompile verbose path = do
@@ -468,7 +468,7 @@ byteCompile verbose path = do
       let cam   = Peephole.optimise $ C.interpret camir
       condPutStrLn verbose $ show $ A.translate cam
 
-     
+
       condPutStrLn verbose $ "\n"
       --condPutStrLn verbose $ "\n\n CAM HS Interpreter \n\n"
       --let val = IM.evaluate $ C.interpret camir
