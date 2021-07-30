@@ -138,7 +138,6 @@ uart_dev_t* uart_init(ll_uart_if_t uif,
     break;
   }
 
-  
   if (uart_id >= 0 && uart_id <= 7) {
 
     ring_buf_init(&uarts[uart_id].in_ringbuf, in_size, in_buffer);

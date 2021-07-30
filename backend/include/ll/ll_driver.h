@@ -35,10 +35,6 @@
 #define LL_DRIVER_CONTROL_FAILURE 0x0
 #define LL_DRIVER_CONTROL_SUCCESS 0x1
 
-/* Initialize driver subsystem. 
-   sleep_ms  : pointer to sleep function or NULL 
-   timestamp : pointer to timestamp function of NULL 
-*/ 
 extern bool ll_driver_init(void);
 
 /* Driver interface */
@@ -50,7 +46,7 @@ typedef struct ll_driver_s{
   uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);
   uint32_t (*ll_data_readable_fun)(struct ll_driver_s *this);
   uint32_t (*ll_data_writeable_fun)(struct ll_driver_s *this);
-  
+
   UUID channel_id;
 } ll_driver_t;
 
@@ -63,15 +59,14 @@ extern uint32_t ll_data_readable(ll_driver_t *drv);
 extern uint32_t ll_data_writeable(ll_driver_t *drv);
 
 /* Message format for messages from driver to RTS */
-/* The message must be a multiple of 4 bytes in  size to ensure 
-   four byte alignment */ 
-  
+/* The message must be a multiple of 4 bytes in  size to ensure
+   four byte alignment */
+
 typedef struct ll_driver_msg_s{
   uint32_t driver_id;     // Index into an array of drivers maintained by "low-level"
   uint32_t msg_type;      // Encode what kind of message ? (this could be 2 bytes, if driver_id is also 2 bytes)
   uint32_t data;          // Data payload, driver specific message or pointer  
   ll_sys_time_t timestamp;
 } ll_driver_msg_t;
-
 
 #endif
