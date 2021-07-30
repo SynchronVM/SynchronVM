@@ -1419,32 +1419,43 @@ static int handle_synct(vmc_t *vmc){
 
   //syncT : Time -> Time -> Event a -> a
 
-  cam_value_t baseline = vmc->contexts[vmc->current_running_context_id].env;
+  cam_value_t hold_reg1 = vmc->contexts[vmc->current_running_context_id].env;
 
-  cam_register_t deadline;
+  cam_register_t hold_reg2;
   int i =
-    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &deadline);
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg2);
   if(i == 0){
     DEBUG_PRINT(("Stack pop has failed"));
     return -1;
   }
 
-  cam_register_t timed_evt;
+  cam_register_t hold_reg3;
   int j =
-    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &timed_evt);
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg3);
   if(j == 0){
     DEBUG_PRINT(("Stack pop has failed"));
     return -1;
   }
 
-  (void)baseline;
-  (void)deadline;
-  (void)timed_evt;
+  Time baseline = (Time)hold_reg1.value;
 
-  //TODO: index of 64 bit ints of int pool
-  //TODO: Call syncT
+  Time deadline = (Time)hold_reg2.value;
+
+  event_t timed_evt = (event_t)hold_reg3.value;
+
+  int k = syncT(vmc, baseline, deadline, &timed_evt);
+  if(k == -1){
+    DEBUG_PRINT(("Error with syncT \n"));
+    return j;
+  }
+
 
   return 1;
+
+  //FUTURE WORK
+  //TODO: hold_reg1 and hold_reg2 should contain indices to the int pool
+  // find index of 64 bit int baseline and deadline from the int pool
+
 }
 
 void eval_callrts(vmc_t *vmc, INT *pc_idx){
