@@ -255,7 +255,6 @@ bool zephyr_sensevm_init(void) {
 
     /* add zephyr_interop field to vm container */
     vm_containers[i].backend_custom = (void *)&zephyr_interop[i];
-
   }
 
   r = ll_driver_init();
