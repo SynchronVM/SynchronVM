@@ -34,7 +34,7 @@ static void button_cb(void *arg) {
 
   chSysLockFromISR();
   
-  button_driver_t *button = (chibios_interop_t*)arg;
+  button_driver_t *button = (button_driver_t *)arg;
 
   bool state = palReadPad(button->port, button->pad);
 
@@ -58,6 +58,7 @@ button_driver_t button_drivers[10]; /*hmm I dont like this much */
 
 
 button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t identifier) {
+  (void) drv_id; /* hmm */ 
   button_driver_t *r = NULL;
   
   if (identifier < button_num()) {
@@ -83,14 +84,19 @@ button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t ide
 
 
 static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  (void) this;
+  (void) data;
+  (void) data_size;
   return 0;
 }
 
 static uint32_t ll_button_data_available(struct ll_driver_s *this) {
+  (void) this;
   return 1;
 }
 
 static uint32_t ll_button_data_writeable(struct ll_driver_s *this) {
+  (void) this;
   return 0;
 }
 
@@ -111,6 +117,9 @@ static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t
 }
 
 static uint32_t ll_button_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  (void) this;
+  (void) data;
+  (void) data_size;
   return 0;
 }
 

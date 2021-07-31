@@ -117,7 +117,7 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
     *m = msg;
     msg_t msg_val = chMBPostI(this->mb, (uint32_t)m);
     if (msg_val != MSG_OK) {
-      chPoolFree(this->msg_pool, m);
+      chPoolFree(this->msg_pool, (void*)m);
       r = -1;
     }
   }
@@ -138,7 +138,7 @@ static int read_message_block(vmc_t* vmc, ll_driver_msg_t *msg) {
 
     *msg = *(ll_driver_msg_t*)msg_value;
 
-    chPoolFree(interop->msg_pool, msg_value);
+    chPoolFree(interop->msg_pool, (void*)msg_value);
     r = VMC_MESSAGE_RECEIVED;
   } else {
     r = VMC_NO_MESSAGE;

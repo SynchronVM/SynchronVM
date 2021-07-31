@@ -69,14 +69,19 @@ bool led_state(led_driver_t *led) {
 #include <string.h>
 
 static uint32_t ll_led_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  (void) this;
+  (void) data;
+  (void) data_size;
   return 0;
 }
 
 static uint32_t ll_led_data_available(struct ll_driver_s *this) {
+  (void) this;
   return 1;
 }
 
 static uint32_t ll_led_data_writeable(struct ll_driver_s *this) {
+  (void) this;
   return 1;
 }
 
