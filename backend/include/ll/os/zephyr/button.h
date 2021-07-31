@@ -25,6 +25,9 @@
 #ifndef BUTTON_H_
 #define BUTTON_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+
 typedef struct {
   uint32_t pin;
   uint32_t id;

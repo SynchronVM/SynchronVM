@@ -20,9 +20,6 @@ FILE(GLOB app_sources src/*.c)
 FILE(GLOB extra_sources
   ${SENSE_VM}/*.c
   ${LLBC}/ll_driver.c
-  ${LLBC}/ll_led.c
-  ${LLBC}/ll_uart.c
-  ${LLBC}/ll_button.c
   ${LLBC_Z}/led.c
   ${LLBC_Z}/uart.c
   ${LLBC_Z}/button.c

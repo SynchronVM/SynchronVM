@@ -20,6 +20,8 @@
      aliases {
      	     svm-uart0 = &uart0;
 
+	     svm-debug-uart = &uart1;
+
 	     svm-led0 = &led100;
 	     
 	     svm-button0 = &button100;

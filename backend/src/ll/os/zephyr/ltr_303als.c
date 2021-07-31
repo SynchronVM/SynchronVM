@@ -149,3 +149,62 @@ bool als_read_data(uint16_t *ch0, uint16_t *ch1) {
   }
   return r;
 }
+
+
+/* LL interface implementation */
+
+
+#include <ll/ll_als.h>
+
+
+static uint32_t ll_als_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return 0;
+}
+
+static uint32_t ll_als_data_available(struct ll_driver_s *this) {
+  return 4; // not really sure what to do here. the driver should be redesigned
+}
+static uint32_t ll_als_data_writeable(struct ll_driver_s *this) {
+  return 0;
+}
+
+static uint32_t ll_als_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+
+  bool r = als_read_data_sequential(data, data_size);
+
+  
+  return r ? data_size : 0 ; /* makes slightly more sense, But the error should be reported somehow. */ 
+}
+
+/* als does not accept any input */
+static uint32_t ll_als_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
+  return 0; 
+}
+
+bool ll_als_init(ll_driver_t* lld, uint8_t gain) {
+
+  bool r = als_init();
+
+  if (r) ll_driver_sleep_ms(ALS_STARTUP_TIME_MS);
+
+  r = als_standby();
+  
+  if (r) ll_driver_sleep_ms(ALS_STANDBY_TIME_MS);
+  
+  r = als_activate(gain);
+
+  if (r) {
+    lld->driver_info = NULL;
+    lld->is_synchronous = true;
+    lld->ll_control_fun = ll_als_control;
+    lld->ll_read_fun = ll_als_read;
+    lld->ll_write_fun = ll_als_write;
+    lld->ll_data_readable_fun = ll_als_data_available;
+    lld->ll_data_writeable_fun = ll_als_data_writeable;
+  }
+
+  if(r) ll_driver_sleep_ms(ALS_WAKEUP_TIME_MS);
+  
+  return r;
+
+}
