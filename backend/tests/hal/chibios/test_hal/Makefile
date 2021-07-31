@@ -140,8 +140,6 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/stack.c \
             $(SENSE_VM)/VMC.c \
             $(SENSE_VM)/ll/ll_driver.c \
-            $(SENSE_VM)/ll/ll_led.c\
-            $(SENSE_VM)/ll/ll_button.c\
             $(SENSE_VM)/ll/os/chibios/button.c\
             $(SENSE_VM)/ll/os/chibios/led.c\
             $(SENSE_VM)/ll/os/chibios/gpio.c\
