@@ -1,7 +1,8 @@
 / {
      aliases {
      svm-uart0 = &usart2;
-     svm-uart1 = &usart1;
+
+     svm-debug-uart = &usart1;	
 
      svm-button0 = &user_button;
 
@@ -10,7 +11,7 @@
      svm-led2 = &red_led_5;
      svm-led3 = &blue_led_6;
 
-     ssm-timer   = &timers5;
+     svm-sys-timer   = &timers5;
      };
 };
 
