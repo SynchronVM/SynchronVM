@@ -40,26 +40,6 @@
 		};
 	};
 
-	buttons {
-		compatible = "gpio-keys";
-		button0: button_0 {
-			gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button switch 0";
-		};
-		button1: button_1 {
-			gpios = <&gpio0 26 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button switch 1";
-		};
-		button2: button_2 {
-			gpios = <&gpio0 27 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button switch 2";
-		};
-		button3: button_3 {
-			gpios = <&gpio0 28 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button switch 3";
-		};
-	};
-
 	aliases {
 		led0 = &led0;
 		led1 = &led1;
@@ -96,10 +76,10 @@
 &i2c0 {
       compatible = "nordic,nrf-twi";
       status = "okay";
-      //sda-gpios = <&gpio1 2 0>;
-      //scl-gpios = <&gpio1 1 0>;
-      sda-pin = <34>;
-      scl-pin = <33>; 
+      sda-gpios = <&gpio1 2 0>;
+      scl-gpios = <&gpio1 1 0>;
+     /* sda-pin = <34>; */
+     /* scl-pin = <33>; */
 };
 
 /* spi */ 

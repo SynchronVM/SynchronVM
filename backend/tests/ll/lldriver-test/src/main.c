@@ -19,7 +19,6 @@
 #include <ll/ll_driver.h>
 #include <ll/ll_uart.h>
 #include <ll/ll_led.h>
-#include <ll/ll_time.h>
 #include <hal/zephyr/svm_zephyr.h>
 
 //#include <ll/powerman.h>
@@ -39,9 +38,9 @@ uint8_t uart0_out_buffer[1024];
 #define MAX_MESSAGES 100
 #define MSG_ALIGNMENT 4
 
-K_MSGQ_DEFINE(message_queue, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue, sizeof(svm_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 
-int send_message(zephyr_interop_t* this, ll_driver_msg_t msg) {
+int send_message(zephyr_interop_t* this, svm_msg_t msg) {
 
   return k_msgq_put(this->msgq,(void*)&msg, K_NO_WAIT);
 }

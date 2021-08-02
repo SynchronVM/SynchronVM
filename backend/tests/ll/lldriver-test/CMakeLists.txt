@@ -19,7 +19,7 @@ FILE(GLOB extra_sources
   ${LLBC}/ll_uart.c
   ${LLBC_Z}/led.c
   ${LLBC_Z}/uart.c)
-#  ${LLBC_Z}/powerman.c)
+
 
 target_sources(app PRIVATE ${app_sources} ${extra_sources})
 target_include_directories(app PRIVATE
