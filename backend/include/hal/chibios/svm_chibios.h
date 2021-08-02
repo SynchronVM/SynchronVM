@@ -36,7 +36,7 @@ typedef struct chibios_interop_s {
   mailbox_t *mb;
   
   /* Send a message to associated vm container */
-  int (*send_message)(struct chibios_interop_s* this, ll_driver_msg_t msg);
+  int (*send_message)(struct chibios_interop_s* this, svm_msg_t msg);
 
 } chibios_interop_t;
 

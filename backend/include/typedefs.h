@@ -49,6 +49,6 @@ typedef struct {
   Time timestamp;
 } svm_msg_t;
 
-
+#define SENDER_ID_SYS_TIME 0xFFFFFFFF
 
 #endif

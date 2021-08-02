@@ -88,30 +88,30 @@ void dbg_print(const char *str, ...) {
 static mailbox_t mb[VMC_NUM_CONTAINERS];
 static msg_t b[VMC_NUM_CONTAINERS][MAX_MESSAGES];
 
-static ll_driver_msg_t msgs[VMC_NUM_CONTAINERS][MAX_MESSAGES] __attribute__((aligned((4))));
+static svm_msg_t msgs[VMC_NUM_CONTAINERS][MAX_MESSAGES] __attribute__((aligned((4))));
 
 static memory_pool_t* msg_pools[VMC_NUM_CONTAINERS];
 
 #if (VMC_NUM_CONTAINERS >= 1)
-static MEMORYPOOL_DECL(msg_pool1, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+static MEMORYPOOL_DECL(msg_pool1, sizeof (svm_msg_t), PORT_NATURAL_ALIGN, NULL);
 #endif
 #if (VMC_NUM_CONTAINERS >= 2)
-static MEMORYPOOL_DECL(msg_pool2, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+static MEMORYPOOL_DECL(msg_pool2, sizeof (svm_msg_t), PORT_NATURAL_ALIGN, NULL);
 #endif
 #if (VMC_NUM_CONTAINERS >= 3)
-static MEMORYPOOL_DECL(msg_pool3, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+static MEMORYPOOL_DECL(msg_pool3, sizeof (svm_msg_t), PORT_NATURAL_ALIGN, NULL);
 #endif
 #if (VMC_NUM_CONTAINERS >= 4)
-static MEMORYPOOL_DECL(msg_pool4, sizeof (ll_driver_msg_t), PORT_NATURAL_ALIGN, NULL);
+static MEMORYPOOL_DECL(msg_pool4, sizeof (svm_msg_t), PORT_NATURAL_ALIGN, NULL);
 #endif
 
 chibios_interop_t chibios_interop[VMC_NUM_CONTAINERS];
 
-static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
+static int send_message(chibios_interop_t *this, svm_msg_t msg) {
   /* Called from within an interrupt routine */
 
   int r = 0;
-  ll_driver_msg_t *m = (ll_driver_msg_t *)chPoolAllocI(this->msg_pool);
+  svm_msg_t *m = (svm_msg_t *)chPoolAllocI(this->msg_pool);
 
   if (m) {
     *m = msg;
@@ -127,7 +127,7 @@ static int send_message(chibios_interop_t *this, ll_driver_msg_t msg) {
 }
 
 
-static int read_message_block(vmc_t* vmc, ll_driver_msg_t *msg) {
+static int read_message_block(vmc_t* vmc, svm_msg_t *msg) {
 
   msg_t msg_value;
 
@@ -136,7 +136,7 @@ static int read_message_block(vmc_t* vmc, ll_driver_msg_t *msg) {
 
   if (r == MSG_OK ) {
 
-    *msg = *(ll_driver_msg_t*)msg_value;
+    *msg = *(svm_msg_t*)msg_value;
 
     chPoolFree(interop->msg_pool, (void*)msg_value);
     r = VMC_MESSAGE_RECEIVED;
@@ -153,7 +153,7 @@ static uint32_t mailbox_num_used(vmc_t* vmc) {
 }
 
 // A chibios message is large enough to hold a pointer.
-// So ll_driver_msg_t struct has to be stored elsewhere.
+// So svm_msg_t struct has to be stored elsewhere.
 // TODO: Come up with solution.
 
 static THD_WORKING_AREA(thread_wa[VMC_NUM_CONTAINERS],

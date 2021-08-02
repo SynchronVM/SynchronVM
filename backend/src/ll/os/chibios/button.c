@@ -23,7 +23,7 @@
 /**********************************************************************************/
 
 #include <button.h>
-#include <ll/ll_sys_time.h>
+#include <sys/sys_time.h>
 
 #include <hal_pal.h>
 uint32_t button_num(void){
@@ -40,10 +40,9 @@ static void button_cb(void *arg) {
 
   button->state = state;
   
-  ll_driver_msg_t msg; 
-  msg.driver_id = button->id; 
-  msg.timestamp.high_word = 0; //ll_driver_timestamp();
-  msg.timestamp.low_word = 0;
+  svm_msg_t msg; 
+  msg.sender_id = button->id; 
+  msg.timestamp = 0; // TODO: implement
   msg.data = state;  // 1 or 0
 
   if (button->interop->send_message(button->interop, msg) == -1) {
