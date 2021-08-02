@@ -143,26 +143,35 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
      correct os specific datastructure.
   */
 
-  ll_driver_t lld;
+
 
   /* it is fine to include (#include ll_uart.h) the ll drivers any number of times */
   #if VMC_CONTAINER_1_USE_UART_0
-  //#include <ll/ll_uart.h>
+  {
+      ll_driver_t lld;
+      //#include <ll/ll_uart.h>
 
-  //drv_num++;
+      //drv_num++;
+  }
   #endif
 
   #if VMC_CONTAINER_1_USE_BUTTON_0
-  if (ll_button_init(&lld, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
-    vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
-    drv_num++;
+  {
+      ll_driver_t lld;
+      if (ll_button_init(&lld, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
+	vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+	drv_num++;
+      }
   }
   #endif
 
   #if VMC_CONTAINER_1_USE_LED_0
-  if (ll_led_init(&lld, 0, 0)) {
-    vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
-    drv_num++;
+  {
+      ll_driver_t lld;
+      if (ll_led_init(&lld, 0, 0)) {
+	vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+	drv_num++;
+      }
   }
   #endif
 
