@@ -71,9 +71,6 @@ static void debug_uart_isr(const struct device *dev, void *args)
   }
 }
 
-
-
-
 #else
 
 void debug_uart_init(uint32_t buffer_size) {
