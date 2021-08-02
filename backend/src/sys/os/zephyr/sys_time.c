@@ -88,28 +88,34 @@ bool sys_time_init(void *os_interop) {
   return true;
 }
 
-ll_sys_time_t sys_time_get_current_ticks(void) {
+Time sys_time_get_current_ticks(void) {
 
-  ll_sys_time_t time;
+  Time time = 0;
+  uint32_t low_word;
+  uint32_t high_word;
 
   /* May need more sophisticated approach here 
      to really rule out overflow interleaving with 
      reading of low and high word */
   uint32_t key = irq_lock();
-  counter_get_value(counter_dev, &time.low_word);
-  time.high_word = counter_high_word;
+  counter_get_value(counter_dev, &low_word);
+  high_word = counter_high_word;
   irq_unlock(key);
+
+  time = high_word;
+  time <<= 32;
+  time |= low_word;
   
   return time;
 }
 
-
+// TODO: IMPLEMENT
 uint32_t sys_time_get_clock_freq(void) {
   return counter_freq;
 }
 
 
-bool sys_time_set_wake_up(ll_sys_time_t absolute) {
+bool sys_time_set_wake_up(Time absolute) {
   return false;
 }
 
