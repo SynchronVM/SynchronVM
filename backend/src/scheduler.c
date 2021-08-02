@@ -117,8 +117,8 @@ int scheduler(vmc_t *container,
 	      message_queue_num_used_fun msgq_num_used,
         void (*dbg_print)(const char *str, ...)) {
 
-  //type: poll_msg(vmc_t *vmc, ll_driver_msg_t *msg);
-  //type: block_msg(vmc_t *vmc, ll_driver_msg_t *msg);
+  //type: poll_msg(vmc_t *vmc, svm_msg_t *msg);
+  //type: block_msg(vmc_t *vmc, svm_msg_t *msg);
 
   (void)poll_msg;
 
