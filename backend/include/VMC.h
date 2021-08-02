@@ -68,8 +68,8 @@ typedef struct {
 #define VMC_MESSAGE_RECEIVED 0
 #define VMC_NO_MESSAGE       -1 
 
-typedef int (*message_read_poll_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
-typedef int (*message_read_block_fun)(vmc_t *vmc, ll_driver_msg_t *msg);
+typedef int (*message_read_poll_fun)(vmc_t *vmc, svm_msg_t *msg);
+typedef int (*message_read_block_fun)(vmc_t *vmc, svm_msg_t *msg);
 typedef uint32_t (*message_queue_num_used_fun)(vmc_t *vmc);
 
 /**********************/

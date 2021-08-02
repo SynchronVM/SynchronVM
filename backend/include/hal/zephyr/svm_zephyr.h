@@ -32,8 +32,7 @@ typedef struct zephyr_interop_s {
   struct k_msgq *msgq;
   
   /* Send a message to associated vm container */
-  //void (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
-  int (*send_message)(struct zephyr_interop_s* this, ll_driver_msg_t msg);
+  int (*send_message)(struct zephyr_interop_s* this, svm_msg_t msg);
 
 } zephyr_interop_t;
 

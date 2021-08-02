@@ -58,15 +58,4 @@ extern uint32_t ll_data_readable(ll_driver_t *drv);
 
 extern uint32_t ll_data_writeable(ll_driver_t *drv);
 
-/* Message format for messages from driver to RTS */
-/* The message must be a multiple of 4 bytes in  size to ensure
-   four byte alignment */
-
-typedef struct ll_driver_msg_s{
-  uint32_t driver_id;     // Index into an array of drivers maintained by "low-level"
-  uint32_t msg_type;      // Encode what kind of message ? (this could be 2 bytes, if driver_id is also 2 bytes)
-  uint32_t data;          // Data payload, driver specific message or pointer  
-  Time timestamp;
-} ll_driver_msg_t;
-
 #endif

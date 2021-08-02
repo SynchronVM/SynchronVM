@@ -95,16 +95,16 @@ zephyr_interop_t zephyr_interop[4];
 /* Message Queues */
 
 #if VMC_NUM_CONTAINERS >= 1
-K_MSGQ_DEFINE(message_queue_0, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_0, sizeof(svm_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 2
-K_MSGQ_DEFINE(message_queue_1, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_1, sizeof(svm_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 3
-K_MSGQ_DEFINE(message_queue_2, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_2, sizeof(svm_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 #if VMC_NUM_CONTAINERS >= 4
-K_MSGQ_DEFINE(message_queue_3, sizeof(ll_driver_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
+K_MSGQ_DEFINE(message_queue_3, sizeof(svm_msg_t),MAX_MESSAGES, MSG_ALIGNMENT);
 #endif
 
 struct k_msgq *message_queues[VMC_NUM_CONTAINERS];
@@ -113,12 +113,12 @@ struct k_msgq *message_queues[VMC_NUM_CONTAINERS];
 /* Send_message implementation */
 
 
-int send_message(zephyr_interop_t* this, ll_driver_msg_t msg) {
+int send_message(zephyr_interop_t* this, svm_msg_t msg) {
 
   return k_msgq_put(this->msgq,(void*)&msg, K_NO_WAIT);
 }
 
-int read_message_poll(vmc_t *vmc, ll_driver_msg_t *msg) {
+int read_message_poll(vmc_t *vmc, svm_msg_t *msg) {
   zephyr_interop_t* interop = (zephyr_interop_t*)vmc->backend_custom;
 
   int r = k_msgq_get(interop->msgq, (void*)msg, K_NO_WAIT);
@@ -129,7 +129,7 @@ int read_message_poll(vmc_t *vmc, ll_driver_msg_t *msg) {
   return VMC_MESSAGE_RECEIVED;
 }
 
-int read_message_block(vmc_t *vmc, ll_driver_msg_t *msg) {
+int read_message_block(vmc_t *vmc, svm_msg_t *msg) {
   zephyr_interop_t* interop = (zephyr_interop_t*)vmc->backend_custom;
 
   int r = k_msgq_get(interop->msgq, (void*)msg, K_FOREVER);

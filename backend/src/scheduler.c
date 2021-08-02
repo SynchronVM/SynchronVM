@@ -122,7 +122,7 @@ int scheduler(vmc_t *container,
 
   (void)poll_msg;
 
-  ll_driver_msg_t msg;
+  svm_msg_t msg;
 
   dbg_print("Entered Scheduler\r\n");
   dbg_print("container address: %u\r\n", (uint32_t)container);

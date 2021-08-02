@@ -109,12 +109,11 @@ Time sys_time_get_current_ticks(void) {
   return time;
 }
 
-// TODO: IMPLEMENT
 uint32_t sys_time_get_clock_freq(void) {
   return counter_freq;
 }
 
-
+// TODO: IMPLEMENT
 bool sys_time_set_wake_up(Time absolute) {
   return false;
 }

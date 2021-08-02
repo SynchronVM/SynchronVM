@@ -55,6 +55,6 @@ extern int syncT(  vmc_t   *container
                  , Time     deadline
                  , event_t *evts);
 
-extern int handle_msg(vmc_t *vmc, ll_driver_msg_t *m);
+extern int handle_msg(vmc_t *vmc, svm_msg_t *m);
 
 #endif

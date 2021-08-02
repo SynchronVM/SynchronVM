@@ -839,9 +839,9 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
 }
 
 
-int handle_msg(vmc_t *vmc, ll_driver_msg_t *m){
+int handle_msg(vmc_t *vmc, svm_msg_t *m){
 
-  UUID chan_id = vmc->drivers[m->driver_id].channel_id;
+  UUID chan_id = vmc->drivers[m->sender_id].channel_id;
 
   //XXX: Logic here to decide if the arrived message is
   //     the entire message or the pointer to a location to read
