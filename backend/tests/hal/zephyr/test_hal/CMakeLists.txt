@@ -6,12 +6,13 @@ project(lldriver-test)
 
 set(LLBC   ../../../../src/ll)
 set(LLBC_Z ../../../../src/ll/os/zephyr)
+set(SYSC_Z  ../../../../src/sys/os/zephyr)
 
 set(HAL_Z  ../../../../src/hal/zephyr)
 
 set(LLBH_Z ../../../../include/ll/os/zephyr)
-
-set(HALH_Z  ../../../../include/hal/zephyr)
+set(HALH_Z ../../../../include/hal/zephyr)
+set(SYSH_Z ../../../../include/sys/os/zephyr)
 
 set(SENSE_VM ../../../../src)       
 set(SENSE_VM_H ../../../../include) 
@@ -23,7 +24,7 @@ FILE(GLOB extra_sources
   ${LLBC_Z}/led.c
   ${LLBC_Z}/uart.c
   ${LLBC_Z}/button.c
-  ${LLBC_Z}/sys_time.c
+  ${SYSC_Z}/sys_time.c
   ${HAL_Z}/svm_zephyr.c)
 #  ${LLBC_Z}/powerman.c)
 
@@ -33,6 +34,7 @@ target_include_directories(app PRIVATE
   ${SENSE_VM_H}
   ${LLBH_Z}
   ${HALH_Z}
+  ${SYSH_Z}
   ${ZEPHYR_BASE}/kernel/include
   ${ZEPHYR_BASE}/arch/${ARCH}/include)
 

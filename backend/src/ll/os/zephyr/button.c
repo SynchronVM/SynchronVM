@@ -72,7 +72,7 @@ static void button_pressed(const struct device *dev,
 
   ll_driver_msg_t msg; 
   msg.driver_id = driver->id; 
-  msg.timestamp = ll_sys_time_get_current_ticks();
+  msg.timestamp = sys_time_get_current_ticks();
   msg.data = driver->state;  // 1 or 0
   msg.msg_type = 0;
 

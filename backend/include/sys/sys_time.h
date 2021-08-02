@@ -41,15 +41,15 @@ typedef struct {
 /* initialize the timers, takes an os_interop pointer 
    to enable sending of messages to the scheduler message queue
 */
-extern bool ll_sys_time_init(void *os_interop);
+extern bool sys_time_init(void *os_interop);
 
-extern ll_sys_time_t ll_sys_time_get_current_ticks(void);
-extern uint32_t      ll_sys_time_get_clock_freq(void);
+extern ll_sys_time_t sys_time_get_current_ticks(void);
+extern uint32_t      sys_time_get_clock_freq(void);
 
 /* Sends a timestamped message to the scheduler message queue at an absolute time */
-extern bool          ll_sys_time_set_wake_up(ll_sys_time_t absolute);
+extern bool          sys_time_set_wake_up(ll_sys_time_t absolute);
 
 /* put OS thread to sleep, risky operation */
-extern void          ll_sys_sleep_ms(uint32_t ms); 
+extern void          sys_sleep_ms(uint32_t ms); 
 
 #endif

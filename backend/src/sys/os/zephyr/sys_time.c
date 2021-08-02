@@ -26,7 +26,7 @@
 #include <zephyr/types.h>
 #include <drivers/counter.h>
 
-#include <ll/ll_sys_time.h>
+#include <sys/sys_time.h>
 #include <hal/zephyr/svm_zephyr.h>
 
 #define COUNTER DT_LABEL(DT_ALIAS(svm_sys_timer))
@@ -54,7 +54,7 @@ void overflow_callback(const struct device *dev, void* user_data) {
 /**************************************/
 /* Interface functions implementation */
 
-bool ll_sys_time_init(void *os_interop) {
+bool sys_time_init(void *os_interop) {
 
   counter_high_word = 0;
   
@@ -88,7 +88,7 @@ bool ll_sys_time_init(void *os_interop) {
   return true;
 }
 
-ll_sys_time_t ll_sys_time_get_current_ticks(void) {
+ll_sys_time_t sys_time_get_current_ticks(void) {
 
   ll_sys_time_t time;
 
@@ -104,15 +104,15 @@ ll_sys_time_t ll_sys_time_get_current_ticks(void) {
 }
 
 
-uint32_t ll_sys_time_get_clock_freq(void) {
+uint32_t sys_time_get_clock_freq(void) {
   return counter_freq;
 }
 
 
-bool ll_sys_time_set_wake_up(ll_sys_time_t absolute) {
+bool sys_time_set_wake_up(ll_sys_time_t absolute) {
   return false;
 }
 
-void ll_sys_sleep_ms(uint32_t ms) {
+void sys_sleep_ms(uint32_t ms) {
   
 }

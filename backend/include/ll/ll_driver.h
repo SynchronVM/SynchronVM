@@ -30,7 +30,7 @@
 #include <stddef.h>
 #include <typedefs.h>
 
-#include <ll/ll_sys_time.h>
+#include <sys/sys_time.h>
 
 #define LL_DRIVER_CONTROL_FAILURE 0x0
 #define LL_DRIVER_CONTROL_SUCCESS 0x1
