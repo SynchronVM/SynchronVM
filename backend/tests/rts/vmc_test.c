@@ -31,13 +31,13 @@
 #include <scheduler.h>
 /* #include <string.h> */ // has memcpy
 
-int mock_read_message_poll(vmc_t *vmc, ll_driver_msg_t *msg){
+int mock_read_message_poll(vmc_t *vmc, svm_msg_t *msg){
   (void)vmc;
   (void)msg;
   return -1;
 }
 
-int mock_read_message_block(vmc_t *vmc, ll_driver_msg_t *msg){
+int mock_read_message_block(vmc_t *vmc, svm_msg_t *msg){
   (void)vmc;
   (void)msg;
   return -1;
