@@ -25,6 +25,7 @@ FILE(GLOB extra_sources
   ${LLBC_Z}/uart.c
   ${LLBC_Z}/button.c
   ${SYSC_Z}/sys_time.c
+  ${SYSC_Z}/sys_debug_uart.c
   ${HAL_Z}/svm_zephyr.c)
 #  ${LLBC_Z}/powerman.c)
 
