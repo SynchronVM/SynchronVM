@@ -41,14 +41,4 @@ typedef struct {
   UINT          value;
 } cam_value_t;
 
-
-typedef struct {
-  uint32_t sender_id;     // Id of the sender of this message (driver ID in the case of a driver)
-  uint32_t msg_type;      // Encode what kind of message ? 
-  uint32_t data;          // Data payload, driver specific message or pointer  
-  Time timestamp;
-} svm_msg_t;
-
-#define SENDER_ID_SYS_TIME 0xFFFFFFFF
-
 #endif

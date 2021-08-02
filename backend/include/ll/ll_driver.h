@@ -28,7 +28,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <typedefs.h>
+#include <svmdefs.h>
 
 #include <sys/sys_time.h>
 
