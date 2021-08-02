@@ -43,8 +43,8 @@ typedef struct {
 
 
 typedef struct {
-  uint32_t sender_id;     // Index into an array of drivers maintained by "low-level"
-  uint32_t msg_type;      // Encode what kind of message ? (this could be 2 bytes, if driver_id is also 2 bytes)
+  uint32_t sender_id;     // Id of the sender of this message (driver ID in the case of a driver)
+  uint32_t msg_type;      // Encode what kind of message ? 
   uint32_t data;          // Data payload, driver specific message or pointer  
   Time timestamp;
 } svm_msg_t;
