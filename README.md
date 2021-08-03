@@ -59,6 +59,9 @@ Coming soon.
 
 Coming soon.
 
+## Flashing an nRF52840 Development kit board
+
+Coming soon.
 
 # About
 
