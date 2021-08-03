@@ -22,6 +22,7 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/event.c \
               $(SOURCE_DIR)/heap.c \
               $(SOURCE_DIR)/queue.c \
+              $(SOURCE_DIR)/priorityqueue.c \
               $(SOURCE_DIR)/RTS.c \
               $(SOURCE_DIR)/scheduler.c \
               $(SOURCE_DIR)/stack.c \
