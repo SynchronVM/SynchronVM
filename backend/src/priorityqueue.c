@@ -49,23 +49,28 @@ static inline int rightIdx(int i) { return (2*i + 2); }
 
 static void minHeapify(PriorityQ_t *pq, int i)
 {
-  int l = leftIdx(i);
-  int r = rightIdx(i);
-  int smallest = i;
-  if (l < pq->size && pq->data[l].ticks < pq->data[i].ticks)
-    smallest = l;
-  if (r < pq->size && pq->data[r].ticks < pq->data[smallest].ticks)
-    smallest = r;
-  if (smallest != i)
-    {
-      swapElems(&pq->data[i], &pq->data[smallest]);
-      minHeapify(pq, smallest);
+  for(;;){
+    int l = leftIdx(i);
+    int r = rightIdx(i);
+    int smallest = i;
+    if (l < pq->size && pq->data[l].ticks < pq->data[i].ticks)
+      smallest = l;
+    if (r < pq->size && pq->data[r].ticks < pq->data[smallest].ticks)
+      smallest = r;
+    if (smallest == i){
+      break;
+    } else {
+        swapElems(&pq->data[i], &pq->data[smallest]);
+        i = smallest;
     }
+
+  }
 }
+
 
 int pq_init(PriorityQ_t *pq, uint8_t *mem, unsigned int size_bytes){
 
-  if (!mem || !pq || size_bytes < sizeof(pq_data_t)) return 0;
+  if (!mem || !pq || size_bytes < sizeof(pq_data_t)) return -1;
   unsigned int num_elt = size_bytes / sizeof(pq_data_t);
   pq->capacity = num_elt;
   pq->size = 0;

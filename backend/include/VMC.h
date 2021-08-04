@@ -31,6 +31,7 @@
 #include <heap.h>
 #include <queue.h>
 #include <channel.h>
+#include <priorityqueue.h>
 #include <Context.h>
 #include <ll/ll_driver.h>
 #include <stdint.h>
@@ -56,6 +57,7 @@ typedef struct {
   bool          context_used[VMC_MAX_CONTEXTS];
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
   Queue_t       rdyQ;
+  PriorityQ_t   waitQ;
   ll_driver_t   drivers[VMC_MAX_DRIVERS];
   void*         backend_custom; /* Can be used by a backend for low level integration */
   bool          all_contexts_stopped;
