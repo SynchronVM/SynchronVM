@@ -70,7 +70,7 @@ static void minHeapify(PriorityQ_t *pq, int i)
 
 int pq_init(PriorityQ_t *pq, uint8_t *mem, unsigned int size_bytes){
 
-  if (!mem || !pq || size_bytes < sizeof(pq_data_t)) return 0;
+  if (!mem || !pq || size_bytes < sizeof(pq_data_t)) return -1;
   unsigned int num_elt = size_bytes / sizeof(pq_data_t);
   pq->capacity = num_elt;
   pq->size = 0;
