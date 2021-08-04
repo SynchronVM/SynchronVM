@@ -95,7 +95,9 @@ static bool init_all_chans(Channel_t *c, uint8_t *mem);
 static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
 
 /* Moving the obligation to allocate memory for driver internal state here */ 
+#if VMC_CONTAINER_1_USE_BUTTON_0
 ll_button_driver_t ll_button;
+#endif 
 
 
 int vmc_init(vmc_t *vm_containers, int max_num_containers) { 

@@ -84,6 +84,14 @@ void main(void) {
 
   k_sleep(K_SECONDS(1));
 
+  while (true) {
+    Time t =  sys_time_get_current_ticks();
+    printk("%llu\r\n", t);
+    k_sleep(K_SECONDS(1));
+  }
+
+
+  
   /* PRINT("Currently running threads:\r\n"); */
   /* k_thread_foreach(t_info_dump, NULL); */
 
