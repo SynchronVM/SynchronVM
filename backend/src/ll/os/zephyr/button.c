@@ -25,154 +25,38 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <button.h>
 #include <drivers/gpio.h>
 #include <hal/zephyr/svm_zephyr.h>
 
-#define BUTTON_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
-#define BUTTON_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
-#define BUTTON_FLAGS(X)        (GPIO_INPUT | GPIO_INT_DEBOUNCE | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
-
-
-#define CONFIG_BUTTON_CASE(X) \
-  case X: \
-  button_drivers[(X)].pin = BUTTON_PIN(svm_button##X);\
-  button_drivers[(X)].id  = drv_id; \
-  button_drivers[(X)].state = 0; \
-  button_data[(X)].interop = (zephyr_interop_t*)backend_custom;\
-  button_data[(X)].driver = &(button_drivers[(X)]); \
-  gpio_pin_configure(button_device, button_drivers[(X)].pin, BUTTON_FLAGS(svm_button##X)); \
-  gpio_pin_interrupt_configure(button_device, button_drivers[(X)].pin, GPIO_INT_EDGE_BOTH); \
-  gpio_init_callback(&button_data[X].cb_data, button_pressed, BIT(BUTTON_PIN(svm_button##X))); \
-  gpio_add_callback(button_device, &button_data[X].cb_data);\
-  break;
-
-typedef struct {
-  struct gpio_callback cb_data;
-  zephyr_interop_t *interop;
-  button_driver_t *driver;
-}  button_user_data_t;
-
-
-static button_user_data_t button_data[10];
-button_driver_t button_drivers[10];
-const struct device *button_device;
+#include <ll/ll_button.h>
 
 /* The callback routine */
-static void button_pressed(const struct device *dev,
-		    struct gpio_callback *cb,
-		    uint32_t pins) {
+void button_pressed_cb(const struct device *dev,
+		       struct gpio_callback *cb,
+		       uint32_t pins) {
   unsigned int key = irq_lock();
-  /* This is so weird and backwards!!! CONTAINER_OF*/
-  button_user_data_t *parent = CONTAINER_OF(cb, button_user_data_t, cb_data);
-  zephyr_interop_t *interop = parent->interop;
-  button_driver_t  *driver  = parent->driver;
 
-  driver->state = gpio_pin_get(button_device, driver->pin);
+  /* This is so weird and backwards!!! CONTAINER_OF*/
+  button_driver_internal_t *parent = CONTAINER_OF(cb, button_driver_internal_t, cb_data); 
+  zephyr_interop_t *interop = parent->interop;
+
+
+  parent->state = gpio_pin_get(parent->dev, parent->pin); 
 
   svm_msg_t msg; 
-  msg.sender_id = driver->id; 
-  msg.timestamp = sys_time_get_current_ticks();
-  msg.data = driver->state;  // 1 or 0
+  msg.sender_id = parent->drv_id; 
+  msg.timestamp = 0;//sys_time_get_current_ticks();
+  msg.data = parent->state;  // 1 or 0 
   msg.msg_type = 0;
 
   if (interop->send_message(interop, msg) == -ENOMSG) {
-    /* Message was not send due to queue being full. 
-       What do we do in this case?  */ 
+    /* Message was not send due to queue being full.
+       What do we do in this case?  */
   }
   irq_unlock(key);
 }
 
-uint32_t button_num(void) {
-  uint32_t num_buttons = 0;
-
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button0), okay)
-  num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button1), okay)
-  num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button2), okay)
-  num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button3), okay)
-  num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button4), okay)
-   num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button5), okay)
-   num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button6), okay)
-   num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button7), okay)
-   num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button8), okay)
-   num_buttons = num_buttons + 1;
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button9), okay)
-   num_buttons = num_buttons + 1;
-#endif
-  return num_buttons;
-}
-
-
-button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t identifier){
-
-  if (!button_device) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button0), okay) 
-    button_device = device_get_binding(BUTTON_DEVICE_LABEL(svm_button0));
-#endif
-  }
-
-  if (!button_device) return false;
-
-  switch(identifier) {
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button0), okay)
-    CONFIG_BUTTON_CASE(0);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button1), okay)
-    CONFIG_BUTTON_CASE(1);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button2), okay)
-    CONFIG_BUTTON_CASE(2);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button3), okay)
-    CONFIG_BUTTON_CASE(3);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button4), okay)
-    CONFIG_BUTTON_CASE(4);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button5), okay)
-    CONFIG_BUTTON_CASE(5);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button6), okay)
-    CONFIG_BUTTON_CASE(6);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button7), okay)
-    CONFIG_BUTTON_CASE(7);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button8), okay)
-    CONFIG_BUTTON_CASE(8);
-#endif
-#if DT_NODE_HAS_STATUS(DT_ALIAS(svm_button9), okay)
-    CONFIG_BUTTON_CASE(9);
-#endif
-  default:
-    return NULL;
-  }
-  return &button_drivers[identifier];
-}
-
-
 /* Implementation of LL interface */
-
-#include <ll/ll_button.h>
-
-
 static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   return 0;
 }
@@ -186,10 +70,11 @@ static uint32_t ll_button_data_writeable(struct ll_driver_s *this) {
 }
 
 static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
-  button_driver_t *b = (button_driver_t*)this->driver_info;
+
+  button_driver_internal_t *b = (button_driver_internal_t*)this->driver_info;
 
   uint32_t r = 0;
-  
+
   if (data_size == 4) {
     data[0] = b->state;
     data[1] = b->state >> 8;
@@ -197,7 +82,7 @@ static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t
     data[3] = b->state >> 24;
     r = 4;
   }
-  
+
   return r;
 }
 
@@ -205,21 +90,18 @@ static uint32_t ll_button_write(struct ll_driver_s *this, uint8_t *data, uint32_
   return 0;
 }
 
-bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void* backend_custom,  uint32_t button_id) {
+bool ll_button_init(ll_driver_t* lld, ll_button_driver_t *bdrv) {
 
-  button_driver_t *button_driver = button_init(drv_id, backend_custom, button_id);
+  lld->driver_info = bdrv;
 
-  bool r = false;
-  
-  if (button_driver) {
-    r = true; 
-    lld->driver_info = (void*) button_driver;
-    lld->is_synchronous = false;
-    lld->ll_control_fun = ll_button_control;
-    lld->ll_read_fun = ll_button_read;
-    lld->ll_write_fun = ll_button_write;
-    lld->ll_data_readable_fun = ll_button_data_available;
-    lld->ll_data_writeable_fun = ll_button_data_writeable;
-  }
-  return r;
+  /* TODO: Check that all fields of bdrv has been initialized */
+
+  lld->is_synchronous = false;
+  lld->ll_control_fun = ll_button_control;
+  lld->ll_read_fun = ll_button_read;
+  lld->ll_write_fun = ll_button_write;
+  lld->ll_data_readable_fun = ll_button_data_available;
+  lld->ll_data_writeable_fun = ll_button_data_writeable;
+
+  return true; // TODO: FIXME
 }

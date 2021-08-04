@@ -32,6 +32,8 @@
 
 #include <sys/sys_time.h>
 
+/* Thoughts: We have not used the control interface for anything so far. Maybe drop it. */
+
 #define LL_DRIVER_CONTROL_FAILURE 0x0
 #define LL_DRIVER_CONTROL_SUCCESS 0x1
 

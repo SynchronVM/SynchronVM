@@ -36,7 +36,6 @@
 
 #define VMC_NUM_CONTAINERS 1 // Defines the number of Virtual Machine Containers to run
 
-
 /*********/
 /* VMC 1 */
 /*********/

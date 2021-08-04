@@ -92,11 +92,15 @@ const uint8_t vmc_container_2_code[] = {
 static bool init_all_chans(Channel_t *c, uint8_t *mem);
 static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
 
-int vmc_init(vmc_t *vm_containers, int max_num_containers) {
+/* Moving the obligation to allocate memory for driver internal state here */ 
+ll_button_driver_t ll_button;
+
+
+int vmc_init(vmc_t *vm_containers, int max_num_containers) { 
 
   int r = 0;
   int rl = 0;
-  uint32_t drv_num = 0;
+  uint32_t drv_num = 0; 
 
   if (VMC_NUM_CONTAINERS > max_num_containers) {
     return -1; /* error! */
@@ -134,6 +138,13 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   }
 
 
+
+  /* Initialize system time */
+  //if (!sys_time_init((void *)vm_containers[VMC_CONTAINER_1].backend_custom)) {
+  //  return -6;
+  //}
+    
+
   /**********************************************************/
   /* Initialize the Drivers
      At this point we can give the vmc_t data to the driver.
@@ -157,11 +168,14 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   #if VMC_CONTAINER_1_USE_BUTTON_0
   {
-      ll_driver_t lld;
-      if (ll_button_init(&lld, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom, 0)) {
-	vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
-	drv_num++;
-      }
+    LL_BUTTON_DRIVER_INIT(ll_button, 0, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
+
+    ll_driver_t lld;
+    //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
+    if (ll_button_init(&lld, &ll_button)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    }
   }
   #endif
 

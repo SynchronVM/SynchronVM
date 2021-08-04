@@ -28,13 +28,43 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct {
-  uint32_t pin;
-  uint32_t id;
-  uint32_t state;
-} button_driver_t;
+/* SVM includes */ 
+#include <hal/zephyr/svm_zephyr.h>
 
-extern uint32_t button_num(void);
-extern button_driver_t *button_init(uint32_t drv_id, void *backend_custom, uint32_t identifier);
+/* Zephyr includes */ 
+#include <drivers/gpio.h>
+
+typedef struct {
+  struct gpio_callback cb_data;
+  uint32_t pin;
+  uint32_t state;
+  uint32_t drv_id;
+  const struct device *dev;
+  zephyr_interop_t *interop;
+} button_driver_internal_t; 
+
+#define BUTTON_DRIVER_INTERNAL button_driver_internal_t internal
+
+extern void button_pressed_cb(const struct device *dev,
+			      struct gpio_callback *cb,
+			      uint32_t pin);
+
+#define BUTTON_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
+#define BUTTON_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
+#define BUTTON_FLAGS(X)        (GPIO_INPUT | GPIO_INT_DEBOUNCE | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
+
+#define BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX)	\
+  {\
+  XbdrvX.internal.dev = NULL;\
+  XbdrvX.internal.pin = BUTTON_PIN(svm_button##XbidX);\
+  XbdrvX.internal.state = 0;\
+  XbdrvX.internal.drv_id = Xdrv_idX;\
+  XbdrvX.internal.interop = (zephyr_interop_t *)(XcustomX);\
+  XbdrvX.internal.dev = device_get_binding(BUTTON_DEVICE_LABEL(svm_button##XbidX));\
+  gpio_pin_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, BUTTON_FLAGS(svm_button##XbidX)); \
+  gpio_pin_interrupt_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, GPIO_INT_EDGE_BOTH); \
+  gpio_init_callback(&XbdrvX.internal.cb_data, button_pressed_cb, BIT(BUTTON_PIN(svm_button##XbidX))); \
+  gpio_add_callback(XbdrvX.internal.dev, &XbdrvX.internal.cb_data);\
+  }
 
 #endif

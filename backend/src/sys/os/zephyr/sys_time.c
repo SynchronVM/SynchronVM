@@ -34,7 +34,7 @@
 struct counter_alarm_cfg alarm_cfg;
 struct counter_top_cfg overflow_cfg; 
 
-const struct device *counter_dev = NULL;
+static const struct device *counter_dev = NULL;
 
 static zephyr_interop_t *zephyr_interop;
 
@@ -56,12 +56,13 @@ void overflow_callback(const struct device *dev, void* user_data) {
 
 bool sys_time_init(void *os_interop) {
 
+
   counter_high_word = 0;
   
   zephyr_interop = (zephyr_interop_t*)os_interop;
   if (!zephyr_interop) return false;
  
-  counter_dev = device_get_binding(COUNTER);
+  counter_dev = device_get_binding(COUNTER); 
   if (!counter_dev) return false;
 
   counter_freq = counter_get_frequency(counter_dev);
@@ -84,7 +85,7 @@ bool sys_time_init(void *os_interop) {
     return false;
 
   if (counter_start(counter_dev) != 0) return false;
-  
+
   return true;
 }
 

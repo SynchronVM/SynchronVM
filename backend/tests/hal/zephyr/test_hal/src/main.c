@@ -70,7 +70,7 @@ void main(void) {
   k_sleep(K_SECONDS(2));
 
   PRINT("Initializing SenseVM Runtime System\r\n");
-  if (zephyr_sensevm_init() <= 0) {
+  if (!zephyr_sensevm_init()) {
     PRINT("Error Initializing SenseVM RTS\r\n");
     return;
   }

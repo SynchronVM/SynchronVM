@@ -259,10 +259,14 @@ bool zephyr_sensevm_init(void) {
 
   r = ll_driver_init();
 
+  int vmc_r = 0;
   if (r) {
     /* Initialize VM containers */
-    r = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
+    vmc_r = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
   }
 
-  return r;
+  if (vmc_r <= 0) {
+    return false;
+  }
+  return true;
 }

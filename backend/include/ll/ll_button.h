@@ -31,8 +31,14 @@
 #include <button.h>
 #include <ll/ll_driver.h>
 
+typedef struct {
+  BUTTON_DRIVER_INTERNAL;
+} ll_button_driver_t;
 
-extern bool ll_button_init(ll_driver_t* lld, uint32_t drv_id, void *backend_custom, uint32_t button_id);
+#define LL_BUTTON_DRIVER_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX) \
+  BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX);
+
+extern bool ll_button_init(ll_driver_t* lld, ll_button_driver_t *bdrv);
 
   
 #endif
