@@ -27,7 +27,8 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/scheduler.c \
               $(SOURCE_DIR)/stack.c \
               $(SOURCE_DIR)/VMC.c \
-              $(SOURCE_DIR)/ll/ll_driver.c
+              $(SOURCE_DIR)/ll/ll_driver.c \
+              $(SOURCE_DIR)/sys/os/macosx/sys_time.c
 
 TEST_SOURCES = $(wildcard *.c)
 TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))
