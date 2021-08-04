@@ -38,6 +38,8 @@
 #include <scheduler.h>
 #include <ll/ll_driver.h>
 
+// #include <sys/sys_debug_uart.h>
+
 #include <hal/zephyr/svm_zephyr.h>
 
 /***************************************************/

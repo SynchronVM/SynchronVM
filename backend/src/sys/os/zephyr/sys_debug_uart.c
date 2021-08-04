@@ -71,6 +71,14 @@ static void debug_uart_isr(const struct device *dev, void *args)
   }
 }
 
+void debug_uart_init(uint32_t buffer_size) {
+  return;
+}
+
+int debug_printf(const char* format, ...) {
+  return 0;
+}
+
 #else
 
 void debug_uart_init(uint32_t buffer_size) {

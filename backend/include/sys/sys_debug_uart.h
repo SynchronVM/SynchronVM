@@ -27,6 +27,12 @@
 
 #include <stdint.h>
 
+#ifdef DEBUG
+#define DBG_PRINT(fmt, ...) debug_printf(fmt, __VA_ARGS__)
+#else
+#define DBG_PRINT(fmt, ...) (void)
+#endif
+
 void debug_uart_init(uint32_t buffer_size);
 int debug_printf(const char *format, ...);
 
