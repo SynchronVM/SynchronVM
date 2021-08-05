@@ -31,16 +31,16 @@
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_debug_uart), okay)
 
 static const struct device* dev;
-static const struct debug_in_ringbuf;
-static const struct debug_out_ringbuf;
+static struct ring_buf debug_in_ringbuf;
+static struct ring_buf debug_out_ringbuf;
 
 /* ************************* */
 /* Interrupt service routine */
 
 static void debug_uart_isr(const struct device *dev, void *args)
 {
-  uart_dev_t *bufs = (uart_dev_t*)args;
-
+  (void) args;
+  
   while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
     if (uart_irq_rx_ready(dev)) {
       int recv_len, rb_len;
