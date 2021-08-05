@@ -33,7 +33,7 @@
 
 int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes){
 
-  if (!mem || !q || size_bytes < 256) return -1;
+  if (!mem || !q || size_bytes < sizeof(UUID)) return -1;
   unsigned int num_elt = size_bytes / sizeof(UUID);
   q->capacity = num_elt;
   q->front = q->size = 0;

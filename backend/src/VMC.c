@@ -66,8 +66,8 @@ uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];
 uint8_t vmc_container_1_stack[VMC_CONTAINER_1_STACK_SIZE_BYTES];
 uint8_t vmc_container_1_arrays[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];
 uint8_t vmc_container_1_channels[VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES];
-uint8_t vmc_container_1_rdyq [sizeof(UUID) * 1024 * VMC_MAX_CONTEXTS];
-uint8_t vmc_container_1_waitq[sizeof(pq_data_t) * 1024 * VMC_MAX_CONTEXTS];
+uint8_t vmc_container_1_rdyq [sizeof(UUID) * VMC_MAX_CONTEXTS];
+uint8_t vmc_container_1_waitq[sizeof(pq_data_t) * VMC_MAX_CONTEXTS];
 
 const uint8_t vmc_container_1_code[] = {
   #include VMC_CONTAINER_1_BYTECODE_FILE
@@ -135,7 +135,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int readyq_status = q_init(&vm_containers[VMC_CONTAINER_1].rdyQ
                              , vmc_container_1_rdyq
-                             , sizeof(UUID) * 1024 * VMC_MAX_CONTEXTS);
+                             , sizeof(UUID) * VMC_MAX_CONTEXTS);
   if(readyq_status == -1){
     DEBUG_PRINT(("Failed to initialise ready queue"));
     return -5;
@@ -143,7 +143,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int waitq_status = pq_init(&vm_containers[VMC_CONTAINER_1].waitQ
                             , vmc_container_1_waitq
-                            , sizeof(pq_data_t) * 1024 * VMC_MAX_CONTEXTS);
+                            , sizeof(pq_data_t) * VMC_MAX_CONTEXTS);
   if(waitq_status == -1){
     DEBUG_PRINT(("Failed to initialise wait queue"));
     return -6;
