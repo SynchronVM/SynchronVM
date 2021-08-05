@@ -742,11 +742,51 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
 
 
 int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
-  (void)container;
-  (void)baseline;
-  (void)deadline;
-  (void)evts;
-  return -1;
+
+
+  if(baseline == 0){
+
+    //XXX: `sync` above uses a cooperative schduler
+    // which could lead to issues outlined in Scheduler.md.
+    //
+    // We might have to add logic to `dispatch` which informs
+    // it that a timed task is blocked and dispatch threads
+    // which can unblock the timed task.
+    // The logic is more about how the rdyQ is sorted.
+    // It cannot simply be elements organized by deadlines,
+    // sometimes an untimed thread (with a short lifetime)
+    // might unblock an important blocked thread, while
+    // meeting other deadlines.
+
+    return sync(container, evts);
+  }
+
+  Time currentTime = sys_time_get_current_ticks();
+  Time wakeupTime  = currentTime + baseline;
+  Time finishTime  = wakeupTime  + deadline;
+
+  bool b = sys_time_set_wake_up(wakeupTime);
+
+  if(!b){
+    DEBUG_PRINT(("Setting wakeup time has failed \n"));
+    return -2;
+  }
+
+  pq_data_t sleepThread =
+    {   .context_id = container->current_running_context_id
+      , .ticks = finishTime };
+
+  int j = pq_insert(&container->waitQ, sleepThread);
+  if(j == -1){
+    DEBUG_PRINT(("Cannot enqueue in wait queue \n"));
+    return -1;
+  }
+
+  // The running thread will sleep till the baseline
+  // dispatch other threads.
+  dispatch(container);
+
+  return 1;
 }
 
 

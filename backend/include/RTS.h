@@ -27,6 +27,7 @@
 
 #include <VMC.h>
 #include <event.h>
+#include <sys/sys_time.h>
 
 extern int channel(vmc_t *container, UUID    *chan_id);
 
