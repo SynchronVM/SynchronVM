@@ -52,5 +52,11 @@ Time sys_get_wake_up_time(void){
   return 1;
 }
 
+bool sys_is_alarm_set(void){
+  // TODO: Implement this;
+  return false;
+}
+
+
 
 void sys_sleep_ms(uint32_t ms){ (void)ms; }
