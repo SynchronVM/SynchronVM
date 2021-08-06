@@ -50,6 +50,11 @@ bool sys_time_set_wake_up(Time absolute) {
   return false;
 }
 
+Time sys_get_wake_up_time(void){
+  // TODO: Implement this;
+  return 1;
+}
+
 void sys_sleep_ms(uint32_t ms) {
 
 }

@@ -46,6 +46,9 @@ extern uint32_t  sys_time_get_clock_freq(void);
 /* Sends a timestamped message to the scheduler message queue at an absolute time */
 extern bool      sys_time_set_wake_up(Time absolute);
 
+/* Return the wake up time of the current alarm */
+extern Time      sys_get_wake_up_time(void);
+
 /* put OS thread to sleep, risky operation */
 extern void      sys_sleep_ms(uint32_t ms); 
 
