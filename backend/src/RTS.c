@@ -765,11 +765,20 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
   Time wakeupTime  = currentTime + baseline;
   Time finishTime  = wakeupTime  + deadline;
 
-  bool b = sys_time_set_wake_up(wakeupTime);
+  Time alarmTime = sys_get_wake_up_time();
 
-  if(!b){
-    DEBUG_PRINT(("Setting wakeup time has failed \n"));
-    return -2;
+  // set alarm only if it is not set already (the very first time)
+  // or if the wakeupTime for this thread is earlier than the current
+  // set alarm time. In both cases queue the thread in the waitQ
+  // When woken up the next alarm will be set
+  if(!sys_is_alarm_set() || (wakeupTime < alarmTime)){
+    bool b = sys_time_set_wake_up(wakeupTime);
+
+    if(!b){
+      // something seriously wrong
+      DEBUG_PRINT(("Setting wakeup time has failed \n"));
+      return -2;
+    }
   }
 
   pq_data_t sleepThread =
