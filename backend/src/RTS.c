@@ -774,7 +774,8 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
   pq_data_t sleepThread =
     {   .context_id = container->current_running_context_id
-      , .ticks = finishTime };
+      , .baseline = wakeupTime
+      , .deadline = finishTime };
 
   int j = pq_insert(&container->waitQ, sleepThread);
   if(j == -1){

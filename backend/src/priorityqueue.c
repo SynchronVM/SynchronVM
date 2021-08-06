@@ -45,7 +45,19 @@ static inline int leftIdx(int i) { return (2*i + 1); }
 
 static inline int rightIdx(int i) { return (2*i + 2); }
 
+static inline bool lessThan(pq_data_t *d1, pq_data_t *d2, Comparator_t c){
+  if(c == BASELINE)
+    return (d1->baseline < d2->baseline);
+  else
+    return (d1->deadline < d2->deadline);
+}
 
+static inline bool greaterThan(pq_data_t *d1, pq_data_t *d2, Comparator_t c){
+  if(c == BASELINE)
+    return (d1->baseline > d2->baseline);
+  else
+    return (d1->deadline > d2->deadline);
+}
 
 static void minHeapify(PriorityQ_t *pq, int i)
 {
@@ -53,9 +65,9 @@ static void minHeapify(PriorityQ_t *pq, int i)
     int l = leftIdx(i);
     int r = rightIdx(i);
     int smallest = i;
-    if (l < pq->size && pq->data[l].ticks < pq->data[i].ticks)
+    if (l < pq->size && lessThan(&pq->data[l], &pq->data[i], pq->cmp))
       smallest = l;
-    if (r < pq->size && pq->data[r].ticks < pq->data[smallest].ticks)
+    if (r < pq->size && lessThan(&pq->data[r], &pq->data[smallest], pq->cmp))
       smallest = r;
     if (smallest == i){
       break;
@@ -68,13 +80,17 @@ static void minHeapify(PriorityQ_t *pq, int i)
 }
 
 
-int pq_init(PriorityQ_t *pq, uint8_t *mem, unsigned int size_bytes){
+int pq_init(  PriorityQ_t *pq
+            , uint8_t *mem
+            , unsigned int size_bytes
+            , Comparator_t c){
 
   if (!mem || !pq || size_bytes < sizeof(pq_data_t)) return -1;
   unsigned int num_elt = size_bytes / sizeof(pq_data_t);
   pq->capacity = num_elt;
   pq->size = 0;
-  pq->data  = (pq_data_t*)mem;
+  pq->data = (pq_data_t*)mem;
+  pq->cmp  = c;
 
   return 1;
 
@@ -92,7 +108,10 @@ int pq_insert(PriorityQ_t *pq, pq_data_t pq_data){
   pq->data[insertIdx] = pq_data;
 
   while(insertIdx != 0 &&
-        (pq->data[parentIdx(insertIdx)].ticks > pq->data[insertIdx].ticks)){
+        greaterThan(  &pq->data[parentIdx(insertIdx)]
+                    , &pq->data[insertIdx]
+                    , pq->cmp)
+        ){
     swapElems(&pq->data[insertIdx], &pq->data[parentIdx(insertIdx)]);
     insertIdx = parentIdx(insertIdx);
   }

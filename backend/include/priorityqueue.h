@@ -28,9 +28,15 @@
 #include <stdbool.h>
 #include <typedefs.h>
 
+typedef enum {
+  BASELINE,
+  DEADLINE
+} Comparator_t;
+
 typedef struct {
-  UUID  context_id;
-  Time  ticks; // baseline for waitQ; deadline for rdyQ
+  UUID context_id;
+  Time baseline;
+  Time deadline;
 } pq_data_t;
 
 
@@ -39,9 +45,13 @@ typedef struct {
   pq_data_t *data;
   int capacity;
   int size;
+  Comparator_t cmp;
 } PriorityQ_t;
 
-extern int  pq_init(PriorityQ_t *pq, uint8_t *mem, unsigned int size_bytes);
+extern int  pq_init(  PriorityQ_t *pq
+                    , uint8_t *mem
+                    , unsigned int size_bytes
+                    , Comparator_t c);
 
 extern int  pq_insert    (PriorityQ_t *pq, pq_data_t  pq_data);
 extern int  pq_extractMin(PriorityQ_t *pq, pq_data_t *pq_data);
