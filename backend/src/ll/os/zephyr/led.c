@@ -45,9 +45,9 @@ static uint32_t ll_led_data_writeable(struct ll_driver_s *this) {
 }
 
 /* sets bit 0 in the first byte of data to the value of the led.
-    The rest of data is cleared. */ 
+    The rest of data is cleared. */
 static uint32_t ll_led_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
-  ll_led_driver_t *led_driver = (ll_led_driver_t*)this->driver_info; 
+  ll_led_driver_t *led_driver = (ll_led_driver_t*)this->driver_info;
   bool state = led_driver->internal.state;
 
   if (data_size > 0) {
@@ -62,7 +62,7 @@ static uint32_t ll_led_write(struct ll_driver_s *this, uint8_t *data, uint32_t d
   ll_led_driver_t *led_driver = (ll_led_driver_t*)this->driver_info;
 
   uint32_t value = data[0];
-  
+
   if (data_size > 0) {
     led_driver->internal.state = value;
     gpio_pin_set(led_driver->internal.dev, led_driver->internal.pin, value);
@@ -82,4 +82,3 @@ bool ll_led_init(ll_driver_t* lld, ll_led_driver_t *ldrv) {
 
   return true;
 }
-

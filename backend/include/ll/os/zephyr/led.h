@@ -50,10 +50,4 @@ typedef struct {
   gpio_pin_configure(XldrvX.internal.dev, XldrvX.internal.pin, GPIO_OUTPUT_ACTIVE | LED_FLAGS(svm_led##XlidX)); \
   gpio_pin_set(XldrvX.internal.dev, XldrvX.internal.pin, 0); \
 
-/* extern uint32_t led_num(void); */
-/* extern led_driver_t* led_init(uint32_t identifier); */
-/* extern void led_set(led_driver_t *led, bool value); */
-
-/* extern bool led_state(led_driver_t *led); */
-
 #endif

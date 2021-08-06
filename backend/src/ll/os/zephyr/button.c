@@ -41,12 +41,12 @@ void button_pressed_cb(const struct device *dev,
   zephyr_interop_t *interop = parent->interop;
 
 
-  parent->state = gpio_pin_get(parent->dev, parent->pin); 
+  parent->state = gpio_pin_get(parent->dev, parent->pin);
 
-  svm_msg_t msg; 
-  msg.sender_id = parent->drv_id; 
+  svm_msg_t msg;
+  msg.sender_id = parent->drv_id;
   msg.timestamp = 0;//sys_time_get_current_ticks();
-  msg.data = parent->state;  // 1 or 0 
+  msg.data = parent->state;  // 1 or 0
   msg.msg_type = 0;
 
   if (interop->send_message(interop, msg) == -ENOMSG) {
