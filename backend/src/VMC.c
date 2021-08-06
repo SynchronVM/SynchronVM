@@ -143,7 +143,8 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int waitq_status = pq_init(&vm_containers[VMC_CONTAINER_1].waitQ
                             , vmc_container_1_waitq
-                            , sizeof(pq_data_t) * VMC_MAX_CONTEXTS);
+                            , sizeof(pq_data_t) * VMC_MAX_CONTEXTS
+                            , BASELINE);
   if(waitq_status == -1){
     DEBUG_PRINT(("Failed to initialise wait queue"));
     return -6;
