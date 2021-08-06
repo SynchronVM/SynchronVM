@@ -28,6 +28,14 @@
 #include <led.h>
 #include <ll/ll_driver.h>
 
-extern bool ll_led_init(ll_driver_t* lld, uint32_t led_id, bool initial_state);
+typedef struct {
+  LED_DRIVER_INTERNAL;
+} ll_led_driver_t;
+
+#define LL_LED_DRIVER_INIT(XldrvX, XlidX, Xdrv_idX) \
+  LED_DRIVER_INTERNAL_INIT(XldrvX, XlidX, Xdrv_idX);
+
+
+extern bool ll_led_init(ll_driver_t* lld, ll_led_driver_t *ldrv);
 
 #endif

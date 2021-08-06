@@ -71,15 +71,15 @@ static uint32_t ll_button_data_writeable(struct ll_driver_s *this) {
 
 static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
 
-  button_driver_internal_t *b = (button_driver_internal_t*)this->driver_info;
+  ll_button_driver_t *b = (ll_button_driver_t*)this->driver_info;
 
   uint32_t r = 0;
 
   if (data_size == 4) {
-    data[0] = b->state;
-    data[1] = b->state >> 8;
-    data[2] = b->state >> 16;
-    data[3] = b->state >> 24;
+    data[0] = b->internal.state;
+    data[1] = b->internal.state >> 8;
+    data[2] = b->internal.state >> 16;
+    data[3] = b->internal.state >> 24;
     r = 4;
   }
 

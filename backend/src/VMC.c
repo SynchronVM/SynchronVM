@@ -94,9 +94,14 @@ const uint8_t vmc_container_2_code[] = {
 static bool init_all_chans(Channel_t *c, uint8_t *mem);
 static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
 
-/* Moving the obligation to allocate memory for driver internal state here */ 
+/* Moving the obligation to allocate memory for driver internal state here */
+/* TODO: This needs some love */
 #if VMC_CONTAINER_1_USE_BUTTON_0
 ll_button_driver_t ll_button;
+#endif 
+
+#if VMC_CONTAINER_1_USE_LED_0
+ll_led_driver_t ll_led;
 #endif 
 
 
@@ -193,11 +198,13 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   #if VMC_CONTAINER_1_USE_LED_0
   {
-      ll_driver_t lld;
-      if (ll_led_init(&lld, 0, 0)) {
-	vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
-	drv_num++;
-      }
+    LL_LED_DRIVER_INIT(ll_led, 0, drv_num);
+    
+    ll_driver_t lld;
+    if (ll_led_init(&lld, &ll_led)) {
+       vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    }
   }
   #endif
 

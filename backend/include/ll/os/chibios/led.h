@@ -35,12 +35,20 @@ typedef struct {
   uint16_t pad;
   uint32_t id;
   bool state;
-} led_driver_t;
+} led_driver_internal_t;
 
-extern uint32_t led_num(void);
-extern led_driver_t* led_init(uint32_t identifier);
-extern void led_set(led_driver_t *led, bool value);
+#define LED_DRIVER_INTERNAL led_driver_internal_t internal
 
-extern bool led_state(led_driver_t *led);
+#define LED_DRIVER_INTERNAL_INIT(XldrvX,XlidX,Xdrv_idX) \
+    palSetPadMode(LED##XlidX##_GPIO,\
+		  LED##XlidX##_PIN,\
+		  LED##XlidX##_MODE);\
+    palClearPad(LED##XlidX##_GPIO,\
+		LED##XlidX##_PIN);\
+    \
+    XldrvX.internal.port = LED##XlidX##_GPIO;\
+    XldrvX.internal.pad = LED##XlidX##_PIN,\
+    XldrvX.internal.id = Xdrv_idX;\
+    XldrvX.internal.state = false; 
 
 #endif

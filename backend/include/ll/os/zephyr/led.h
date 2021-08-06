@@ -32,12 +32,28 @@ typedef struct {
   uint32_t pin;
   uint32_t id;
   bool state;
-} led_driver_t;
+  const struct device *dev;
+} led_driver_internal_t;
 
-extern uint32_t led_num(void);
-extern led_driver_t* led_init(uint32_t identifier);
-extern void led_set(led_driver_t *led, bool value);
+#define LED_DRIVER_INTERNAL led_driver_internal_t internal
 
-extern bool led_state(led_driver_t *led);
+#define LED_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
+#define LED_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
+#define LED_FLAGS(X)        DT_GPIO_FLAGS(DT_ALIAS(X), gpios)
+
+
+#define LED_DRIVER_INTERNAL_INIT(XldrvX,XlidX,Xdrv_idX)			\
+  XldrvX.internal.pin = LED_PIN(svm_led##XlidX);			\
+  XldrvX.internal.id  = (Xdrv_idX);					\
+  XldrvX.internal.state = false;					\
+  XldrvX.internal.dev = device_get_binding(LED_DEVICE_LABEL(svm_led##XlidX)); \
+  gpio_pin_configure(XldrvX.internal.dev, XldrvX.internal.pin, GPIO_OUTPUT_ACTIVE | LED_FLAGS(svm_led##XlidX)); \
+  gpio_pin_set(XldrvX.internal.dev, XldrvX.internal.pin, 0); \
+
+/* extern uint32_t led_num(void); */
+/* extern led_driver_t* led_init(uint32_t identifier); */
+/* extern void led_set(led_driver_t *led, bool value); */
+
+/* extern bool led_state(led_driver_t *led); */
 
 #endif

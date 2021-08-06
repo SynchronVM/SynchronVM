@@ -24,47 +24,6 @@
 
 #include <led.h>
 
-uint32_t led_num(void) {
-  return gpio_num_leds();
-}
-
-
-led_driver_t led_drivers[10];
-
-/* TODO: see if it makes more sense to take a led_driver_t * object as argument */
-led_driver_t* led_init(uint32_t identifier) {
-
-  led_driver_t *r = NULL;
-  
-  if (identifier < led_num()) {
-    palSetPadMode(leds[identifier].port,
-		  leds[identifier].pad,
-		  leds[identifier].mode);
-    palClearPad(leds[identifier].port,
-		leds[identifier].pad);
-
-    led_drivers[identifier].port = leds[identifier].port;
-    led_drivers[identifier].pad = leds[identifier].pad;
-    led_drivers[identifier].id = identifier;
-    led_drivers[identifier].state = false;
-    r = &led_drivers[identifier];
-  }
- 
-  return r;
-}
-void led_set(led_driver_t *led, bool value) {
-
-  palWritePad(led->port, led->pad, value);
-  led->state = value;
-  
-}
-
-bool led_state(led_driver_t *led) {
-  return led->state;
-}
-
-/* LL interface implementation */
-
 #include <ll/ll_led.h>
 #include <string.h>
 
@@ -88,8 +47,8 @@ static uint32_t ll_led_data_writeable(struct ll_driver_s *this) {
 /* sets bit 0 in the first byte of data to the value of the led.
     The rest of data is cleared. */ 
 static uint32_t ll_led_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
-  led_driver_t *led_driver = (led_driver_t*)this->driver_info; 
-  bool state = led_state(led_driver);
+  ll_led_driver_t *led_driver = (ll_led_driver_t*)this->driver_info;
+  bool  state = led_driver->internal.state;
 
   if (data_size > 0) {
     memset(data,0, data_size);
@@ -100,28 +59,26 @@ static uint32_t ll_led_read(struct ll_driver_s *this, uint8_t *data, uint32_t da
 
 /* data[0] will be reinterpreted as a bool */
 static uint32_t ll_led_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
-  led_driver_t *led_driver = (led_driver_t*)this->driver_info;
+  ll_led_driver_t *led_driver = (ll_led_driver_t*)this->driver_info;
   if (data_size > 0) {
-    led_set(led_driver, data[0]); 
+    palWritePad(led_driver->internal.port, led_driver->internal.pad, data[0]);\
+    led_driver->internal.state = data[0];  
   }
   return data_size; /* there are alternative interpretations one could make... */
 }
 
-bool ll_led_init(ll_driver_t* lld, uint32_t led_id, bool initial_state) {
-  led_driver_t *led_driver = led_init(led_id);
-  bool r = false;
+bool ll_led_init(ll_driver_t* lld, ll_led_driver_t *ldrv){
   
-  if (led_driver) {
-    r = true; 
-    led_set(led_driver, initial_state);
-    lld->driver_info = (void*) led_driver;
-    lld->is_synchronous = true;
-    lld->ll_control_fun = ll_led_control;
-    lld->ll_read_fun = ll_led_read;
-    lld->ll_write_fun = ll_led_write;
-    lld->ll_data_readable_fun = ll_led_data_available;
-    lld->ll_data_writeable_fun = ll_led_data_writeable;
-  }
-  return r;
+  
+  
+  lld->driver_info = ldrv;
+  lld->is_synchronous = true;
+  lld->ll_control_fun = ll_led_control;
+  lld->ll_read_fun = ll_led_read;
+  lld->ll_write_fun = ll_led_write;
+  lld->ll_data_readable_fun = ll_led_data_available;
+  lld->ll_data_writeable_fun = ll_led_data_writeable;
+
+  return true;
 }
 

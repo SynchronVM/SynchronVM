@@ -139,6 +139,7 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/scheduler.c \
             $(SENSE_VM)/stack.c \
             $(SENSE_VM)/VMC.c \
+            $(SENSE_VM)/priorityqueue.c \
             $(SENSE_VM)/ll/ll_driver.c \
             $(SENSE_VM)/ll/os/chibios/button.c\
             $(SENSE_VM)/ll/os/chibios/led.c\

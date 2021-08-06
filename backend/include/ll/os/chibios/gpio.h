@@ -47,6 +47,5 @@ extern gpio_pad_t leds[]; /* defined in svm_chibios_conf.h */
 extern gpio_button_t buttons[]; 
 
 extern uint32_t gpio_num_leds(void);
-extern uint32_t gpio_num_buttons(void);
 
 #endif
