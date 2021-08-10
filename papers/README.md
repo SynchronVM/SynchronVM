@@ -23,6 +23,9 @@
 #### Stack vs Heap for closures
 - [An Empirical and Analytic Study of Stack vs. Heap Costfor Languages with Closures](https://www.cs.princeton.edu/~appel/papers/stack2.pdf)
 
+#### Real Time and Functional Languages
+- [A survey of real‐time capabilities in functional languages and compilers](https://onlinelibrary.wiley.com/doi/full/10.1002/cpe.4902)
+
 
 ### RELATED WORK 2
 
