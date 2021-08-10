@@ -266,3 +266,23 @@ int scheduler(vmc_t *container,
   dbg_print("Closing down scheduler\r\n");
   return 1;
 }
+
+// Handle timer interrupt
+/*
+  LOGIC
+  The top of the waitQ will inform us when
+  to call poll_msg; so we can perhaps avoid
+  calling poll_msg at all times.
+
+
+  handleTimerInterrupt(vmc_t *container){
+
+	pq_data_t elem = dequeue(container->waitQ);
+	insert elem in container->rdyQ
+
+	// set next alarm
+	pq_data_t top = peekTop(container->waitQ);
+	sys_time_set_wakeup(top->baseline);
+
+  }
+ */
