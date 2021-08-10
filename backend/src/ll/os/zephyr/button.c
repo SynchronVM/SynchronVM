@@ -45,7 +45,7 @@ void button_pressed_cb(const struct device *dev,
 
   svm_msg_t msg;
   msg.sender_id = parent->drv_id;
-  msg.timestamp = 0;//sys_time_get_current_ticks();
+  msg.timestamp = sys_time_get_current_ticks();
   msg.data = parent->state;  // 1 or 0
   msg.msg_type = 0;
 

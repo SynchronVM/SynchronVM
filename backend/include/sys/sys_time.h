@@ -35,6 +35,8 @@
 
 #include <typedefs.h> /* for definition of Time type */
 
+#define SYS_TIME_SENDER_ID 255
+
 /* initialize the timers, takes an os_interop pointer 
    to enable sending of messages to the scheduler message queue
 */

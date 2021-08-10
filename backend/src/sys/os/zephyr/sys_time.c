@@ -36,7 +36,15 @@
 
 #define COUNTER DT_LABEL(DT_ALIAS(svm_sys_timer))
 
-static struct counter_alarm_cfg alarm_cfg;
+typedef struct {
+  struct counter_alarm_cfg alarm_cfg;
+  bool  active;
+  Time  alarm_time;
+}sys_time_alarm_t;
+
+
+static sys_time_alarm_t alarm;
+
 static struct counter_top_cfg overflow_cfg; 
 
 static const struct device *counter_dev = NULL;
@@ -49,6 +57,18 @@ static uint32_t      counter_freq;
 
 void alarm_callback(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_data) {
   /* send a message via the interop */
+  unsigned int key = irq_lock(); /* Do we need this? */
+  
+  svm_msg_t msg;
+  msg.sender_id = SYS_TIME_SENDER_ID;
+  msg.timestamp = sys_time_get_current_ticks();
+  msg.data = 0xDEADBEEF;
+  msg.msg_type = 0;
+  
+  if(zephyr_interop->send_message(zephyr_interop, msg) != -ENOMSG) {
+    /* message error. what to do ? */
+  }
+  irq_unlock(key);
 }
 
 void overflow_callback(const struct device *dev, void* user_data) {
@@ -80,37 +100,40 @@ bool sys_time_init(void *os_interop) {
   if (counter_set_top_value(counter_dev, &overflow_cfg) != 0) return false;
 
   /* just prepare the alarm config. Dont actually set this alarm. */
-  alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
-  alarm_cfg.ticks = 0;
-  alarm_cfg.callback = alarm_callback;
-  alarm_cfg.user_data = &alarm_cfg;
+  alarm.alarm_cfg.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE;
+  alarm.alarm_cfg.ticks = 0;
+  alarm.alarm_cfg.callback = alarm_callback;
+  alarm.alarm_cfg.user_data = NULL;
 
   /* an alarm in the past should go off immediately */
   if (counter_set_guard_period(counter_dev, UINT_MAX/2, COUNTER_GUARD_PERIOD_LATE_TO_SET) != 0)
     return false; 
 
-  if (counter_start(counter_dev) != 0) return false; 
+  if (counter_start(counter_dev) != 0) return false;
+
+  alarm.active = false;
+  alarm.alarm_time = 0;
 
   return true;
 }
 
 Time sys_time_get_current_ticks(void) {
 
+  if (!counter_dev) return 0;
+  
   Time time = 0;
   uint32_t low_word;
   uint32_t high_word;
+  uint32_t high_word2;
 
   /* May need more sophisticated approach here 
      to really rule out overflow interleaving with 
      reading of low and high word */
-  uint32_t key = irq_lock();
-  if (counter_dev) { 
-    counter_get_value(counter_dev, &low_word);
-  } else {
-    low_word = 0;
-  }
+  do { 
   high_word = counter_high_word;
-  irq_unlock(key);
+  counter_get_value(counter_dev, &low_word);
+  high_word2 = counter_high_word;
+  } while (high_word != high_word2);  /* TODO: Execute at most twice */
 
   time = high_word;
   time <<= 32;
@@ -123,23 +146,18 @@ uint32_t sys_time_get_clock_freq(void) {
   return counter_freq;
 }
 
-// TODO: IMPLEMENT
 bool sys_time_set_wake_up(Time absolute) {
   return false;
 }
 
 Time sys_get_wake_up_time(void){
-  // TODO: Implement this;
-  return 0;
+  return alarm.alarm_time;
 }
 
 bool sys_is_alarm_set(void){
-  // TODO: Implement this;
-  return false;
+  return alarm.active;
 }
 
-
-
 void sys_sleep_ms(uint32_t ms) {
-  
+  k_sleep(K_MSEC(ms));
 }
