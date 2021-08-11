@@ -889,7 +889,7 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
 }
 
 
-int handle_msg(vmc_t *vmc, svm_msg_t *m){
+static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 
   UUID chan_id = vmc->drivers[m->sender_id].channel_id;
 
@@ -941,3 +941,63 @@ int handle_msg(vmc_t *vmc, svm_msg_t *m){
   return 1;
 
 }
+
+int handle_msg(vmc_t *vmc, svm_msg_t *m){
+
+  if (m->sender_id == 255){ // Timer interrupt
+    pq_data_t elem;
+    int i = pq_extractMin(&vmc->waitQ, &elem);
+    if (i == -1){
+      DEBUG_PRINT(("Cannot dequeue from wait queue \n"));
+      return i;
+    }
+
+    //rdyQ should be a priority queue
+    int j = q_enqueue(&vmc->rdyQ, elem.context_id);
+    if (j == -1){
+      DEBUG_PRINT(("Cannot enqueue to ready queue \n"));
+      return j;
+    }
+
+    pq_data_t elem2;
+    int k = pq_getMin(&vmc->waitQ, &elem2);
+    if (k == -1){
+      DEBUG_PRINT(("Cannot peek in the wait queue \n"));
+      return k;
+
+    }
+
+    bool b = sys_time_set_wake_up(elem2.baseline);
+
+    if(!b){
+      // something seriously wrong
+      DEBUG_PRINT(("Setting wakeup time has failed \n"));
+      return -2;
+    }
+
+    return 1;
+  } else {
+    return handle_driver_msg(vmc, m);
+  }
+}
+
+
+// Handle timer interrupt
+/*
+  LOGIC
+  The top of the waitQ will inform us when
+  to call poll_msg; so we can perhaps avoid
+  calling poll_msg at all times.
+
+
+  handleTimerInterrupt(vmc_t *container){
+
+	pq_data_t elem = dequeue(container->waitQ);
+	insert elem in container->rdyQ
+
+	// set next alarm
+	pq_data_t top = peekTop(container->waitQ);
+	sys_time_set_wakeup(top->baseline);
+
+  }
+*/
