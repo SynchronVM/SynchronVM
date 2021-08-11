@@ -51,36 +51,45 @@ static const struct device *counter_dev = NULL;
 
 static zephyr_interop_t *zephyr_interop;
 
-static uint32_t      counter_high_word;
+static volatile uint32_t      counter_high_word;
 static uint32_t      counter_freq;
 
 
 void alarm_callback(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_data) {
   /* send a message via the interop */
   unsigned int key = irq_lock(); /* Do we need this? */
-  
+
   svm_msg_t msg;
   msg.sender_id = SYS_TIME_SENDER_ID;
   msg.timestamp = sys_time_get_current_ticks();
   msg.data = 0xDEADBEEF;
   msg.msg_type = 0;
-  
+
   if(zephyr_interop->send_message(zephyr_interop, msg) != -ENOMSG) {
     /* message error. what to do ? */
   }
+
+  alarm.active = false;  
   irq_unlock(key);
 }
 
 void overflow_callback(const struct device *dev, void* user_data) {
   counter_high_word ++;
-}
 
+  if (alarm.active) {
+
+    if (counter_high_word == alarm.alarm_time >> 32) {
+
+      alarm.alarm_cfg.ticks = alarm.alarm_time; /* low 32 bits */
+      counter_set_channel_alarm(counter_dev,0, &alarm.alarm_cfg);
+    }
+  }
+}
 
 /**************************************/
 /* Interface functions implementation */
 
 bool sys_time_init(void *os_interop) {
-
 
   counter_high_word = 0;
 
@@ -138,8 +147,12 @@ Time sys_time_get_current_ticks(void) {
   time = high_word;
   time <<= 32;
   time |= low_word;
-  
+
   return time;
+}
+
+uint32_t sys_time_alarm_channels(void) {
+  return counter_get_num_of_channels(counter_dev);
 }
 
 uint32_t sys_time_get_clock_freq(void) {
@@ -147,7 +160,28 @@ uint32_t sys_time_get_clock_freq(void) {
 }
 
 bool sys_time_set_wake_up(Time absolute) {
-  return false;
+
+  uint32_t high_word = 0;
+  uint32_t high_word2 = 0;
+
+  /* If an alarm is set on the channel, cancel it. */
+  counter_cancel_channel_alarm(counter_dev, 0);
+
+  alarm.alarm_time = absolute;
+  alarm.active = true;
+  alarm.alarm_cfg.ticks = absolute; /* low 32 bits */
+
+  /* TODO: testing. this is tricky */
+  /* TODO: fail if this loop performs more than 2 iterations */
+  do {
+    high_word = counter_high_word;
+    if (high_word == alarm.alarm_time >> 32) {
+      counter_set_channel_alarm(counter_dev,0, &alarm.alarm_cfg);
+    }
+    high_word2 = counter_high_word;
+  } while (high_word != high_word2);
+
+  return true;
 }
 
 Time sys_get_wake_up_time(void){
