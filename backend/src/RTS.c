@@ -744,6 +744,7 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
 int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
 
+  //XXX: baseline = 0 and deadline = 0 means no baseline, no deadline
   if(baseline == 0){
 
     //XXX: `sync` above uses a cooperative schduler
@@ -772,7 +773,7 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
   // set alarm time. In both cases queue the thread in the waitQ
   // When woken up the next alarm will be set
   if(!sys_is_alarm_set() || (wakeupTime < wakeupTimeSet)){
-    bool b = sys_time_set_wake_up(wakeupTime);
+    bool b = sys_time_set_wake_up(wakeupTime); // check NOTE 1
 
     if(!b){
       // something seriously wrong
@@ -966,7 +967,7 @@ static int handle_timer_msg(vmc_t *vmc){
   }
 
   //Step 3. Set alarm from the baseline detected at Step 2
-  bool b = sys_time_set_wake_up(timedThread2.baseline);
+  bool b = sys_time_set_wake_up(timedThread2.baseline); // Check NOTE 1
   if(!b){
     // something seriously wrong
     DEBUG_PRINT(("Setting wakeup time has failed \n"));
@@ -1014,22 +1015,30 @@ int handle_msg(vmc_t *vmc, svm_msg_t *m){
 }
 
 
-// Handle timer interrupt
-/*
-  LOGIC
-  The top of the waitQ will inform us when
-  to call poll_msg; so we can perhaps avoid
-  calling poll_msg at all times.
+/* NOTE 1
 
+  Setting alarm.
 
-  handleTimerInterrupt(vmc_t *container){
+  We set an alarm currently using
+  bool b = sys_time_set_wake_up(wakeupTime);
 
-	pq_data_t elem = dequeue(container->waitQ);
-	insert elem in container->rdyQ
+  ------------------------------------------
 
-	// set next alarm
-	pq_data_t top = peekTop(container->waitQ);
-	sys_time_set_wakeup(top->baseline);
+  We need a more complex check.
 
+  Time wakeupTime = ..calculated...
+  Time currentTime = sys_time_get_current_ticks();
+
+  if (wakeupTime  <= currentTime){
+     bool b = sys_time_set_wake_up(wakeupTime);
+  } else {
+     // we have passed the baseline
+
+     if (wakeupTime > deadline){
+       log a deadline missed error
+     }
+
+     sync the event right now.
   }
+
 */
