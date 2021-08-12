@@ -1317,7 +1317,7 @@ static int handle_sync(vmc_t *vmc){
 
   int j = sync(vmc, &evt);
   if(j == -1){
-    DEBUG_PRINT(("Error with recvEvt \n"));
+    DEBUG_PRINT(("Error in synchronisation \n"));
     return j;
   }
 
