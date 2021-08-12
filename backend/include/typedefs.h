@@ -35,6 +35,7 @@ typedef uint64_t Time;
 
 #define UUID_NONE 0xFF
 #define DRIVER_NULL 0xFF
+#define TIME_MAX UINT64_MAX
 
 typedef struct {
   value_flags_t flags;
