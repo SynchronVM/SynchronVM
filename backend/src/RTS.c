@@ -945,29 +945,25 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 int handle_msg(vmc_t *vmc, svm_msg_t *m){
 
   if (m->sender_id == 255){ // Timer interrupt
-    pq_data_t elem;
-    int i = pq_extractMin(&vmc->waitQ, &elem);
+
+    pq_data_t timedThread;
+    int i = pq_extractMin(&vmc->waitQ, &timedThread);
     if (i == -1){
       DEBUG_PRINT(("Cannot dequeue from wait queue \n"));
       return i;
     }
 
-    //rdyQ should be a priority queue
-    int j = q_enqueue(&vmc->rdyQ, elem.context_id);
-    if (j == -1){
-      DEBUG_PRINT(("Cannot enqueue to ready queue \n"));
-      return j;
-    }
 
-    pq_data_t elem2;
-    int k = pq_getMin(&vmc->waitQ, &elem2);
+
+    pq_data_t timedThread2;
+    int k = pq_getMin(&vmc->waitQ, &timedThread2);
     if (k == -1){
       DEBUG_PRINT(("Cannot peek in the wait queue \n"));
       return k;
 
     }
 
-    bool b = sys_time_set_wake_up(elem2.baseline);
+    bool b = sys_time_set_wake_up(timedThread2.baseline);
 
     if(!b){
       // something seriously wrong
@@ -975,7 +971,33 @@ int handle_msg(vmc_t *vmc, svm_msg_t *m){
       return -2;
     }
 
-    return 1;
+    // enqueue the current thread (assuming it is untimed)
+    // if we were executing a timed thread we shouldn't remove
+    // the current running thread
+    int z = q_enqueue(&vmc->rdyQ, vmc->current_running_context_id);
+    if(z == -1){
+      DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
+      return -1;
+    }
+
+    vmc->current_running_context_id = timedThread.context_id;
+
+    cam_value_t event_env = vmc->contexts[timedThread.context_id].env;
+
+    if(event_env.flags != VALUE_PTR_BIT){
+      DEBUG_PRINT(("Pointer not found in the environment register \n"));
+      return -1;
+    }
+
+    event_t evt = (event_t)event_env.value;
+    int j = sync(vmc, &evt);
+    if(j == -1){
+      DEBUG_PRINT(("Error in synchronisation \n"));
+      return j;
+    }
+
+
+    return j;
   } else {
     return handle_driver_msg(vmc, m);
   }
