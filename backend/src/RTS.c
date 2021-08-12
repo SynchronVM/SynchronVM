@@ -942,65 +942,75 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 
 }
 
+static int handle_timer_msg(vmc_t *vmc){
+
+
+  // A 6 step process now.
+
+  // Step 1. Pick the top of the waitQ, time to schedule it.
+  pq_data_t timedThread;
+  int i = pq_extractMin(&vmc->waitQ, &timedThread);
+  if (i == -1){
+    DEBUG_PRINT(("Cannot dequeue from wait queue \n"));
+    return i;
+  }
+
+
+  //Step 2. Peek at the top of the waitQ and get that baseline to set the alarm
+  pq_data_t timedThread2;
+  int k = pq_getMin(&vmc->waitQ, &timedThread2);
+  if (k == -1){
+    DEBUG_PRINT(("Cannot peek in the wait queue \n"));
+    return k;
+
+  }
+
+  //Step 3. Set alarm from the baseline detected at Step 2
+  bool b = sys_time_set_wake_up(timedThread2.baseline);
+  if(!b){
+    // something seriously wrong
+    DEBUG_PRINT(("Setting wakeup time has failed \n"));
+    return -2;
+  }
+
+  //Step 4. Put the current thread in the rdyQ
+  int z = q_enqueue(&vmc->rdyQ, vmc->current_running_context_id);
+  if(z == -1){
+    DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
+    return -1;
+  }
+
+  //Step 5. Set the timerThread from Step 1 as currently running
+  vmc->current_running_context_id = timedThread.context_id;
+
+  //Step 6. Call `sync` on the timerThread (copy of handle_sync)
+  cam_value_t event_env = vmc->contexts[timedThread.context_id].env;
+
+  if(event_env.flags != VALUE_PTR_BIT){
+    DEBUG_PRINT(("Pointer not found in the environment register \n"));
+    return -1;
+  }
+
+  event_t evt = (event_t)event_env.value;
+
+  int j = sync(vmc, &evt);
+
+  if(j == -1){
+    DEBUG_PRINT(("Error in synchronisation \n"));
+    return j;
+  }
+
+  return j;
+
+}
+
 int handle_msg(vmc_t *vmc, svm_msg_t *m){
 
-  if (m->sender_id == 255){ // Timer interrupt
-
-    pq_data_t timedThread;
-    int i = pq_extractMin(&vmc->waitQ, &timedThread);
-    if (i == -1){
-      DEBUG_PRINT(("Cannot dequeue from wait queue \n"));
-      return i;
-    }
-
-
-
-    pq_data_t timedThread2;
-    int k = pq_getMin(&vmc->waitQ, &timedThread2);
-    if (k == -1){
-      DEBUG_PRINT(("Cannot peek in the wait queue \n"));
-      return k;
-
-    }
-
-    bool b = sys_time_set_wake_up(timedThread2.baseline);
-
-    if(!b){
-      // something seriously wrong
-      DEBUG_PRINT(("Setting wakeup time has failed \n"));
-      return -2;
-    }
-
-    // enqueue the current thread (assuming it is untimed)
-    // if we were executing a timed thread we shouldn't remove
-    // the current running thread
-    int z = q_enqueue(&vmc->rdyQ, vmc->current_running_context_id);
-    if(z == -1){
-      DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
-      return -1;
-    }
-
-    vmc->current_running_context_id = timedThread.context_id;
-
-    cam_value_t event_env = vmc->contexts[timedThread.context_id].env;
-
-    if(event_env.flags != VALUE_PTR_BIT){
-      DEBUG_PRINT(("Pointer not found in the environment register \n"));
-      return -1;
-    }
-
-    event_t evt = (event_t)event_env.value;
-    int j = sync(vmc, &evt);
-    if(j == -1){
-      DEBUG_PRINT(("Error in synchronisation \n"));
-      return j;
-    }
-
-
-    return j;
-  } else {
+  if (m->sender_id == 255) // Timer interrupt
+    return handle_timer_msg(vmc);
+  else
     return handle_driver_msg(vmc, m);
-  }
+
 }
 
 
