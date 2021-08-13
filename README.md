@@ -67,6 +67,10 @@ Coming soon.
 
 Coming soon.
 
+## Papers on SenseVM
+
+[Higher-Order Concurrency for Microcontroller](https://abhiroop.github.io/pubs/sensevm_mplr.pdf)
+
 # About
 
 First commit 8 July 2020.
