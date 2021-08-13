@@ -69,7 +69,7 @@ Coming soon.
 
 ## Papers on SenseVM
 
-[Higher-Order Concurrency for Microcontroller](https://abhiroop.github.io/pubs/sensevm_mplr.pdf)
+[Higher-Order Concurrency for Microcontroller](https://abhiroop.github.io/pubs/sensevm_mplr.pdf) - MPLR '21
 
 # About
 
