@@ -53,7 +53,7 @@ compiling file `testcases/good11.cam` to output `good11.svm`
 
 ## MPLR 2021 paper snapshot
 
-https://github.com/svenssonjoel/Sense-VM/releases/tag/v0.1.0
+[V0.1.0](https://github.com/svenssonjoel/Sense-VM/releases/tag/v0.1.0)
 
 ## Configuring and building the virtual machine
 
