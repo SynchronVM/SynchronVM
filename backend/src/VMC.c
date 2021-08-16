@@ -164,7 +164,10 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   if (!sys_time_init((void *)vm_containers[VMC_CONTAINER_1].backend_custom)) {
     return -6;
   }
-    
+
+  // set logical time
+  vm_containers[VMC_CONTAINER_1].logicalTime = sys_time_get_current_ticks();
+
 
   /**********************************************************/
   /* Initialize the Drivers
