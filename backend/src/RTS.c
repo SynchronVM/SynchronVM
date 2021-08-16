@@ -758,6 +758,27 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
 }
 
 
+static int setAlarm(Time alarmTime){
+
+  Time wakeupTimeSet = sys_get_wake_up_time();
+
+  // set alarm only if it is not set already (the very first time)
+  // or if the wakeupTime for this thread is earlier than the current
+  // set alarm time.
+  // When a thread is woken up the next alarm will be set
+  if(!sys_is_alarm_set() || (alarmTime < wakeupTimeSet)){
+    bool b = sys_time_set_wake_up(alarmTime); // implemented NOTE 1
+
+    if(!b){
+      // something seriously wrong
+      DEBUG_PRINT(("Setting wakeup time has failed \n"));
+      return -1;
+    }
+  }
+
+  return 1;
+
+}
 int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
 
@@ -781,34 +802,25 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
     return sync(container, evts);
   }
 
-  Time currentTime = sys_time_get_current_ticks();
+  Time currentTime = container->logicalTime;
   Time wakeupTime  = currentTime + baseline;
   Time finishTime;
 
   if(deadline == 0) // XXX : No deadline
     finishTime = TIME_MAX;
   else
-    finishTime = wakeupTime  + deadline;
+    finishTime = deadline;
 
-  Time wakeupTimeSet = sys_get_wake_up_time();
-
-  // set alarm only if it is not set already (the very first time)
-  // or if the wakeupTime for this thread is earlier than the current
-  // set alarm time. In both cases queue the thread in the waitQ
-  // When woken up the next alarm will be set
-  if(!sys_is_alarm_set() || (wakeupTime < wakeupTimeSet)){
-    bool b = sys_time_set_wake_up(wakeupTime); // check NOTE 1
-
-    if(!b){
-      // something seriously wrong
-      DEBUG_PRINT(("Setting wakeup time has failed \n"));
-      return -2;
-    }
+  int i = setAlarm(wakeupTime);
+  if(i == -1){
+    // something seriously wrong
+    DEBUG_PRINT(("Setting wakeup time has failed \n"));
+    return -1;
   }
 
   pq_data_t sleepThread =
     {   .context_id = container->current_running_context_id
-      , .baseline = wakeupTime
+      , .baseline = baseline
       , .deadline = finishTime };
 
   int j = pq_insert(&container->waitQ, sleepThread);
@@ -980,8 +992,10 @@ static int handle_timer_msg(vmc_t *vmc){
     return i;
   }
 
+  //Step 2. Increment logical time
+  vmc->logicalTime += timedThread.baseline;
 
-  //Step 2. Peek at the top of the waitQ and get that baseline to set the alarm
+  //Step 3. Peek at the top of the waitQ and get that baseline to set the alarm
   pq_data_t timedThread2;
   int k = pq_getMin(&vmc->waitQ, &timedThread2);
   if (k == -1){
@@ -990,15 +1004,16 @@ static int handle_timer_msg(vmc_t *vmc){
 
   }
 
-  //Step 3. Set alarm from the baseline detected at Step 2
-  bool b = sys_time_set_wake_up(timedThread2.baseline); // Check NOTE 1
-  if(!b){
+  //Step 4. Set alarm from the baseline detected at Step 2
+  Time alarmTime = vmc->logicalTime + timedThread2.baseline;
+  int q = setAlarm(alarmTime);
+  if(q == -1){
     // something seriously wrong
-    DEBUG_PRINT(("Setting wakeup time has failed \n"));
+    DEBUG_PRINT(("Setting alarm has failed \n"));
     return -2;
   }
 
-  //Step 4. Put the current thread in the rdyQ
+  //Step 5. Put the current thread in the rdyQ
   pq_data_t currentThreadInfo =
     {   .context_id = vmc->current_running_context_id
       , .baseline = TIME_MAX
@@ -1010,10 +1025,10 @@ static int handle_timer_msg(vmc_t *vmc){
     return -1;
   }
 
-  //Step 5. Set the timerThread from Step 1 as currently running
+  //Step 6. Set the timerThread from Step 1 as currently running
   vmc->current_running_context_id = timedThread.context_id;
 
-  //Step 6. Call `sync` on the timerThread (copy of handle_sync)
+  //Step 7. Call `sync` on the timerThread (copy of handle_sync)
   cam_value_t event_env = vmc->contexts[timedThread.context_id].env;
 
   if(event_env.flags != VALUE_PTR_BIT){
