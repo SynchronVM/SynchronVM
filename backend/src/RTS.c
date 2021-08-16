@@ -761,7 +761,9 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
 int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
 
-  //XXX: baseline = 0 and deadline = 0 means no baseline, no deadline
+  //XXX: syncT 0 n ev == sync ev
+  // baseline = 0 implies start right now
+  // and finish at the earliest
   if(baseline == 0){
 
     //XXX: `sync` above uses a cooperative schduler
@@ -781,7 +783,12 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
   Time currentTime = sys_time_get_current_ticks();
   Time wakeupTime  = currentTime + baseline;
-  Time finishTime  = wakeupTime  + deadline;
+  Time finishTime;
+
+  if(deadline == 0) // XXX : No deadline
+    finishTime = TIME_MAX;
+  else
+    finishTime = wakeupTime  + deadline;
 
   Time wakeupTimeSet = sys_get_wake_up_time();
 
