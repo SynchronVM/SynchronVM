@@ -66,7 +66,7 @@ uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];
 uint8_t vmc_container_1_stack[VMC_CONTAINER_1_STACK_SIZE_BYTES];
 uint8_t vmc_container_1_arrays[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];
 uint8_t vmc_container_1_channels[VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES];
-uint8_t vmc_container_1_rdyq [sizeof(UUID) * VMC_MAX_CONTEXTS];
+uint8_t vmc_container_1_rdyq [sizeof(pq_data_t) * VMC_MAX_CONTEXTS];
 uint8_t vmc_container_1_waitq[sizeof(pq_data_t) * VMC_MAX_CONTEXTS];
 
 const uint8_t vmc_container_1_code[] = {
@@ -126,21 +126,24 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
 
   vm_containers[VMC_CONTAINER_1].code_size = sizeof(vmc_container_1_code);
- 
+
   if (!init_all_chans(  vm_containers[VMC_CONTAINER_1].channels
 			, vmc_container_1_channels)) {
     return -3;
   }
-  
+
   if (!init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
 				, vm_containers[VMC_CONTAINER_1].stack_memory
 				, VMC_CONTAINER_1_STACK_SIZE_BYTES)){
     return -4;
   }
 
-  int readyq_status = q_init(&vm_containers[VMC_CONTAINER_1].rdyQ
-                             , vmc_container_1_rdyq
-                             , sizeof(UUID) * VMC_MAX_CONTEXTS);
+
+  int readyq_status = pq_init(&vm_containers[VMC_CONTAINER_1].rdyQ
+                              , vmc_container_1_rdyq
+                              , sizeof(pq_data_t) * VMC_MAX_CONTEXTS
+                              , DEADLINE);
+
   if(readyq_status == -1){
     DEBUG_PRINT(("Failed to initialise ready queue"));
     return -5;

@@ -56,7 +56,7 @@ typedef struct {
   Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */
   bool          context_used[VMC_MAX_CONTEXTS];
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
-  Queue_t       rdyQ;
+  PriorityQ_t   rdyQ;
   PriorityQ_t   waitQ;
   ll_driver_t   drivers[VMC_MAX_DRIVERS];
   void*         backend_custom; /* Can be used by a backend for low level integration */

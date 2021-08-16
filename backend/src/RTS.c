@@ -261,7 +261,11 @@ int spawn(vmc_t *container, uint16_t label){
       /**************************************************/
 
       container->context_used[i] = true;
-      int j = q_enqueue(&container->rdyQ, i);
+
+      pq_data_t elem = {   .context_id = i
+                         , .baseline = TIME_MAX
+                         , .deadline = TIME_MAX };
+      int j = pq_insert(&container->rdyQ, elem);
       if(j == -1){
         DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
         return -1;
@@ -281,8 +285,8 @@ int spawn(vmc_t *container, uint16_t label){
 }
 
 int dispatch(vmc_t *container){
-  UUID context_id;
-  int de_q_status = q_dequeue(&container->rdyQ, &context_id);
+  pq_data_t thread_info;
+  int de_q_status = pq_extractMin(&container->rdyQ, &thread_info);
   if (de_q_status == -1){
     // This is the standard state of a microcontroller
     // where processes are blocked and sleeping, waiting
@@ -294,7 +298,7 @@ int dispatch(vmc_t *container){
     return -1;
   }
   DEBUG_PRINT(("Queueing\n"));
-  container->current_running_context_id = context_id;
+  container->current_running_context_id = thread_info.context_id;
   return 1;
 }
 
@@ -462,8 +466,14 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /* NOTE Message passing ends */
 
+    pq_data_t sender_info =
+      {   .context_id = container->current_running_context_id
+        , .baseline = TIME_MAX
+        , .deadline = TIME_MAX
+      };
     int enq_status =
-      q_enqueue(&container->rdyQ, container->current_running_context_id); // queueing sender
+      pq_insert(&container->rdyQ, sender_info); // queueing sender
+
     if (enq_status == -1){
       DEBUG_PRINT(("Ready Queue is full\n"));
       return -1;
@@ -540,7 +550,14 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     /* NOTE Message passing ends */
 
-    int enq_status = q_enqueue(&container->rdyQ, sender_data.context_id); // queueing sender
+    pq_data_t sender_info_2 =
+      {   .context_id = sender_data.context_id
+        , .baseline = TIME_MAX
+        , .deadline = TIME_MAX
+      };
+    int enq_status =
+      pq_insert(&container->rdyQ, sender_info_2); // queueing sender
+
     if (enq_status == -1){
       DEBUG_PRINT(("Ready Queue is full\n"));
       return -1;
@@ -975,7 +992,12 @@ static int handle_timer_msg(vmc_t *vmc){
   }
 
   //Step 4. Put the current thread in the rdyQ
-  int z = q_enqueue(&vmc->rdyQ, vmc->current_running_context_id);
+  pq_data_t currentThreadInfo =
+    {   .context_id = vmc->current_running_context_id
+      , .baseline = TIME_MAX
+      , .deadline = TIME_MAX
+    };
+  int z = pq_insert(&vmc->rdyQ, currentThreadInfo);
   if(z == -1){
     DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
     return -1;
