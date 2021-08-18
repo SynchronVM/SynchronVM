@@ -23,26 +23,133 @@
 /**********************************************************************************/
 
 #include <ch.h>
+#include <hal.h>
 
 #include <sys/sys_time.h>
 #include <hal/chibios/svm_chibios.h>
 
-// TODO: IMPLEMENT
+#include <svm_chibios_conf.h>
+
+/* This file is stm32 specific */
+#include "stm32_tim.h"
+#include "stm32_rcc.h"
+
+#define COMB_EXPAND0(X,Y) X##Y
+#define COMB_EXPAND(X,Y) COMB_EXPAND0(X,Y)
+
+#define TIM COMB_EXPAND(STM32_TIM, SYS_TIMER);
+
+stm32_tim_t * tim = TIM;
+
+chibios_interop_t *interop;
+
+typedef struct {
+  bool active;
+  Time alarm_time;
+} sys_time_alarm_t;
+
+static sys_time_alarm_t alarm;
+static volatile uint32_t counter_high_word;
+static uint32_t counter_freq;
+
 
 bool sys_time_init(void *os_interop) {
 
-  return false;
+  if (!os_interop) return false;
+
+  counter_high_word = 0;
+  counter_freq = 0; /* TODO: Figure out how to compute this. 
+		       I think it is 84Mhz / (tim->PSC+1)
+		     */
+
+  alarm.active = false;
+  alarm.alarm_time = 0;
+  
+  
+  COMB_EXPAND(rccEnableTIM, SYS_TIMER)(true);
+  COMB_EXPAND(rccResetTIM, SYS_TIMER)();
+
+  nvicEnableVector(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER,_NUMBER)) ,
+		   COMB_EXPAND(STM32_GPT_TIM, COMB_EXPAND(SYS_TIMER, _IRQ_PRIORITY))); /* use GPT level prio */
+
+
+  tim->PSC = 0xFFFF;     // counter rate is input_clock / (0xFFFF+1)
+  tim->ARR = 0xFFFFFFFF; // Value when counter should flip to zero.
+
+  tim->CCR[0] = 0xFFFFFFFF; /* init compare values */
+  tim->CCR[1] = 0xFFFFFFFF;
+  tim->CCR[2] = 0xFFFFFFFF;
+  tim->CCR[3] = 0xFFFFFFFF;
+
+  tim->CCER |= 0x1; /* activate compare on ccr channel 1 */
+  tim->DIER |= 0x2; /* activate interrupt on ccr channel 1 */
+  tim->DIER |= 0x1; /* activate interrupt on "update event" (for example overflow) */
+
+  tim->CNT = 0;
+  tim->EGR = 0x1; // Update event (Makes all the configurations stick)
+  tim->CR1 = 0x1; // enable
+
+  interop = (chibios_interop_t*)os_interop;
+  
+  return true;
+}
+
+OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
+  OSAL_IRQ_PROLOGUE();
+
+  if (tim->SR & 0x1) { /* This indicates and update event (overflow?) */
+    /* TODO: Not 100% certain this is definitely an overflow. Couldn't it 
+       be other "events"?  */
+    tim->SR |= ~0x1; /* clear update event flag */
+    counter_high_word++;
+    return;
+  } else {
+  
+    uint32_t sr = tim->SR;
+    sr &= tim->DIER & STM32_TIM_DIER_IRQ_MASK;
+    tim->SR = ~sr;  /* wipe sr */ 
+
+    svm_msg_t msg;
+    msg.sender_id = SYS_TIME_SENDER_ID;
+    msg.timestamp = sys_time_get_current_ticks();
+    msg.data = 0xDEADBEEF;
+    msg.msg_type = 0;
+    
+    osalSysLockFromISR();
+    interop->send_message(interop, msg); /* check for error */
+    osalSysUnlockFromISR();
+  }  
+  OSAL_IRQ_EPILOGUE();
 }
 
 
 Time sys_time_get_current_ticks(void) {
 
+  Time time = 0;
+  uint32_t low_word;
+  uint32_t high_word;
+  uint32_t high_word2;
+
+  do {
+    high_word = counter_high_word;
+    low_word = tim->CNT;
+    high_word2 = counter_high_word;
+  } while (high_word != high_word2); /* todo execute body at most twice */
+
+  time = high_word;
+  time <<= 32;
+  time |= low_word;
+  
   return 0;
+}
+
+uint32_t sys_time_alarm_channels(void) {
+  return 4;
 }
 
 uint32_t sys_time_get_clock_freq(void) {
 
-  return 0;
+  return counter_freq;
 }
 
 bool sys_time_set_wake_up(Time absolute) {
@@ -56,8 +163,7 @@ Time sys_get_wake_up_time(void){
 }
 
 bool sys_is_alarm_set(void){
-  // TODO: Implement this;
-  return false;
+  return alarm.active;
 }
 
 
