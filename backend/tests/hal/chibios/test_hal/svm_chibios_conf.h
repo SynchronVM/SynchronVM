@@ -19,5 +19,6 @@
 #define BUTTON0_MODE PAL_MODE_INPUT
 #define BUTTON0_EVENT_MODE PAL_EVENT_MODE_BOTH_EDGES
 
+#define SYS_TIMER  5 /*select tim5 for system time*/
 
 #endif 
