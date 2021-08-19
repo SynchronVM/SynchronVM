@@ -27,6 +27,7 @@
 #include "chprintf.h"
 
 #include <svm_chibios.h>
+#include <sys/sys_time.h>
 
 void print_it(const char *str, ...) {
   va_list args;
@@ -39,7 +40,7 @@ void print_it(const char *str, ...) {
 int main(void) {
   halInit();
   chSysInit();
-  
+
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
 
@@ -57,9 +58,12 @@ int main(void) {
 
   chThdSleepMilliseconds(2000);
 
+  print_it("Starting up!\r\n");
 
-  chibios_register_dbg_print(print_it); /* should be done first */
-  
+  chThdSleepMilliseconds(500);
+
+  chibios_register_dbg_print(print_it);
+
   if (!chibios_sensevm_init()) {
      chprintf((BaseSequentialStream *)&SDU1, "SenseVM init failed!\r\n");
   } else {
@@ -68,18 +72,24 @@ int main(void) {
 
   if (!chibios_start_container_threads()) {
      chprintf((BaseSequentialStream *)&SDU1, "SenseVM failed to start container threads!\r\n");
-  } else { 
+  } else {
     chprintf((BaseSequentialStream *)&SDU1, "SenseVM container threads started!\r\n");
   }
 
-  
-  
+
+
   while(true) {
 
-    chprintf((BaseSequentialStream *)&SDU1, "Hello world\r\n");
+    //    chprintf((BaseSequentialStream *)&SDU1, "Hello world\r\n");
 
-    chThdSleepMilliseconds(2000);
-    
+    chThdSleepMilliseconds(1000);
+
+    Time t = sys_time_get_current_ticks();
+
+    chprintf((BaseSequentialStream *)&SDU1, "high: %u\r\n",t >> 32);
+    chprintf((BaseSequentialStream *)&SDU1, "low: %u\r\n",t );
+
+
   }
 
   return 0; //unreachable

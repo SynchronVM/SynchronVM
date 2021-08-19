@@ -256,6 +256,6 @@ bool chibios_sensevm_init(void) {
   res = vmc_init(vm_containers, VMC_NUM_CONTAINERS);
 
   if (res == VMC_NUM_CONTAINERS) r = true;
-
+  
   return r;
 }
