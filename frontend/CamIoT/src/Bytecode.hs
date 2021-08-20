@@ -481,7 +481,7 @@ byteCompile verbose path = do
 
 
 -- Experiments --
-path = "testcases/good20.cam"
+path = "testcases/good21.cam"
 
 test :: IO ()
 test = do

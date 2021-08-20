@@ -1,0 +1,16 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+ledchan : Channel Int
+ledchan = channel ()
+
+
+foo : Int -> ()
+foo val =
+ let _ = syncT 2000000 0 (send ledchan val) in
+ foo (not val)
+
+main =
+  let _ = spawnExternal ledchan 1 in
+  foo 1
