@@ -998,20 +998,22 @@ static int handle_timer_msg(vmc_t *vmc){
   //Step 3. Peek at the top of the waitQ and get that baseline to set the alarm
   pq_data_t timedThread2;
   int k = pq_getMin(&vmc->waitQ, &timedThread2);
-  if (k == -1){
-    DEBUG_PRINT(("Cannot peek in the wait queue \n"));
-    return k;
+  if (k == 1){
 
+    // if there are waiting threads then set alarm
+
+    //Step 4. Set alarm for the baseline of timedThread2
+    Time alarmTime = timedThread2.baseline;
+    int q = setAlarm(alarmTime);
+    if(q == -1){
+      DEBUG_PRINT(("Setting alarm has failed \n"));
+      return -2;
+    }
+  } else {
+    DEBUG_PRINT(("Wait queue is empty \n"));
+    // Proceed onwards
   }
 
-  //Step 4. Set alarm from the baseline detected at Step 2
-  Time alarmTime = timedThread2.baseline;
-  int q = setAlarm(alarmTime);
-  if(q == -1){
-    // something seriously wrong
-    DEBUG_PRINT(("Setting alarm has failed \n"));
-    return -2;
-  }
 
   //Step 5. Put the current thread in the rdyQ
   pq_data_t currentThreadInfo =
