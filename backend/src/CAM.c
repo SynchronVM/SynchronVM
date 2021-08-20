@@ -1443,7 +1443,7 @@ static int handle_synct(vmc_t *vmc){
 
   event_t timed_evt = (event_t)hold_reg3.value;
 
-  vmc->contexts[vmc->current_running_context_id].env = hold_reg3
+  vmc->contexts[vmc->current_running_context_id].env = hold_reg3;
 
   int k = syncT(vmc, baseline, deadline, &timed_evt);
   if(k == -1){
