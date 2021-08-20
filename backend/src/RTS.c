@@ -1016,16 +1016,16 @@ static int handle_timer_msg(vmc_t *vmc){
 
 
   //Step 5. Put the current thread in the rdyQ
-  pq_data_t currentThreadInfo =
-    {   .context_id = vmc->current_running_context_id
-      , .baseline = TIME_MAX
-      , .deadline = TIME_MAX
-    };
-  int z = pq_insert(&vmc->rdyQ, currentThreadInfo);
-  if(z == -1){
-    DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
-    return -1;
-  }
+  /* pq_data_t currentThreadInfo = */
+  /*   {   .context_id = vmc->current_running_context_id */
+  /*     , .baseline = TIME_MAX */
+  /*     , .deadline = TIME_MAX */
+  /*   }; */
+  /* int z = pq_insert(&vmc->rdyQ, currentThreadInfo); */
+  /* if(z == -1){ */
+  /*   DEBUG_PRINT(("Cannot enqueue in ready queue \n")); */
+  /*   return -1; */
+  /* } */
 
   //Step 6. Set the timerThread from Step 1 as currently running
   vmc->current_running_context_id = timedThread.context_id;
