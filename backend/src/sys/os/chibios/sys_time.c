@@ -25,6 +25,9 @@
 #include <ch.h>
 #include <hal.h>
 
+#include <chprintf.h> // DEBUG
+#include <usbcfg.h>   // DEBUG
+
 #include <sys/sys_time.h>
 #include <hal/chibios/svm_chibios.h>
 
@@ -59,7 +62,7 @@ bool sys_time_init(void *os_interop) {
 
   interop = (chibios_interop_t*)os_interop;
 
-  counter_high_word = 0;
+  counter_high_word = 0xFFFFFFFF;
   counter_freq = 0; /* TODO: Figure out how to compute this.
   		       I think it is 84Mhz / (tim->PSC+1)
   		     */
@@ -116,12 +119,13 @@ OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
     }
   } else {
 
-    tim->DIER &= ~0x2; /* disable interrupt on ccr channel 1 */
 
     uint32_t sr = tim->SR;
     sr &= tim->DIER & STM32_TIM_DIER_IRQ_MASK;
     tim->SR = ~sr;  /* wipe sr */
 
+    tim->DIER &= ~0x2; /* disable interrupt on ccr channel 1 */
+    
     svm_msg_t msg;
     msg.sender_id = SYS_TIME_SENDER_ID;
     msg.timestamp = sys_time_get_current_ticks();
@@ -131,6 +135,8 @@ OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
     osalSysLockFromISR();
     interop->send_message(interop, msg); /* check for error */
     osalSysUnlockFromISR();
+
+    alarm.active = false;
 
   }
   OSAL_IRQ_EPILOGUE();
@@ -184,6 +190,8 @@ bool sys_time_set_wake_up(Time absolute) {
     }
     high_word2 = counter_high_word;
   } while (high_word != high_word2);
+  
+  chprintf((BaseSequentialStream *)&SDU1, "alarm set at low word: %u\r\n", tim->CCR[0]);
 
   return true;
 }

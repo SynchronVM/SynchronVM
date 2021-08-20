@@ -57,9 +57,9 @@
 /************************/
 /* Debug print facility */
 
-void (*dbg_print_fun)(const char *str, ...) = NULL;
+void (*dbg_print_fun)(const char *str, va_list args) = NULL;
 
-void chibios_register_dbg_print(void (*f)(const char *str, ...)) {
+void chibios_register_dbg_print(void (*f)(const char *str, va_list args)) {
   dbg_print_fun = f;
 }
 

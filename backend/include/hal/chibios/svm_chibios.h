@@ -40,7 +40,7 @@ typedef struct chibios_interop_s {
 
 } chibios_interop_t;
 
-extern void chibios_register_dbg_print(void (*f)(const char *str, ...));
+extern void chibios_register_dbg_print(void (*f)(const char *str, va_list));
 extern bool chibios_start_container_threads(void);
 extern bool chibios_sensevm_init(void);
 
