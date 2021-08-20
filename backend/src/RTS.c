@@ -982,6 +982,16 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 static int handle_timer_msg(vmc_t *vmc){
 
 
+
+  // foo = ...syncT 100 0 ev....
+  // timeThread = {foo, 2100, 0}
+  // waitQ -> 
+  // rdyQ  ->
+  // currently running = foo
+
+
+
+
   // A 7 step process now.
 
   // Step 1. Pick the top of the waitQ, time to schedule it.
@@ -989,7 +999,7 @@ static int handle_timer_msg(vmc_t *vmc){
   int i = pq_extractMin(&vmc->waitQ, &timedThread);
   if (i == -1){
     DEBUG_PRINT(("Cannot dequeue from wait queue \n"));
-    return i;
+    return -3;
   }
 
   //Step 2. Increment logical time
@@ -1035,7 +1045,7 @@ static int handle_timer_msg(vmc_t *vmc){
 
   if(event_env.flags != VALUE_PTR_BIT){
     DEBUG_PRINT(("Pointer not found in the environment register \n"));
-    return -1;
+    return -4;
   }
 
   event_t evt = (event_t)event_env.value;
@@ -1044,7 +1054,7 @@ static int handle_timer_msg(vmc_t *vmc){
 
   if(j == -1){
     DEBUG_PRINT(("Error in synchronisation \n"));
-    return j;
+    return -5;
   }
 
   return j;
