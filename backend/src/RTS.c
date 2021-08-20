@@ -760,20 +760,24 @@ int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){
 
 static int setAlarm(Time alarmTime){
 
-  Time wakeupTimeSet = sys_get_wake_up_time();
 
-  // set alarm only if it is not set already (the very first time)
-  // or if the wakeupTime for this thread is earlier than the current
-  // set alarm time.
-  // When a thread is woken up the next alarm will be set
-  if(!sys_is_alarm_set() || (alarmTime < wakeupTimeSet)){
-    bool b = sys_time_set_wake_up(alarmTime); // implemented NOTE 1
+  // if alarm is not set, set it directly
+  // else check if the set wakeuptime is more than
+  // the requested alarm time only then set alarm
 
-    if(!b){
-      // something seriously wrong
-      DEBUG_PRINT(("Setting wakeup time has failed \n"));
-      return -1;
-    }
+  bool b = true;
+  if(!sys_is_alarm_set()){
+    b = sys_time_set_wake_up(alarmTime);
+  } else {
+    Time wakeupTimeSet = sys_get_wake_up_time();
+    if(alarmTime < wakeupTimeSet)
+      b = sys_time_set_wake_up(alarmTime);
+  }
+
+  if(!b){
+    // something seriously wrong
+    DEBUG_PRINT(("Setting wakeup time has failed \n"));
+    return -1;
   }
 
   return 1;
@@ -980,16 +984,6 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 }
 
 static int handle_timer_msg(vmc_t *vmc){
-
-
-
-  // foo = ...syncT 100 0 ev....
-  // timeThread = {foo, 2100, 0}
-  // waitQ -> 
-  // rdyQ  ->
-  // currently running = foo
-
-
 
 
   // A 7 step process now.
