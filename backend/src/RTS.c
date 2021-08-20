@@ -809,7 +809,7 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
   if(deadline == 0) // XXX : No deadline
     finishTime = TIME_MAX;
   else
-    finishTime = deadline;
+    finishTime = wakeupTime + deadline;
 
   int i = setAlarm(wakeupTime);
   if(i == -1){
@@ -820,7 +820,7 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
   pq_data_t sleepThread =
     {   .context_id = container->current_running_context_id
-      , .baseline = baseline
+      , .baseline = wakeupTime
       , .deadline = finishTime };
 
   int j = pq_insert(&container->waitQ, sleepThread);
@@ -982,7 +982,7 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 static int handle_timer_msg(vmc_t *vmc){
 
 
-  // A 6 step process now.
+  // A 7 step process now.
 
   // Step 1. Pick the top of the waitQ, time to schedule it.
   pq_data_t timedThread;
@@ -993,7 +993,7 @@ static int handle_timer_msg(vmc_t *vmc){
   }
 
   //Step 2. Increment logical time
-  vmc->logicalTime += timedThread.baseline;
+  vmc->logicalTime = timedThread.baseline;
 
   //Step 3. Peek at the top of the waitQ and get that baseline to set the alarm
   pq_data_t timedThread2;
@@ -1005,7 +1005,7 @@ static int handle_timer_msg(vmc_t *vmc){
   }
 
   //Step 4. Set alarm from the baseline detected at Step 2
-  Time alarmTime = vmc->logicalTime + timedThread2.baseline;
+  Time alarmTime = timedThread2.baseline;
   int q = setAlarm(alarmTime);
   if(q == -1){
     // something seriously wrong
