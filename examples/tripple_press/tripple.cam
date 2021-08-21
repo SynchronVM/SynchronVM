@@ -1,14 +1,42 @@
+ledchan : Channel Int
+ledchan = channel ()
+
+butchan : Channel Int
+butchan = channel ()
+
+togglechan : Channel Int
+togglechan = channel ()
 
 not : Int -> Int
-not 1 = 0
 not 0 = 1
+not 1 = 0
 
-toggler : Int -> () -> ()
-toggler val v = v
+toggler : Int -> Int -> ()
+toggler val lval =
+  let _ = sync (recv togglechan) in
+  if val >= 3
+  then 
+    let _ = sync (send ledchan lval) in
+    toggler 0 (not lval)
+  else
+    toggler (val + 1) lval
 
-tp : Int -> ()
-tp 3 = tp 0
-tp x = tp (x+1)
+togg : () -> ()
+togg _ = toggler 0 1
 
-main = ()
+press : ()
+press =
+  let s = sync (recv butchan) in
+  if (s == 1)
+  then
+    let _ = sync (send togglechan 0) in
+    press
+  else
+    press
+
+main =
+  let _ = spawnExternal butchan 0 in
+  let _ = spawnExternal ledchan 1 in
+  let _ = spawn togg in
+  press
 
