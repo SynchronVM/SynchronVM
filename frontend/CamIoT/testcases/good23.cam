@@ -1,0 +1,24 @@
+ledchan : Channel Int
+ledchan = channel ()
+
+butchan : Channel Int
+butchan = channel ()
+
+togglechan : Channel Int
+togglechan = channel ()
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+toggler : Int -> () -> ()
+toggler val v =
+  let _ = 2 in
+  toggler (not val) v
+
+tp : Int -> ()
+tp 3 = tp 0
+tp x = tp (x+1)
+
+main = ()
+
