@@ -12,7 +12,7 @@ not 1 = 0
 not 0 = 1
 
 toggler : Int -> () -> ()
-toggler val void = void
+toggler val void = 
   let _ = sync (wrap (recv togglechan) (send ledchan val)) in
   toggler (not val) void
 

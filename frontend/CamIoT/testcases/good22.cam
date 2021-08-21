@@ -1,0 +1,7 @@
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+main =
+  ()
