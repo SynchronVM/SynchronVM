@@ -1,0 +1,25 @@
+ledchan : Channel Int
+ledchan = channel ()
+
+butchan : Channel Int
+butchan = channel ()
+
+togglechan : Channel Int
+togglechan = channel ()
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+--toggler : Int -> () -> ()
+--toggler val void = void
+--  let _ = sync (wrap (recv togglechan) (send ledchan val)) in
+--  toggler (not val) void
+
+tp : Int -> Int
+tp x = x
+
+main =
+  let _ = spawnExternal butchan 0 in
+  let _ = spawnExternal ledchan 1 in
+  tp 0
