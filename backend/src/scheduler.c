@@ -32,7 +32,7 @@
 /* Scheduler tracing */
 
 //#define TRACE_ON
-#define MAX_TRACE_LENGTH 1000
+#define MAX_TRACE_LENGTH 100
 
 typedef struct scheduler_trace_s {
   UUID context_id;
@@ -221,12 +221,13 @@ int scheduler(vmc_t *container,
     if (container->current_running_context_id != UUID_NONE) {
 
       INT *pc = (INT *)&container->contexts[container->current_running_context_id].pc;
-      //dbg_print("*****************************************************\r\n");
+      /* dbg_print("*****************************************************\r\n"); */
       /* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
       /* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
       /* dbg_print("pc    : %d\r\n", *pc); */
+      /* dbg_print("sp    : %d\r\n", stack_get_sp(&container->contexts[container->current_running_context_id].stack)); */
       /* dbg_print("current env: %u\r\n", container->contexts[container->current_running_context_id].env.value); */
-      /* dbg_print("current instr: 0x%x\r\n", container->code_memory[*pc]); */
+      /* dbg_print("current instr: 0x%x  [Dec: %u]\r\n", container->code_memory[*pc], container->code_memory[*pc]); */
       /* dbg_print("sizeof(evaluators) = %d\r\n", sizeof(evaluators)); */
 
       /* Execute an instruction */
