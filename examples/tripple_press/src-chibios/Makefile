@@ -152,7 +152,7 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        $(SENSE_SRC) \
-       main.c \
+       $(SENSE_VM)/backend/src/hal/chibios/svm_chibios_main.c \
        usbcfg.c \
        $(CHIBIOS)/os/various/syscalls.c 
 
