@@ -461,12 +461,15 @@ byteCompile verbose path = do
       condPutStrLn verbose $ show camir
 
       condPutStrLn verbose $ "\nCAM BYTECODE (Hs Datatype): \n"
-      let cam   = Peephole.optimise $ C.interpret camir
+      let cam   = C.interpret camir
       condPutStrLn verbose $ show cam
 
+      condPutStrLn verbose $ "\nCAM BYTECODE (Peephole optimized): \n"
+      let camopt   = Peephole.optimise $ cam
+      condPutStrLn verbose $ show camopt
+
       condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
-      let cam   = Peephole.optimise $ C.interpret camir
-      condPutStrLn verbose $ show $ A.translate cam
+      condPutStrLn verbose $ show $ A.translate camopt
 
 
       condPutStrLn verbose $ "\n"

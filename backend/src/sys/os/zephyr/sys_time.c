@@ -45,7 +45,7 @@ typedef struct {
 
 static sys_time_alarm_t alarm;
 
-static struct counter_top_cfg overflow_cfg; 
+static struct counter_top_cfg overflow_cfg;
 
 static const struct device *counter_dev = NULL;
 
@@ -69,7 +69,7 @@ void alarm_callback(const struct device *dev, uint8_t chan, uint32_t ticks, void
     /* message error. what to do ? */
   }
 
-  alarm.active = false;  
+  alarm.active = false;
   irq_unlock(key);
 }
 
@@ -95,9 +95,9 @@ bool sys_time_init(void *os_interop) {
 
   zephyr_interop = (zephyr_interop_t*)os_interop;
   if (!zephyr_interop) return false;
- 
+
   counter_dev = device_get_binding(COUNTER);
-  if (counter_dev == NULL) return false; 
+  if (counter_dev == NULL) return false;
 
   counter_freq = counter_get_frequency(counter_dev);
 
@@ -105,7 +105,7 @@ bool sys_time_init(void *os_interop) {
   overflow_cfg.callback = overflow_callback;
   overflow_cfg.flags = 0;
   overflow_cfg.user_data = NULL;
-  
+
   if (counter_set_top_value(counter_dev, &overflow_cfg) != 0) return false;
 
   /* just prepare the alarm config. Dont actually set this alarm. */
@@ -116,7 +116,7 @@ bool sys_time_init(void *os_interop) {
 
   /* an alarm in the past should go off immediately */
   if (counter_set_guard_period(counter_dev, UINT_MAX/2, COUNTER_GUARD_PERIOD_LATE_TO_SET) != 0)
-    return false; 
+    return false;
 
   if (counter_start(counter_dev) != 0) return false;
 
@@ -129,16 +129,16 @@ bool sys_time_init(void *os_interop) {
 Time sys_time_get_current_ticks(void) {
 
   if (!counter_dev) return 0;
-  
+
   Time time = 0;
   uint32_t low_word;
   uint32_t high_word;
   uint32_t high_word2;
 
-  /* May need more sophisticated approach here 
-     to really rule out overflow interleaving with 
+  /* May need more sophisticated approach here
+     to really rule out overflow interleaving with
      reading of low and high word */
-  do { 
+  do {
   high_word = counter_high_word;
   counter_get_value(counter_dev, &low_word);
   high_word2 = counter_high_word;
@@ -151,7 +151,7 @@ Time sys_time_get_current_ticks(void) {
   return time;
 }
 
-uint32_t sys_time_alarm_channels(void) {
+uint32_t sys_time_get_alarm_channels(void) {
   return counter_get_num_of_channels(counter_dev);
 }
 

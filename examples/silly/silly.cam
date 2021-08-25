@@ -8,7 +8,8 @@ ledchan = channel ()
 foo : Int -> ()
 foo val =
  let _ = sync (send ledchan val) in
- foo (not val)
+ let nv = not val in
+ foo nv
 
 main =
   let _ = spawnExternal ledchan 1 in

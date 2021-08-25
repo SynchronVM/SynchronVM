@@ -35,11 +35,12 @@ packages:
 # forks / in-progress versions pinned to a git hash. For example:
 #
 extra-deps:
-- git: https://github.com/svenssonjoel/Sense-VM.git
-  commit: 9f11e434b2b55686451621903fae16fbf826602f
+ - ../../middleware/cam
+#- git: https://github.com/svenssonjoel/Sense-VM.git
+#  commit: 9f11e434b2b55686451621903fae16fbf826602f
 
-  subdirs:
-    - middleware/cam
+#  subdirs:
+#    - middleware/cam
 #
 # extra-deps: []
 
@@ -63,6 +64,8 @@ extra-deps:
 # Extra directories used by stack for building
 # extra-include-dirs: [/path/to/dir]
 # extra-lib-dirs: [/path/to/dir]
+#extra-include-dirs:
+# - ../../middleware/cam/app	
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor

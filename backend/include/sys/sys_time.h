@@ -37,12 +37,13 @@
 
 #define SYS_TIME_SENDER_ID 255
 
-/* initialize the timers, takes an os_interop pointer 
+/* initialize the timers, takes an os_interop pointer
    to enable sending of messages to the scheduler message queue
 */
 extern bool      sys_time_init(void *os_interop);
 
 extern Time      sys_time_get_current_ticks(void);
+extern uint32_t  sys_time_get_alarm_channels(void);
 extern uint32_t  sys_time_get_clock_freq(void);
 
 /* Sends a timestamped message to the scheduler message queue at an absolute time */
@@ -54,6 +55,6 @@ extern Time      sys_get_wake_up_time(void);
 extern bool      sys_is_alarm_set(void);
 
 /* put OS thread to sleep, risky operation */
-extern void      sys_sleep_ms(uint32_t ms); 
+extern void      sys_sleep_ms(uint32_t ms);
 
 #endif

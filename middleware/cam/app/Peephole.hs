@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2021 Abhiroop Sarkar
+-- Copyright (c) 2021 Abhiroop Sarkar, Joel Svensson
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -49,8 +49,6 @@ newtype Optimise a =
     }
   deriving (Functor, Applicative, Monad, S.MonadState Code)
 
-
-
 optimiser :: Optimise [FlatCAM]
 optimiser = do
   pc <- getPC
@@ -76,7 +74,7 @@ applyOneOPRule = do
     let i1 = is !! pc
     case i1 of
       Plain (Ins i1_) -> do
-          let (is_, offset) = oneOPRule i1_
+          let (is_, offset) = oneOPRule is i1_
           replaceNInstrs 1 is_
           pure offset
 
@@ -138,6 +136,11 @@ getPC = do
   pc <- S.gets programcounter
   pure pc
 
+setPC :: Int -> Optimise ()
+setPC newpc = do
+  (Code i pc) <- S.get
+  S.put (Code i newpc)
+
 getInstrs :: Optimise [FlatCAM]
 getInstrs = do
   is <- S.gets instrs
@@ -145,12 +148,29 @@ getInstrs = do
 
 type Offset = Int
 
-oneOPRule :: Instruction -> ([Instruction], Offset)
-oneOPRule SKIP     = ([], -1)
-oneOPRule (REST 0) = ([], -1)
-oneOPRule (REST 1) = ([FST], -1)
-oneOPRule (ACC  0) = ([SND], -1)
-oneOPRule i        = ([i]  ,  1)
+lookupFun :: Label -> [FlatCAM] -> Maybe [Instruction]
+lookupFun l [] = Nothing
+lookupFun l func@((Labeled l1 x):xs) | l == l1 =
+                                       grabFunc func
+                                     | otherwise = lookupFun l xs
+  where
+    grabFunc :: [FlatCAM] -> Maybe [Instruction]
+    grabFunc ((Labeled l1 (Ins i)):(Plain (Ins RETURN)):xs) = Just [i]
+    grabFunc _ = Nothing
+lookupFun l (x:xs) = lookupFun l xs
+
+
+
+oneOPRule :: [FlatCAM] -> Instruction -> ([Instruction], Offset)
+oneOPRule _ SKIP     = ([], -1)
+oneOPRule _ (REST 0) = ([], -1)
+oneOPRule _ (REST 1) = ([FST], -1)
+oneOPRule _ (ACC  0) = ([SND], -1)
+oneOPRule c (CALL l) = case is of
+                         (Just is') -> (is', -1)
+                         Nothing    -> ([CALL l], 1)
+  where is = lookupFun l c
+oneOPRule _ i        = ([i]  ,  1)
 
 twoOPRule :: Instruction -> Instruction -> ([Instruction], Offset)
 twoOPRule FST  FST  = ([REST 2],   0)
@@ -170,8 +190,6 @@ twoOPRule (CUR l)  APP = ([SNOC, CALL l], -1)
 twoOPRule (COMB l) APP = ([POP , CALL l], -1)
 twoOPRule (CALL l) RETURN = ([GOTO l], 1)
 twoOPRule i1       i2     = ([i1, i2], 0) -- try oneOPRules now
-
-
 
 
 
