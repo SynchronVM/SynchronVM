@@ -469,10 +469,9 @@ byteCompile verbose path = do
       condPutStrLn verbose $ show camopt
 
       condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
-      condPutStrLn verbose $ show $ A.translate camopt
+      let bytecode = A.translate camopt
+      condPutStrLn verbose $ show bytecode
 
-
-      condPutStrLn verbose $ "\n"
       --condPutStrLn verbose $ "\n\n CAM HS Interpreter \n\n"
       --let val = IM.evaluate $ C.interpret camir
       --condPutStrLn verbose $ show val
@@ -480,7 +479,7 @@ byteCompile verbose path = do
       -- condPutStrLn verbose $ "\nCAM Assembler and true bytecode generator: \n"
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
-      return (A.translate cam)
+      return bytecode
 
 
 -- Experiments --

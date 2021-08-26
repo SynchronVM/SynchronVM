@@ -8,4 +8,4 @@ flash:
 
 clean:
 	rm button_blinky.svm
-	cd src-chibios; make
+	cd src-chibios; make clean
