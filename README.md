@@ -12,7 +12,7 @@ to support Concurrent ML style concurrency.
 ## Building the compiler
 
 The compiler is implemented in Haskell and uses the stack build
-system.  So building the compiler requires [stack](https://docs.haskellstack.org/en/stable/README/)
+system.  So building the compiler requires [stack](https://docs.haskellstack.org/en/stable/README/).
 Go to the `frontend/CamIoT` directory and issue the command:
 
 ```
