@@ -1,10 +1,6 @@
 
-/* SenseVM Chibios hardware configuration and mapping file */
-/* Should not be included into more than one C file (included in gpio.c per default) */
-
 #ifndef SVM_CHIBIOS_CONF_H_
 #define SVM_CHIBIOS_CONF_H_
-
 
 #define LED0_GPIO GPIOD
 #define LED0_PIN  13

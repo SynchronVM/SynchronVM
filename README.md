@@ -76,9 +76,7 @@ The `button_blinky` example consists of the following files:
 │   ├── halconf.h
 │   ├── Makefile
 │   ├── mcuconf.h
-│   ├── stm32f407g.cfg
-│   ├── usbcfg.c
-│   └── usbcfg.h
+│   └── stm32f407g.cfg
 ├── svm_chibios_conf.h
 └── vm-conf.h
 ```
@@ -135,6 +133,18 @@ compilation tools installed. It also requires that you have built and
 The examples are set up to run on STM32F4-Discovery (the stm32f407 model) and
 to be flashed using [OpenOCD](https://openocd.org/). To flash a Discovery board, 
 connect the programming interface USB cable and run `make flash`.
+
+After flashing, the program will immediately start running on the board. Currently some 
+debug information will be printed over the USB interface (the USB port on the oposite end 
+to the programming interface on the discovery board).
+
+### What about Zephyr??!?!
+
+SenseVM can be built on top of ChibiOS or ZephyrOS, currently the
+"user friendly" examples are just set up to use ChibiOS. There is no
+real reason for this other than it is what we had time to do first. 
+
+Examples on top of ZephyrOS will appear when time allows. 
 
 # About
 
