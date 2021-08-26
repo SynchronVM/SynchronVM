@@ -8,3 +8,4 @@ flash:
 
 clean:
 	rm blinky.svm
+	cd src-chibios; make clean
