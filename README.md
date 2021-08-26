@@ -86,13 +86,14 @@ The `button_blinky` example consists of the following files:
  - `button_blinky.cam` is the source code of the example program.
  - `Makefile` compiles the example to bytecode and compiles the
    virtual machine with the specifications provided in `svm_chibios_conf.h` and `vm-conf.h`
+ - The `src-chibios` directory contains files related to the configuration of ChibiOS.
  - `svm_chibios_conf.h` contains information related to peripherals on the target board. 
  - `vm-conf` contains specification of virtual machine parameters. 
 
 The `svm_chibios_conf.h` contains microcontroller and board specific
 mappings of hardware (pins/peripherals) to concepts known to SenseVM. 
 
-```C
+``` C
 #ifndef SVM_CHIBIOS_CONF_H_
 #define SVM_CHIBIOS_CONF_H_
 
@@ -114,6 +115,26 @@ mappings of hardware (pins/peripherals) to concepts known to SenseVM.
 #endif 
 ```
 
+`vm-conf` contains configuration of the virtual machine. Below is an excerpt from this file.
+
+``` C
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES       2048
+#define VMC_CONTAINER_1_BYTECODE_FILE         "button_blinky.svm"
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
+#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  0
+
+#define VMC_CONTAINER_1_USE_BUTTON_0          1
+#define VMC_CONTAINER_1_USE_LED_0             1
+```
+
+To build the example run `make` in the example directory. This relies
+on ChibiOS 20.3.3 being in the right location and that you have cross
+compilation tools installed. It also requires that you have built and
+"installed" the camiotc compiler using the instructions above.
+
+The examples are set up to run on STM32F4-Discovery (the stm32f407 model) and
+to be flashed using [OpenOCD](https://openocd.org/). To flash a Discovery board, 
+connect the programming interface USB cable and run `make flash`.
 
 # About
 
