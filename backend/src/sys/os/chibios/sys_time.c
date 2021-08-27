@@ -174,23 +174,37 @@ uint32_t sys_time_get_clock_freq(void) {
 
 bool sys_time_set_wake_up(Time absolute) {
 
+  chSysLock();
   uint32_t high_word = 0;
-  uint32_t high_word2 = 0;
 
   alarm.alarm_time = absolute;
   alarm.active = true;
 
-  do {
-    high_word = counter_high_word;
-    if (high_word == alarm.alarm_time >> 32) {
-      tim->CCR[0] = absolute; /* low 32 bits */
-      tim->DIER |= 0x2; /* enable interrups on CCR[0] */
-      /* if we manage to set this alarm, but high_word != high_word2
-         then the event should go off immediately */
-    }
-    high_word2 = counter_high_word;
-  } while (high_word != high_word2);
-  
+  high_word = counter_high_word;
+  if (high_word == alarm.alarm_time >> 32) {
+    tim->CCR[0] = absolute; /* low 32 bits */
+    tim->DIER |= 0x2; /* enable interrups on CCR[0] */
+  }
+
+  /* uint32_t high_word = 0; */
+  /* uint32_t high_word2 = 0; */
+
+  /* alarm.alarm_time = absolute; */
+  /* alarm.active = true; */
+
+  /* do { */
+  /*   high_word = counter_high_word; */
+  /*   if (high_word == alarm.alarm_time >> 32) { */
+  /*     tim->CCR[0] = absolute; /\* low 32 bits *\/ */
+  /*     tim->DIER |= 0x2; /\* enable interrups on CCR[0] *\/ */
+  /*     /\* if we manage to set this alarm, but high_word != high_word2 */
+  /*        then the event should go off immediately *\/ */
+  /*   } */
+  /*   high_word2 = counter_high_word; */
+  /* } while (high_word != high_word2); */
+
+  chSysUnlock();
+  chprintf((BaseSequentialStream *)&SDU1, "alarm set at high word: %u\r\n", high_word);
   chprintf((BaseSequentialStream *)&SDU1, "alarm set at low word: %u\r\n", tim->CCR[0]);
 
   return true;
