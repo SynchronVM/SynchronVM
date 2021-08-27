@@ -127,8 +127,10 @@ mappings of hardware (pins/peripherals) to concepts known to SenseVM.
 
 To build the example run `make` in the example directory. This relies
 on ChibiOS 20.3.3 being in the right location and that you have cross
-compilation tools installed. It also requires that you have built and
-"installed" the camiotc compiler using the instructions above.
+compilation tools installed [Get'em
+here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads). It
+also requires that you have built and "installed" the camiotc compiler
+using the instructions above.
 
 The examples are set up to run on STM32F4-Discovery (the stm32f407 model) and
 to be flashed using [OpenOCD](https://openocd.org/). To flash a Discovery board, 
