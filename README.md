@@ -12,7 +12,7 @@ to support Concurrent ML style concurrency.
 ## Building the compiler
 
 The compiler is implemented in Haskell and uses the stack build
-system.  So building the compiler requires [stack](https://docs.haskellstack.org/en/stable/README/).
+system ([get stack](https://docs.haskellstack.org/en/stable/README/)).
 Go to the `frontend/CamIoT` directory and issue the command:
 
 ```
@@ -127,8 +127,8 @@ mappings of hardware (pins/peripherals) to concepts known to SenseVM.
 
 To build the example run `make` in the example directory. This relies
 on ChibiOS 20.3.3 being in the right location and that you have cross
-compilation tools installed [Get'em
-here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads). It
+compilation tools installed ([Get'em
+here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)). It
 also requires that you have built and "installed" the camiotc compiler
 using the instructions above.
 
