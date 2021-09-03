@@ -95,7 +95,7 @@ const uint8_t vmc_container_2_code[] = {
 
 
 static bool init_all_chans(Channel_t *c, uint8_t *mem);
-static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
+static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size);
 
 /* Moving the obligation to allocate memory for driver internal state here */
 /* TODO: This needs some love */
@@ -139,7 +139,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
     return -3;
   }
 
-  if (!init_all_contextstacks(  vm_containers[VMC_CONTAINER_1].contexts
+  if (!init_all_contexts(  vm_containers[VMC_CONTAINER_1].contexts
 				, vm_containers[VMC_CONTAINER_1].stack_memory
 				, VMC_CONTAINER_1_STACK_SIZE_BYTES)){
     return -4;
@@ -369,7 +369,7 @@ static bool init_all_chans(Channel_t *c, uint8_t *mem){
   return true;
 }
 
-static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
+static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size){
 
   /* Maybe we want a different number of max contexts on different VMC.
      I think VMC_CONTAINERX_MAX_CONTEXTS should be defined in vm-conf.
@@ -386,6 +386,7 @@ static bool init_all_contextstacks(Context_t *ctx, uint8_t *mem, uint32_t memory
     int st_status = stack_init(&ctx[i].stack
                                , &mem[offset]
                                , CONTEXT_STACK_SPACE);
+    ctx[i].deadline = TIME_MAX;
 
     if(!st_status){
       DEBUG_PRINT(("Failed to initialise stack for %dth context", i));
