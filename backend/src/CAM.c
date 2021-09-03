@@ -164,7 +164,8 @@ eval_fun evaluators[] =
     eval_comb,
     eval_gotoifalse,
     eval_switchi,
-    eval_callrts };
+    eval_callrts  // 0x37 : 55
+  };
 
 
 uint16_t get_label(vmc_t *vmc, INT *pc_idx){
@@ -1513,7 +1514,8 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
   if(ret_code == -1){
     DEBUG_PRINT(("Error in RTS function"));
     *pc_idx = ret_code;
-  }
+  } else { 
 
-  *pc_idx = (*pc_idx) + 2;
+    *pc_idx = (*pc_idx) + 2;
+  }
 }

@@ -866,8 +866,10 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
     UUID sync_driver_number =
       container->channels[bevt_simple.channel_id].sync_driver_no;
 
+    // TODO: how many bytes should we write ?
+    //       its not always one. 
     int k =
-      ll_write(&container->drivers[sync_driver_number], data_arr, 1); //writing 1 byte
+      ll_write(&container->drivers[sync_driver_number], data_arr, 4); //writing 1 byte
     if(k != 1){
       DEBUG_PRINT(("Failed to write to sync driver!"));
       return -1;
@@ -883,6 +885,7 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
     UUID sync_driver_number =
       container->channels[bevt_simple.channel_id].sync_driver_no;
     uint8_t data_arr[4];
+    //TODO: How many bytes do we read ? its not always1 byte
     int k =
       ll_read(&container->drivers[sync_driver_number], data_arr, 1); //reading 1 byte
     if(k != 1){
