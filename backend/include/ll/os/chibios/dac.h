@@ -22,8 +22,8 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef CHIBIOS_LED_H_
-#define CHIBIOS_LED_H_
+#ifndef CHIBIOS_DAC_H_
+#define CHIBIOS_DAC_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -35,21 +35,30 @@ typedef struct {
   stm32_gpio_t *port;
   uint16_t pad;
   uint32_t id;
-  bool state;
-} led_driver_internal_t;
+  uint32_t state;
+  DACDriver dacd;
+  DACConfig dacc;
+} dac_driver_internal_t;
 
-#define LED_DRIVER_INTERNAL led_driver_internal_t internal
+#define CONC(a,b) a##_##b
 
-#define LED_DRIVER_INTERNAL_INIT(XldrvX,XlidX,Xdrv_idX) \
-    palSetPadMode(LED##XlidX##_GPIO,\
-		  LED##XlidX##_PIN,\
-		  LED##XlidX##_MODE);\
-    palClearPad(LED##XlidX##_GPIO,\
-		LED##XlidX##_PIN);\
-    \
-    XldrvX.internal.port = LED##XlidX##_GPIO;\
-    XldrvX.internal.pad = LED##XlidX##_PIN,\
-    XldrvX.internal.id = Xdrv_idX;\
-    XldrvX.internal.state = false; 
+#define IF(c, t, e) CONC(IF, c)(t, e)
+#define IF_1(t, e) e
+#define IF_2(t, e) t
+
+#define THE_DAC(x)  IF(x, DACD2, DACD1)
+
+#define DAC_DRIVER_INTERNAL dac_driver_internal_t internal
+
+#define DAC_DRIVER_INTERNAL_INIT(XddrvX, XdidX, Xdrv_idX)\
+  palSetPadMode(DAC##XdidX##_GPIO,\
+                DAC##XdidX##_PIN,\
+                DAC##XdidX##_MODE);\
+  XddrvX.internal.dacc.init = 2047u;\
+  XddrvX.internal.dacc.datamode = DAC_DHRM_12BIT_RIGHT;\
+  XddrvX.internal.dacc.cr = 0;\
+  XddrvX.internal.dacd = THE_DAC(DAC##XdidX##_CH);\
+  \
+  dacStart(&XddrvX.internal.dacd, &XddrvX.internal.dacc);
 
 #endif

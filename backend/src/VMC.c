@@ -46,6 +46,9 @@
 #if VMC_CONTAINER_1_USE_UART_0
 #include <ll/ll_uart.h>
 #endif
+#if VMC_CONTAINER_1_USE_DAC_0
+#include <ll/ll_dac.h>
+#endif
 
 
 /* This is just an experiment and if we end up building on it, the
@@ -102,6 +105,10 @@ ll_button_driver_t ll_button;
 
 #if VMC_CONTAINER_1_USE_LED_0
 ll_led_driver_t ll_led;
+#endif 
+
+#if VMC_CONTAINER_1_USE_DAC_0
+ll_dac_driver_t ll_dac;
 #endif 
 
 
@@ -215,6 +222,18 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   }
   #endif
 
+  #if VMC_CONTAINER_1_USE_DAC_0
+  {
+    LL_DAC_DRIVER_INIT(ll_dac, 0, drv_num);
+    
+    ll_driver_t lld;
+    if (ll_dac_init(&lld, &ll_dac)) {
+       vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    }
+  }
+  #endif
+  
   r++;
   #endif
 

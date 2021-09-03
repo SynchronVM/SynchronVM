@@ -22,34 +22,20 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef CHIBIOS_LED_H_
-#define CHIBIOS_LED_H_
+#ifndef LL_DAC_H_
+#define LL_DAC_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-
-#include <gpio.h>
-#include <svm_chibios_conf.h>
+#include <dac.h>
+#include <ll/ll_driver.h>
 
 typedef struct {
-  stm32_gpio_t *port;
-  uint16_t pad;
-  uint32_t id;
-  bool state;
-} led_driver_internal_t;
+  DAC_DRIVER_INTERNAL;
+} ll_dac_driver_t;
 
-#define LED_DRIVER_INTERNAL led_driver_internal_t internal
+#define LL_DAC_DRIVER_INIT(XddrvX, XdidX, Xdrv_idX) \
+  DAC_DRIVER_INTERNAL_INIT(XddrvX, XdidX, Xdrv_idX);
 
-#define LED_DRIVER_INTERNAL_INIT(XldrvX,XlidX,Xdrv_idX) \
-    palSetPadMode(LED##XlidX##_GPIO,\
-		  LED##XlidX##_PIN,\
-		  LED##XlidX##_MODE);\
-    palClearPad(LED##XlidX##_GPIO,\
-		LED##XlidX##_PIN);\
-    \
-    XldrvX.internal.port = LED##XlidX##_GPIO;\
-    XldrvX.internal.pad = LED##XlidX##_PIN,\
-    XldrvX.internal.id = Xdrv_idX;\
-    XldrvX.internal.state = false; 
+
+extern bool ll_dac_init(ll_driver_t* lld, ll_dac_driver_t *ldrv);
 
 #endif
