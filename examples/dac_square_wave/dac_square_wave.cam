@@ -1,0 +1,15 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+dacchan : Channel Int
+dacchan = channel ()
+
+foo : Int -> ()
+foo val =
+ let _ = syncT 95454 1000 (send dacchan (val * 4095)) in
+ foo (not val)
+
+main =
+  let _ = spawnExternal dacchan 0 in 
+  foo 1
