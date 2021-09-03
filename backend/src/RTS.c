@@ -869,7 +869,7 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
     // TODO: how many bytes should we write ?
     //       its not always one. 
     int k =
-      ll_write(&container->drivers[sync_driver_number], data_arr, 4); //writing 1 byte
+      ll_write(&container->drivers[sync_driver_number], data_arr, 4); //writing 4 bytes
     if(k != 4){
       DEBUG_PRINT(("Failed to write to sync driver!"));
       return -1;

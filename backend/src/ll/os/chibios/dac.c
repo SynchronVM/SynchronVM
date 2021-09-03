@@ -70,13 +70,14 @@ static uint32_t ll_dac_read(struct ll_driver_s *this, uint8_t *data, uint32_t da
 static uint32_t ll_dac_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {
   ll_dac_driver_t *dac_driver = (ll_dac_driver_t*)this->driver_info;
 
+  //  dacPutChannelX(&dac_driver->internal.dacd, 0, 4095);
   if (data_size >= 2) { 
-    uint16_t val;
+    uint16_t val = 0;
     val = data[1];
-    val >>= 8;
+    val = val << 8;
     val |= data[0];
-    
-    dacPutChannelX(&dac_driver->internal.dacd, 0, val);
+
+    dacPutChannelX(dac_driver->internal.dacd, 0, val);
     return data_size; 
   } 
   return 0;

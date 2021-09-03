@@ -131,6 +131,11 @@ int scheduler(vmc_t *container,
   uint32_t total_msgs = 0;
 #endif
 
+
+  // set logical time
+  container->logicalTime = sys_time_get_current_ticks();
+
+  
   while (true) {
     
 #ifdef TRACE_ON

@@ -36,29 +36,46 @@ typedef struct {
   uint16_t pad;
   uint32_t id;
   uint32_t state;
-  DACDriver dacd;
+  DACDriver *dacd;
   DACConfig dacc;
 } dac_driver_internal_t;
 
-#define CONC(a,b) a##_##b
+/* #define CONC(a,b) a##_##b */
 
-#define IF(c, t, e) CONC(IF, c)(t, e)
-#define IF_1(t, e) e
-#define IF_2(t, e) t
-
-#define THE_DAC(x)  IF(x, DACD2, DACD1)
+/* #define IF(c, t, e) CONC(IF, c)(t, e) */
+/* #define IF_1(t, e) e */
+/* #define IF_2(t, e) t */
+/* #define THE_DAC(x)  IF(x, DACD1, DACD1) */
 
 #define DAC_DRIVER_INTERNAL dac_driver_internal_t internal
 
-#define DAC_DRIVER_INTERNAL_INIT(XddrvX, XdidX, Xdrv_idX)\
-  palSetPadMode(DAC##XdidX##_GPIO,\
+static const DACConfig dac_config = {
+  .init         = 2047u, 
+  .datamode     = DAC_DHRM_12BIT_RIGHT,
+  .cr           = 0
+};
+
+/*
+  palSetPadMode(DAC##XdidX##_GPIO,		\
                 DAC##XdidX##_PIN,\
                 DAC##XdidX##_MODE);\
+  
+  XddrvX.internal.port = DAC##XdidX##_GPIO;\
+  XddrvX.internal.pad = DAC##XdidX##_PIN;\
+  XddrvX.internal.id  = Xdrv_idX;\
+  XddrvX.internal.state = 2047;\
+  \
+*/
+
+#define DAC_DRIVER_INTERNAL_INIT(XddrvX, XdidX, Xdrv_idX)\
+  palSetPadMode(DAC##XdidX##_GPIO,			 \
+		DAC##XdidX##_PIN,			 \
+		DAC##XdidX##_MODE);			 \
   XddrvX.internal.dacc.init = 2047u;\
   XddrvX.internal.dacc.datamode = DAC_DHRM_12BIT_RIGHT;\
   XddrvX.internal.dacc.cr = 0;\
-  XddrvX.internal.dacd = THE_DAC(DAC##XdidX##_CH);\
-  \
-  dacStart(&XddrvX.internal.dacd, &XddrvX.internal.dacc);
+  XddrvX.internal.dacd = &DACD1;\
+  XddrvX.internal.id  = Xdrv_idX;\
+  dacStart(XddrvX.internal.dacd, &XddrvX.internal.dacc);
 
 #endif
