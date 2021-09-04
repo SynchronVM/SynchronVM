@@ -1,0 +1,58 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+dacchan : Channel Int
+dacchan = channel ()
+
+tempo : Int
+tempo = 630
+
+silence : Int
+silence = 315
+
+c : Int
+c = 160550
+
+d : Int
+d = 143003
+
+e : Int
+e = 127427
+
+f : Int
+f = 120275
+
+g : Int
+g = 107143
+
+a : Int
+a = 95455
+
+data Notes where
+  Empty : Notes
+  Notes : Int -> Notes -> Notes
+
+data Mode where
+  Silence : Mode
+  Playing : Mode
+
+twinkle = Notes c (Notes c (Notes g (Notes g Empty)))
+
+foo : Notes -> Mode -> cnt -> Int -> ()
+foo Empty a b c = foo Empty Silence 0 0
+foo (Notes n xs) Playing cnt val =
+ let newnot = if cnt >= tempo then xs else (Notes n xs) in
+ let newmod = if cnt >= tempo then Silence else Playing in
+ let newcnt = if cnt >= tempo then 0 else (cnt + 1) in
+ let _ = syncT 95454 1000 (send dacchan (val * 4095)) in
+ foo newnot newmod newcnt (not val)
+foo n Silence cnt val =
+ let newmod = if cnt >= silence then Playing else Silence in
+ let newcnt = if cnt >= silence then 0 else  (cnt + 1) in
+ let _ = syncT 100000 1000 (send dacchan 0) in
+ foo n newmod newcnt 0
+
+main =
+  let _ = spawnExternal dacchan 0 in 
+  foo twinkle Silence 0 1
