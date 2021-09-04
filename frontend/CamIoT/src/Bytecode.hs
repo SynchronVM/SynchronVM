@@ -758,7 +758,7 @@ rewriteCasePair (SECase ty1 econd pm@(SPM tup@(SPTup ty2 p1 p2) e :_)) = do
       p1' <- genTree p1
       p2' <- genTree p2
       pure $ SPTup tty p1' p2'
-    genTree _ = error "Other patterns not covered"
+    genTree c = error $ "Other patterns not covered: " ++ show c
 
     heightOfTree (SPTup _ p1 p2) =
       1 + max (heightOfTree p1) (heightOfTree p2)
