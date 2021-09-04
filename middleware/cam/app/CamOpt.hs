@@ -76,12 +76,22 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
 
+{-
+
+SYNCT is exposed to the consumer of middleware.
+But it is broken down into two bytecodes during compilation:
+
+CALLRTS 8 -- TIME
+CALLRTS 4 -- SYNC
+
+-}
 data RTS3 = SYNCT deriving (Ord, Show, Eq)
 
 data RTS2 = SEND
           | CHOOSE
           | SPAWNEXTERNAL
           | WRAP
+          | TIME
           deriving (Ord, Show, Eq)
 
 data RTS1 = CHANNEL | RECV
@@ -174,14 +184,14 @@ sync      - 4
 choose    - 5
 spawnExternal - 6
 wrap      - 7
-synct     - 8
+time      - 8
 -}
 type OperationNumber = Word8
 
 
 spawnop, channelop, sendevtop, recvevtop  :: Word8
 syncop, chooseop, spawnexternalop, wrapop :: Word8
-synctop :: Word8
+timeop :: Word8
 
 spawnop   = 0
 channelop = 1
@@ -191,7 +201,7 @@ syncop    = 4
 chooseop  = 5
 spawnexternalop = 6
 wrapop    = 7
-synctop   = 8
+timeop    = 8
 
 
 -- labels to identify a subroutine
@@ -291,7 +301,7 @@ codegen (Sys (RTS2 rts2 e1 e2)) env = do
   pure $! is <+> genrts2 rts2
 codegen (Sys (RTS3 rts3 e1 e2 e3)) env = do
   is <- codegen3 e1 e2 e3 env
-  pure $! is <+> genrts3 SYNCT
+  pure $! is <+> genrts2 TIME <+> genrts1 SYNC
 codegen Void _ = pure $! Ins CLEAR
 codegen (Pair e1 e2) env = do
   is <- codegen2 e1 e2 env
@@ -609,14 +619,13 @@ nofail (Lab _ cam)  = nofail cam
 
 callrts = Ins . CALLRTS
 
-genrts3 :: RTS3 -> CAM
-genrts3 SYNCT = callrts synctop
 
 genrts2 :: RTS2 -> CAM
 genrts2 SEND          = callrts sendevtop
 genrts2 CHOOSE        = callrts chooseop
 genrts2 SPAWNEXTERNAL = callrts spawnexternalop
 genrts2 WRAP          = callrts wrapop
+genrts2 TIME          = callrts timeop
 
 genrts1 :: RTS1 -> CAM
 genrts1 CHANNEL = callrts channelop

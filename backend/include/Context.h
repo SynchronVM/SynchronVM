@@ -32,8 +32,9 @@
 
 typedef struct {
   cam_register_t env;
-  UINT       pc;
+  UINT           pc;
   cam_stack_t    stack;
+  Time        deadline;
 } Context_t;
 
 /* TODO: There is no implementation of this */
