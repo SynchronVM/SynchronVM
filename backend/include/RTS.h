@@ -51,10 +51,7 @@ extern int choose (  vmc_t   *container
                    , event_t *evt2
                    , event_t *evts);
 
-extern int syncT(  vmc_t   *container
-                 , Time     baseline
-                 , Time     deadline
-                 , event_t *evts);
+extern int time (vmc_t *container, Time baseline, Time deadline);
 
 extern int handle_msg(vmc_t *vmc, svm_msg_t *m);
 

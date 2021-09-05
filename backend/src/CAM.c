@@ -1416,7 +1416,7 @@ static int handle_wrap(vmc_t *vmc){
 
 }
 
-static int handle_synct(vmc_t *vmc){
+static int handle_time(vmc_t *vmc){
 
   //syncT : Time -> Time -> Event a -> a
 
@@ -1442,15 +1442,15 @@ static int handle_synct(vmc_t *vmc){
 
   Time deadline = (Time)hold_reg2.value;
 
-  event_t timed_evt = (event_t)hold_reg3.value;
-
-  // Before calling syncT make the env register point to the event
+  // After calling the rts function `time` make sure the
+  // env register points to `ev` so that we can `sync` next
+  // because the sequence of bytecode will be - ..time; sync...
   vmc->contexts[vmc->current_running_context_id].env = hold_reg3;
 
-  int k = syncT(vmc, baseline, deadline, &timed_evt);
+  int k = time(vmc, baseline, deadline);
   if(k == -1){
     DEBUG_PRINT(("Error with syncT \n"));
-    return j;
+    return k;
   }
 
 
@@ -1475,7 +1475,7 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
     /* choose    - 5 */
     /* spawnExternal - 6 */
     /* wrap      - 7 */
-    /* syncT     - 8 */
+    /* time      - 8 */
 
   int ret_code = -1; 
   switch(rts_op_no){
@@ -1504,7 +1504,7 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
       ret_code = handle_wrap(vmc);
       break;
     case 8:
-      ret_code = handle_synct(vmc);
+      ret_code = handle_time(vmc);
       break;
     default:
       DEBUG_PRINT(("Invalid RTS op number"));

@@ -783,12 +783,26 @@ static int setAlarm(Time alarmTime){
   return 1;
 
 }
-int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
 
+int time(vmc_t *container, Time baseline, Time deadline){
 
-  //XXX: syncT 0 n ev == sync ev
-  // baseline = 0 implies start right now
-  // and finish at the earliest
+  Time currentTime = container->logicalTime;
+  Time wakeupTime  = currentTime + baseline;
+  Time finishTime;
+
+  if(deadline == 0) // XXX : No deadline
+    finishTime = TIME_MAX;
+  else
+    finishTime = wakeupTime + deadline;
+
+  pq_data_t currentThread =
+    {   .context_id = container->current_running_context_id
+      , .baseline = wakeupTime
+      , .deadline = finishTime };
+
+  container->contexts[container->current_running_context_id].deadline
+    = finishTime;
+
   if(baseline == 0){
 
     //XXX: `sync` above uses a cooperative schduler
@@ -803,34 +817,31 @@ int syncT(vmc_t *container, Time baseline, Time deadline, event_t *evts){
     // might unblock an important blocked thread, while
     // meeting other deadlines.
 
-    return sync(container, evts);
+    int k = pq_insert(&container->rdyQ, currentThread);
+    if(k == -1){
+      DEBUG_PRINT(("Cannot enqueue in rdyQ \n"));
+      return k;
+    }
+
+    dispatch(container);
+
+    return 1;
+
   }
 
-  Time currentTime = container->logicalTime;
-  Time wakeupTime  = currentTime + baseline;
-  Time finishTime;
-
-  if(deadline == 0) // XXX : No deadline
-    finishTime = TIME_MAX;
-  else
-    finishTime = wakeupTime + deadline;
-
+  // baseline > 0 set alarm
   int i = setAlarm(wakeupTime);
   if(i == -1){
     // something seriously wrong
     DEBUG_PRINT(("Setting wakeup time has failed \n"));
-    return -1;
+    return i;
   }
 
-  pq_data_t sleepThread =
-    {   .context_id = container->current_running_context_id
-      , .baseline = wakeupTime
-      , .deadline = finishTime };
 
-  int j = pq_insert(&container->waitQ, sleepThread);
+  int j = pq_insert(&container->waitQ, currentThread);
   if(j == -1){
     DEBUG_PRINT(("Cannot enqueue in wait queue \n"));
-    return -1;
+    return j;
   }
 
   // The running thread will sleep till the baseline
@@ -989,7 +1000,7 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
 static int handle_timer_msg(vmc_t *vmc){
 
 
-  // A 7 step process now.
+  // A 5 step process now. (With several sub-steps)
 
   // Step 1. Pick the top of the waitQ, time to schedule it.
   pq_data_t timedThread;
@@ -1009,7 +1020,7 @@ static int handle_timer_msg(vmc_t *vmc){
 
     // if there are waiting threads then set alarm
 
-    //Step 4. Set alarm for the baseline of timedThread2
+    //Step 3.1  Set alarm for the baseline of timedThread2
     Time alarmTime = timedThread2.baseline;
     int q = setAlarm(alarmTime);
     if(q == -1){
@@ -1021,40 +1032,51 @@ static int handle_timer_msg(vmc_t *vmc){
     // Proceed onwards
   }
 
+  //Step 4. If no threads are running schedule the thread
+  //        for which the interrupt arrived
+  if(vmc->current_running_context_id == UUID_NONE){
+    vmc->current_running_context_id = timedThread.context_id;
+  } else {
+    // Some thread is running
 
-  //Step 5. Put the current thread in the rdyQ
-  /* pq_data_t currentThreadInfo = */
-  /*   {   .context_id = vmc->current_running_context_id */
-  /*     , .baseline = TIME_MAX */
-  /*     , .deadline = TIME_MAX */
-  /*   }; */
-  /* int z = pq_insert(&vmc->rdyQ, currentThreadInfo); */
-  /* if(z == -1){ */
-  /*   DEBUG_PRINT(("Cannot enqueue in ready queue \n")); */
-  /*   return -1; */
-  /* } */
+    //Step 5. Compare deadlines and accordingly schedule
 
-  //Step 6. Set the timerThread from Step 1 as currently running
-  vmc->current_running_context_id = timedThread.context_id;
+    if(timedThread.deadline <
+       vmc->contexts[vmc->current_running_context_id].deadline){
 
-  //Step 7. Call `sync` on the timerThread (copy of handle_sync)
-  cam_value_t event_env = vmc->contexts[timedThread.context_id].env;
+      // Step 5.1. Put the current thread to rdyQ
+      pq_data_t currentThreadInfo =
+        {   .context_id = vmc->current_running_context_id
+          , .baseline = 0
+          , .deadline = vmc->contexts[vmc->current_running_context_id].deadline
+        };
+      int z = pq_insert(&vmc->rdyQ, currentThreadInfo);
+      if(z == -1){
+        DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
+        return z;
+      }
 
-  if(event_env.flags != VALUE_PTR_BIT){
-    DEBUG_PRINT(("Pointer not found in the environment register \n"));
-    return -4;
+      // Step 5.2 Put the timed thread as currently running
+      vmc->current_running_context_id = timedThread.context_id;
+
+    } else {
+
+      // Currently running thread's deadline is earlier
+
+      // Step 5.3 Put the timed thread in rdyQ
+      int r = pq_insert(&vmc->rdyQ, timedThread);
+      if(r == -1){
+        DEBUG_PRINT(("Cannot enqueue in ready queue \n"));
+        return r;
+      }
+
+      // No need to make any changes to the currently running thread
+
+    }
   }
 
-  event_t evt = (event_t)event_env.value;
 
-  int j = sync(vmc, &evt);
-
-  if(j == -1){
-    DEBUG_PRINT(("Error in synchronisation \n"));
-    return -5;
-  }
-
-  return j;
+  return 1;
 
 }
 
