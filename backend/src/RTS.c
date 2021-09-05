@@ -786,7 +786,9 @@ static int setAlarm(Time alarmTime){
 
 int time(vmc_t *container, Time baseline, Time deadline){
 
-  Time currentTime = container->logicalTime;
+  // use the logical time of the current thread
+  Time currentTime =
+    container->contexts[container->current_running_context_id].logicalTime;
   Time wakeupTime  = currentTime + baseline;
   Time finishTime;
 
@@ -1002,6 +1004,21 @@ static int handle_timer_msg(vmc_t *vmc){
 
   // A 5 step process now. (With several sub-steps)
 
+  //TODO: What if more than one thread have the same baseline?
+  //     We have to pick all the threads from the waitQ who have
+  //     the same baseline. Do this after step 2
+  //     Solution:
+  //     multiDeQ(timedThread.baseline){
+  //        peekwaitQ baseline
+  //        while (baseline is the same as timedThread.baseline){
+  //           extract and send to rdyQ
+  //           stop when peeked val is not the same as timedThread.baseline
+  //
+  //           don't forget to fix the logical time of these threads
+  //           when moving from waitQ
+  //        }
+  //     }
+
   // Step 1. Pick the top of the waitQ, time to schedule it.
   pq_data_t timedThread;
   int i = pq_extractMin(&vmc->waitQ, &timedThread);
@@ -1010,8 +1027,9 @@ static int handle_timer_msg(vmc_t *vmc){
     return -3;
   }
 
-  //Step 2. Increment logical time
-  vmc->logicalTime = timedThread.baseline;
+  //Step 2. Increment logical time of the thread for which the interrupt
+  //        arrived
+  vmc->contexts[timedThread.context_id].logicalTime = timedThread.baseline;
 
   //Step 3. Peek at the top of the waitQ and get that baseline to set the alarm
   pq_data_t timedThread2;

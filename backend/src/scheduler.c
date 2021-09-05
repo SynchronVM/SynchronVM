@@ -107,6 +107,17 @@ void trace_print(void (*dbg_print)(const char *str, ...), int num) {
   }
 }
 
+
+static void initLogicalTime(vmc_t *vmc){
+  Time currentTicks = sys_time_get_current_ticks();
+  for(int i = 0; i < VMC_MAX_CONTEXTS; i ++){
+    vmc->contexts[i].logicalTime = currentTicks;
+  }
+}
+
+
+
+
 /*************/
 /* Scheduler */
 
@@ -133,7 +144,7 @@ int scheduler(vmc_t *container,
 
 
   // set logical time
-  container->logicalTime = sys_time_get_current_ticks();
+  initLogicalTime(container);
 
   
   while (true) {

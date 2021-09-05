@@ -58,7 +58,6 @@ typedef struct {
   Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */
   PriorityQ_t   rdyQ;
   PriorityQ_t   waitQ;
-  Time          logicalTime;
   ll_driver_t   drivers[VMC_MAX_DRIVERS];
   void*         backend_custom; /* Can be used by a backend for low level integration */
   bool          all_contexts_stopped;

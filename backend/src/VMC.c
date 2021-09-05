@@ -173,7 +173,7 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   }
 
   // set logical time
-  //vm_containers[VMC_CONTAINER_1].logicalTime = sys_time_get_current_ticks();
+  // XXX: setting logical time in scheduler.c instead
 
 
   /**********************************************************/
