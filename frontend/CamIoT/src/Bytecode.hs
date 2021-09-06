@@ -758,6 +758,14 @@ rewriteCasePair (SECase ty1 econd pm@(SPM tup@(SPTup ty2 p1 p2) e :_)) = do
       p1' <- genTree p1
       p2' <- genTree p2
       pure $ SPTup tty p1' p2'
+
+    -- Replace wildcard with random variable.
+    -- There are probably optimisations we could apply
+    -- when generating code for wildcard, so that the unwanted
+    -- data is immediately discarded.
+    genTree (SPWild ty) = do
+      tempVar <- fresh
+      pure $ SPVar ty (AST.Ident tempVar)
     genTree c = error $ "Other patterns not covered: " ++ show c
 
     heightOfTree (SPTup _ p1 p2) =
