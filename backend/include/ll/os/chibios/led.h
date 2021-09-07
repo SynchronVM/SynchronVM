@@ -48,7 +48,7 @@ typedef struct {
 		LED##XlidX##_PIN);\
     \
     XldrvX.internal.port = LED##XlidX##_GPIO;\
-    XldrvX.internal.pad = LED##XlidX##_PIN,\
+    XldrvX.internal.pad = LED##XlidX##_PIN;  \
     XldrvX.internal.id = Xdrv_idX;\
     XldrvX.internal.state = false; 
 

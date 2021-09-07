@@ -37,6 +37,9 @@
 
 #include <ll/ll_driver.h>
 
+
+/* TODO: We need a better way to manage these
+   conditional includes. */
 #if VMC_CONTAINER_1_USE_BUTTON_0
 #include <ll/ll_button.h>
 #endif
@@ -48,6 +51,9 @@
 #endif
 #if VMC_CONTAINER_1_USE_DAC_0
 #include <ll/ll_dac.h>
+#endif
+#if VMC_CONTAINER_1_USE_PWM_0
+#include <ll/ll_pwm.h>
 #endif
 
 
@@ -101,22 +107,38 @@ static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size
 /* TODO: This needs some love */
 #if VMC_CONTAINER_1_USE_BUTTON_0
 ll_button_driver_t ll_button;
-#endif 
+#endif
 
 #if VMC_CONTAINER_1_USE_LED_0
 ll_led_driver_t ll_led;
-#endif 
+#endif
+
+#if VMC_CONTAINER_1_USE_PWM_0
+ll_pwm_driver_group_t ll_pwm_driver_group0;
+#endif
+#if VMC_CONTAINER_1_USE_PWM_0_CH_0
+ll_pwm_driver_t ll_pwm0;
+#endif
+#if VMC_CONTAINER_1_USE_PWM_0_CH_1
+ll_pwm_driver_t ll_pwm1;
+#endif
+#if VMC_CONTAINER_1_USE_PWM_0_CH_2
+ll_pwm_driver_t ll_pwm2;
+#endif
+#if VMC_CONTAINER_1_USE_PWM_0_CH_3
+ll_pwm_driver_t ll_pwm3;
+#endif
+
 
 #if VMC_CONTAINER_1_USE_DAC_0
 ll_dac_driver_t ll_dac;
-#endif 
+#endif
 
-
-int vmc_init(vmc_t *vm_containers, int max_num_containers) { 
+int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
   int r = 0;
   int rl = 0;
-  uint32_t drv_num = 0; 
+  uint32_t drv_num = 0;
 
   if (VMC_NUM_CONTAINERS > max_num_containers) {
     return -1; /* error! */
@@ -213,9 +235,85 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_CONTAINER_1_USE_LED_0
   {
     LL_LED_DRIVER_INIT(ll_led, 0, drv_num);
-    
+
     ll_driver_t lld;
     if (ll_led_init(&lld, &ll_led)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+
+  /*  Theres a lot of possible combinations of all these... */
+  /*  Some form of autogeneration is needed */
+  
+  #if VMC_CONTAINER_1_USE_PWM_0
+  LL_PWM_DRIVER_GROUP_INIT(ll_pwm_driver_group0, 0);
+  #endif
+  #if VMC_CONTAINER_1_USE_PWM_0_CH_0
+  {
+    LL_PWM_DRIVER_INIT(ll_pwm0, ll_pwm_driver_group0, 0, 0, drv_num);
+
+    ll_driver_t lld;
+    if (ll_pwm_init(&lld, &ll_pwm0)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+  #if VMC_CONTAINER_1_USE_PWM_0_CH_1
+  {
+    LL_PWM_DRIVER_INIT(ll_pwm1, ll_pwm_driver_group0, 0, 1, drv_num);
+
+    ll_driver_t lld;
+    if (ll_pwm_init(&lld, &ll_pwm1)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+  #if VMC_CONTAINER_1_USE_PWM_0_CH_2
+  {
+    LL_PWM_DRIVER_INIT(ll_pwm2, ll_pwm_driver_group0, 0, 2, drv_num);
+
+    ll_driver_t lld;
+    if (ll_pwm_init(&lld, &ll_pwm2)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+  #if VMC_CONTAINER_1_USE_PWM_0_CH_3
+  {
+    LL_PWM_DRIVER_INIT(ll_pwm3, ll_pwm_driver_group0, 0, 3, drv_num);
+
+    ll_driver_t lld;
+    if (ll_pwm_init(&lld, &ll_pwm3)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+  #if VMC_CONTAINER_1_USE_PWM_0
+  LL_PWM_DRIVER_GROUP_START(ll_pwm_driver_group0);
+  #endif
+
+  #if VMC_CONTAINER_1_USE_DAC_0
+  {
+    LL_DAC_DRIVER_INIT(ll_dac, 0, drv_num);
+
+    ll_driver_t lld;
+    if (ll_dac_init(&lld, &ll_dac)) {
        vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
       drv_num++;
     } else {
@@ -224,20 +322,6 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   }
   #endif
 
-  #if VMC_CONTAINER_1_USE_DAC_0
-  {
-    LL_DAC_DRIVER_INIT(ll_dac, 0, drv_num);
-    
-    ll_driver_t lld;
-    if (ll_dac_init(&lld, &ll_dac)) {
-       vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
-      drv_num++;
-    } else {
-      return -1;
-    }
-  } 
-  #endif
-  
   r++;
   #endif
 
@@ -382,7 +466,7 @@ static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
 
     int offset = i * CONTEXT_STACK_SPACE;
-    
+
     int st_status = stack_init(&ctx[i].stack
                                , &mem[offset]
                                , CONTEXT_STACK_SPACE);
@@ -433,7 +517,7 @@ static inline void mark_heap_context(Context_t *context, heap_t *heap){
 }
 
 static void heap_mark_phase(vmc_t *container) {
-#ifdef HEAP_COLLECT_STATS  
+#ifdef HEAP_COLLECT_STATS
   gc_stats.num_mark_phases++;
 #endif
   //mark_heap_context
@@ -473,24 +557,24 @@ static void heap_mark_phase(vmc_t *container) {
 
 heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 
-  heap_index head = HEAP_NULL; 
+  heap_index head = HEAP_NULL;
 
   cam_value_t list = get_cam_val((UINT)HEAP_NULL, VALUE_PTR_BIT);
-    
-  for(int retries = 0; retries < 2; retries ++) { 
+
+  for(int retries = 0; retries < 2; retries ++) {
     for (int i = 0; i < (int)n; i ++) {
-      
+
       head = heap_allocate(&container->heap);
-      
+
       if (head == HEAP_NULL) {
 	break;
       }
-      
-      /* Is this correct ? */ 
+
+      /* Is this correct ? */
       heap_set_snd(&container->heap, head, list);
-      list = get_cam_val((UINT)head, VALUE_PTR_BIT); 
+      list = get_cam_val((UINT)head, VALUE_PTR_BIT);
     }
-    
+
     if (head != HEAP_NULL) {
       break;
     }

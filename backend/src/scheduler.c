@@ -200,12 +200,12 @@ int scheduler(vmc_t *container,
       total_msgs ++;
 #endif
 
-      /* dbg_print("message received: blocking\r\n");  */
-      /* dbg_print("  driver: %u\r\n", msg.driver_id); */
+      /* dbg_print("Message received: blocking\r\n");  */
+      /* dbg_print("  Sender: %u\r\n", msg.sender_id); */
       /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
       /* dbg_print("  data: %u\r\n", msg.data); */
       /* dbg_print("  time: %llu\r\n", msg.timestamp); */
-      /* handle msg */
+      /*handle msg */
       int msg_r = handle_msg(container, &msg);
       if (msg_r  <= 0) {
 	dbg_print("Error in handle_msg: %d\r\n",msg_r);
