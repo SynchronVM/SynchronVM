@@ -1,0 +1,43 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+msec : Int -> Int
+msec t = t * 84000
+
+after : Int -> Event a -> a
+after t ev = syncT t 0 ev
+
+butC : Channel Int
+butC = channel ()
+
+dacC : Channel Int
+dacC = channel ()
+
+volC : Channel Int
+volC = channel ()
+
+volumeP : Int -> () -> ()
+volumeP curVol void =
+  let newVol = sync (choose (recv butC)
+                            (wrap (send volC curVol) (\x -> curVol))) in
+  volumeP newVol void
+
+
+
+recvHandler vol =
+  let _ = sync (send dacC vol) in
+  vol
+
+playerP : Int -> () -> ()
+playerP curVol =
+  let newVol = after (msec 300) (wrap (recv volC) recvHandler) in
+  playerP newVol
+
+
+startVolume = 5
+
+main =
+  let _ = spawn (volumeP startVolume) in
+  let _ = spawn (playerP startVolume) in
+  ()
