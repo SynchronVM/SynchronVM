@@ -45,10 +45,14 @@ import qualified Interpreter.Interpreter as I
 compile :: String -> IO (Either String (SExp SType))
 compile input = do
     contents <- T.readFile input
+
+    {- PreP.process adding layout tokens.
+       - May be the culprit in the whitespace issues -}
     let processed = PreP.process contents
     let parsed = Text.Megaparsec.parse P.pProgram input processed
+        
     case parsed of
-        Left err   -> return $ Left (show err)
+        Left err   -> return $ Left (errorBundlePretty err)
         Right defs -> do
             tc <- typecheck defs
             case tc of

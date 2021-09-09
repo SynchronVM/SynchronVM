@@ -1,21 +1,5 @@
+foo =
+  let id x = x in
+  5
 
-
-\x -> \y -> \z -> x + y + z
-
-\x y z -> x + y + z
-
-data List a where
-
-f = channel ()
-
-sendint = send f 5
-sendbool = send f True
-
-g = let c = channel ()
-    in let _ = send c 5
-    in let _ = send c 2
-    in ()
-
-listtest = Cons 5 Nil
-
-main = sync sendint
+main = foo

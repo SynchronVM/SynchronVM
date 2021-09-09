@@ -159,9 +159,18 @@ pushCurrentTarget i = modify $ \(ST r c ts) -> ST r c (i:ts)
 isKeyword :: T.Text -> Bool
 isKeyword token = token `elem` keywords
 
+{- Text of token and column,
+   could we add linenumber ?.
+   Maybe we can count newlines in pp
+
+   (Text, Int)  we could invent Token type 
+-} 
 nextToken :: PP (T.Text, Int)
 nextToken = do
     (ST t i ti) <- get
+
+    {- This does not recognize tab as a whitespace.
+       - We could forbid tab unless part of a string literal -} 
 
     -- first split the input up in its leading whitespace/newline and the rest
     let (fluff, t')  = T.span (\c -> c == ' ' || c == '\n') t

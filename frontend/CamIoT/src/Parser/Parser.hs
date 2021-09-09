@@ -246,7 +246,7 @@ pPat allowConstants allowNAry = pSpace *> pPatAs allowConstants allowNAry
 
 pConst :: Parser Const
 pConst = choice [
-    try $ CFloat  <$> Lexer.lexeme pSpace Lexer.float
+    try $ CFloat  <$> Lexer.lexeme pSpace Lexer.float   -- try : if failure do not mess up string
   , CInt          <$> Lexer.lexeme pSpace Lexer.decimal
   , CTrue         <$  pSymbol "True"
   , CFalse        <$  pSymbol "False"

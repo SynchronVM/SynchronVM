@@ -33,6 +33,7 @@ import GHC.Float(double2Float)
 import Interpreter.Interpreter
 import Lib
 import GHC.Word
+import System.Exit
 
 import qualified CamOpt as C
 import qualified Assembler as A
@@ -44,8 +45,11 @@ import qualified Bytecode.InterpreterModel as IM
 
 import Debug.Trace
 
-
-
+{- translate - 
+   SExp t is desugared IR from frontend and
+   converts this to middleware Exp from CamOpt.hs.
+   middleware Exp is "simpler" 
+-} 
 {- See NOTE 2 for missing rewrites -}
 translate :: SExp SType -> C.Exp
 translate (SEIf _ cond thn els) =
@@ -449,7 +453,7 @@ byteCompile verbose path = do
   compiled <- compile path
   case compiled of
     Left err -> do putStrLn err
-                   return []
+                   exitFailure 
     Right desugaredIr -> do
 
       condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
