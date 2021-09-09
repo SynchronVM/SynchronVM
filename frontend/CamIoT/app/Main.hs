@@ -29,7 +29,6 @@ import Data.List
 import Data.Maybe
 import GHC.Word
 
-import Lib (compile)
 import Bytecode
 
 data Target = Target { inputFile :: Maybe FilePath
