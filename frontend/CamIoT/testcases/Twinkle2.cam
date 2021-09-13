@@ -31,9 +31,9 @@ data Move where
 
 
 twinkle : List Int
-twinkle = Cons (1915 (Cons 1915 (Cons 1275 (Cons 1275 (Cons 1136
+twinkle = Cons  1915 (Cons 1915 (Cons 1275 (Cons 1275 (Cons 1136
           (Cons 1136 (Cons 1275 (Cons 1432 (Cons 1432 (Cons 1519
-          (Cons 1519 (Cons 1700 (Cons 1700 (Cons 1915 Nil))))))))))))))
+          (Cons 1519 (Cons 1700 (Cons 1700 (Cons 1915 Nil)))))))))))))
 
 butC : Channel Int
 butC = channel ()

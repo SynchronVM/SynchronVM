@@ -25,7 +25,17 @@ runR ra =
     let rea = runStateT ra 0
     in runReader rea initialEnv
     where
-      initialEnv = Map.empty
+      initialEnv = Map.fromList [((Ident "main" )  , (Ident "main" ))
+                                ,((Ident "send" )  , (Ident "send" ))
+                                ,((Ident "recv" )  , (Ident "recv" ))
+                                ,((Ident "sync" )  , (Ident "sync" ))
+                                ,((Ident "spawn")  , (Ident "spawn"))
+                                ,((Ident "choose") , (Ident "choose"))
+                                ,((Ident "channel"), (Ident "channel"))
+                                ,((Ident "spawnExternal"), (Ident "spawnExternal"))
+                                ,((Ident "wrap") , (Ident "wrap"))
+                                ,((Ident "syncT"), (Ident "syncT"))
+                                ]
 
 
 doNotRename = [ Ident "main", Ident "send", Ident "recv"
@@ -64,30 +74,44 @@ isRenamed id = do
         Just _  -> return True
         Nothing -> return False
 
+
 -- | Rename a list of definitions.
 renameDef :: [Def a] -> R [Def a]
 renameDef []     = return []
-renameDef (d:ds) = case d of
-    DEquation a id ps e
-      | id `elem` doNotRename -> do
-          (ps',e') <- renamePat ps (renameExp e)
-          let eq' = DEquation a id ps' e'
-          ds' <- renameDef ds
-          return $ eq' : ds'
-      | otherwise -> do
-          id' <- fresh
-          inEnv (id, id') (renameDef (d:ds))
-    DTypeSig id t
-      | id `elem` doNotRename -> do
-          ds' <- renameDef ds
-          return $ (DTypeSig id t) : ds'
-      | otherwise -> do
-          id' <- fresh
-          ds' <- renameDef ds
-          inEnv (id, id') (return $ DTypeSig id' t : ds')
-    DDataDec uid ids cd -> do
-      ds' <- renameDef ds
-      return $ DDataDec uid ids cd : ds'
+renameDef x@(d:ds) = case d of
+    DEquation _ id _ _ -> do
+      b <- isRenamed id
+      if b
+        then do d'  <- renameDef' d
+                ds' <- renameDef ds
+                return $ d':ds'
+        else do id' <- fresh
+                inEnv (id, id') (renameDef (d:ds))
+    DTypeSig id t       -> do
+      b <- isRenamed id
+      if b
+        then do d' <- renameType' d
+                ds' <- renameDef ds
+                return $ d' : ds'
+        else do id' <- fresh
+                inEnv (id, id') (renameDef (d:ds))
+    DDataDec uid ids cd -> renameDef ds >>= \ds' -> return $ DDataDec uid ids cd : ds'
+  where
+        renameDef' :: Def a -> R (Def a)
+        renameDef' (DEquation a id ps e) = do
+            env <- ask
+            case Map.lookup id env of
+                Just id' -> do (ps',e') <- renamePat ps (renameExp e)
+                               return $ DEquation a id' ps' e'
+                Nothing  -> error "The equation name wasn't found in env"
+
+        renameType' :: Def a -> R (Def a)
+        renameType' (DTypeSig id t) = do
+            env <- ask
+            case Map.lookup id env of
+                Just id' -> return $ DTypeSig id' t
+                Nothing  -> error "The type name wasn't found in env"
+
 
 -- | Rename a case-match branch.
 renamePatMatch :: PatMatch a -> R (PatMatch a)
