@@ -85,7 +85,9 @@ renameDef (d:ds) = case d of
           id' <- fresh
           ds' <- renameDef ds
           inEnv (id, id') (return $ DTypeSig id' t : ds')
-    DDataDec uid ids cd -> renameDef ds >>= \ds' -> return $ DDataDec uid ids cd : ds'
+    DDataDec uid ids cd -> do
+      ds' <- renameDef ds
+      return $ DDataDec uid ids cd : ds'
 
 -- | Rename a case-match branch.
 renamePatMatch :: PatMatch a -> R (PatMatch a)

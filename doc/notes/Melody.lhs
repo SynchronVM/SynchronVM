@@ -14,7 +14,7 @@ note   frequency 	period 	timeHigh
  b       493 Hz          2028	 1014
  C       523 Hz          1912 	 956
 
-> data Notes = C | D | E | F | G | A | B |CC deriving (Ord, Show, Eq)
+> data Notes = C | D | E | F | G | A | B | CC | Rest deriving (Ord, Show, Eq)
 
 > freqMap :: [(Notes, Int)]
 > freqMap = [ (C, 261)
@@ -27,8 +27,15 @@ note   frequency 	period 	timeHigh
 >           , (CC, 523)
 >           ]
 >
-> timePeriod :: Int -> Int
-> timePeriod f = 1 `div` (2 * f)
+> getFreq :: [(Notes, Int)] -> Notes -> Int
+> getFreq _ Rest = 0
+> getFreq [] _ = error "Note not found"
+> getFreq ((x, y):xs) n
+>   | n == x = y
+>   | otherwise = getFreq xs n
+>
+> timePeriodUSec :: Int -> Int
+> timePeriodUSec f = 1000000 `div` (2 * f)
 
 Twinkle-twinkle little star
 
@@ -37,3 +44,8 @@ Twinkle-twinkle little star
 
 > twinkletwinkle = [C, C, G, G, A, A, G, F, F, E, E, D, D, C]
 > beatLength = 500 -- msec
+
+> notes = map f twinkletwinkle
+>   where
+>     f Rest = beatLength * 1000 -- usec
+>     f x = timePeriodUSec $ freqMap `getFreq` x

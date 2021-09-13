@@ -1,0 +1,73 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+head : List a -> a
+head Nil = Nil
+head (Cons x xs) = x
+
+tail : List a -> List a
+tail Nil = Nil
+tail (Cons x xs) = xs
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+msec : Int -> Int
+msec t = t * 84000
+
+usec : Int -> Int
+usec t = (msec t) * 1000
+
+after : Int -> Event a -> a
+after t ev = syncT t 0 ev
+
+
+
+data Move where
+  Next   : Move
+  Circle : Move
+
+
+twinkle : List Int
+twinkle = Cons (1915 (Cons 1915 (Cons 1275 (Cons 1275 (Cons 1136
+          (Cons 1136 (Cons 1275 (Cons 1432 (Cons 1432 (Cons 1519
+          (Cons 1519 (Cons 1700 (Cons 1700 (Cons 1915 Nil))))))))))))))
+
+butC : Channel Int
+butC = channel ()
+
+dacC : Channel Int
+dacC = channel ()
+
+noteC : Channel Int
+noteC = channel ()
+
+noteDuration : Int
+noteDuration = msec 500
+
+playerP : Int -> () -> ()
+playerP 14 void =
+  let _ = after noteDuration (send noteC Circle) in
+  playerP 1 void
+playerP n void =
+  let _ = after noteDuration (send noteC Next) in
+  playerP (n + 1) void
+
+
+recvHandler : List Int -> Int -> Move -> ()
+recvHandler mel vol Next = tuneP (tail mel) vol ()
+recvHandler mel vol Circle = tuneP twinkle vol ()
+
+
+tuneP : List Int -> Int -> () -> ()
+tuneP myMelody vol void =
+  let timePeriod = usec (head myMelody) in
+  let _ = after timePeriod (choose (wrap (recv noteC) recvHandler) (send dacC vol)) in
+  tuneP myMelody (not vol) void
+
+main =
+  let _ = spawn (tuneP 1) in
+  let _ = spawn (playerP 1) in
+  ()
