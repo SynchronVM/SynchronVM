@@ -15,7 +15,7 @@
       (let* (
             ;; define several category of keywords
              (x-keywords '("where" "data" "case" "let" "then" "else" "of" "in" "if"))
-            (x-types '("Channel Bool" "Channel Int" "Event Bool" "Event Int" "Float" "Bool" "Int" "->" "()"))
+            (x-types '("Channel Bool" "Channel Int" "Event Bool" "Event Int" "List Int" "List a" "Float" "Bool" "Int" "->" "()"))
             (x-constants '("False" "True" "()"))
             (x-functions '("spawnExternal" "channel" "spawn" "choose" "syncT" "send" "recv"  "sync" "wrap"))
 
