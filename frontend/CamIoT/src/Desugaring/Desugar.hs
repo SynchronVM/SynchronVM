@@ -102,17 +102,22 @@ desugarFunctions :: [[AST.Def AST.Type]] -> [AST.Def AST.Type] -> DS (SExp SType
 desugarFunctions functions main = do
     m <- gets constructorfuncs
     case functions of
-        [] -> return $ desugarMain m main
+        [] -> return $ desugarMain m
         (fun:funs) -> case funs of
                 [] -> do fun' <- desugarFunction fun
-                         return $ fun' (desugarMain m main)
+                         return $ fun' (desugarMain m)
                 _  -> do fun' <- desugarFunction fun
                          rest <- desugarFunctions funs main
                          return $ fun' rest
   where
-    desugarMain :: Map.Map AST.UIdent AST.Ident -> [AST.Def AST.Type] -> SExp SType
-    desugarMain m [AST.DEquation _ _ _ body] = desugarExp m body
-    desugarMain m _                          = error "wrong form of main function"
+    desugarMain :: Map.Map AST.UIdent AST.Ident -> SExp SType
+    desugarMain m = desugarExp m (findMainBody main)
+
+    findMainBody [] = error $ "main body not found"
+    findMainBody ((AST.DEquation _ id _ body):xs)
+      | id == (AST.Ident "main") = body
+      | otherwise = findMainBody xs
+    findMainBody (_:xs) = findMainBody xs
 
 -- | Desugar a single function, represented as a list of definitions.
 desugarFunction :: [AST.Def AST.Type] -> DS (SExp SType -> SExp SType)
