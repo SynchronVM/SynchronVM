@@ -6,6 +6,8 @@ import Parser.PrintTinyCamiot ( printTree )
 import Control.Monad.Reader
 import Control.Monad.State  (StateT(runStateT), MonadState(put, get) )
 import qualified Data.Map as Map
+import Debug.Trace
+
 
 -- | Internal state used to generate fresh names
 type StateEnv    = Int
@@ -23,21 +25,14 @@ runR ra =
     let rea = runStateT ra 0
     in runReader rea initialEnv
     where
-      initialEnv = Map.fromList [((Ident "main" )  , (Ident "main" ))
-                                ,((Ident "send" )  , (Ident "send" ))
-                                ,((Ident "recv" )  , (Ident "recv" ))
-                                ,((Ident "sync" )  , (Ident "sync" ))
-                                ,((Ident "spawn")  , (Ident "spawn"))
-                                ,((Ident "choose") , (Ident "choose"))
-                                ,((Ident "channel"), (Ident "channel"))
-                                ,((Ident "spawnExternal"), (Ident "spawnExternal"))
-                                ,((Ident "wrap") , (Ident "wrap"))
-                                ,((Ident "syncT"), (Ident "syncT"))
-                                ]
+      initialEnv = Map.empty
 
 
-
-
+doNotRename = [ Ident "main", Ident "send", Ident "recv"
+              , Ident "sync", Ident "spawn", Ident "choose"
+              , Ident "channel", Ident "spawnExternal", Ident "wrap"
+              , Ident "syncT"
+              ]
 
 -- | Alpha-rename a program, returns the state so that it can be passed along to the lifter
 rename :: [Def a ] -> ([Def a], Int)
@@ -73,26 +68,24 @@ isRenamed id = do
 renameDef :: [Def a] -> R [Def a]
 renameDef []     = return []
 renameDef (d:ds) = case d of
-    DEquation _ id _ _ -> do
-        b <- isRenamed id
-        if b
-            then do d'  <- renameDef' d
-                    ds' <- renameDef ds
-                    return $ d':ds'
-            else do id' <- fresh
-                    inEnv (id, id') (renameDef (d:ds))
-    DTypeSig id t       -> do
-        id' <- fresh
-        inEnv (id, id') (renameDef ds >>= \ds' -> return $ DTypeSig id' t : ds')
+    DEquation a id ps e
+      | id `elem` doNotRename -> do
+          (ps',e') <- renamePat ps (renameExp e)
+          let eq' = DEquation a id ps' e'
+          ds' <- renameDef ds
+          return $ eq' : ds'
+      | otherwise -> do
+          id' <- fresh
+          inEnv (id, id') (renameDef (d:ds))
+    DTypeSig id t
+      | id `elem` doNotRename -> do
+          ds' <- renameDef ds
+          return $ (DTypeSig id t) : ds'
+      | otherwise -> do
+          id' <- fresh
+          ds' <- renameDef ds
+          inEnv (id, id') (return $ DTypeSig id' t : ds')
     DDataDec uid ids cd -> renameDef ds >>= \ds' -> return $ DDataDec uid ids cd : ds'
-  where
-        renameDef' :: Def a -> R (Def a)
-        renameDef' (DEquation a id ps e) = do
-            env <- ask
-            case Map.lookup id env of
-                Just id' -> do (ps',e') <- renamePat ps (renameExp e)
-                               return $ DEquation a id' ps' e'
-                Nothing  -> undefined
 
 -- | Rename a case-match branch.
 renamePatMatch :: PatMatch a -> R (PatMatch a)
