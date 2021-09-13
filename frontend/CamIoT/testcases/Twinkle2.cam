@@ -64,7 +64,7 @@ recvHandler mel vol Circle = tuneP twinkle vol ()
 tuneP : List Int -> Int -> () -> ()
 tuneP myMelody vol void =
   let timePeriod = usec (head myMelody) in
-  let _ = after timePeriod (choose (wrap (recv noteC) recvHandler) (send dacC vol)) in
+  let _ = after timePeriod (choose (wrap (recv noteC) (recvHandler myMelody vol)) (send dacC vol)) in
   tuneP myMelody (not vol) void
 
 main =
