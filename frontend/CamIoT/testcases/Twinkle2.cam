@@ -25,6 +25,8 @@ after t ev = syncT t 0 ev
 
 
 
+
+
 data Move where
   Next   : Move
   Circle : Move
@@ -35,39 +37,37 @@ twinkle = Cons  1915 (Cons 1915 (Cons 1275 (Cons 1275 (Cons 1136
           (Cons 1136 (Cons 1275 (Cons 1432 (Cons 1432 (Cons 1519
           (Cons 1519 (Cons 1700 (Cons 1700 (Cons 1915 Nil)))))))))))))
 
-butC : Channel Int
-butC = channel ()
-
 dacC : Channel Int
 dacC = channel ()
 
-noteC : Channel Int
+noteC : Channel Move
 noteC = channel ()
 
 noteDuration : Int
 noteDuration = msec 500
 
 playerP : Int -> () -> ()
-playerP 14 void =
-  let _ = after noteDuration (send noteC Circle) in
-  playerP 1 void
 playerP n void =
-  let _ = after noteDuration (send noteC Next) in
-  playerP (n + 1) void
-
-
-recvHandler : List Int -> Int -> Move -> ()
-recvHandler mel vol Next = tuneP (tail mel) vol ()
-recvHandler mel vol Circle = tuneP twinkle vol ()
+  if (n == 14)
+  then let _ = after noteDuration (send noteC Circle) in
+       playerP 1 void
+  else let _ = after noteDuration (send noteC Next) in
+       playerP (n + 1) void
 
 
 tuneP : List Int -> Int -> () -> ()
 tuneP myMelody vol void =
   let timePeriod = usec (head myMelody) in
-  let _ = after timePeriod (choose (wrap (recv noteC) (recvHandler myMelody vol)) (send dacC vol)) in
+  let recvHandler =
+         (\move -> case move of
+                        Next -> tuneP (tail myMelody) vol ()
+                        Circle -> tuneP twinkle vol ()
+          ) in
+  let _ = after timePeriod (choose (wrap (recv noteC) recvHandler)
+                                   (send dacC vol)) in
   tuneP myMelody (not vol) void
 
 main =
-  let _ = spawn (tuneP 1) in
+  let _ = spawn (tuneP twinkle 1) in
   let _ = spawn (playerP 1) in
   ()
