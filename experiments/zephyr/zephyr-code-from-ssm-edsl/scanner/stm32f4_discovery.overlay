@@ -1,0 +1,15 @@
+/ {
+     aliases {
+          ssm-button0 = &user_button;
+	  ssm-timer   = &rtc; /* not working */
+
+	  ssm-led0    = &green_led_4;
+	  ssm-led1    = &orange_led_3;
+	  
+     };
+};
+
+&timers3 {
+	 status = "okay";
+};
+
