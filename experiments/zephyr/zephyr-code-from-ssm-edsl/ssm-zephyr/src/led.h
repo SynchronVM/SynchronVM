@@ -22,39 +22,24 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef SYS_TIME_H_
-#define SYS_TIME_H_
+#ifndef LED_H_
+#define LED_H_
 
-/* sys is at a slightly lower level in the "tree of abstractions"
-   as ll_driver may come to depend upon these things. */
-
-/* Each port must implement these operations */
-
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#include <typedefs.h> /* for definition of Time type */
+typedef struct {
+  uint32_t pin;
+  uint32_t id;
+  bool state;
+} led_driver_t;
 
-#define SYS_TIME_SENDER_ID 255
+extern uint32_t led_num(void);
+extern led_driver_t* led_init(uint32_t identifier);
+extern void led_set(led_driver_t *led, bool value);
 
-/* initialize the timers, takes an os_interop pointer
-   to enable sending of messages to the scheduler message queue
-*/
-extern bool      sys_time_init(void *os_interop);
-
-extern Time      sys_time_get_current_ticks(void);
-extern uint32_t  sys_time_get_alarm_channels(void);
-extern uint32_t  sys_time_get_clock_freq(void);
-
-/* Sends a timestamped message to the scheduler message queue at an absolute time */
-extern bool      sys_time_set_wake_up(Time absolute);
-
-/* Return the wake up time of the current alarm */
-extern Time      sys_get_wake_up_time(void);
-
-extern bool      sys_is_alarm_set(void);
-
-/* put OS thread to sleep, risky operation */
-extern void      sys_sleep_ms(uint32_t ms);
+static inline bool led_state(led_driver_t *led) {
+  return led->state;
+}
 
 #endif

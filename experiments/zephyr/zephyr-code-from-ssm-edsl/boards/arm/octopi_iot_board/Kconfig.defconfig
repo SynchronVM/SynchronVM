@@ -1,0 +1,11 @@
+# STM32F4DISCOVERY board configuration
+
+# Copyright (c) 2016 Linaro Limited.
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_OCTOPI_IOT_BOARD
+
+config BOARD
+	default "octopi_iot_board"
+
+endif # BOARD_OCTOPI_IOT_BOARD

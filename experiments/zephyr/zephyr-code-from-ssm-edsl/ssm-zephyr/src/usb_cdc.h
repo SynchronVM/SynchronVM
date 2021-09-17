@@ -22,39 +22,16 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef SYS_TIME_H_
-#define SYS_TIME_H_
+#ifndef _USB_CDC_H_
+#define _USB_CDC_H_
 
-/* sys is at a slightly lower level in the "tree of abstractions"
-   as ll_driver may come to depend upon these things. */
+extern void usb_printf(char *format, ...);
 
-/* Each port must implement these operations */
+extern int usb_has_data(void);
+extern int usb_get_char(void);
+extern void usb_put_char(int i);
+extern int usb_readl(char *buffer, int size);
+extern void start_usb_cdc_thread(void);
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include <typedefs.h> /* for definition of Time type */
-
-#define SYS_TIME_SENDER_ID 255
-
-/* initialize the timers, takes an os_interop pointer
-   to enable sending of messages to the scheduler message queue
-*/
-extern bool      sys_time_init(void *os_interop);
-
-extern Time      sys_time_get_current_ticks(void);
-extern uint32_t  sys_time_get_alarm_channels(void);
-extern uint32_t  sys_time_get_clock_freq(void);
-
-/* Sends a timestamped message to the scheduler message queue at an absolute time */
-extern bool      sys_time_set_wake_up(Time absolute);
-
-/* Return the wake up time of the current alarm */
-extern Time      sys_get_wake_up_time(void);
-
-extern bool      sys_is_alarm_set(void);
-
-/* put OS thread to sleep, risky operation */
-extern void      sys_sleep_ms(uint32_t ms);
 
 #endif
