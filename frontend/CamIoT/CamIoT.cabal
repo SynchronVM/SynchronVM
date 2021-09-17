@@ -50,6 +50,7 @@ library
       Monomorphisation.Environment
       Desugaring.Desugar
       Desugaring.AST
+      DetectRecs.DetectRecs
       Typechecker.NewTypeChecker
       Typechecker.NewTypeChecker2
   hs-source-dirs:

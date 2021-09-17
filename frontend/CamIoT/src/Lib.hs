@@ -41,6 +41,9 @@ import qualified LambdaLifting.LambdaLifting as L
 import qualified Monomorphisation.Monomorphise as M
 import qualified Desugaring.Desugar as D
 import qualified Interpreter.Interpreter as I
+import qualified DetectRecs.DetectRecs as DR
+
+import Debug.Trace
 
 compile :: String -> IO (Either String (SExp SType))
 compile input = do
@@ -58,21 +61,26 @@ compile input = do
             case tc of
                 Left err2           -> return $ Left (show err2)
                 Right (tree, subst) -> do let (rn, state1) =  R.rename (apply subst tree)
-                                          putStrLn "***** Alpha Renamed version *****"
-                                          putStrLn $ betterPrint rn
-                                          putStrLn ""
+                                          -- putStrLn "***** Alpha Renamed version *****"
+                                          -- putStrLn $ betterPrint rn
+                                          -- putStrLn ""
                                           let (ll, state2) =  L.lambdaLift rn state1
-                                          putStrLn "***** LambdaLifted version *****"
-                                          putStrLn $ betterPrint ll
-                                          putStrLn ""
+                                          -- putStrLn "***** LambdaLifted version *****"
+                                          -- putStrLn $ betterPrint ll
+                                          -- putStrLn ""
                                           (mm2, state3) <- M.monomorphise state2 ll
-                                          putStrLn "***** Monomorphized version 2 *****"
-                                          putStrLn $ betterPrint mm2
-                                          putStrLn ""
+                                          -- putStrLn "***** Monomorphized version 2 *****"
+                                          -- putStrLn $ betterPrint mm2
+                                          -- putStrLn ""
                                           let ss           =  D.desugar state3 mm2
                                           putStrLn "***** Desugared version *****"
                                           putStrLn $ printTree ss
                                           putStrLn ""
+                                          -- let ss'          =  DR.detectRecs ss
+                                          -- putStrLn "***** Desugared recursive version *****"
+                                          -- putStrLn $ printTree ss'
+                                          -- putStrLn ""
+
                                           return $ Right ss
 
 betterPrint :: (Show a, Print a) => [Def a] -> String

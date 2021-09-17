@@ -1,0 +1,7 @@
+foo : Int -> Int
+foo i =
+  let a = \x -> foo x in
+  a 3
+
+
+main = foo 2

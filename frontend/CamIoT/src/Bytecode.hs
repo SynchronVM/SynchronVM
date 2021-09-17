@@ -45,6 +45,20 @@ import qualified Bytecode.InterpreterModel as IM
 
 import Debug.Trace
 
+
+
+
+gentoplevelLetRec :: C.Exp -> C.Exp
+gentoplevelLetRec = collectBindings []
+
+collectBindings :: [(C.Pat,C.Exp)] -> C.Exp -> C.Exp
+collectBindings collect (C.Let pat e1 e2) = collectBindings ((pat, e1):collect) e2
+collectBindings collect (C.Letrec patexps e) = collectBindings (collect ++ patexps) e
+collectBindings collect x = C.Letrec collect x
+
+
+
+
 {- translate - 
    SExp t is desugared IR from frontend and
    converts this to middleware Exp from CamOpt.hs.
@@ -489,6 +503,8 @@ byteCompile verbose path = do
 -- Experiments --
 path = "testcases/Twinkle2.cam"
 
+-- path = "testcases/good24.cam"
+
 test :: IO ()
 test = do
   compiled <- compile path
@@ -501,7 +517,7 @@ test = do
 
 
       putStrLn $ "\n\n CAM IR (no pp) \n\n"
-      let camir = translate desugaredIr
+      let camir = gentoplevelLetRec $ translate desugaredIr
       putStrLn $ show camir
 
       putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
