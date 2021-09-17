@@ -592,6 +592,7 @@ example33 =
     four = Sys $ LInt 4
     eleven = Sys $ LInt 11
 
+
 run :: Exp -> Val
 run = evaluate . CO.interpret
 
@@ -708,3 +709,26 @@ uiexample2 =
                             (Var "v1")))]
     (Let Empty (Sys (RTS2 SPAWNEXTERNAL (Var "v0") (Sys (LInt 0))))
      (Var "v1")))
+
+
+{-
+letrec v5 = \v6 -> let v4 = v6
+                    in v0 v4
+       v0 = \v7 -> let v1 = v7
+                    in letrec v2 = v5
+                           in (v2 3)
+    in v0 2
+
+Mutually recursive and non termintating
+
+-}
+
+
+uiexample3 =
+  Letrec [(PatVar "v5",Lam (PatVar "v6") (Let (PatVar "v4") (Var "v6") (App (Var "v0") (Var "v4"))))
+         , (PatVar "v0",Lam (PatVar "v7")
+                        (Let (PatVar "v1") (Var "v7")
+                         (Letrec [(PatVar "v2",Var "v5")]
+                          (App (Var "v2") (Sys (LInt 3))))))
+         ]
+  (App (Var "v0") (Sys (LInt 2)))
