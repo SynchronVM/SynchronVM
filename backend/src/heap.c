@@ -31,6 +31,8 @@
 
 #include <heap.h>
 
+#include <sys_gpio_printf.h>
+
 /* Statistics collection */
 gc_stats_t gc_stats;
 
@@ -141,6 +143,11 @@ static inline void clr_cell(heap_t *heap, heap_index i) {
 
 int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
+  DBG_GPIO_INIT(DBG0);
+  DBG_GPIO_INIT(DBG1);
+  DBG_GPIO_CLR(DBG0);
+  DBG_GPIO_CLR(DBG1);
+  
   if (!mem || !heap || size_bytes < 1024) return 0;
 
   unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(heap_flags_t) + sizeof(uint8_t));
@@ -179,13 +186,15 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
 
 heap_index heap_allocate(heap_t *heap) {
 
+  DBG_GPIO_SET(DBG0);
+  
   /* Hughes Lazy sweep */
   /* Instead of sweeping every time after mark completes      */
   /* wait for the allocation call to happen and lazily sweep  */
   /* then and instead of returning to the free list return    */
   /* the current index as the place for allocation. Further   */
   /* allocations will keep clearing cells, unmarking them etc */
-
+  
   while (heap->sweep_pos < heap->size_cells) {
 
     if (get_gc_mark(heap, heap->sweep_pos)) {
@@ -196,11 +205,14 @@ heap_index heap_allocate(heap_t *heap) {
 #ifdef HEAP_COLLECT_STATS
       gc_stats.num_allocated ++;
 #endif
+      DBG_GPIO_CLR(DBG0);
       return heap->sweep_pos++;
     }
   }
 
   heap->sweep_pos = 0;
+
+  DBG_GPIO_CLR(DBG0);
   return HEAP_NULL;
 }
 
@@ -213,13 +225,17 @@ heap_index heap_allocate(heap_t *heap) {
 
 //void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 void heap_mark(heap_t *heap, cam_value_t v) {
+  
   bool done = false;
   cam_value_t curr = v;
   cam_value_t prev = get_cam_val(HEAP_NULL, VALUE_PTR_BIT);
 
   // Abort if value is not a pointer to a heap structure.
-  if (is_atomic(curr)) return;
-
+  if (is_atomic(curr)) {
+    DBG_GPIO_CLR(DBG1);
+    return;
+  }
+    
   // curr_val is a pointer onto the heap.
   while (!done) {
     // Follow left pointers
