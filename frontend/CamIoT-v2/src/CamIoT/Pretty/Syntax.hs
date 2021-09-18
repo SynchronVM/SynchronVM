@@ -326,7 +326,7 @@ instance Print a => Print (Function a) where
     tsig = concatD
       [ prt 0 (name f)
       , doc (showString ":")
-      , prt 0 $ fromJust $ typesig f
+      , maybe (doc $ showString "no-type-sig-yet") (\sig -> prt 0 sig) $ typesig f
       , doc (showString ";")
       ]
     defs = (flip map) (equations f) $ \(args, body) -> concatD
