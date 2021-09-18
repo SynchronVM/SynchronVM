@@ -254,7 +254,7 @@ specializeFunction oldid newt = do
           typeEnv :: Map.Map Ident Type
           typeEnv = case runUnify [[(typeOfDef, newt)]] of
             Just s  -> s
-            Nothing -> error "should not end up here"
+            Nothing -> error $ "Monomorphiser failed unification for " <> show [[(typeOfDef, newt)]]
 
           -- | Type of the definition
           typeOfDef :: Type

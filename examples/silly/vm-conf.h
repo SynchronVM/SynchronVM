@@ -29,6 +29,7 @@
 /* Sense-VM Application Configuration Settings */
 /***********************************************/
 
+#define VMC_ENABLE_GPIO_PRINTF 1
 
 /********************************************/
 /* Virtual Machine Container (VMC) settings */

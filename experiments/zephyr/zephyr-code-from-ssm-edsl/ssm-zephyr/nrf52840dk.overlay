@@ -1,0 +1,14 @@
+/ {
+     aliases {
+     	     ssm-timer = &timer4;
+
+	     ssm-led0  = &led0;
+	     ssm-led1  = &led1;
+
+	     ssm-button0 = &button0;
+	     ssm-button1 = &button1;
+	     ssm-button2 = &button2;
+	     ssm-button3 = &button3;
+     };
+};
+

@@ -37,6 +37,7 @@
 
 #include <ll/ll_driver.h>
 
+#include <sys_gpio_printf.h>
 
 /* TODO: We need a better way to manage these
    conditional includes. */
@@ -517,6 +518,7 @@ static inline void mark_heap_context(Context_t *context, heap_t *heap){
 }
 
 static void heap_mark_phase(vmc_t *container) {
+  DBG_GPIO_SET(DBG1);
 #ifdef HEAP_COLLECT_STATS
   gc_stats.num_mark_phases++;
 #endif
@@ -553,6 +555,7 @@ static void heap_mark_phase(vmc_t *container) {
       }
     }
   }
+  DBG_GPIO_CLR(DBG1);
 }
 
 heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {

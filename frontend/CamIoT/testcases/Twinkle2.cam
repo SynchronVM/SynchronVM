@@ -3,7 +3,6 @@ data List a where
   Cons : a -> List a -> List a
 
 head : List a -> a
-head Nil = Nil
 head (Cons x xs) = x
 
 tail : List a -> List a

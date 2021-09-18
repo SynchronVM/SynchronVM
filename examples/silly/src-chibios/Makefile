@@ -122,7 +122,8 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld
 
 SENSE_VM = ../../../backend/src
-SENSE_VM_H = ../../../backend/include
+SENSE_VM_H = ../../../backend/include \
+             ../../../backend/include/sys
 SENSE_VM_CH_H = ../../../backend/include/hal/chibios
 
 SENSE_VM_LL_OS_H = ../../../backend/include/ll/os/chibios
