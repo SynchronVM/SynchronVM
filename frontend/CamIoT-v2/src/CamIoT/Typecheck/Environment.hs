@@ -2,19 +2,19 @@
 typechecking. -}
 module CamIoT.Typecheck.Environment where
 
-import CamIoT.Internal.Syntax
-import CamIoT.Pretty.Syntax
-import CamIoT.Typecheck.TCError
+import           CamIoT.Internal.Syntax
+import           CamIoT.Pretty.Syntax
+import           CamIoT.Typecheck.TCError
 
-import Data.List
-import Control.Monad.State
-import Control.Monad.Except
-import Control.Monad.Reader
-import Control.Monad.Identity
-import Control.Monad.Fail
+import           Control.Monad.Except
+import           Control.Monad.Fail
+import           Control.Monad.Identity
+import           Control.Monad.Reader
+import           Control.Monad.State
+import           Data.List
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.Map                      as Map
+import qualified Data.Set                      as Set
 
 -- * Schemas
 
@@ -100,13 +100,14 @@ getTypeWithoutInstantiate :: Schema -> Type
 getTypeWithoutInstantiate (Forall _ t) = t
 
 instance Show Schema where
-  show (Forall vars typ) = concat [ "forall [", intercalate "," (map printTree vars), "] . ", printTree typ]
+  show (Forall vars typ) = concat
+    ["forall [", intercalate "," (map printTree vars), "] . ", printTree typ]
 
 -- * Type checking monad
 
 -- | The state maintained by the state monad-part of the `TC` monad during type checking
 data TCState = TCState
-    { namegen :: Int                 -- ^ Counter used to generate fresh names
+  { namegen :: Int                 -- ^ Counter used to generate fresh names
     {- | Arity of the different algebraic datatypes. E.g
     
     @
@@ -116,8 +117,8 @@ data TCState = TCState
                    ]
     @
     -}
-    , tycons  :: Map.Map UIdent Int
-    }
+  , tycons  :: Map.Map UIdent Int
+  }
 
 {- | The type checking monad! We use
 
@@ -126,47 +127,51 @@ data TCState = TCState
   3. @Reader@ for the typing environment
 
 -}
-type TC a = ExceptT TCError (
-            StateT TCState (
-            Reader Env))
-            a
+type TC a = ExceptT TCError (StateT TCState (Reader Env)) a
 
 -- | Need this instance for the do notation, sigh
 instance MonadFail Identity where
-    fail = error
+  fail = error
 
 -- * Type variable generation
 
 -- | Infinite string of unique words @["a0", "a1", ..., "b0", ..., "ab0", ...]@
 letters :: [String]
-letters = [1..] >>= flip replicateM ['a'..'z']
+letters = [1 ..] >>= flip replicateM ['a' .. 'z']
 
 -- | Generate a fresh type variable
 fresh :: TC Type
 fresh = do
   s <- get
-  put $ s { namegen = namegen s + 1}
+  put $ s { namegen = namegen s + 1 }
   return $ TVar (Ident (letters !! namegen s))
 
 -- * Typing environment management
 
 {- | Typing environent. The typing environment contains a mapping from identifiers to
 schemas and from uppercase identifiers to schemas (constructors). -}
-data Env
-    = Env (Map.Map Ident Schema) (Map.Map UIdent Schema)
+data Env = Env (Map.Map Ident Schema) (Map.Map UIdent Schema)
 
 -- | The empty environment
 emptyEnv :: Env
 emptyEnv = Env Map.empty Map.empty
 
 instance Show Env where
-  show (Env identifiers constructors) =
-    concat [ "Identifiers:\n"
-           , intercalate "\n" (map (\(id,t) -> printTree id ++ " : " ++ show t) (Map.toList identifiers))
-           , "\n"
-           , "Constructors:\n"
-           , intercalate "\n" (map (\(id,t) -> printTree id ++ " : " ++ show t) (Map.toList constructors))
-           ]
+  show (Env identifiers constructors) = concat
+    [ "Identifiers:\n"
+    , intercalate
+      "\n"
+      (map (\(id, t) -> printTree id ++ " : " ++ show t)
+           (Map.toList identifiers)
+      )
+    , "\n"
+    , "Constructors:\n"
+    , intercalate
+      "\n"
+      (map (\(id, t) -> printTree id ++ " : " ++ show t)
+           (Map.toList constructors)
+      )
+    ]
 
 {- | Does the constructor already exist in the typing environment? This is used for
 verifying the correctness of datatype declarations, that the constructors are unique. -}
@@ -175,7 +180,7 @@ existsCon uid = do
   (Env _ env) <- ask
   case Map.lookup uid env of
     Just _  -> return True
-    Nothing -> return False 
+    Nothing -> return False
 
 -- | Look up the arity of a data constructor
 lookupTyconArity :: UIdent -> TC Int
@@ -190,30 +195,31 @@ extendTyconArity :: UIdent -> Int -> TC ()
 extendTyconArity uid arity = do
   st <- get
   case Map.lookup uid (tycons st) of
-    Just _ -> throwError $ DuplicateTycon uid
+    Just _  -> throwError $ DuplicateTycon uid
     Nothing -> put $ st { tycons = Map.insert uid arity (tycons st) }
 
 -- | A map that maps binary operators to their type schemas
 binoptypes :: Map.Map (Binop ()) Schema
-binoptypes = Map.fromList $
-     [ (Add (), Forall [a] $ TLam ta (TLam ta ta))
-     , (Sub (), Forall [a] $ TLam ta (TLam ta ta))
-     , (Mul (), Forall [a] $ TLam ta (TLam ta ta))
-     , (Div (), Forall [a] $ TLam ta (TLam ta ta))
-     , (OLT (), Forall [a] $ TLam ta (TLam ta TBool))
-     , (OLE (), Forall [a] $ TLam ta (TLam ta TBool))
-     , (OGT (), Forall [a] $ TLam ta (TLam ta TBool))
-     , (OGE (), Forall [a] $ TLam ta (TLam ta TBool))
-     , (OEQ (), Forall [a] $ TLam ta (TLam ta TBool))
-     , (And (), Forall [] $ TLam TBool (TLam TBool TBool))
-     , (Or  (), Forall [] $ TLam TBool (TLam TBool TBool))
-     ]
-  where
-     a :: Ident
-     a = Ident "a"
+binoptypes =
+  Map.fromList
+    $ [ (Add (), Forall [a] $ TLam ta (TLam ta ta))
+      , (Sub (), Forall [a] $ TLam ta (TLam ta ta))
+      , (Mul (), Forall [a] $ TLam ta (TLam ta ta))
+      , (Div (), Forall [a] $ TLam ta (TLam ta ta))
+      , (OLT (), Forall [a] $ TLam ta (TLam ta TBool))
+      , (OLE (), Forall [a] $ TLam ta (TLam ta TBool))
+      , (OGT (), Forall [a] $ TLam ta (TLam ta TBool))
+      , (OGE (), Forall [a] $ TLam ta (TLam ta TBool))
+      , (OEQ (), Forall [a] $ TLam ta (TLam ta TBool))
+      , (And (), Forall [] $ TLam TBool (TLam TBool TBool))
+      , (Or () , Forall [] $ TLam TBool (TLam TBool TBool))
+      ]
+ where
+  a :: Ident
+  a = Ident "a"
 
-     ta :: Type
-     ta = TVar a
+  ta :: Type
+  ta = TVar a
 
 {- | Candidate types for binary operators. When a binary operator has had an inferred
 type, that type needs to be unified with any of the entries in the list of candidate
@@ -231,12 +237,12 @@ binopCandidates op = case op of
   OEQ _ -> [intintbool, floatfloatbool, boolboolbool]
   And _ -> [boolboolbool]
   Or  _ -> [boolboolbool]
-  where
-    intintint       = TLam TInt   (TLam TInt   TInt)
-    floatfloatfloat = TLam TFloat (TLam TFloat TFloat)
-    intintbool      = TLam TInt   (TLam TInt   TBool)
-    floatfloatbool  = TLam TFloat (TLam TFloat TBool)
-    boolboolbool    = TLam TBool  (TLam TBool  TBool)
+ where
+  intintint       = TLam TInt (TLam TInt TInt)
+  floatfloatfloat = TLam TFloat (TLam TFloat TFloat)
+  intintbool      = TLam TInt (TLam TInt TBool)
+  floatfloatbool  = TLam TFloat (TLam TFloat TBool)
+  boolboolbool    = TLam TBool (TLam TBool TBool)
 
 -- | Look up the type of a unary operator
 lookupUnop :: Unop () -> TC Type
@@ -244,9 +250,7 @@ lookupUnop op = undefined
 
 -- | Map that maps unary operators to their type schemas
 unoptypes :: Map.Map (Unop ()) Schema
-unoptypes = Map.fromList $
-  [ (Not (), Forall [] $ TLam TBool TBool)
-  ]
+unoptypes = Map.fromList $ [(Not (), Forall [] $ TLam TBool TBool)]
 
 {- | Candidate types of unary operators. The same conditions that are described in the
 documentation for `binopCandidates` apply here as well. -}
@@ -264,22 +268,24 @@ restrict (Env m1 m2) id = Env (Map.delete id m1) m2
 
 -- | Perform a typechecking computation in an extended environment
 inEnv :: Ident -> Schema -> TC a -> TC a
-inEnv id schema ma = inEnvMany [(id,schema)] ma
+inEnv id schema ma = inEnvMany [(id, schema)] ma
 
 {- | Perform a typechecking computation in an environment that has been extended with
 zero or more mappings from identifiers to schemas. -}
 inEnvMany :: [(Ident, Schema)] -> TC a -> TC a
 inEnvMany xs ma =
-  let scope e = foldl (\e' (id,schema) -> extend (restrict e' id) id schema) e xs
-  in local scope ma
+  let scope e =
+        foldl (\e' (id, schema) -> extend (restrict e' id) id schema) e xs
+  in  local scope ma
 
 {- | Perform a typechecking computation after having extended the environment with
 the data constructors that are in scope. -}
 withConstructors :: [ADT] -> TC a -> TC a
-withConstructors adts = local (\(Env m1 m2) -> Env m1 $ Map.fromList allConsSchemas)
-  where
-      adtToCons :: ADT -> [(UIdent, Schema)]
-      adtToCons (_,vars,cons) = map (\(con,t) -> (con, Forall vars t)) cons
+withConstructors adts = local
+  (\(Env m1 m2) -> Env m1 $ Map.fromList allConsSchemas)
+ where
+  adtToCons :: ADT -> [(UIdent, Schema)]
+  adtToCons (_, vars, cons) = map (\(con, t) -> (con, Forall vars t)) cons
 
-      allConsSchemas :: [(UIdent, Schema)]
-      allConsSchemas = concat $ map adtToCons adts
+  allConsSchemas :: [(UIdent, Schema)]
+  allConsSchemas = concat $ map adtToCons adts

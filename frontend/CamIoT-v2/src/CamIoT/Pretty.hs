@@ -4,10 +4,10 @@ like. There are some extra whitespaces inserted in places, and some whitespaces 
 removed in other places. -}
 module CamIoT.Pretty where
 
-import CamIoT.Internal.Syntax ( Program )
-import CamIoT.Pretty.Syntax   ( Print
-                              , printTree
-                              )
+import           CamIoT.Internal.Syntax         ( Program )
+import           CamIoT.Pretty.Syntax           ( Print
+                                                , printTree
+                                                )
 
 -- | Pretty print a camiot program
 prettyProgram :: Print a => Program a -> String

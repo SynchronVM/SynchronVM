@@ -2,22 +2,20 @@
 produce a program in the form of the AST in this module. -}
 module CamIoT.Internal.Syntax where
 
-import Data.List  ( find
-                  , delete
-                  , groupBy
-                  , partition
-                  )
-import Data.Maybe ( fromJust )
+import           Data.List                      ( delete
+                                                , find
+                                                , groupBy
+                                                , partition
+                                                )
+import           Data.Maybe                     ( fromJust )
 
 -- | Identifiers in the source language
-data Ident
-    = Ident String
-    deriving (Eq, Show, Ord)
+data Ident = Ident String
+  deriving (Eq, Show, Ord)
 
 -- | Uppercase identifiers. Used for algebraic data types and constructors.
-data UIdent
-    = UIdent String
-    deriving (Eq, Show, Ord)
+data UIdent = UIdent String
+  deriving (Eq, Show, Ord)
 
 -- | The types that are supported by the surface language
 data Type
@@ -71,8 +69,9 @@ Int -> Bool -> Maybe a
 
 -}
 funtype :: [Type] -> Type
-funtype [t]        = t
-funtype (t1:t2:ts) = TLam t1 (funtype (t2:ts))
+funtype [] = error "CamIoT.Internal.Syntax error --- empty list of arguments"
+funtype [t] = t
+funtype (t1 : t2 : ts) = TLam t1 (funtype (t2 : ts))
 
 -- | Patterns supported by the surface language
 data Pat a
@@ -92,7 +91,7 @@ patVar p = case p of
   PNil a     -> a
   PConst a _ -> a
   PWild a    -> a
-  PAs a _ _  -> a
+  PAs  a _ _ -> a
   PAdt a _ _ -> a
   PTup a _   -> a
 
@@ -135,11 +134,11 @@ expVar e = case e of
   ECase a _ _  -> a
   ETup a _     -> a
   EBin a _ _ _ -> a
-  EUn a _ _    -> a
+  EUn  a _ _   -> a
   ELam a _ _   -> a
   EApp a _ _   -> a
   ELet a _ _ _ -> a
-  EIf a _ _ _  -> a
+  EIf  a _ _ _ -> a
 
 -- | Set the value of the type variable @a@ of a @Binop a@.
 data Binop a
@@ -186,12 +185,11 @@ setBinopVar a op = case op of
   OGE _ -> OGE a
   OEQ _ -> OEQ a
   And _ -> And a
-  Or _  -> Or a
+  Or  _ -> Or a
 
 -- | Unary operators in the surface language
-data Unop a
-    = Not a  -- ^ Boolean negation, @!@
-    deriving (Eq, Show, Ord)
+data Unop a = Not a  -- ^ Boolean negation, @!@
+  deriving (Eq, Show, Ord)
 
 -- | Get the value of the type variable @a@ out of a @Unop a@.
 unopVar :: Unop a -> a
@@ -243,14 +241,21 @@ data Def a
 {- | Get the name of a top level definition. Partial function which has no equation
 for the case when it is applied to a data type declaration. -}
 getName :: Def a -> Ident
-getName (DTypeSig id _)      = id
+getName (DTypeSig id _     ) = id
 getName (DEquation _ id _ _) = id
+getName _ =
+  error
+    "CamIoT.Internal.Syntax.getName error --- getName applied to entity without name"
 
 -- | Get the value of the type variable @a@ out of a @Def a@.
 defVar :: Def a -> Maybe a
 defVar d = case d of
   DTypeSig _ _      -> Nothing
   DEquation a _ _ _ -> Just a
+  _                 -> error $ concat
+    [ "CamIoT.Internal.Syntax.getName error ---"
+    , " defVar applied to argument without variable"
+    ]
 
 {-| Functions in the surface language. After parsing, a program is represented as a list
 of @Def ()@. Just by looking at this list it is not clear which definitions belong to
@@ -291,7 +296,7 @@ data Function a = Function
   , equations :: [([Pat a], Exp a)]  -- ^ Equations that makes up the function definition
   , typesig   :: Maybe Type  -- ^ Type signature of the function, if any exists
   }
-  deriving (Eq)
+  deriving Eq
 
 {- | Type synonym for Algebraic Datatypes (ADT). An ADT has a type constructor, zero or
 more type parameters and one or more data constructors. -}
@@ -311,22 +316,27 @@ do this conversion, it will return @Nothing@. The only case where it is impossib
 this transformation is when there is no main-function present. -}
 mkProgram :: Eq a => [Def a] -> Maybe (Program a)
 mkProgram defs =
-  let (datadecs,funs)    = partitionDataDecs defs
-      functions          = mkFunctions funs
-  in case partitionMain functions of
-      Just (main, functions') -> Just $ Program (map unwrapDataDec datadecs) functions' main
-      Nothing -> Nothing
-  where
-      unwrapDataDec (DDataDec uid vars cons) = (uid, vars, cons)
+  let (datadecs, funs) = partitionDataDecs defs
+      functions        = mkFunctions funs
+  in  case partitionMain functions of
+        Just (main, functions') ->
+          Just $ Program (map unwrapDataDec datadecs) functions' main
+        Nothing -> Nothing
+ where
+  unwrapDataDec (DDataDec uid vars cons) = (uid, vars, cons)
+  unwrapDataDec _                        = error $ concat
+    [ "CamIoT.Internal.Syntax.unwrapDataDec error ---"
+    , " unwrapDataDec applied to entity that is not a data type declaration"
+    ]
 
 {- | Partition a @[Def a]@ into two lists where the first list contains all the
 datatype declarations and the other contains all the functions. -}
 partitionDataDecs :: [Def a] -> ([Def a], [Def a])
 partitionDataDecs ds = partition pred ds
-  where
-      pred d = case d of
-        DDataDec _ _ _ -> True
-        _              -> False
+ where
+  pred d = case d of
+    DDataDec _ _ _ -> True
+    _              -> False
 
 {- | Take a @[Def a]@ and turn it into a @[Function a]@, which is explained in a bit
 more detail in the documentation for `Function`. The @[Def a]@ represents the equations
@@ -338,10 +348,11 @@ mkFunctions defs = map toFunction $ groups defs
 function from them. If there is no main-function present, returns @Nothing@. Otherwise,
 returns a pair @(main-function, rest-of-the-functions)@. -}
 partitionMain :: Eq a => [Function a] -> Maybe (Function a, [Function a])
-partitionMain funs = let main  = find ((==) (Ident "main") . name) funs
-                     in case main of
-                         Just m  -> Just (m, delete m funs)
-                         Nothing -> Nothing
+partitionMain funs =
+  let main = find ((==) (Ident "main") . name) funs
+  in  case main of
+        Just m  -> Just (m, delete m funs)
+        Nothing -> Nothing
 
 {- | Predicate to check if two named top level definitions are the same. Will
 crash if the top level definition is a datatype declaration. -}
@@ -358,9 +369,21 @@ groups defs = groupBy CamIoT.Internal.Syntax.pred defs
 that the following definitions are not empty, that there are no signatures without
 function definitions. -}
 toFunction :: [Def a] -> Function a
-toFunction (d:ds) = case d of
+toFunction [] = error $ concat
+  [ "CamIoT.Internal.Syntax.toFunction error ---"
+  , " toFunction applied to empty list of definition"
+  ]
+toFunction (d : ds) = case d of
   DTypeSig id t      -> Function id (map defToPair ds) (Just t)
-  DEquation _ id _ _ -> Function id (map defToPair (d:ds)) Nothing
-  where
-     defToPair :: Def a -> ([Pat a], Exp a)
-     defToPair (DEquation _ _ args body) = (args, body)
+  DEquation _ id _ _ -> Function id (map defToPair (d : ds)) Nothing
+  _                  -> error $ concat
+    [ "CamIoT.Internal.Syntax.toFunction error ---"
+    , " toFunction applied to data type declaration"
+    ]
+ where
+  defToPair :: Def a -> ([Pat a], Exp a)
+  defToPair (DEquation _ _ args body) = (args, body)
+  defToPair _                         = error $ concat
+    [ "CamIoT.Internal.Syntax.defToPair error ---"
+    , " defToPair applied on entity that is not a definition"
+    ]

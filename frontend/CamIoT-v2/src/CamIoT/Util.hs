@@ -2,9 +2,9 @@
 used in any phase of the compiler. -}
 module CamIoT.Util where
 
-import Control.Monad.State
+import           Control.Monad.State
 
-import CamIoT.Internal.Syntax
+import           CamIoT.Internal.Syntax
 
 {- | Class of types that can produce and consume an integer. Used in conjunction with
 `MonadState a m` where `a` has an `IntState` constraint. We can use this to reuse
@@ -16,7 +16,7 @@ class IntState a where
 
 -- | Trivial instance for a simple integer state
 instance IntState Int where
-  getInt     = id
+  getInt = id
   setInt i _ = i
 
 -- | Generate a fresh identifier
@@ -32,6 +32,4 @@ result is @True@. If not, the default value (third argument) is returned. -}
 whenM :: Monad m => m Bool -> m a -> a -> m a
 whenM mb ma d = do
   b <- mb
-  if b
-    then ma
-    else return d
+  if b then ma else return d
