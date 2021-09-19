@@ -22,49 +22,37 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef BUTTON_H_
-#define BUTTON_H_
+#ifndef UART_H_
+#define UART_H_
 
 #include <stdint.h>
-#include <stdbool.h>
+#include <sys/ring_buffer.h>
+#include <drivers/uart.h>
+#include <svm_zephyr.h>
 
-/* SVM includes */ 
-#include <hal/zephyr/svm_zephyr.h>
-
-/* Zephyr includes */ 
-#include <drivers/gpio.h>
+#include <ll/ll_uart.h>
 
 typedef struct {
-  struct gpio_callback cb_data;
-  uint32_t pin;
-  uint32_t state;
-  uint32_t drv_id;
+  struct ring_buf in_ringbuf;
+  struct ring_buf out_ringbuf;
   const struct device *dev;
-  zephyr_interop_t *interop;
-} button_driver_internal_t; 
+  zephyr_interop_t* interop;
+} uart_dev_t;
 
-#define BUTTON_DRIVER_INTERNAL button_driver_internal_t internal
-
-extern void button_pressed_cb(const struct device *dev,
-			      struct gpio_callback *cb,
-			      uint32_t pin);
-
-#define BUTTON_DEVICE_LABEL(X) DT_GPIO_LABEL(DT_ALIAS(X), gpios)
-#define BUTTON_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
-#define BUTTON_FLAGS(X)        (GPIO_INPUT | GPIO_INT_DEBOUNCE | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
-
-#define BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX)	\
-  {\
-  XbdrvX.internal.dev = NULL;\
-  XbdrvX.internal.pin = BUTTON_PIN(svm_button##XbidX);\
-  XbdrvX.internal.state = 0;\
-  XbdrvX.internal.drv_id = Xdrv_idX;\
-  XbdrvX.internal.interop = (zephyr_interop_t *)(XcustomX);\
-  XbdrvX.internal.dev = device_get_binding(BUTTON_DEVICE_LABEL(svm_button##XbidX));\
-  gpio_pin_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, BUTTON_FLAGS(svm_button##XbidX)); \
-  gpio_pin_interrupt_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, GPIO_INT_EDGE_BOTH); \
-  gpio_init_callback(&XbdrvX.internal.cb_data, button_pressed_cb, BIT(BUTTON_PIN(svm_button##XbidX))); \
-  gpio_add_callback(XbdrvX.internal.dev, &XbdrvX.internal.cb_data);\
-  }
+extern uart_dev_t* uart_init(ll_uart_if_t uif,
+			     uint8_t *in_buffer,
+			     uint32_t in_size,
+			     uint8_t *out_buffer,
+			     uint32_t out_size,
+			     void *backend_custom);
+extern bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud);
+extern bool uart_data_available(uart_dev_t *dev);
+extern uint32_t uart_ndata_available(uart_dev_t *dev);
+extern uint32_t uart_ndata_writeable(uart_dev_t *dev);
+extern int uart_get_char(uart_dev_t *buffs);
+extern int uart_put_char(uart_dev_t *buffs, char c);
+extern uint32_t uart_read_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size);
+extern uint32_t uart_write_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size);
+extern void uart_printf(uart_dev_t *buffs, char *format, ...);
 
 #endif

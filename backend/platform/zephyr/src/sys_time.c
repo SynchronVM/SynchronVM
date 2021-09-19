@@ -27,7 +27,7 @@
 #include <drivers/counter.h>
 
 #include <sys/sys_time.h>
-#include <hal/zephyr/svm_zephyr.h>
+#include <svm_zephyr.h>
 
 #if DT_NODE_HAS_STATUS(DT_ALIAS(svm_sys_timer), okay)
 #else

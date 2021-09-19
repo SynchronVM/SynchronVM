@@ -124,10 +124,9 @@ LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld
 SENSE_VM = ../../../../src
 SENSE_VM_H = ../../../../include \
              ../../../../include/sys
-SENSE_VM_CH_H = ../../../../include/hal/chibios
 
-SENSE_VM_LL_OS_H = ../../../../include/ll/os/chibios
-
+PLATFORM_SRC = ../../../../platform/chibios/src
+PLATFORM_H   = ../../../../platform/chibios/include
 
 SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/channel.c \
@@ -142,11 +141,11 @@ SENSE_SRC = $(SENSE_VM)/CAM.c \
             $(SENSE_VM)/VMC.c \
             $(SENSE_VM)/priorityqueue.c \
             $(SENSE_VM)/ll/ll_driver.c \
-            $(SENSE_VM)/ll/os/chibios/button.c\
-            $(SENSE_VM)/ll/os/chibios/led.c\
-            $(SENSE_VM)/ll/os/chibios/gpio.c\
-            $(SENSE_VM)/hal/chibios/svm_chibios.c \
-            $(SENSE_VM)/sys/os/chibios/sys_time.c
+            $(PLATFORM_SRC)/button.c\
+            $(PLATFORM_SRC)/led.c\
+            $(PLATFORM_SRC)/gpio.c\
+            $(PLATFORM_SRC)/svm_chibios.c \
+            $(PLATFORM_SRC)/sys_time.c
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -185,7 +184,7 @@ TCPPSRC =
 ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
-INCDIR = $(ALLINC) $(TESTINC) $(SENSE_VM_H) $(SENSE_VM_CH_H) $(SENSE_VM_LL_OS_H)
+INCDIR = $(ALLINC) $(TESTINC) $(SENSE_VM_H) $(PLATFORM_H)
 
 #
 # Project, sources and paths

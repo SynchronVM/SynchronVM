@@ -40,7 +40,7 @@
 
 // #include <sys/sys_debug_uart.h>
 
-#include <hal/zephyr/svm_zephyr.h>
+#include <svm_zephyr.h>
 
 /***************************************************/
 /* Check for configurations that are not sensible. */

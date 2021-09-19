@@ -22,39 +22,14 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef BUTTON_H_
-#define BUTTON_H_
+#ifndef PLATFORM_GPIO_PRINTF_
+#define PLATFORM_GPIO_PRINTF_
 
-#include <gpio.h>
-#include <hal/chibios/svm_chibios.h>
-#include <svm_chibios_conf.h>
+/* TODO implement this stuff. It will be trickier on zephyr */ 
 
-typedef struct {
-  stm32_gpio_t *port;
-  uint16_t pad;
-  uint32_t id;
-  uint32_t state;
-  chibios_interop_t *interop;
-} button_driver_internal_t;
-
-// TODO: Check if it it can be added annonymously. 
-#define BUTTON_DRIVER_INTERNAL button_driver_internal_t internal
-
-extern void button_cb(void *arg);
-
-#define BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX) \
-  {\
-  palSetPadMode(BUTTON##XbidX##_GPIO,\
-                BUTTON##XbidX##_PIN,\
-                BUTTON##XbidX##_MODE);\
-  \
-  XbdrvX.internal.port = BUTTON##XbidX##_GPIO;\
-  XbdrvX.internal.pad = BUTTON##XbidX##_PIN;\
-  XbdrvX.internal.id = XbidX;\
-  XbdrvX.internal.state = false;\
-  XbdrvX.internal.interop = (chibios_interop_t*)XcustomX;\
-  palEnablePadEvent(BUTTON##XbidX##_GPIO, BUTTON##XbidX##_PIN, BUTTON##XbidX##_EVENT_MODE);\
-  palSetPadCallback(BUTTON##XbidX##_GPIO, BUTTON##XbidX##_PIN, button_cb, &XbdrvX);\
-  }
+#define PLATFORM_DBG_GPIO_INIT(X)   
+#define PLATFORM_DBG_GPIO_SET(X) 
+#define PLATFORM_DBG_GPIO_CLR(X) 
+#define PLATFORM_DBG_GPIO_GET(X) 
 
 #endif
