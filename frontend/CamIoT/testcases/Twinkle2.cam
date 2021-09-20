@@ -67,6 +67,7 @@ tuneP myMelody vol void =
   tuneP myMelody (not vol) void
 
 main =
+  let _ = spawnExternal dacC 1 in
   let _ = spawn (tuneP twinkle 1) in
   let _ = spawn (playerP 1) in
   ()

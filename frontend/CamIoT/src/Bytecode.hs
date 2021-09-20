@@ -500,9 +500,9 @@ byteCompile verbose path = do
 
 
 -- Experiments --
--- path = "testcases/Twinkle2.cam"
+path = "testcases/Twinkle2.cam"
 
-path = "testcases/good24.cam"
+-- path = "testcases/good24.cam"
 
 test :: IO ()
 test = do
