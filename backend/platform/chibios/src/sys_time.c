@@ -29,7 +29,7 @@
 #include <usbcfg.h>   // DEBUG
 
 #include <sys/sys_time.h>
-#include <hal/chibios/svm_chibios.h>
+#include <svm_chibios.h>
 
 #include <svm_chibios_conf.h>
 

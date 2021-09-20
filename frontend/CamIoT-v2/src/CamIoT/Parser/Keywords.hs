@@ -5,16 +5,17 @@ module CamIoT.Parser.Keywords where
 
 -- | Reserved words in the language
 keywords :: [String]
-keywords = [
+keywords =
+  [
   -- types
     "Bool"
   , "Int"
   , "Float"
-  
+
   -- constants
   , "True"
   , "False"
-  
+
   -- misc
   , "data"
   , "where"

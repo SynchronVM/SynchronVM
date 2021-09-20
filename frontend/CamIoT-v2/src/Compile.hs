@@ -29,11 +29,84 @@ compile fp = do
 
 -- | A map that associates the primitive, built in identifiers with thier type schemas
 primitiveIdentifiers :: Map.Map Ident Schema
-primitiveIdentifiers = Map.fromList [{- Abis primitive functions -}]
+primitiveIdentifiers = Map.fromList
+  [ (channel       , Forall [a]    $ TLam unit channelType)
+  , (send          , Forall [a]    $ TLam channelType (TLam ta unitevent))
+  , (recv          , Forall [a]    $ TLam channelType eventTypea)
+  , (sync          , Forall [a]    $ TLam eventTypea ta)
+  , (choose        , Forall [a]    $ TLam eventTypea (TLam eventTypea eventTypea))
+  , (spawn         , Forall []     $ TLam (TLam unit unit) TInt)
+  , (spawnExternal , Forall [a]    $ TLam channelType (TLam TInt unit))
+  , (wrap          , Forall [a, b] $ TLam eventTypea (TLam (TLam ta tb) eventTypeb))
+  , (syncT         , Forall [a]    $ TLam TInt (TLam TInt (TLam eventTypea ta)))
+  , (msec          , Forall []     $ TLam TInt TInt)
+  , (mainI         , Forall [a]    $ ta)
+  ]
 
 -- | A map that associates the primitive, built in constructors with thier type schemas
 primitiveConstructors :: Map.Map UIdent Schema
 primitiveConstructors = Map.fromList [{- Abis primitive constructors -}]
+
+
+channel :: Ident
+channel = Ident "channel"
+
+send :: Ident
+send = Ident "send"
+
+recv :: Ident
+recv = Ident "recv"
+
+sync :: Ident
+sync = Ident "sync"
+
+choose :: Ident
+choose = Ident "choose"
+
+spawn :: Ident
+spawn = Ident "spawn"
+
+spawnExternal :: Ident
+spawnExternal = Ident "spawnExternal"
+
+wrap :: Ident
+wrap = Ident "wrap"
+
+syncT :: Ident
+syncT = Ident "syncT"
+
+msec :: Ident
+msec = Ident "msec"
+
+mainI :: Ident
+mainI = Ident "main"
+
+a :: Ident
+a = Ident "a"
+
+b :: Ident
+b = Ident "b"
+
+ta :: Type
+ta = TVar a
+
+tb :: Type
+tb = TVar b
+
+unit :: Type
+unit = TNil
+
+channelType :: Type
+channelType = TAdt (UIdent "Channel") [ta]
+
+eventTypea :: Type
+eventTypea = TAdt (UIdent "Event") [ta]
+
+eventTypeb :: Type
+eventTypeb = TAdt (UIdent "Event") [tb]
+
+unitevent :: Type
+unitevent = TAdt (UIdent "Event") [unit]
 
 -- * Parsing a program
 

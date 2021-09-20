@@ -26,7 +26,7 @@
 #include <stdbool.h>
 
 #include <drivers/gpio.h>
-#include <hal/zephyr/svm_zephyr.h>
+#include <svm_zephyr.h>
 
 #include <ll/ll_button.h>
 

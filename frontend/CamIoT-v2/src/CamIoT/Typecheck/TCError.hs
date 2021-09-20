@@ -1,8 +1,8 @@
 {- | This module exposes a datatype that is used to signal typechecking errors -}
 module CamIoT.Typecheck.TCError where
 
-import CamIoT.Internal.Syntax
-import CamIoT.Pretty.Syntax
+import           CamIoT.Internal.Syntax
+import           CamIoT.Pretty.Syntax
 
 {- | This datatype declaration declares all the different kinds of type errors that
 can be thrown during type checking. -}
@@ -138,37 +138,73 @@ data TCError
 -- | Show instance for type errors
 instance Show TCError where
   show e = case e of
-    UnboundVariable id     -> "can not resolve symbol: " ++ show id
+    UnboundVariable    id  -> "can not resolve symbol: " ++ show id
     UnknownConstructor uid -> "can not resolve constructor: " ++ show uid
-    UnknownBinop op        -> "can not resolve binop: " ++ printTree op
-    OccursError id t       ->
-      concat ["Can not substitute ", show id
-             , " for ", show t
-             , "! the type does not become more concrete."
-             ]
-    UnificationError t1 t2 ->
-      concat ["Can not unify the two types "
-             , printTree t1, " and ", printTree t2
-             ]
-    UndeclaredTycon uid    -> concat ["Undeclared type constructor: ", printTree uid]
-    DuplicateTycon uid     -> concat ["Type constructor ", printTree uid, " already declared"]
-    DuplicateDataConstructor uid -> concat ["Data constructor ", printTree uid, " already declared"]
-    PartiallyAppliedTycon uid expectedarity actualarity ->
-      concat [ "Type constructor ", printTree uid, " is partially applied; expected arity is "
-             , show expectedarity, " but actual arity is ", show actualarity]
-    UnboundADTVariable tycon vars datacon t unexpected ->
-      concat [ "The data constructor ", printTree datacon, " declared with "
-             , printTree tycon, " ", printTree vars, ", is declared to have type ", printTree t
-             , ", but the data declaration only binds variables [", printTree vars, "]. The "
-             , "variable ", printTree unexpected, " is unbound and unexpected"]
-    NonADTConstruction datacon expected actual ->
-      concat [ "The data constructor ", printTree datacon, " constructs a value of type "
-             , printTree actual, ", but the expected type is ", printTree expected]
-    TypeSignatureTooGeneral fun declared inferred ->
-      concat [ "The type signature of ", printTree fun, " is too general:\n"
-             , "  declared: ", printTree declared, "\n"
-             , "  inferred: ", printTree inferred]
-    TypesigError fun declared inferred ->
-      concat [ "Type error in function ", printTree fun, ":\n"
-             , "  declared type: ", printTree declared, "\n"
-             , "  inferred: ", printTree inferred]
+    UnknownBinop       op  -> "can not resolve binop: " ++ printTree op
+    OccursError id t       -> concat
+      [ "Can not substitute "
+      , show id
+      , " for "
+      , show t
+      , "! the type does not become more concrete."
+      ]
+    UnificationError t1 t2 -> concat
+      ["Can not unify the two types ", printTree t1, " and ", printTree t2]
+    UndeclaredTycon uid ->
+      concat ["Undeclared type constructor: ", printTree uid]
+    DuplicateTycon uid ->
+      concat ["Type constructor ", printTree uid, " already declared"]
+    DuplicateDataConstructor uid ->
+      concat ["Data constructor ", printTree uid, " already declared"]
+    PartiallyAppliedTycon uid expectedarity actualarity -> concat
+      [ "Type constructor "
+      , printTree uid
+      , " is partially applied; expected arity is "
+      , show expectedarity
+      , " but actual arity is "
+      , show actualarity
+      ]
+    UnboundADTVariable tycon vars datacon t unexpected -> concat
+      [ "The data constructor "
+      , printTree datacon
+      , " declared with "
+      , printTree tycon
+      , " "
+      , printTree vars
+      , ", is declared to have type "
+      , printTree t
+      , ", but the data declaration only binds variables ["
+      , printTree vars
+      , "]. The "
+      , "variable "
+      , printTree unexpected
+      , " is unbound and unexpected"
+      ]
+    NonADTConstruction datacon expected actual -> concat
+      [ "The data constructor "
+      , printTree datacon
+      , " constructs a value of type "
+      , printTree actual
+      , ", but the expected type is "
+      , printTree expected
+      ]
+    TypeSignatureTooGeneral fun declared inferred -> concat
+      [ "The type signature of "
+      , printTree fun
+      , " is too general:\n"
+      , "  declared: "
+      , printTree declared
+      , "\n"
+      , "  inferred: "
+      , printTree inferred
+      ]
+    TypesigError fun declared inferred -> concat
+      [ "Type error in function "
+      , printTree fun
+      , ":\n"
+      , "  declared type: "
+      , printTree declared
+      , "\n"
+      , "  inferred: "
+      , printTree inferred
+      ]

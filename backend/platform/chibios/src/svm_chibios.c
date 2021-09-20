@@ -40,7 +40,7 @@
 #include <scheduler.h>
 #include <ll/ll_driver.h>
 
-#include <hal/chibios/svm_chibios.h>
+#include <svm_chibios.h>
 
 /***************************************************/
 /* Check for configurations that are not sensible. */

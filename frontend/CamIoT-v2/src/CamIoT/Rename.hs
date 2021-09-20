@@ -3,14 +3,14 @@ renaming a program converts a program from a form where names are not necessaril
 unique to one where names are guaranteed to be unique. -}
 module CamIoT.Rename where
 
-import CamIoT.Internal.Syntax
-import CamIoT.Rename.Syntax
+import           CamIoT.Internal.Syntax
+import           CamIoT.Rename.Syntax
 
-import qualified Data.Map as Map
+import qualified Data.Map                      as Map
 
-import Control.Monad.State
-import Control.Monad.Reader
-import Control.Monad.Except
+import           Control.Monad.Except
+import           Control.Monad.Reader
+import           Control.Monad.State
 
 
 {- | Alpha rename a program. The input to this function is
@@ -27,14 +27,14 @@ The output is either an error or a tuple consisting of
 -}
 alphaRename :: [Ident] -> Int -> Program a -> Either String (Program a, Int)
 alphaRename doNotRename nameGeneratingState p =
-    case runExcept $ runReaderT (runStateT p' nameGeneratingState) renameState of
-        Left err -> Left $ show err
-        Right r  -> Right r
-  where
-      p' = renameProgram p
+  case runExcept $ runReaderT (runStateT p' nameGeneratingState) renameState of
+    Left  err -> Left $ show err
+    Right r   -> Right r
+ where
+  p' = renameProgram p
 
-      renameState :: Map.Map Ident Ident
-      renameState = Map.fromList $ map dup doNotRename
+  renameState :: Map.Map Ident Ident
+  renameState = Map.fromList $ map dup doNotRename
 
-      dup :: a -> (a, a)
-      dup a = (a, a)
+  dup :: a -> (a, a)
+  dup a = (a, a)

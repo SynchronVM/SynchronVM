@@ -5,37 +5,31 @@ find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 project(lldriver-test)
 
 set(LLBC   ../../../../src/ll)
-set(LLBC_Z ../../../../src/ll/os/zephyr)
-set(SYSC_Z  ../../../../src/sys/os/zephyr)
-
-set(HAL_Z  ../../../../src/hal/zephyr)
-
-set(LLBH_Z ../../../../include/ll/os/zephyr)
-set(HALH_Z ../../../../include/hal/zephyr)
-set(SYSH_Z ../../../../include/sys/os/zephyr)
 
 set(SENSE_VM ../../../../src)       
-set(SENSE_VM_H ../../../../include) 
+set(SENSE_VM_H ../../../../include)
+
+set(PLATFORM_SRC ../../../../platform/zephyr/src)
+set(PLATFORM_H   ../../../../platform/zephyr/include)
 
 FILE(GLOB app_sources src/*.c)
 FILE(GLOB extra_sources
   ${SENSE_VM}/*.c
   ${LLBC}/ll_driver.c
-  ${LLBC_Z}/led.c
-  ${LLBC_Z}/uart.c
-  ${LLBC_Z}/button.c
-  ${SYSC_Z}/sys_time.c
-  ${SYSC_Z}/sys_debug_uart.c
-  ${HAL_Z}/svm_zephyr.c)
+  ${PLATFORM_SRC}/led.c
+  ${PLATFORM_SRC}/uart.c
+  ${PLATFORM_SRC}/button.c
+  ${PLATFORM_SRC}/sys_time.c
+  ${PLATFORM_SRC}/sys_debug_uart.c
+  ${PLATFORM_SRC}/svm_zephyr.c)
 #  ${LLBC_Z}/powerman.c)
 
 target_sources(app PRIVATE ${app_sources} ${extra_sources})
 target_include_directories(app PRIVATE
   .
   ${SENSE_VM_H}
-  ${LLBH_Z}
-  ${HALH_Z}
-  ${SYSH_Z}
+  ${SENSE_VM_H}/sys
+  ${PLATFORM_H}
   ${ZEPHYR_BASE}/kernel/include
   ${ZEPHYR_BASE}/arch/${ARCH}/include)
 
