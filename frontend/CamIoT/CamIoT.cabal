@@ -46,6 +46,7 @@ library
       HindleyMilner.TypeInference
       Renaming.Renaming
       LambdaLifting.LambdaLifting
+      LetLifting.LetLift
       Monomorphisation.Monomorphise
       Monomorphisation.Environment
       Desugaring.Desugar
