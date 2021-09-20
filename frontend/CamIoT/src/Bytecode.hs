@@ -31,6 +31,7 @@ import Data.List
 import Desugaring.AST
 import GHC.Float(double2Float)
 import Interpreter.Interpreter
+import LetLifting.LetLift
 import Lib
 import GHC.Word
 import System.Exit
@@ -57,13 +58,11 @@ collectBindings collect (C.Letrec patexps e) = collectBindings (collect ++ patex
 collectBindings collect x = C.Letrec collect x
 
 
-
-
-{- translate - 
+{- translate -
    SExp t is desugared IR from frontend and
    converts this to middleware Exp from CamOpt.hs.
-   middleware Exp is "simpler" 
--} 
+   middleware Exp is "simpler"
+-}
 {- See NOTE 2 for missing rewrites -}
 translate :: SExp SType -> C.Exp
 translate (SEIf _ cond thn els) =
@@ -475,7 +474,7 @@ byteCompile verbose path = do
       --putStrLn $ show desugaredIr
 
       condPutStrLn verbose $ "\nCAM IR (no pp): \n"
-      let camir = translate desugaredIr
+      let camir = gentoplevelLetRec $ translate desugaredIr
       condPutStrLn verbose $ show camir
 
       condPutStrLn verbose $ "\nCAM BYTECODE (Hs Datatype): \n"
@@ -501,9 +500,9 @@ byteCompile verbose path = do
 
 
 -- Experiments --
-path = "testcases/Twinkle2.cam"
+-- path = "testcases/Twinkle2.cam"
 
--- path = "testcases/good24.cam"
+path = "testcases/good24.cam"
 
 test :: IO ()
 test = do
