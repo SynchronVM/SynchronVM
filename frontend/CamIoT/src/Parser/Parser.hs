@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2020 Robert Krook
+-- Copyright (c) 2020 Robert Krook, Abhiroop Sarkar
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@ type Parser a = Parsec Void Text a
 
 -- | Parser that parses a program
 pProgram :: Parser [Def ()]
-pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation
+pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation <|> try pMutRec
 
 -- parse types
 pClosed :: Parser Type
@@ -203,6 +203,25 @@ pEquation = do
     pChar ';'
     return $ DEquation () name patterns exp
 
+-- Parsing mutually recursive equations
+
+pMutRec :: Parser (Def ())
+pMutRec = do
+  pSymbol "mutrec"
+  recTysDefs <- sepBy pMutRecBody (pSymbol "and")
+  let (typesigs, defs)  = unzip recTysDefs
+  return $ DMutRec typesigs defs
+
+pMutRecBody :: Parser (Def (), Def ())
+pMutRecBody = do
+  name <- pIdent
+  patterns <- many (pPat True False)
+  pSymbol ":"
+  fType <- parens pType
+  pSymbol "="
+  exp <- pExp
+  return $ (DTypeSig name fType, DEquation () name patterns exp)
+
 -- parse patterns
 
 -- \1 -> flsfgg
@@ -315,4 +334,7 @@ keywords = [
   , "in"
   , "if"
   , "then"
-  , "else"]
+  , "else"
+  , "mutrec"
+  , "and"
+  ]

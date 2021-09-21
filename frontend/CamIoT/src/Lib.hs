@@ -53,7 +53,8 @@ compile input = do
        - May be the culprit in the whitespace issues -}
     let processed = PreP.process contents
     let parsed = Text.Megaparsec.parse P.pProgram input processed
-        
+    putStrLn "Parser output"
+    putStrLn $ show parsed
     case parsed of
         Left err   -> return $ Left (errorBundlePretty err)
         Right defs -> do
