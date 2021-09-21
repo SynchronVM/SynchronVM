@@ -472,17 +472,21 @@ byteCompile verbose path = do
       condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
       condPutStrLn verbose $ PP.printTree desugaredIr
       --putStrLn $ show desugaredIr
-
+  
       condPutStrLn verbose $ "\nCAM IR (no pp): \n"
-      let camir = gentoplevelLetRec $ translate desugaredIr
-      condPutStrLn verbose $ show camir
+      let cam0 = translate desugaredIr
+      condPutStrLn verbose $ show cam0
+  
+      condPutStrLn verbose $ "\nCAM IR LETREC: \n"
+      let cam1 = gentoplevelLetRec $ cam0
+      condPutStrLn verbose $ show cam1
 
       condPutStrLn verbose $ "\nCAM BYTECODE (Hs Datatype): \n"
-      let cam   = C.interpret camir
-      condPutStrLn verbose $ show cam
+      let cam2   = C.interpret cam1
+      condPutStrLn verbose $ show cam2
 
       condPutStrLn verbose $ "\nCAM BYTECODE (Peephole optimized): \n"
-      let camopt   = Peephole.optimise $ cam
+      let camopt   = Peephole.optimise $ cam2
       condPutStrLn verbose $ show camopt
 
       condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
