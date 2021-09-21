@@ -54,8 +54,8 @@ gentoplevelLetRec = collectBindings []
 
 collectBindings :: [(C.Pat,C.Exp)] -> C.Exp -> C.Exp
 collectBindings collect (C.Let pat e1 e2) = collectBindings ((pat, e1):collect) e2
-collectBindings collect (C.Letrec patexps e) = collectBindings (collect ++ patexps) e
-collectBindings collect x = C.Letrec collect x
+collectBindings collect (C.Letrec patexps e) = collectBindings (patexps ++ collect) e
+collectBindings collect x = C.Letrec (reverse collect) x
 
 
 {- translate -
@@ -472,11 +472,11 @@ byteCompile verbose path = do
       condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
       condPutStrLn verbose $ PP.printTree desugaredIr
       --putStrLn $ show desugaredIr
-  
+
       condPutStrLn verbose $ "\nCAM IR (no pp): \n"
       let cam0 = translate desugaredIr
       condPutStrLn verbose $ show cam0
-  
+
       condPutStrLn verbose $ "\nCAM IR LETREC: \n"
       let cam1 = gentoplevelLetRec $ cam0
       condPutStrLn verbose $ show cam1
@@ -504,9 +504,9 @@ byteCompile verbose path = do
 
 
 -- Experiments --
-path = "testcases/Twinkle2.cam"
+-- path = "testcases/Twinkle2.cam"
 
--- path = "testcases/good24.cam"
+path = "testcases/good17.cam"
 
 test :: IO ()
 test = do
@@ -520,19 +520,24 @@ test = do
 
 
       putStrLn $ "\n\n CAM IR (no pp) \n\n"
-      let camir = gentoplevelLetRec $ translate desugaredIr
+      let camir = translate desugaredIr
       putStrLn $ show camir
 
+
+      putStrLn $ "\nCAM IR LETREC: \n"
+      let cam1 = gentoplevelLetRec $ camir
+      putStrLn $ show cam1
+
       putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
-      let cam   = Peephole.optimise $ C.interpret camir
+      let cam   = Peephole.optimise $ C.interpret cam1
       putStrLn $ show cam
 
       putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
-      let cam   = Peephole.optimise $ C.interpret camir
+      let cam   = Peephole.optimise $ C.interpret cam1
       putStrLn $ show $ A.translate cam
 
       putStrLn $ "\n\n CAM HS Interpreter \n\n"
-      let val = IM.evaluate $ C.interpret camir
+      let val = IM.evaluate $ C.interpret cam1
       -- putStrLn $ show val
 
       putStrLn $ "\n\n CAM Assembler and true bytecode generator \n\n"

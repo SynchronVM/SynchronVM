@@ -91,6 +91,36 @@ letlift e = C.Letrec (reverse bindings) e'
 
 
 
+-- {- | Returns the set of unbound variables in an expression. E.g \x -> x + y would return
+-- the set containing only y, as we clearly see where x is bound. -}
+-- varsInExp :: Exp Type -> [(Ident, Type)]
+-- varsInExp e = case e of
+--         ECase _ e pms   -> let s = varsInExp e
+--                                varsInPm (PM p e') = exclude (varsInExp e') (varsInPat p)
+--                            in concat $ s : map varsInPm pms
+--         ELet _ p e1 e2  -> let s1 = varsInExp e1
+--                                s2 = varsInExp e2
+--                                pi = varsInPat p
+--                            in exclude s1 pi ++ exclude s2 pi
+--         ELetR a p e1 e2 -> undefined
+--         ELam _ p e      -> exclude (varsInExp e) (varsInPat p)
+--         EIf _ e1 e2 e3  -> varsInExp e1 ++ varsInExp e2 ++ varsInExp e3
+--         EApp _ e1 e2    -> varsInExp e1 ++ varsInExp e2
+--         EOr _ e1 e2     -> varsInExp e1 ++ varsInExp e2
+--         EAnd _ e1 e2    -> varsInExp e1 ++ varsInExp e2
+--         ERel _ e1 _ e2  -> varsInExp e1 ++ varsInExp e2
+--         EAdd _ e1 _ e2  -> varsInExp e1 ++ varsInExp e2
+--         EMul _ e1 _ e2  -> varsInExp e1 ++ varsInExp e2
+--         ETup _ texps    -> concat $ map varsInExp texps
+--         ENot _ e        -> varsInExp e
+--         EVar a id       -> [(id, a)]
+--         EUVar _ _       -> []
+--         EConst _ _      -> []
+
+isFree :: C.Exp -> C.Exp -> Bool
+isFree f e = undefined
+
+
 letlift' :: C.Exp -> [(C.Pat, C.Exp)] -> (C.Exp, [(C.Pat, C.Exp)])
 letlift' (C.Let pat e1 e2) bindings = letlift' e2 (((pat, eNew):bs) ++ bindings)
   where
