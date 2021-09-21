@@ -208,6 +208,26 @@ pEquation = do
 pMutRec :: Parser (Def ())
 pMutRec = do
   pSymbol "mutrec"
+  pChar '{'
+  recTysDefs <- sepBy pMutRecBody (pChar ';')
+  pChar '}'
+  pChar ';'
+  let (typesigs, defs) = unzip recTysDefs
+  return $ DMutRec typesigs defs
+  where
+    pMutRecBody :: Parser (Def (), Def ())
+    pMutRecBody = do
+      name <- pIdent
+      patterns <- many (pPat True False)
+      pChar ':'
+      fType <- parens pType
+      pChar '='
+      exp <- pExp
+      return (DTypeSig name fType, DEquation () name patterns exp)
+
+{-pMutRec :: Parser (Def ())
+pMutRec = do
+  pSymbol "mutrec"
   recTysDefs <- sepBy pMutRecBody (pSymbol "and")
   let (typesigs, defs)  = unzip recTysDefs
   return $ DMutRec typesigs defs
@@ -221,7 +241,7 @@ pMutRecBody = do
   pSymbol "="
   exp <- pExp
   return $ (DTypeSig name fType, DEquation () name patterns exp)
-
+-}
 -- parse patterns
 
 -- \1 -> flsfgg

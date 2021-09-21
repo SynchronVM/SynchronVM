@@ -1,5 +1,8 @@
-foo =
-  let id x = x in
-  5
 
-main = foo
+mutrec
+  f x y : (Int -> Int -> Int) = g (x + y)
+
+  g z : (Int -> Int) = f z z
+
+
+main = 5

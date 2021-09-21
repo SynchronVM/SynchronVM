@@ -108,7 +108,7 @@ instance Show Error where
 type PP a = StateT PPState (Writer T.Text) a
 
 keywords :: [T.Text]
-keywords = ["where", "of"]
+keywords = ["where", "of", "mutrec"]
 
 -- | Function that will take a `Text` and preprocess it
 process :: T.Text -> T.Text
