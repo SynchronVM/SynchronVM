@@ -592,6 +592,39 @@ example33 =
     four = Sys $ LInt 4
     eleven = Sys $ LInt 11
 
+{-
+letrec even = \n -> if (n == 0)
+                    then True
+                    else odd (n - 1)
+       odd  = \n -> if (n == 0)
+                    then False
+                    else even (n - 1)
+    in even 4
+
+-}
+
+example34 =
+  Letrec
+  [(PatVar "even", Lam (PatVar "n")
+                   (If (Sys $ Sys2 BEQ (Var "n") zero)
+                    true
+                    (App (Var "odd") (Sys $ Sys2 MinusI (Var "n") one))
+                   )
+   )
+   , (PatVar "odd", Lam (PatVar "n")
+                   (If (Sys $ Sys2 BEQ (Var "n") zero)
+                    false
+                    (App (Var "even") (Sys $ Sys2 MinusI (Var "n") one))
+                   )
+     )
+  ] (App (Var "even") four)
+  where
+    zero = Sys $ LInt 0
+    one  = Sys $ LInt 1
+    three = Sys $ LInt 3
+    four = Sys $ LInt 4
+    true = Sys $ LBool True
+    false = Sys $ LBool False
 
 run :: Exp -> Val
 run = evaluate . CO.interpret
@@ -611,6 +644,7 @@ runAllTests =
       , example19 , example20 , example21 , example22 , example23
       , example24 , example25 , example26 , example27 , example28
       , example29', example30', example31', example32', example33
+      , example34
       ]
     results =
       [ VInt 1, VInt 4, VInt 5, VInt 25, VBool True
@@ -620,6 +654,7 @@ runAllTests =
       , VInt 10, VInt 8,  VInt 3 , VInt 5
       , VInt 10, VInt 8,  VInt 2 , VInt 5
       , VInt 5,  VInt 11, VInt 11, VInt 13
+      , VBool True
       ]
 
 
