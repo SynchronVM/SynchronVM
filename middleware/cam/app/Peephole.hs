@@ -105,7 +105,8 @@ applyTwoOPRule = do
 incPCBy :: Offset -> Optimise ()
 incPCBy offset = do
   pc <- getPC
-  S.modify $ \s -> s {programcounter = pc + offset}
+  if (offset < 0 && pc <= 0) then return ()
+    else  S.modify $ \s -> s {programcounter = pc + offset}
 
 replaceNInstrs :: Int -> [Instruction] -> Optimise ()
 replaceNInstrs n is_ = do
