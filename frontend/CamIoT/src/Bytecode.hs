@@ -48,16 +48,6 @@ import Debug.Trace
 
 
 
-
-gentoplevelLetRec :: C.Exp -> C.Exp
-gentoplevelLetRec = collectBindings []
-
-collectBindings :: [(C.Pat,C.Exp)] -> C.Exp -> C.Exp
-collectBindings collect (C.Let pat e1 e2) = collectBindings ((pat, e1):collect) e2
-collectBindings collect (C.Letrec patexps e) = collectBindings (patexps ++ collect) e
-collectBindings collect x = C.Letrec (reverse collect) x
-
-
 {- translate -
    SExp t is desugared IR from frontend and
    converts this to middleware Exp from CamOpt.hs.
@@ -474,11 +464,7 @@ byteCompile verbose path = do
       --putStrLn $ show desugaredIr
 
       condPutStrLn verbose $ "\nCAM IR (no pp): \n"
-      let cam0 = translate desugaredIr
-      condPutStrLn verbose $ show cam0
-
-      condPutStrLn verbose $ "\nCAM IR LETREC: \n"
-      let cam1 = gentoplevelLetRec $ cam0
+      let cam1 = translate desugaredIr
       condPutStrLn verbose $ show cam1
 
       condPutStrLn verbose $ "\nCAM BYTECODE (Hs Datatype): \n"
@@ -504,9 +490,9 @@ byteCompile verbose path = do
 
 
 -- Experiments --
--- path = "testcases/Twinkle2.cam"
+path = "testcases/Twinkle2.cam"
 
-path = "testcases/good17.cam"
+-- path = "testcases/good17.cam"
 
 test :: IO ()
 test = do
@@ -524,20 +510,16 @@ test = do
       putStrLn $ show camir
 
 
-      putStrLn $ "\nCAM IR LETREC: \n"
-      let cam1 = gentoplevelLetRec $ camir
-      putStrLn $ show cam1
-
       putStrLn $ "\n\n CAM BYTECODE (Hs Datatype) \n\n"
-      let cam   = Peephole.optimise $ C.interpret cam1
+      let cam   = Peephole.optimise $ C.interpret camir
       putStrLn $ show cam
 
       putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
-      let cam   = Peephole.optimise $ C.interpret cam1
+      let cam   = Peephole.optimise $ C.interpret camir
       putStrLn $ show $ A.translate cam
 
       putStrLn $ "\n\n CAM HS Interpreter \n\n"
-      let val = IM.evaluate $ C.interpret cam1
+      let val = IM.evaluate $ C.interpret camir
       -- putStrLn $ show val
 
       putStrLn $ "\n\n CAM Assembler and true bytecode generator \n\n"
