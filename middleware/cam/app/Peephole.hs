@@ -127,9 +127,9 @@ replaceNInstrs n l is_ = do
     flatcaminst :: Instruction -> FlatCAM
     flatcaminst i = Plain (Ins i)
 
-    
+
     labelheadcaminst :: Label -> [FlatCAM] -> [FlatCAM]
-    labelheadcaminst l [] = [Labeled l (Ins SKIP)]   
+    labelheadcaminst l [] = [Labeled l (Ins SKIP)]
     labelheadcaminst l ((Plain i):is) = (Labeled l i):is
     labelheadcaminst _ is = is  -- Even empty replacement seq is legal
 
@@ -137,19 +137,16 @@ replaceNInstrs n l is_ = do
     --
     -- In a two instr sequence both could be labeled.
     -- so if a two instr sequence is transformed into a one instr sequence
-    -- then it should have two labels on that instruction. Or rather, or usages
+    -- then it should have two labels on that instruction. Or rather, usages
     -- of the first of these labels should be replaced with usages of the second. 
     -- Here,  applyTwoOpRule will not apply any two instr seq optimizations
-    -- if both instrs are labeled, hopefully avoiding that issue. 
+    -- if both instrs are labeled, hopefully avoiding that issue.
     --
     -- Another thing is when a two instruction sequence is translated to a
     -- 0 instruction sequence. Then the label should be moved to the next
     -- instruction in the sequence.
     -- Here we protect against that by inserting a labeled SKIP in this case.
-    -- 
-
-
-
+    --
 
 terminateNow :: Optimise Bool
 terminateNow = do
