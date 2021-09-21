@@ -75,7 +75,7 @@ applyOneOPRule = do
     case i1 of
       Plain (Ins i1_) -> do
           let (is_, offset) = oneOPRule is i1_
-          replaceNInstrs 1 is_
+          replaceNInstrs 1 Nothing is_
           pure offset
 
       _ -> pure 1 -- this is because the two op rule has already been applied
@@ -95,9 +95,12 @@ applyTwoOPRule = do
     case (i1, i2) of
       (Plain (Ins i1_), Plain (Ins i2_)) -> do
           let (is_, offset) = twoOPRule i1_ i2_
-          replaceNInstrs 2 is_
+          replaceNInstrs 2 Nothing is_
           pure offset
-
+      (Labeled l (Ins i1_), Plain (Ins i2_)) -> do
+          let (is_, offset) = twoOPRule i1_ i2_
+          replaceNInstrs 2 (Just l) is_
+          pure offset
       _ -> pure 0 -- maybe the OneOPRule applies so don't increment PC
 
   else pure 0 -- if there is only one instruction and applyOneOPRule applies
@@ -108,17 +111,45 @@ incPCBy offset = do
   if (offset < 0 && pc <= 0) then return ()
     else  S.modify $ \s -> s {programcounter = pc + offset}
 
-replaceNInstrs :: Int -> [Instruction] -> Optimise ()
-replaceNInstrs n is_ = do
+replaceNInstrs :: Int -> Maybe Label -> [Instruction] -> Optimise ()
+replaceNInstrs n l is_ = do
   is <- getInstrs
   pc <- getPC
+  let replacement' = map flatcaminst is_
+  let replacement  = case l of
+                       Just l' -> labelheadcaminst l' replacement'
+                       Nothing -> replacement'
   let instrs_ = take pc is
-             ++ map flatcaminst is_
+             ++ replacement
              ++ drop (pc + n) is
   S.modify $ \s -> s {instrs = instrs_}
   where
     flatcaminst :: Instruction -> FlatCAM
     flatcaminst i = Plain (Ins i)
+
+    
+    labelheadcaminst :: Label -> [FlatCAM] -> [FlatCAM]
+    labelheadcaminst l [] = [Labeled l (Ins SKIP)]   
+    labelheadcaminst l ((Plain i):is) = (Labeled l i):is
+    labelheadcaminst _ is = is  -- Even empty replacement seq is legal
+
+    -- There are a couple of problems here that we need to protect ourselves against.
+    --
+    -- In a two instr sequence both could be labeled.
+    -- so if a two instr sequence is transformed into a one instr sequence
+    -- then it should have two labels on that instruction. Or rather, or usages
+    -- of the first of these labels should be replaced with usages of the second. 
+    -- Here,  applyTwoOpRule will not apply any two instr seq optimizations
+    -- if both instrs are labeled, hopefully avoiding that issue. 
+    --
+    -- Another thing is when a two instruction sequence is translated to a
+    -- 0 instruction sequence. Then the label should be moved to the next
+    -- instruction in the sequence.
+    -- Here we protect against that by inserting a labeled SKIP in this case.
+    -- 
+
+
+
 
 terminateNow :: Optimise Bool
 terminateNow = do
