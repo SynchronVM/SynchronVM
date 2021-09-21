@@ -732,3 +732,32 @@ uiexample3 =
                           (App (Var "v2") (Sys (LInt 3))))))
          ]
   (App (Var "v0") (Sys (LInt 2)))
+
+{-
+
+The button blinky program
+
+-}
+
+uiexample4 =
+  Letrec
+  [(Empty,Sys (RTS2 SPAWNEXTERNAL (Var "v1") (Sys (LInt 1))))
+  ,(Empty,Sys (RTS2 SPAWNEXTERNAL (Var "v0") (Sys (LInt 0))))
+  ,(PatVar "v2",Lam (PatVar "v5")
+                (Let (PatVar "v3") (Var "v5")
+                 (Sys (RTS1 SYNC (Sys (RTS2 SEND (Var "v1") (Var "v3")))))))
+  ,(PatVar "v1",Sys (RTS1 CHANNEL Void))
+  ,(PatVar "v0",Sys (RTS1 CHANNEL Void))
+  ,(PatVar "v4",Let Empty
+                (Sys (RTS1 SYNC (Sys (RTS2 WRAP (Sys (RTS1 RECV (Var "v0"))) (Var "v2"))))) (Var "v4"))
+  ]
+  (Var "v4")
+
+{-
+
+letrec v0 = v0
+    in v0
+
+-}
+
+uiexample5 = Letrec [(PatVar "v0",Var "v0")] (Var "v0")
