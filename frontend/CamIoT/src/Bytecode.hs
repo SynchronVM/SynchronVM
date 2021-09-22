@@ -44,9 +44,6 @@ import qualified Peephole as Peephole
 import qualified Bytecode.InterpreterModel as IM
 
 
-import Debug.Trace
-
-
 
 {- translate -
    SExp t is desugared IR from frontend and

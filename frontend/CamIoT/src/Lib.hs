@@ -52,10 +52,6 @@ compile input = do
     {- PreP.process adding layout tokens.
        - May be the culprit in the whitespace issues -}
     let processed = PreP.process contents
-    putStrLn "\n\n"
-    putStrLn "Preprocessed contents"
-    putStrLn $ show processed
-    putStrLn "\n\n"
     let parsed = Text.Megaparsec.parse P.pProgram input processed
     putStrLn "\n\n"
     putStrLn "Parser output"

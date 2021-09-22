@@ -36,6 +36,8 @@ import Control.Monad.Identity
 import Data.Void
 import Data.Text (Text, unpack, unlines, intercalate)
 
+
+
 -- | Custom parser type - synonym for Parsec Void Text a
 type Parser a = Parsec Void Text a
 
@@ -52,7 +54,7 @@ type Parser a = Parsec Void Text a
 
 -- | Parser that parses a program
 pProgram :: Parser [Def ()]
-pProgram = many $ pDataDec <|> try pTypeSignature <|> pEquation <|> try pMutRec
+pProgram = some $ pDataDec <|> try pTypeSignature <|> pEquation <|> pMutRec
 
 -- parse types
 pClosed :: Parser Type
@@ -205,25 +207,6 @@ pEquation = do
 
 -- Parsing mutually recursive equations
 
--- pMutRec :: Parser (Def ())
--- pMutRec = do
---   pSymbol "mutrec"
---   pChar '{'
---   recTysDefs <- sepBy pMutRecBody (pChar ';')
---   pChar '}'
---   pChar ';'
---   let (typesigs, defs) = unzip recTysDefs
---   return $ DMutRec typesigs defs
---   where
---     pMutRecBody :: Parser (Def (), Def ())
---     pMutRecBody = do
---       name <- pIdent
---       patterns <- many (pPat True False)
---       pChar ':'
---       fType <- parens pType
---       pChar '='
---       exp <- pExp
---       return (DTypeSig name fType, DEquation () name patterns exp)
 
 pMutRec :: Parser (Def ())
 pMutRec = do
@@ -250,23 +233,6 @@ pMutRec = do
       return $ DEquation () name patterns exp
 
 
-{-pMutRec :: Parser (Def ())
-pMutRec = do
-  pSymbol "mutrec"
-  recTysDefs <- sepBy pMutRecBody (pSymbol "and")
-  let (typesigs, defs)  = unzip recTysDefs
-  return $ DMutRec typesigs defs
-
-pMutRecBody :: Parser (Def (), Def ())
-pMutRecBody = do
-  name <- pIdent
-  patterns <- many (pPat True False)
-  pSymbol ":"
-  fType <- parens pType
-  pSymbol "="
-  exp <- pExp
-  return $ (DTypeSig name fType, DEquation () name patterns exp)
--}
 -- parse patterns
 
 -- \1 -> flsfgg

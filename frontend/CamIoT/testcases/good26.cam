@@ -5,7 +5,7 @@ mutrec
       then True
       else odd (n - 1)
 
-  odd : Int -> Bool =
+  odd : Int -> Bool
   odd n = 
       if (n == 0)
       then False
