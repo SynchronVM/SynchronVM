@@ -63,7 +63,11 @@ compile input = do
             tc <- typecheck defs
             case tc of
                 Left err2           -> return $ Left (show err2)
-                Right (tree, subst) -> do let (rn, state1) =  R.rename (apply subst tree)
+                Right (tree, subst) -> do let tcedP = apply subst tree
+                                          putStrLn "*****Typechecking*****"
+                                          putStrLn $ show tcedP
+                                          putStrLn "\n\n"
+                                          let (rn, state1) =  R.rename tcedP
                                           -- putStrLn "***** Alpha Renamed version *****"
                                           -- putStrLn $ betterPrint rn
                                           -- putStrLn ""

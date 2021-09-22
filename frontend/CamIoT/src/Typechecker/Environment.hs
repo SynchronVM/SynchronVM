@@ -67,7 +67,7 @@ import Control.Monad.Writer ( WriterT, runWriterT, tell )
 import Control.Monad.Except ( MonadError(throwError), ExceptT, runExceptT )
 
 -- | Type schemas, e.g forall a . Maybe a.
-data Scheme = Forall [Ident] Type
+data Scheme = Forall [Ident] Type deriving Show
 
 instance Substitutable Scheme where
     apply s (Forall vars t) = Forall vars $ apply s' t

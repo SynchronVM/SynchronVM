@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2020 Robert Krook
+-- Copyright (c) 2020 Robert Krook, Abhiroop Sarkar
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -59,7 +59,7 @@ import Parser.AbsTinyCamiot
       AddOp(Minus, Plus),
       Exp(..),
       Type(TFloat, TVar, TAdt, TNil, TTup, TLam, TBool, TInt),
-      Def(DEquation, DTypeSig),
+      Def(DEquation, DTypeSig, DMutRec),
       Ident )
 import Typechecker.Substitution ( Substitutable(..) )
 
@@ -267,6 +267,7 @@ that would perform the substitution for us.
 -- type annotated AST produced while typechecking.
 instance Substitutable a => Substitutable (Def a) where
   apply s (DEquation t ident pats exp) = DEquation (apply s t) ident (apply s pats) (apply s exp)
+  apply s (DMutRec tydefs) = DMutRec $ map (\(ty, defs) -> ((apply s ty), (map (apply s) defs))) tydefs
   apply _ d = d
 
   ftv d = undefined -- see below

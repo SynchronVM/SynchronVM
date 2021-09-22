@@ -20,10 +20,10 @@ data Def a
     = DEquation a Ident [Pat a] (Exp a)
     | DTypeSig Ident Type
     | DDataDec UIdent [Ident] [ConstructorDec]
-    | DMutRec [Def a] [Def a]
-    --          ^       ^
-    --          |    mutally recursive definitions
-    --       type sigs of mutually recursive types
+    | DMutRec [(Def a, [Def a])]
+    --           ^       ^
+    --           |    mutally recursive definitions
+    --       type sig of a mutually recursive fun
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor)
 
 -- instance C.Functor Def where

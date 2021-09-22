@@ -215,8 +215,7 @@ pMutRec = do
   recTysDefs <- sepBy pMutRecBody (pChar ';') -- [(Def (), [Def ()])]
   pChar '}'
   pChar ';'
-  let (typesigs, defs) = unzip recTysDefs
-  return $ DMutRec typesigs (concat defs)
+  return $ DMutRec recTysDefs
   where
     pMutRecBody :: Parser (Def (), [Def ()])
     pMutRecBody = do

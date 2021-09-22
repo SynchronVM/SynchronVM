@@ -1,6 +1,6 @@
 -- MIT License
 
--- Copyright (c) 2020 Robert Krook
+-- Copyright (c) 2020 Robert Krook, Abhiroop Sarkar
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,7 @@ import qualified Data.Set as Set
 
 import HindleyMilner.TypeInference
 import HindleyMilner.HM
-
+import Debug.Trace
 typecheck :: [Def ()] -> IO (Either TCError ([Def Type], Subst))
 typecheck tc = do
     res <- runTC (checkProgram tc) emptyEnv
@@ -66,15 +66,28 @@ convCons (C2 c : cs)          = map (\(C (t1,t2,_)) -> (t1,t2) ) c : convCons cs
 gatherTypeSigs :: [Def ()] -> TC [(Ident, Scheme)]
 gatherTypeSigs ds = do
     let typesigs = catMaybes (map go ds)
-    let funs     = map fst typesigs
+    let mutrectypesigs = catMaybes $ fetchMutRecTypeSigs ds []
+    let allTypeSigs = typesigs ++ mutrectypesigs
+    let funs     = map fst allTypeSigs
     e           <- ask
 
     case length funs == length (nub funs) of
-        True  -> return $ map (\(n, t) -> (n, (generalize e t))) typesigs
+        True  -> return $ map (\(n, t) -> (n, (generalize e t))) allTypeSigs
         False -> throwError $ DuplicateTypeSig $ head (intersect funs (nub funs))
 
   where go (DTypeSig fun t) = Just (fun, t)
         go _                   = Nothing
+
+        fetchMutRecTypeSigs :: [Def ()]
+                            -> [[Maybe (Ident, Type)]]
+                            -> [Maybe (Ident, Type)]
+        fetchMutRecTypeSigs [] collect = concat $ collect
+        fetchMutRecTypeSigs ((DMutRec tysdefs):defs) collect =
+          fetchMutRecTypeSigs defs (map go mutrectys:collect)
+          where
+            mutrectys = map fst tysdefs
+        fetchMutRecTypeSigs (_:defs) collect =
+          fetchMutRecTypeSigs defs collect
 
 -- | Traverses a program and puts the data declarations in the type checking environment
 gatherDataDecs :: [Def ()] -> TC ()
@@ -131,6 +144,7 @@ gatherDataDecs (d:ds) = case d of
 -- typecheck
 
 data Function a = FN Ident (Maybe Type) [Def a]
+                | FMutrec [(Ident, Maybe Type, [Def a])]
 
 -- | Given a list of definitions, return a list of typechecked and annotated definitions.
 checkProgram :: [Def ()] -> TC [Def Type]
@@ -151,12 +165,30 @@ checkProgram ds = do
         -}
         single :: [Function ()] -> TC [Function Type]
         single [] = return []
+        single ((FMutrec mutrecfunstys):ds) = do
+          idTysDefs <- checkMutRecs mutrecfunstys
+          ds' <- single ds -- XXX: Could have errors
+          return $ (FMutrec idTysDefs) : ds'
         single (d:ds) = do
             (t, d') <- checkFunction d
             e <- ask
             let scope e = extend e (getName d', generalize e t)
             ds' <- local scope (single ds)
             return $ d' : ds'
+
+        checkMutRecs [] = return []
+        checkMutRecs ((ident, ty, defs):ds) = do
+          -- instead of rewriting a checkFunction for
+          -- mutrec functions, I convert each mutrec func
+          -- to a function with the FN constructor and do
+          -- checkFunction. The ident' and ty' will most likely
+          -- be the same but I used different name just to show
+          -- that it undergoes the application of a function
+          (t, FN ident' ty' defs') <- checkFunction (FN ident ty defs)
+          e <- ask
+          let scope e = extend e (ident', generalize e t)
+          ds' <- local scope (checkMutRecs ds)
+          return $ (ident', ty', defs') : ds'
 
         -- | Given a `Function a`, returns the name of the function.
         getName :: Function a -> Ident
@@ -168,6 +200,10 @@ checkProgram ds = do
         unwrapDef :: Function Type -> [Def Type]
         unwrapDef (FN _ Nothing ds)  = ds
         unwrapDef (FN n (Just t) ds) = (DTypeSig n t) : ds
+        unwrapDef (FMutrec idsTysDefs) =
+          [DMutRec $
+           map (\(id,(Just t),defs ) -> (DTypeSig id t, defs)) idsTysDefs
+          ]
 
         {-- | A bad way of changing the 'phantom' type in `Def`. Meant to be called only
         on data type declarations and type signature declarations, who carry no value of
@@ -194,21 +230,35 @@ makeFunctions ds =
         f (DTypeSig n1 _) (DEquation _ n2 _ _)      = n1 == n2
         f _ _                                       = False
 
-        groups = groupBy f ds
 
-        isDataDec [(DDataDec _ _ _)] = True
-        isDataDec _                  = False
+        isDataDec (DDataDec _ _ _) = True
+        isDataDec _ = False
 
-        (datadecs, funs) = partition isDataDec groups
-    in (concat datadecs, (map makeFun) funs)
+        isMutRec (DMutRec _) = True
+        isMutRec _ = False
+
+        dd = filter isDataDec ds
+        mutrecs = filter isMutRec ds -- [DMutRec [(ty,[eq1, eq1])]]
+        funtys = filter (not . (isDataDec .||. isMutRec)) ds
+        groupedFuns = groupBy f funtys
+
+    in (dd, map makeFun groupedFuns ++ map mutRecToFuns mutrecs)
   where
-      {-- | Wraps a list of definitions up as a Function type. The idea is that it is
-      more convenient to pass objects of this type around than to keep operating
-      on lists.
-      -}
-      makeFun :: [Def ()] -> Function ()
-      makeFun ((DTypeSig name t):ds)        = FN name (Just t) ds
-      makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
+    (.||.) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+    (.||.) f g a = f a || g a -- or use liftA2
+
+    {-- | Wraps a list of definitions up as a Function type. The idea is that it is
+    more convenient to pass objects of this type around than to keep operating
+    on lists.
+    -}
+    makeFun :: [Def ()] -> Function ()
+    makeFun ((DTypeSig name t):ds)        = FN name (Just t) ds
+    makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
+
+    mutRecToFuns :: Def () -> Function ()
+    mutRecToFuns (DMutRec tydefs) =
+      FMutrec $ map (\(DTypeSig name t, defs) -> (name, (Just t), defs)) tydefs
+
 
 {-- | This function returns true if the given Function is recursive. It performs the
 recursive check by seeing if the functions name appears in its body. Might be inefficient
