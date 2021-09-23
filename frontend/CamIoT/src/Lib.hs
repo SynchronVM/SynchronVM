@@ -53,10 +53,10 @@ compile input = do
        - May be the culprit in the whitespace issues -}
     let processed = PreP.process contents
     let parsed = Text.Megaparsec.parse P.pProgram input processed
-    putStrLn "\n\n"
-    putStrLn "Parser output"
-    putStrLn $ show parsed
-    putStrLn "\n\n"
+    -- putStrLn "\n\n"
+    -- putStrLn "*****Parser output*****"
+    -- putStrLn $ show parsed
+    -- putStrLn "\n\n"
     case parsed of
         Left err   -> return $ Left (errorBundlePretty err)
         Right defs -> do
@@ -64,13 +64,12 @@ compile input = do
             case tc of
                 Left err2           -> return $ Left (show err2)
                 Right (tree, subst) -> do let tcedP = apply subst tree
-                                          putStrLn "*****Typechecking*****"
-                                          putStrLn $ show tcedP
-                                          putStrLn "\n\n"
+                                          -- putStrLn "*****Typechecking*****"
+                                          -- putStrLn $ show tcedP
                                           let (rn, state1) =  R.rename tcedP
-                                          -- putStrLn "***** Alpha Renamed version *****"
-                                          -- putStrLn $ betterPrint rn
-                                          -- putStrLn ""
+                                          putStrLn "***** Alpha Renamed version *****"
+                                          putStrLn $ betterPrint rn
+                                          putStrLn ""
                                           let (ll, state2) =  L.lambdaLift rn state1
                                           -- putStrLn "***** LambdaLifted version *****"
                                           -- putStrLn $ betterPrint ll

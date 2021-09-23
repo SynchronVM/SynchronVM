@@ -96,6 +96,11 @@ renameDef x@(d:ds) = case d of
         else do id' <- fresh
                 inEnv (id, id') (renameDef (d:ds))
     DDataDec uid ids cd -> renameDef ds >>= \ds' -> return $ DDataDec uid ids cd : ds'
+    DMutRec tydefs -> do
+      mutrecids <- getAllMutRecNames tydefs
+      tydefs' <- inEnvMany mutrecids $ mapM renameOneMutRecFunc tydefs
+      ds' <- inEnvMany mutrecids (renameDef ds)
+      return $ (DMutRec tydefs') : ds'
   where
         renameDef' :: Def a -> R (Def a)
         renameDef' (DEquation a id ps e) = do
@@ -111,6 +116,23 @@ renameDef x@(d:ds) = case d of
             case Map.lookup id env of
                 Just id' -> return $ DTypeSig id' t
                 Nothing  -> error "The type name wasn't found in env"
+
+        renameOneMutRecFunc :: (Def a, [Def a])
+                            -> R (Def a, [Def a])
+        renameOneMutRecFunc (DTypeSig id t, defs) = do
+          env <- ask
+          case Map.lookup id env of
+            Just id' -> do
+              defs' <- renameDef defs
+              return $ (DTypeSig id' t, defs')
+            Nothing  -> error "getAllMutRecNames and inEnvMany didn't succeed"
+
+        getAllMutRecNames :: [(Def a, [Def a])] -> R [(Ident, Ident)]
+        getAllMutRecNames [] = return []
+        getAllMutRecNames (((DTypeSig id x),y):ds) = do
+          id' <- fresh
+          ds' <- getAllMutRecNames ds
+          return $ (id, id') : ds'
 
 
 -- | Rename a case-match branch.
