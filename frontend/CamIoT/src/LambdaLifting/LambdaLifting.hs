@@ -67,6 +67,10 @@ llDef d  = case d of
                 return (DEquation a id ps e', ds)
         DTypeSig _ _   -> return (d, [])
         DDataDec _ _ _ -> return (d, [])
+        DMutRec  _     -> return (d, []) -- XXX: Do not lambdalift mutually
+                                         -- recursive functions as it might
+                                         -- lift lambdas which require to be in
+                                         -- a `mutal` block
 
 -- | Lambda lift an expression
 llExp :: Exp Type -> LL Type (Exp Type, [Def Type])

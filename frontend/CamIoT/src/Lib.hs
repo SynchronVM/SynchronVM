@@ -71,9 +71,9 @@ compile input = do
                                           putStrLn $ betterPrint rn
                                           putStrLn ""
                                           let (ll, state2) =  L.lambdaLift rn state1
-                                          -- putStrLn "***** LambdaLifted version *****"
-                                          -- putStrLn $ betterPrint ll
-                                          -- putStrLn ""
+                                          putStrLn "***** LambdaLifted version *****"
+                                          putStrLn $ betterPrint ll
+                                          putStrLn ""
                                           (mm2, state3) <- M.monomorphise state2 ll
                                           -- putStrLn "***** Monomorphized version 2 *****"
                                           -- putStrLn $ betterPrint mm2
