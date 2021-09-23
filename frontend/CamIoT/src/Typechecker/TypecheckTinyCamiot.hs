@@ -234,18 +234,25 @@ makeFunctions ds =
         isDataDec (DDataDec _ _ _) = True
         isDataDec _ = False
 
-        isMutRec (DMutRec _) = True
-        isMutRec _ = False
-
         dd = filter isDataDec ds
-        mutrecs = filter isMutRec ds -- [DMutRec [(ty,[eq1, eq1])]]
-        funtys = filter (not . (isDataDec .||. isMutRec)) ds
-        groupedFuns = groupBy f funtys
+        mutrecsAndFunTys = filter (not . isDataDec) ds
+        groupedFuns = groupBy f mutrecsAndFunTys
 
-    in (dd, map makeFun groupedFuns ++ map mutRecToFuns mutrecs)
+        -- after this grouping mutually recursive function will be in
+        -- a list of size one and other functions will be grouped with their
+        -- type signatures. This is owing to the way `f` is written. I do not
+        -- filter out mutually recursive function and separately call
+        -- `mutRecToFuns`(did in first commit) because this will spoil the
+        -- order in which functions are defined. So I have to traverse serially
+        -- and keep applying `mutRecToFun` -> thats what convertToFun does.
+
+    in (dd, convertToFun groupedFuns)
   where
-    (.||.) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
-    (.||.) f g a = f a || g a -- or use liftA2
+    convertToFun :: [[Def ()]] -> [Function ()]
+    convertToFun [] = []
+    convertToFun ([DMutRec tydefs]:ds) =
+      (mutRecToFuns (DMutRec tydefs)):(convertToFun ds)
+    convertToFun (d:ds) = makeFun d : convertToFun ds
 
     {-- | Wraps a list of definitions up as a Function type. The idea is that it is
     more convenient to pass objects of this type around than to keep operating
