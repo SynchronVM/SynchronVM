@@ -75,9 +75,9 @@ compile input = do
                                           putStrLn $ betterPrint ll
                                           putStrLn ""
                                           (mm2, state3) <- M.monomorphise state2 ll
-                                          -- putStrLn "***** Monomorphized version 2 *****"
-                                          -- putStrLn $ betterPrint mm2
-                                          -- putStrLn ""
+                                          putStrLn "***** Monomorphized version 2 *****"
+                                          putStrLn $ betterPrint mm2
+                                          putStrLn ""
                                           let ss           =  D.desugar state3 mm2
                                           putStrLn "***** Desugared version *****"
                                           putStrLn $ printTree ss

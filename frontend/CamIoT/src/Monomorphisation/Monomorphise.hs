@@ -15,6 +15,7 @@ import qualified Data.Map as Map
 import Data.List
 
 import System.IO.Unsafe
+import qualified Debug.Trace as DT
 
 trace :: Show a => a -> a
 trace x = unsafePerformIO $ putStrLn (show x) >> return x
@@ -24,7 +25,13 @@ and the program and returns the monomorphised program and the new state. -}
 monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int)
 monomorphise counter defs = runM (monomorphiseFunctions defs) state
   where
-      state = MState counter (functionsMap defs) Map.empty Map.empty
+    state =
+      MState
+        counter
+        (functionsMap defs `Map.union` mutRecFunctionMap defs) -- we do not allow polymorphic mutrec funs now
+                                                               -- but we will add this functionality in the future
+        Map.empty
+        Map.empty
 
 {- | Monomorphise all the functions in the program. The input is given as a flattened
 list of definitions, which are then grouped together and monomorphised on a group basis. -}
@@ -39,11 +46,14 @@ monomorphiseFunctions defs = do defs'   <- withoutPoly grouped
     grouped :: [[Def Type]]
     grouped = groupAsFunctions defs
 
-    -- | Filter out functions that have a polymorphic type.
+    -- | Filter out functions that *DO NOT* have a polymorphic type.
     withoutPoly :: [[Def Type]] -> M [[Def Type]]
     withoutPoly funs = filterM pred funs
       where
+        -- mutrec functions will be grouped such that it will be a list
+        -- containing only one element the DMutRec with its body
         pred :: [Def Type] -> M Bool
+        pred [(DMutRec _)] = return True -- making mutrec functions monomorphic for the time being
         pred fun = if not (isDataDec fun)
                      then do b <- hasPolymorphicType (name fun)
                              return $ not b
@@ -79,6 +89,9 @@ monomorphiseFunction defs = do defs' <- monoAllDefinitions defs --undefined
                                      let d' = DEquation t id args' body'
                                      ds'   <- monoAllDefinitions ds
                                      return (d':ds')
+      DMutRec defs -> do
+        ds' <- monoAllDefinitions ds
+        return $ (DMutRec defs) : ds'
 
     {- | This function will traverse an expression and return a new one, where the new one
     have had all applications of polymorphic functions replaced with applications of
@@ -351,6 +364,7 @@ updateTypeOfDef m d = case d of
                                     args' = map  (fmap (updateType m)) args
                                     body' = fmap (updateType m) body
                                 in DEquation t' id args' body'
+    DMutRec tydefs -> DMutRec (map updateTypeMut tydefs)
   where
       -- | Updates the type in a constructor declaration
       updateCons :: Map.Map Type Type -> ConstructorDec -> ConstructorDec
@@ -381,3 +395,7 @@ updateTypeOfDef m d = case d of
           TBool         -> f t
           TInt          -> f t
           TFloat        -> f t
+
+      updateTypeMut :: (Def Type, [Def Type]) -> (Def Type, [Def Type])
+      updateTypeMut (ty, defs) =
+        (updateTypeOfDef m ty, map (updateTypeOfDef m) defs)

@@ -18,20 +18,40 @@ data MState = MState {
             , newConstructors :: Map.Map (UIdent, Type) UIdent
             }
 
+mutRecFunctionMap :: [Def Type] -> Map.Map Ident [Def Type]
+mutRecFunctionMap defs =
+  Map.fromList $ concatMap (\(DMutRec tydefs) -> map getpairs tydefs) mutrecdefs
+  where
+    mutrecdefs = filter isMutRec defs
+
+    isMutRec :: Def Type -> Bool
+    isMutRec (DMutRec _) = True
+    isMutRec _ = False
+
+    getpairs :: (Def Type, [Def Type]) -> (Ident, [Def Type])
+    getpairs (DTypeSig ident _, defs) = (ident, defs)
+
 -- | Create a map from function names to their definitions
 functionsMap :: [Def Type] -> Map.Map Ident [Def Type]
 functionsMap defs = Map.fromList pairs
   where
-      tmp   = filter pred $ groupAsFunctions defs
+      tmp   = filter (not . (isDataDec .||. isMutRec)) $ groupAsFunctions defs
       pairs = map (\fun@(d:_) -> (name d, fun)) tmp
 
-      pred :: [Def Type] -> Bool
-      pred (DDataDec _ _ _:_) = False
-      pred _                  = True
+      isDataDec :: [Def Type] -> Bool
+      isDataDec (DDataDec _ _ _:_) = True
+      isDataDec _                  = False
+
+      isMutRec :: [Def Type] -> Bool
+      isMutRec (DMutRec _ :_) = True
+      isMutRec _              = False
 
       name :: Def Type -> Ident
       name (DTypeSig id _)      = id
       name (DEquation _ id _ _) = id
+
+      (.||.) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+      (.||.) f g a = f a || g a
 
 type M a = StateT MState (
              WriterT [Def Type] IO) a

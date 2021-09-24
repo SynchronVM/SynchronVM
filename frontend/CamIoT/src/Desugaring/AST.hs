@@ -38,6 +38,7 @@ data SExp a
     | SEVar   a AST.Ident
     | SETag   a AST.UIdent (Maybe (SExp a))
     | SEConst a AST.Const
+    | SEMutR  a [(SPat a, SExp a)] (SExp a)
   deriving (Eq, Ord, Show, Read)
 
 data SPatMatch a = SPM (SPat a) (SExp a)
