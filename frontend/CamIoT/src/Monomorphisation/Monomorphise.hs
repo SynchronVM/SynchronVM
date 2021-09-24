@@ -46,7 +46,7 @@ monomorphiseFunctions defs = do defs'   <- withoutPoly grouped
     grouped :: [[Def Type]]
     grouped = groupAsFunctions defs
 
-    -- | Filter out functions that *DO NOT* have a polymorphic type.
+    -- | Returns all monomorphic functions.
     withoutPoly :: [[Def Type]] -> M [[Def Type]]
     withoutPoly funs = filterM pred funs
       where
