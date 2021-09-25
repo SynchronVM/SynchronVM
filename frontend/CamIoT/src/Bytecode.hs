@@ -141,6 +141,10 @@ translate (SELam _ pat exp)
   | rewriteRequired pat = undefined
   | otherwise =  C.Lam (translatePat pat) (translate exp)
 
+translate (SEMutR _ patexps e2) =
+  C.Letrec (map (\(p,e) -> (translatePat p, translate e)) patexps) (translate e2)
+
+
 -----------------REWRITES FOR CASE EXPRESSION-----------------
 
 {-

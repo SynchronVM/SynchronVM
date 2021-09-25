@@ -116,6 +116,12 @@ instance Print a => Print (SExp a) where
     SETag a uident (Just exp1) -> prPrec i 6 (concatD [doc (showString "("), prt 0 uident, prt 1 exp1, doc (showString ")")]) -- not sure why I wrote 6 here, don't know how this works at all
     SETag a uident Nothing     -> prPrec i 6 (concatD [doc (showString "("), prt 0 uident, doc (showString ")")]) -- not sure why I wrote 6 here, don't know how this works at all
     SEConst a const -> prPrec i 7 (concatD [prt 0 const])
+    SEMutR a patexps exp ->
+      (prPrec i 0 (concatD [doc (showString "letmutrec")
+                           , foldr (\(d1, d2,d3) b -> b <> d1 <> d2 <> d3) (doc $ showString "")
+                            (map (\(p,e) -> (prt 0 p, doc (showString "="), prt 0 e)) patexps)
+                           ]))
+      <> (prPrec i 0 (concatD [doc (showString "in"), prt 0 exp]))
     where
         printTups [] = []
         printTups [x] = [prt 0 x]

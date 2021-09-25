@@ -35,10 +35,12 @@ desugar state defs = runDS state $ do
   where
       funs  = groupAsFunctions defs
       funs' = filter (\(d:_) -> case d of
+                    AST.DMutRec _          -> True
                     AST.DDataDec _ _ _     -> False
                     AST.DTypeSig id _      -> id /= AST.Ident "main"
                     AST.DEquation _ id _ _ -> id /= AST.Ident "main") funs
       main  = find (\(d:_) -> case d of
+                    AST.DMutRec _          -> False
                     AST.DDataDec _ _ _     -> False
                     AST.DTypeSig id _      -> id == AST.Ident "main"
                     AST.DEquation _ id _ _ -> id == AST.Ident "main")
@@ -66,7 +68,7 @@ desugarADTs decs = do
       desugarADT (AST.DDataDec uid _ cons) = do
           cons' <- reverse <$> mapM desugarConstructor cons
           foldlM (\f g -> return (g . f)) (head cons') (tail cons')
-          
+
       desugarConstructor :: AST.ConstructorDec -> DS (SExp SType -> SExp SType)
       desugarConstructor (AST.ConstDec uid t) = do
           -- get the types of the arguments to the constructor
@@ -98,11 +100,21 @@ desugarADTs decs = do
           let fun = SPVar (getSExpVar res) id
           return $ \e -> SELet (getSExpVar e) fun res e
 
+desugarMutRecs :: (AST.Def AST.Type, [AST.Def AST.Type])
+               -> DS (SPat SType, SExp SType)
+desugarMutRecs (AST.DTypeSig ident t, defs) = do
+  dsExp <- desugarFunction' defs
+  return (SPVar (desugarType t) ident, dsExp)
+
 desugarFunctions :: [[AST.Def AST.Type]] -> [AST.Def AST.Type] -> DS (SExp SType)
 desugarFunctions functions main = do
     m <- gets constructorfuncs
     case functions of
         [] -> return $ desugarMain m
+        ([AST.DMutRec tydefs]:funs) -> do
+          tydefs' <- mapM desugarMutRecs tydefs
+          rest <- desugarFunctions funs main
+          return $ SEMutR (typeof rest) tydefs' rest
         (fun:funs) -> case funs of
                 [] -> do fun' <- desugarFunction fun
                          return $ fun' (desugarMain m)
@@ -118,6 +130,8 @@ desugarFunctions functions main = do
       | id == (AST.Ident "main") = body
       | otherwise = findMainBody xs
     findMainBody (_:xs) = findMainBody xs
+
+    typeof = getSExpVar
 
 -- | Desugar a single function, represented as a list of definitions.
 desugarFunction :: [AST.Def AST.Type] -> DS (SExp SType -> SExp SType)
@@ -301,3 +315,86 @@ desugarType t = case t of
     AST.TBool         -> STBool
     AST.TInt          -> STInt
     AST.TFloat        -> STFloat
+
+
+
+
+
+
+
+-- This is a copy of desugarFunction except instead of returning
+-- `let p = e1 in`, it only returns the `e1` so the type is
+-- `DS (SExp SType)` instead of `DS (SExp SType -> SExp SType)`
+desugarFunction' :: [AST.Def AST.Type] -> DS (SExp SType)
+desugarFunction' defs = do
+    m <- gets constructorfuncs
+    if numargs defs > 0
+        then do
+            -- new arguments for the function
+            args' <- replicateM (numargs defs) fresh
+
+            -- fetch the types the arguments should have
+            let argtyps   = let (AST.DEquation _ _ args _) = head defs' in map getPatVar args
+            -- create typed variables out of the generated variable names and the fetched types
+            let typedargs = zipWith (\id typ -> AST.EVar typ id) args' argtyps
+            -- create a tuple out of the new typed variables and simplify it
+            let argtup    = desugarExp m (AST.ETup (AST.TTup argtyps) typedargs)
+
+            -- case branches representing the different equations
+            let casebranches = map (uncurry SPM) (branches m defs)
+            -- result type of case expression
+            let casetype     = getSExpVar (snd (head (branches m defs)))
+            -- the actual case expression
+            let caseExp      = SECase casetype argtup casebranches
+            -- turn all the variables into patterns and bind them in lambdas
+            let stypedargs   = map (\(AST.EVar t v) -> SPVar (desugarType t) v) typedargs
+            let resultExp    = foldl (\body var@(SPVar a _) -> 
+                                        SELam (STLam a (getSExpVar body)) var body)
+                                    caseExp
+                                    (reverse stypedargs)
+
+            -- type and name of function to simplify
+            let (typ, name) = typeAndName
+            -- return either the recursive-tagged one or a normal let binding
+            return $ resultExp
+        else do let (typ, name)  = typeAndName
+                let casebranches = branches m defs
+                let let_ = case recursive defs of
+                             True -> SELetR
+                             False -> SELet
+                case casebranches of
+                    [(_,x)] -> return $ x
+                    _   -> error "we should not end up here"
+  where
+      -- We don't care about the type signature any more, so we drop it if there is one.
+      defs' :: [AST.Def AST.Type]
+      defs' = case head defs of
+          AST.DEquation _ _ _ _ -> defs
+          AST.DTypeSig _ _      -> tail defs
+    
+      -- Name of the function
+      typeAndName :: (SType, AST.Ident)
+      typeAndName = case head defs of
+          AST.DTypeSig id t      -> (desugarType t, id)
+          AST.DEquation t id _ _ -> (desugarType t, id)
+
+      -- A list of pairs of (patterns, body) representing an equation such as f patterns = body
+      branches :: Map.Map AST.UIdent AST.Ident -> [AST.Def AST.Type] -> [(SPat SType, SExp SType)]
+      branches m []                                = []
+      branches m (AST.DTypeSig _ _: ds)            = branches m ds
+      branches m (AST.DEquation t id args body:ds) =
+          {- We are going to case match on the arguments, so we turn them into
+          a long tuple instead (if there are more than one). -}
+          let argtup = case length args of
+                         1 -> head args
+                         _ -> AST.PTup (AST.TTup (map getPatVar args)) args
+              -- turn the tuple into a simplified tuple
+              args'  = desugarPat argtup
+              -- simplify the body
+              body'  = desugarExp m body
+          in (args', body') : branches m ds
+
+      numargs :: [AST.Def AST.Type] -> Int
+      numargs []                           = error "no definitions - should not end up here"
+      numargs (AST.DTypeSig _ _:ds)        = numargs ds
+      numargs (AST.DEquation _ _ args _:_) = length args
