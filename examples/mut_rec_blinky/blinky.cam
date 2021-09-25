@@ -1,0 +1,20 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+ledchan : Channel Int
+ledchan = channel ()
+
+
+mutrec
+  on : ()
+  on = let _ = syncT 84000000 10 (send ledchan 1) in
+       off
+
+  off : ()
+  off = let _ = syncT 84000000 10 (send ledchan 0) in
+        on
+
+main =
+  let _ = spawnExternal ledchan 1 in
+  on
