@@ -159,6 +159,16 @@ pushCurrentTarget i = modify $ \(ST r c ts) -> ST r c (i:ts)
 isKeyword :: T.Text -> Bool
 isKeyword token = token `elem` keywords
 
+isWhitespace :: Char -> Bool
+isWhitespace ' ' = True
+isWhitespace '\n' = True
+isWhitespace '\t' = True
+isWhitespace _ = False
+
+isNewline :: Char -> Bool
+isNewline '\n' = True
+isNewline _ = False
+
 {- Text of token and column,
    could we add linenumber ?.
    Maybe we can count newlines in pp
@@ -173,9 +183,9 @@ nextToken = do
        - We could forbid tab unless part of a string literal -} 
 
     -- first split the input up in its leading whitespace/newline and the rest
-    let (fluff, t')  = T.span (\c -> c == ' ' || c == '\n') t
+    let (fluff, t')  = T.span isWhitespace t
     -- then extract the next token and the rest of the input
-    let (token, t'') = T.span (\c -> c /= ' ' && c /= '\n') t'
+    let (token, t'') = T.span (not . isWhitespace) t'
 
 
     -- update the internal column counter
@@ -197,13 +207,33 @@ updateColumn :: T.Text -> PP ()
 updateColumn t = do
     -- is there a newline?
     -- if no symbol matches span will not 'consume' anything
-    let (spaces, rest) = T.span (== '\n') t
-    if spaces == T.empty
-        -- if there wasn't, we count the number of spaces and add that to c
-        then modify $ \(ST t' c i) -> ST t' (c + T.length rest) i
-        -- otherwise we've encountered a newline and we set the internal counter
-        -- to c and continue with a recursive call
-        else modify (\(ST t' _ i)  -> ST t' 0 i) >> updateColumn rest
+
+    let spaces = countSpaces (T.reverse t)
+    let nl     = telem '\n' t
+
+    if (nl)
+      then modify (\(ST t' _ i)  -> ST t' spaces i)
+      else modify (\(ST t' c i) -> ST t' (c + T.length t) i)
+      
+    -- case spaces of 
+    -- let (spaces, rest) = T.span (== '\n') t
+    -- if spaces == T.empty
+    --     -- if there wasn't, we count the number of spaces and add that to c
+    --     then modify $ \(ST t' c i) -> ST t' (c + T.length rest) i
+    --     -- otherwise we've encountered a newline and we set the internal counter
+    --     -- to c and continue with a recursive call
+    --     else modify (\(ST t' _ i)  -> ST t' 0 i) >> updateColumn rest
+      where
+        -- count the number of consecutive spaces at the end of
+        -- the text.
+        
+        telem c t | T.null t = False
+                  | T.head t == c = True
+                  | otherwise = telem c (T.tail t)
+        countSpaces t
+           | T.null t = 0 
+           | T.head t == '\n' = 0
+           | T.head t == ' ' || T.head t == '\t' = 1 + countSpaces (T.tail t)
 
 -- while mb returns true, execute ma
 while :: Monad m => m Bool -> m ()
