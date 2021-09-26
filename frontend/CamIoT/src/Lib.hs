@@ -82,6 +82,7 @@ compile input = do
                                           putStrLn "***** Desugared version *****"
                                           putStrLn $ printTree ss
                                           putStrLn ""
+                                          putStrLn "*****************************"
                                           -- let ss'          =  DR.detectRecs ss
                                           -- putStrLn "***** Desugared recursive version *****"
                                           -- putStrLn $ printTree ss'
