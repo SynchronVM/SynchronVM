@@ -45,6 +45,8 @@ import Prelude hiding (lookup)
 import qualified Control.Monad.State.Strict as S
 import qualified Data.Set as Set
 
+import Debug.Trace
+
 -- XXX: When adding new primitives like RTS3 do not forget
 --      to ensure the rFreeSys function is extended as well
 
@@ -437,6 +439,8 @@ codegen (Let pat e1 e) env
 codegen (Letrec recpats e) env = do
   labels  <- replicateM (length recpats) freshLabel
   let evalEnv = growEnv env (zip pats labels)
+  trace ("labels: " ++ show labels) (return ())
+  trace ("env:" ++  show evalEnv) (return ())
   instr  <- codegen e evalEnv
   instrs <- zipWithA codegenR exps (repeat evalEnv)
   let labeledInstrs = zipWith Lab labels instrs
@@ -562,7 +566,7 @@ codegen3 e1 e2 e3 env
 
 
 lookup :: Var -> Env -> Int -> CAM
-lookup var (EnvEmpty _ ) _ = Ins FAIL
+lookup var (EnvEmpty _ ) a = trace ("lookup not found: " ++ show a) (Ins FAIL)
 lookup var (EnvPair _ env pat) n
   | isStar env = (Ins (REST n) <+> (lookupPat var pat))
   | otherwise  =
@@ -580,17 +584,17 @@ isStar _                   = False
 
 -- lookup for r-closed expressions
 lookupRC :: Var -> Env -> CAM
-lookupRC var (EnvEmpty _) = Ins FAIL
+lookupRC var (EnvEmpty _) = trace ("lookupRC not found: " ++ show var) (Ins FAIL)
 lookupRC var (EnvPair _ env _) = lookupRC var env
 lookupRC var (EnvAnn  _ env (p, l)) =
   (Ins (CALL l) <+> lookupPat var p) <?>
   lookupRC var env
 
 lookupPat :: Var -> Pat -> CAM
-lookupPat _ Empty = Ins FAIL
+lookupPat v Empty = trace ("lookupPat not found: " ++ show v) (Ins FAIL)
 lookupPat x (PatVar v)
   | x == v = Ins SKIP
-  | otherwise = Ins FAIL
+  | otherwise = trace ("lookupPat (2) not found: " ++ show x ++ " | " ++ show v ) (Ins FAIL)
 lookupPat x (PatPair p1 p2) =
   ((Ins FST) <+> (lookupPat x p1)) <?>
   ((Ins SND) <+> (lookupPat x p2))
@@ -606,7 +610,7 @@ lookupPat x (As y p)
 (<?>) x y
   | nofail x = x
   | nofail y = y
-  | otherwise = Ins FAIL
+  | otherwise = trace ("<?> fail detected") (Ins FAIL)
 
 nofail :: CAM -> Bool
 nofail (Ins FAIL) = False
