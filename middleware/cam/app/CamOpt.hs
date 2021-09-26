@@ -47,6 +47,9 @@ import qualified Data.Set as Set
 
 import Debug.Trace
 
+traceFail (Ins FAIL) s a = trace s a
+traceFail _ _ a = a 
+
 -- XXX: When adding new primitives like RTS3 do not forget
 --      to ensure the rFreeSys function is extended as well
 
@@ -283,9 +286,14 @@ interpret e =  instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
     maxLabel = 65535 -- (label can be max 2 bytes)
 
 codegen :: Exp -> Env -> Codegen CAM
-codegen v@(Var var) env
-  | rClosed v (env2Eta env) = pure $! lookupRC var env
-  | otherwise = pure $! lookup var env 0
+codegen v@(Var var) env 
+  | rClosed v (env2Eta env) = pure $! rcl -- lookupRC var env
+  | otherwise = pure $! l -- lookup var env 0
+  where rcl' = lookupRC var env
+        l'   = lookup var env 0
+        rcl  = traceFail rcl' ("LookupRC failure: " ++ show v ++ " in env: " ++ show env) rcl'
+        l    = traceFail l' ("Lookup failure: " ++ show v ++ " in env: " ++ show env) l'
+        
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
@@ -439,8 +447,6 @@ codegen (Let pat e1 e) env
 codegen (Letrec recpats e) env = do
   labels  <- replicateM (length recpats) freshLabel
   let evalEnv = growEnv env (zip pats labels)
-  trace ("labels: " ++ show labels) (return ())
-  trace ("env:" ++  show evalEnv) (return ())
   instr  <- codegen e evalEnv
   instrs <- zipWithA codegenR exps (repeat evalEnv)
   let labeledInstrs = zipWith Lab labels instrs
@@ -566,7 +572,7 @@ codegen3 e1 e2 e3 env
 
 
 lookup :: Var -> Env -> Int -> CAM
-lookup var (EnvEmpty _ ) a = trace ("lookup not found: " ++ show a) (Ins FAIL)
+lookup var (EnvEmpty _ ) a = Ins FAIL
 lookup var (EnvPair _ env pat) n
   | isStar env = (Ins (REST n) <+> (lookupPat var pat))
   | otherwise  =
@@ -584,17 +590,17 @@ isStar _                   = False
 
 -- lookup for r-closed expressions
 lookupRC :: Var -> Env -> CAM
-lookupRC var (EnvEmpty _) = trace ("lookupRC not found: " ++ show var) (Ins FAIL)
+lookupRC var (EnvEmpty _) = Ins FAIL
 lookupRC var (EnvPair _ env _) = lookupRC var env
 lookupRC var (EnvAnn  _ env (p, l)) =
   (Ins (CALL l) <+> lookupPat var p) <?>
   lookupRC var env
 
 lookupPat :: Var -> Pat -> CAM
-lookupPat v Empty = trace ("lookupPat not found: " ++ show v) (Ins FAIL)
+lookupPat v Empty = Ins FAIL
 lookupPat x (PatVar v)
   | x == v = Ins SKIP
-  | otherwise = trace ("lookupPat (2) not found: " ++ show x ++ " | " ++ show v ) (Ins FAIL)
+  | otherwise = Ins FAIL
 lookupPat x (PatPair p1 p2) =
   ((Ins FST) <+> (lookupPat x p1)) <?>
   ((Ins SND) <+> (lookupPat x p2))
@@ -610,7 +616,7 @@ lookupPat x (As y p)
 (<?>) x y
   | nofail x = x
   | nofail y = y
-  | otherwise = trace ("<?> fail detected") (Ins FAIL)
+  | otherwise = Ins FAIL
 
 nofail :: CAM -> Bool
 nofail (Ins FAIL) = False
