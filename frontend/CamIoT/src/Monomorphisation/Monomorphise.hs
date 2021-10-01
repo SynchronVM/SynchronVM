@@ -99,7 +99,7 @@ monomorphiseFunction defs = do defs' <- monoAllDefinitions defs --undefined
           monomorphiseMutRecs ((tysig,defs):xs) = do
             (tysig':defs') <- monoAllDefinitions (tysig:defs)
             xs' <- monomorphiseMutRecs xs
-            return $ (tysig',defs') : xs
+            return $ (tysig',defs') : xs'
 
     {- | This function will traverse an expression and return a new one, where the new one
     have had all applications of polymorphic functions replaced with applications of
