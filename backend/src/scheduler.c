@@ -194,13 +194,13 @@ int scheduler(vmc_t *container,
 /* #ifdef TRACE_ON */
 /*       trace_print(dbg_print, 25); */
 /* #endif	 */
-
+      //dbg_print("Blocking in wait for message \r\n");
       block_msg(container, &msg);      
 #ifdef TRACE_ON
       total_msgs ++;
 #endif
 
-      /* dbg_print("Message received: blocking\r\n");  */
+      /* dbg_print("Message received: blocking\r\n"); */
       /* dbg_print("  Sender: %u\r\n", msg.sender_id); */
       /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
       /* dbg_print("  data: %u\r\n", msg.data); */
@@ -266,8 +266,8 @@ int scheduler(vmc_t *container,
       } else {
         evaluators[current_inst](container, pc);
       }
-
-
+      
+      
 
       if(*pc  == -1){
         dbg_print("Instruction %u failed",current_inst);

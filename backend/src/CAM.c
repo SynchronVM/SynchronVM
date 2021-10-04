@@ -1149,35 +1149,52 @@ void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){
   }
 
 }
+//#include "ch.h"
+//#include "hal.h"
+//#include "usbcfg.h"
+//#include "chprintf.h"
 void eval_switchi(vmc_t *vmc, INT *pc_idx){
 
+  //chprintf((BaseSequentialStream *)&SDU1,"entered switchi\r\n");
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
 
   heap_index tag_val_pair = e.value;
   cam_value_t tag_heap = heap_fst(&vmc->heap, tag_val_pair);
   cam_value_t val      = heap_snd(&vmc->heap, tag_val_pair);
+
+  //chprintf((BaseSequentialStream *)&SDU1,"tag: %d, val: %d\r\n",tag_heap.value, val.value);
+  
   INT switch_size_idx = (*pc_idx) + 1;
   uint8_t switch_size = vmc->code_memory[switch_size_idx];
 
   int label_to_jump = -1;
-  for(uint8_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
-    INT tag_idx1 = i;
-    INT tag_idx2 = i + 1;
+  
+  //for(uint8_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
+  for (uint8_t i = 0; i < switch_size; i ++) {
+    
+    INT tag_idx1 = switch_size_idx + 1 + (i * 4);
+    INT tag_idx2 = switch_size_idx + 1 + (i * 4) + 1;
     uint16_t tag =
       (vmc->code_memory[tag_idx1] << 8) | vmc->code_memory[tag_idx2]; // merge 2 bytes
 
-    INT lab_idx1 = i + 2;
-    INT lab_idx2 = i + 3;
+    INT lab_idx1 = switch_size_idx + 1 + (i * 4) + 2;
+    INT lab_idx2 = switch_size_idx + 1 + (i * 4) + 3;
     uint16_t label =
       (vmc->code_memory[lab_idx1] << 8) | vmc->code_memory[lab_idx2]; // merge 2 bytes
 
+    //chprintf((BaseSequentialStream *)&SDU1,"looking at -> tag: %d, label: %d\r\n",tag, label);
+    
 
     if(tag_heap.value == (UINT)tag ||
        (UINT)tag == 65535){ //wildcard check; wildcard tag = max(uint16_t) = 65535
+      //chprintf((BaseSequentialStream *)&SDU1,"tag found jumping to label: %d\r\n",label);
       label_to_jump = label;
       break;
     }
   }
+
+  //chprintf((BaseSequentialStream *)&SDU1,"switchi: %u\r\n", label_to_jump);
+  
   if(label_to_jump == -1){
     DEBUG_PRINT(("Tag %u not found while switching", tag_heap.value));
     *pc_idx = -1;
