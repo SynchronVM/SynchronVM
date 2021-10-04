@@ -90,8 +90,16 @@ monomorphiseFunction defs = do defs' <- monoAllDefinitions defs --undefined
                                      ds'   <- monoAllDefinitions ds
                                      return (d':ds')
       DMutRec defs -> do
+        defs' <- monomorphiseMutRecs defs
         ds' <- monoAllDefinitions ds
-        return $ (DMutRec defs) : ds'
+        return $ (DMutRec defs') : ds'
+        where
+          monomorphiseMutRecs :: [(Def Type, [Def Type])] -> M [(Def Type, [Def Type])]
+          monomorphiseMutRecs [] = return []
+          monomorphiseMutRecs ((tysig,defs):xs) = do
+            (tysig':defs') <- monoAllDefinitions (tysig:defs)
+            xs' <- monomorphiseMutRecs xs
+            return $ (tysig',defs') : xs'
 
     {- | This function will traverse an expression and return a new one, where the new one
     have had all applications of polymorphic functions replaced with applications of

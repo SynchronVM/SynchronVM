@@ -493,7 +493,7 @@ byteCompile verbose path = do
 -- Experiments --
 -- path = "testcases/Twinkle2.cam"
 
-path = "testcases/good26.cam"
+path = "testcases/good27.cam"
 
 test :: IO ()
 test = do

@@ -1,0 +1,15 @@
+data Move where
+  Stop : Move
+  Circle : Move
+
+mutrec
+  foo : Move -> Int
+  foo m =
+      case m of
+         Stop -> 1
+         Circle -> bar m
+
+  bar : Move -> Int
+  bar m = foo Stop
+
+main = foo Circle
