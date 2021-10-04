@@ -454,7 +454,7 @@ condPutStrLn b s =
 
 byteCompile :: Bool -> FilePath -> IO [Word8]
 byteCompile verbose path = do
-  compiled <- compile path
+  compiled <- compile verbose path
   case compiled of
     Left err -> do putStrLn err
                    exitFailure 
@@ -497,7 +497,7 @@ path = "testcases/good26.cam"
 
 test :: IO ()
 test = do
-  compiled <- compile path
+  compiled <- compile True path
   case compiled of
     Left err -> putStrLn err
     Right desugaredIr -> do

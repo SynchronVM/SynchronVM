@@ -45,8 +45,14 @@ import qualified DetectRecs.DetectRecs as DR
 
 import Debug.Trace
 
-compile :: String -> IO (Either String (SExp SType))
-compile input = do
+condPutStrLn :: Bool -> String -> IO ()
+condPutStrLn b s =
+  case b of
+    True -> putStrLn s
+    False -> return ()
+
+compile :: Bool -> String -> IO (Either String (SExp SType))
+compile verbose input = do
     contents <- T.readFile input
 
     {- PreP.process adding layout tokens.
@@ -67,22 +73,22 @@ compile input = do
                                           -- putStrLn "*****Typechecking*****"
                                           -- putStrLn $ show tcedP
                                           let (rn, state1) =  R.rename tcedP
-                                          putStrLn "***** Alpha Renamed version *****"
-                                          putStrLn $ betterPrint rn
-                                          putStrLn ""
+                                          condPutStrLn verbose "***** Alpha Renamed version *****"
+                                          condPutStrLn verbose $ betterPrint rn
+                                          condPutStrLn verbose ""
                                           let (ll, state2) =  L.lambdaLift rn state1
-                                          putStrLn "***** LambdaLifted version *****"
-                                          putStrLn $ betterPrint ll
-                                          putStrLn ""
+                                          condPutStrLn verbose "***** LambdaLifted version *****"
+                                          condPutStrLn verbose $ betterPrint ll
+                                          condPutStrLn verbose ""
                                           (mm2, state3) <- M.monomorphise state2 ll
-                                          putStrLn "***** Monomorphized version 2 *****"
-                                          putStrLn $ betterPrint mm2
-                                          putStrLn ""
+                                          condPutStrLn verbose "***** Monomorphized version 2 *****"
+                                          condPutStrLn verbose $ betterPrint mm2
+                                          condPutStrLn verbose ""
                                           let ss           =  D.desugar state3 mm2
-                                          putStrLn "***** Desugared version *****"
-                                          putStrLn $ printTree ss
-                                          putStrLn ""
-                                          putStrLn "*****************************"
+                                          condPutStrLn verbose "***** Desugared version *****"
+                                          condPutStrLn verbose $ printTree ss
+                                          condPutStrLn verbose ""
+                                          condPutStrLn verbose "*****************************"
                                           -- let ss'          =  DR.detectRecs ss
                                           -- putStrLn "***** Desugared recursive version *****"
                                           -- putStrLn $ printTree ss'
