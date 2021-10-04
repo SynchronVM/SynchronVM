@@ -17,7 +17,7 @@ msec : Int -> Int
 msec t = t * 84000
 
 usec : Int -> Int
-usec t = (msec t) * 1000
+usec t = t * 84
 
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev
@@ -53,7 +53,6 @@ playerP n void =
   else let _ = after noteDuration (send noteC Next) in
        playerP (n + 1) void
 
-
 mutrec
   recvHandler : List Int -> Int -> Move -> ()
   recvHandler melody vol move =
@@ -65,11 +64,11 @@ mutrec
   tuneP myMelody vol void =
     let timePeriod = usec (head myMelody) in
     let _ = after timePeriod (choose (wrap (recv noteC) (recvHandler myMelody vol)) 
-                                     (send dacC vol)) in
+                                     (send dacC (vol * 4095))) in
     tuneP myMelody (not vol) void
 
 main =
   let _ = spawnExternal dacC 0 in
-  let _ = spawn (tuneP twinkle 4095) in
+  let _ = spawn (tuneP twinkle 1) in
   let _ = spawn (playerP 1) in
   ()

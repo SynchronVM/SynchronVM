@@ -194,12 +194,12 @@ int scheduler(vmc_t *container,
 /* #ifdef TRACE_ON */
 /*       trace_print(dbg_print, 25); */
 /* #endif	 */
-      //dbg_print("Blocking in wait for message \r\n");
+      dbg_print("Blocking in wait for message \r\n");
       block_msg(container, &msg);      
 #ifdef TRACE_ON
       total_msgs ++;
 #endif
-
+     
       /* dbg_print("Message received: blocking\r\n"); */
       /* dbg_print("  Sender: %u\r\n", msg.sender_id); */
       /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
@@ -217,6 +217,8 @@ int scheduler(vmc_t *container,
 	return -1;
 	/* continue as if nothing has happend.
 	   This should be like throwing the message away */
+      } else {
+	dbg_print("Current ctx: %d\r\n",container->current_running_context_id);
       }
       /* while (poll_msg(container, &msg) == 0) { */
       /* 	dbg_print("message received: poll loop in blocking\r\n"); */
