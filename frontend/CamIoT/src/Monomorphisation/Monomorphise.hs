@@ -315,7 +315,7 @@ generateDataDeclarations = do
     newADTs :: M [([(UIdent, Type)], Type)]
     newADTs = do
         newcs      <- gets newConstructors
-        let grouped = groupBy pred $ Map.toList newcs
+        let grouped = groupWith pred ord $ Map.toList newcs
         return $ map collapse grouped
       where
         {- | Compares entries after which ADT they produced, e.g
@@ -323,6 +323,10 @@ generateDataDeclarations = do
         compare Maybe Int and Maybe Bool. -}
         pred :: ((UIdent, Type), UIdent) -> ((UIdent, Type), UIdent) -> Bool
         pred ((_,t1),_) ((_,t2),_) = unwrapFunction t1 == unwrapFunction t2
+
+        ord :: ((UIdent, Type), UIdent) -> ((UIdent, Type), UIdent) -> Ordering
+        ord ((_,t1),_) ((_,t2),_) = compare (unwrapFunction t1) (unwrapFunction t2)
+
 
         {- | Forgets the names of the old constructors, and retains only one copy
         of the result ADT.-}
@@ -407,3 +411,10 @@ updateTypeOfDef m d = case d of
       updateTypeMut :: (Def Type, [Def Type]) -> (Def Type, [Def Type])
       updateTypeMut (ty, defs) =
         (updateTypeOfDef m ty, map (updateTypeOfDef m) defs)
+
+
+groupWith :: (a -> a -> Bool) ->
+             (a -> a -> Ordering) ->
+             [a] -> [[a]]
+groupWith p1 p2 = groupBy p1 . sortBy p2
+
