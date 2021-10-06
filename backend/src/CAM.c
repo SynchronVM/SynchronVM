@@ -1345,11 +1345,11 @@ static int handle_sync(vmc_t *vmc){
 }
 
 static int handle_choose(vmc_t *vmc){
-  cam_value_t e1 = vmc->contexts[vmc->current_running_context_id].env;
+  cam_value_t e2 = vmc->contexts[vmc->current_running_context_id].env;
 
-  cam_register_t e2;
+  cam_register_t e1;
   int i =
-    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &e2);
+    stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &e1);
   if(i == 0){
     DEBUG_PRINT(("Stack pop has failed"));
     return -1;
