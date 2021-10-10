@@ -491,7 +491,7 @@ byteCompile verbose path = do
 
 
 -- Experiments --
-path = "testcases/mutrec_twinkle2.cam"
+path = "testcases/mutrec_debug.cam"
 
 -- path = "testcases/good27.cam"
 
