@@ -1079,7 +1079,7 @@ static int handle_timer_msg(vmc_t *vmc){
 
     } else {
 
-      // Currently running thread's deadline is earlier
+      // Currently running thread's deadline is earlier or the same
 
       // Step 5.3 Put the timed thread in rdyQ
       int r = pq_insert(&vmc->rdyQ, timedThread);
