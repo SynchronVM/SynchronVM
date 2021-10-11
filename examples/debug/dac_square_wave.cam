@@ -8,6 +8,9 @@ after t ev = syncT t 0 ev
 tone1 : Int
 tone1 = 160860
 
+tone2 : Int
+tone2 = 95424
+
 dacC : Channel Int
 dacC = channel ()
 
@@ -19,7 +22,7 @@ noteDuration = 42000000
 
 playerP : () -> ()
 playerP void =
-  let _ = after noteDuration (send noteC 5) in
+  let _ = after tone2 (send noteC 5) in
   playerP ()
 
 tuneP : Int -> Int -> () -> ()

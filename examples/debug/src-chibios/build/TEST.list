@@ -428,7 +428,7 @@ endfiniloop:
                 /* Data initialization. Note, it assumes that the DATA size
                   is a multiple of 4 so the linker file must ensure this.*/
                 ldr     r1, =__textdata_base__
- 80002dc:	0800d2c0 	.word	0x0800d2c0
+ 80002dc:	0800d2c8 	.word	0x0800d2c8
                 ldr     r2, =__data_base__
  80002e0:	20000800 	.word	0x20000800
                 ldr     r3, =__data_end__
@@ -4399,7 +4399,7 @@ static void otg_txfifo_flush(USBDriver *usbp, uint32_t fifo) {
  8001c80:	0800c5d0 	.word	0x0800c5d0
  8001c84:	10048000 	.word	0x10048000
  8001c88:	10008000 	.word	0x10008000
- 8001c8c:	0800cbbc 	.word	0x0800cbbc
+ 8001c8c:	0800cbc4 	.word	0x0800cbc4
  8001c90:	02000400 	.word	0x02000400
  8001c94:	10088000 	.word	0x10088000
  8001c98:	100c8000 	.word	0x100c8000
@@ -7132,7 +7132,7 @@ void chTMObjectInit(time_measurement_t *tmp) {
  800269c:	40026400 	.word	0x40026400
  80026a0:	2000a580 	.word	0x2000a580
  80026a4:	40040000 	.word	0x40040000
- 80026a8:	0800ca2c 	.word	0x0800ca2c
+ 80026a8:	0800ca34 	.word	0x0800ca34
  80026ac:	2000bb10 	.word	0x2000bb10
  80026b0:	08006b01 	.word	0x08006b01
  80026b4:	2000bb50 	.word	0x2000bb50
@@ -8020,10 +8020,10 @@ static inline void chSysLock(void) {
  8002950:	e000ed00 	.word	0xe000ed00
  8002954:	05fa0300 	.word	0x05fa0300
  8002958:	e0001000 	.word	0xe0001000
- 800295c:	0800ca38 	.word	0x0800ca38
+ 800295c:	0800ca40 	.word	0x0800ca40
  8002960:	20009d98 	.word	0x20009d98
  8002964:	0800c768 	.word	0x0800c768
- 8002968:	0800ca40 	.word	0x0800ca40
+ 8002968:	0800ca48 	.word	0x0800ca48
  800296c:	08000321 	.word	0x08000321
  8002970:	2000adf8 	.word	0x2000adf8
  8002974:	0800c780 	.word	0x0800c780
@@ -8435,7 +8435,7 @@ static inline void ch_queue_init(ch_queue_t *qp) {
   vm_containers[VMC_CONTAINER_1].current_running_context_id = 0;
 
   vm_containers[VMC_CONTAINER_1].code_size = sizeof(vmc_container_1_code);
- 8002aec:	f44f 7b99 	mov.w	fp, #306	; 0x132
+ 8002aec:	f240 1b3b 	movw	fp, #315	; 0x13b
   heap->sweep_pos  = 0;
   heap->size_bytes = size_bytes;
  8002af0:	f8c3 a008 	str.w	sl, [r3, #8]
@@ -8879,7 +8879,7 @@ bool sys_time_init(void *os_interop) {
  8002cb0:	0800c7c0 	.word	0x0800c7c0
  8002cb4:	2000b288 	.word	0x2000b288
  8002cb8:	20001fc8 	.word	0x20001fc8
- 8002cbc:	0800ca48 	.word	0x0800ca48
+ 8002cbc:	0800ca50 	.word	0x0800ca50
  8002cc0:	2000adf8 	.word	0x2000adf8
  8002cc4:	20009f60 	.word	0x20009f60
  8002cc8:	2000a57c 	.word	0x2000a57c
@@ -9849,20 +9849,20 @@ static inline void chSysUnlock(void) {
  800308c:	c0303c08 	.word	0xc0303c08
  8003090:	0800c744 	.word	0x0800c744
  8003094:	2000adf8 	.word	0x2000adf8
- 8003098:	0800ca70 	.word	0x0800ca70
- 800309c:	0800ca88 	.word	0x0800ca88
+ 8003098:	0800ca78 	.word	0x0800ca78
+ 800309c:	0800ca90 	.word	0x0800ca90
  80030a0:	20001a78 	.word	0x20001a78
  80030a4:	0800c808 	.word	0x0800c808
- 80030a8:	0800ca8c 	.word	0x0800ca8c
+ 80030a8:	0800ca94 	.word	0x0800ca94
  80030ac:	2000b288 	.word	0x2000b288
  80030b0:	20009f08 	.word	0x20009f08
- 80030b4:	0800ca94 	.word	0x0800ca94
+ 80030b4:	0800ca9c 	.word	0x0800ca9c
  80030b8:	c0303c00 	.word	0xc0303c00
  80030bc:	2000a0b8 	.word	0x2000a0b8
  80030c0:	0800c7e4 	.word	0x0800c7e4
  80030c4:	08005321 	.word	0x08005321
  80030c8:	08005311 	.word	0x08005311
- 80030cc:	0800ca58 	.word	0x0800ca58
+ 80030cc:	0800ca60 	.word	0x0800ca60
  80030d0:	0800c7a8 	.word	0x0800c7a8
  80030d4:	40001440 	.word	0x40001440
  80030d8:	20004ba8 	.word	0x20004ba8
@@ -10078,7 +10078,7 @@ static void otg_fifo_write_from_buffer(volatile uint32_t *fifop,
   }
 }
  800318c:	e8bd 81f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, pc}
- 8003190:	0800cabc 	.word	0x0800cabc
+ 8003190:	0800cac4 	.word	0x0800cac4
 	...
 
 080031a0 <otg_epout_handler>:
@@ -11518,8 +11518,8 @@ static uint32_t otg_ram_alloc(USBDriver *usbp, size_t size) {
  8003774:	e7b7      	b.n	80036e6 <usb_lld_serve_interrupt.lto_priv.113+0x406>
  8003776:	bf00      	nop
  8003778:	10008040 	.word	0x10008040
- 800377c:	0800cbbc 	.word	0x0800cbbc
- 8003780:	0800cb50 	.word	0x0800cb50
+ 800377c:	0800cbc4 	.word	0x0800cbc4
+ 8003780:	0800cb58 	.word	0x0800cb58
 	...
 
 08003790 <Vector158>:
@@ -11582,7 +11582,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH7_HANDLER) {
 
   OSAL_IRQ_EPILOGUE();
  80037c4:	f003 ba94 	b.w	8006cf0 <_port_irq_epilogue>
- 80037c8:	0800cb44 	.word	0x0800cb44
+ 80037c8:	0800cb4c 	.word	0x0800cb4c
  80037cc:	40026400 	.word	0x40026400
  80037d0:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -11648,7 +11648,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH6_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003812:	f003 ba6d 	b.w	8006cf0 <_port_irq_epilogue>
  8003816:	bf00      	nop
- 8003818:	0800cb38 	.word	0x0800cb38
+ 8003818:	0800cb40 	.word	0x0800cb40
  800381c:	40026400 	.word	0x40026400
  8003820:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -11714,7 +11714,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH5_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003862:	f003 ba45 	b.w	8006cf0 <_port_irq_epilogue>
  8003866:	bf00      	nop
- 8003868:	0800cb2c 	.word	0x0800cb2c
+ 8003868:	0800cb34 	.word	0x0800cb34
  800386c:	40026400 	.word	0x40026400
  8003870:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -11778,7 +11778,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH4_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  80038ae:	f003 ba1f 	b.w	8006cf0 <_port_irq_epilogue>
  80038b2:	bf00      	nop
- 80038b4:	0800cb20 	.word	0x0800cb20
+ 80038b4:	0800cb28 	.word	0x0800cb28
  80038b8:	40026400 	.word	0x40026400
  80038bc:	2000a0d4 	.word	0x2000a0d4
 
@@ -11843,7 +11843,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH3_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  80038f2:	f003 b9fd 	b.w	8006cf0 <_port_irq_epilogue>
  80038f6:	bf00      	nop
- 80038f8:	0800cb14 	.word	0x0800cb14
+ 80038f8:	0800cb1c 	.word	0x0800cb1c
  80038fc:	40026400 	.word	0x40026400
  8003900:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -11909,7 +11909,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH2_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003942:	f003 b9d5 	b.w	8006cf0 <_port_irq_epilogue>
  8003946:	bf00      	nop
- 8003948:	0800cb08 	.word	0x0800cb08
+ 8003948:	0800cb10 	.word	0x0800cb10
  800394c:	40026400 	.word	0x40026400
  8003950:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -11975,7 +11975,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH1_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003992:	f003 b9ad 	b.w	8006cf0 <_port_irq_epilogue>
  8003996:	bf00      	nop
- 8003998:	0800cafc 	.word	0x0800cafc
+ 8003998:	0800cb04 	.word	0x0800cb04
  800399c:	40026400 	.word	0x40026400
  80039a0:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12039,7 +12039,7 @@ OSAL_IRQ_HANDLER(STM32_DMA2_CH0_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  80039de:	f003 b987 	b.w	8006cf0 <_port_irq_epilogue>
  80039e2:	bf00      	nop
- 80039e4:	0800caf0 	.word	0x0800caf0
+ 80039e4:	0800caf8 	.word	0x0800caf8
  80039e8:	40026400 	.word	0x40026400
  80039ec:	2000a0d4 	.word	0x2000a0d4
 
@@ -12104,7 +12104,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH7_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003a22:	f003 b965 	b.w	8006cf0 <_port_irq_epilogue>
  8003a26:	bf00      	nop
- 8003a28:	0800cae4 	.word	0x0800cae4
+ 8003a28:	0800caec 	.word	0x0800caec
  8003a2c:	40026000 	.word	0x40026000
  8003a30:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12170,7 +12170,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH6_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003a72:	f003 b93d 	b.w	8006cf0 <_port_irq_epilogue>
  8003a76:	bf00      	nop
- 8003a78:	0800cad8 	.word	0x0800cad8
+ 8003a78:	0800cae0 	.word	0x0800cae0
  8003a7c:	40026000 	.word	0x40026000
  8003a80:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12236,7 +12236,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH5_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003ac2:	f003 b915 	b.w	8006cf0 <_port_irq_epilogue>
  8003ac6:	bf00      	nop
- 8003ac8:	0800cc08 	.word	0x0800cc08
+ 8003ac8:	0800cc10 	.word	0x0800cc10
  8003acc:	40026000 	.word	0x40026000
  8003ad0:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12300,7 +12300,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH4_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003b0e:	f003 b8ef 	b.w	8006cf0 <_port_irq_epilogue>
  8003b12:	bf00      	nop
- 8003b14:	0800cbfc 	.word	0x0800cbfc
+ 8003b14:	0800cc04 	.word	0x0800cc04
  8003b18:	40026000 	.word	0x40026000
  8003b1c:	2000a0d4 	.word	0x2000a0d4
 
@@ -12365,7 +12365,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH3_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003b52:	f003 b8cd 	b.w	8006cf0 <_port_irq_epilogue>
  8003b56:	bf00      	nop
- 8003b58:	0800cbd8 	.word	0x0800cbd8
+ 8003b58:	0800cbe0 	.word	0x0800cbe0
  8003b5c:	40026000 	.word	0x40026000
  8003b60:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12431,7 +12431,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH2_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003ba2:	f003 b8a5 	b.w	8006cf0 <_port_irq_epilogue>
  8003ba6:	bf00      	nop
- 8003ba8:	0800cbcc 	.word	0x0800cbcc
+ 8003ba8:	0800cbd4 	.word	0x0800cbd4
  8003bac:	40026000 	.word	0x40026000
  8003bb0:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12497,7 +12497,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH1_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003bf2:	f003 b87d 	b.w	8006cf0 <_port_irq_epilogue>
  8003bf6:	bf00      	nop
- 8003bf8:	0800cb98 	.word	0x0800cb98
+ 8003bf8:	0800cba0 	.word	0x0800cba0
  8003bfc:	40026000 	.word	0x40026000
  8003c00:	2000a0d4 	.word	0x2000a0d4
 	...
@@ -12561,7 +12561,7 @@ OSAL_IRQ_HANDLER(STM32_DMA1_CH0_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8003c3e:	f003 b857 	b.w	8006cf0 <_port_irq_epilogue>
  8003c42:	bf00      	nop
- 8003c44:	0800cb8c 	.word	0x0800cb8c
+ 8003c44:	0800cb94 	.word	0x0800cb94
  8003c48:	40026000 	.word	0x40026000
  8003c4c:	2000a0d4 	.word	0x2000a0d4
 
@@ -12653,7 +12653,7 @@ OSAL_IRQ_HANDLER(VectorE0) {
 
   OSAL_IRQ_EPILOGUE();
  8003ccc:	f003 b810 	b.w	8006cf0 <_port_irq_epilogue>
- 8003cd0:	0800cc14 	.word	0x0800cc14
+ 8003cd0:	0800cc1c 	.word	0x0800cc1c
  8003cd4:	40013c00 	.word	0x40013c00
  8003cd8:	20009cf0 	.word	0x20009cf0
  8003cdc:	00000000 	.word	0x00000000
@@ -12739,7 +12739,7 @@ OSAL_IRQ_HANDLER(Vector9C) {
   OSAL_IRQ_EPILOGUE();
  8003d4e:	f002 bfcf 	b.w	8006cf0 <_port_irq_epilogue>
  8003d52:	bf00      	nop
- 8003d54:	0800cbf0 	.word	0x0800cbf0
+ 8003d54:	0800cbf8 	.word	0x0800cbf8
  8003d58:	40013c00 	.word	0x40013c00
  8003d5c:	20009cf0 	.word	0x20009cf0
 
@@ -12789,7 +12789,7 @@ OSAL_IRQ_HANDLER(Vector68) {
 
   OSAL_IRQ_EPILOGUE();
  8003d94:	f002 bfac 	b.w	8006cf0 <_port_irq_epilogue>
- 8003d98:	0800cbe4 	.word	0x0800cbe4
+ 8003d98:	0800cbec 	.word	0x0800cbec
  8003d9c:	40013c00 	.word	0x40013c00
  8003da0:	20009cf0 	.word	0x20009cf0
 	...
@@ -12840,7 +12840,7 @@ OSAL_IRQ_HANDLER(Vector64) {
 
   OSAL_IRQ_EPILOGUE();
  8003de4:	f002 bf84 	b.w	8006cf0 <_port_irq_epilogue>
- 8003de8:	0800cbb0 	.word	0x0800cbb0
+ 8003de8:	0800cbb8 	.word	0x0800cbb8
  8003dec:	40013c00 	.word	0x40013c00
  8003df0:	20009cf0 	.word	0x20009cf0
 	...
@@ -12891,7 +12891,7 @@ OSAL_IRQ_HANDLER(Vector60) {
 
   OSAL_IRQ_EPILOGUE();
  8003e34:	f002 bf5c 	b.w	8006cf0 <_port_irq_epilogue>
- 8003e38:	0800cba4 	.word	0x0800cba4
+ 8003e38:	0800cbac 	.word	0x0800cbac
  8003e3c:	40013c00 	.word	0x40013c00
  8003e40:	20009cf0 	.word	0x20009cf0
 	...
@@ -12942,7 +12942,7 @@ OSAL_IRQ_HANDLER(Vector5C) {
 
   OSAL_IRQ_EPILOGUE();
  8003e84:	f002 bf34 	b.w	8006cf0 <_port_irq_epilogue>
- 8003e88:	0800cb80 	.word	0x0800cb80
+ 8003e88:	0800cb88 	.word	0x0800cb88
  8003e8c:	40013c00 	.word	0x40013c00
  8003e90:	20009cf0 	.word	0x20009cf0
 	...
@@ -12993,7 +12993,7 @@ OSAL_IRQ_HANDLER(Vector58) {
 
   OSAL_IRQ_EPILOGUE();
  8003ed4:	f002 bf0c 	b.w	8006cf0 <_port_irq_epilogue>
- 8003ed8:	0800cb74 	.word	0x0800cb74
+ 8003ed8:	0800cb7c 	.word	0x0800cb7c
  8003edc:	40013c00 	.word	0x40013c00
  8003ee0:	20009cf0 	.word	0x20009cf0
 	...
@@ -19105,9 +19105,9 @@ static bool is_all_contexts_stopped(vmc_t *vmc){
  80052d0:	2000      	movhi	r0, #0
 }
  80052d2:	4770      	bx	lr
- 80052d4:	0800cd48 	.word	0x0800cd48
- 80052d8:	0800cd70 	.word	0x0800cd70
- 80052dc:	0800cd0c 	.word	0x0800cd0c
+ 80052d4:	0800cd50 	.word	0x0800cd50
+ 80052d8:	0800cd78 	.word	0x0800cd78
+ 80052dc:	0800cd14 	.word	0x0800cd14
 
 080052e0 <ll_dac_read.lto_priv.71>:
 
@@ -19268,7 +19268,7 @@ void print_it(const char *str, va_list args) {
  800536c:	f002 bde0 	b.w	8007f30 <chprintf.constprop.34>
  8005370:	2000a5d8 	.word	0x2000a5d8
  8005374:	2000adf8 	.word	0x2000adf8
- 8005378:	0800cd78 	.word	0x0800cd78
+ 8005378:	0800cd80 	.word	0x0800cd80
  800537c:	00000000 	.word	0x00000000
 
 08005380 <send_message.lto_priv.69>:
@@ -19485,8 +19485,8 @@ msg_t chMBPostI(mailbox_t *mbp, msg_t msg) {
  8005434:	4802      	ldr	r0, [pc, #8]	; (8005440 <send_message.lto_priv.69+0xc0>)
  8005436:	f002 f92b 	bl	8007690 <chSysHalt>
  800543a:	bf00      	nop
- 800543c:	0800cd2c 	.word	0x0800cd2c
- 8005440:	0800cf50 	.word	0x0800cf50
+ 800543c:	0800cd34 	.word	0x0800cd34
+ 8005440:	0800cf58 	.word	0x0800cf58
 	...
 
 08005450 <dbg_print>:
@@ -19728,7 +19728,7 @@ bool obqTryFlushI(output_buffers_queue_t *obqp) {
  800551a:	4802      	ldr	r0, [pc, #8]	; (8005524 <sof_handler.lto_priv.80+0xa4>)
  800551c:	f002 f8b8 	bl	8007690 <chSysHalt>
  8005520:	2000adf8 	.word	0x2000adf8
- 8005524:	0800cd3c 	.word	0x0800cd3c
+ 8005524:	0800cd44 	.word	0x0800cd44
 	...
 
 08005530 <usb_event.lto_priv.78>:
@@ -19968,8 +19968,8 @@ static inline void chSysUnlockFromISR(void) {
  8005618:	2000adfc 	.word	0x2000adfc
  800561c:	2000adf8 	.word	0x2000adf8
  8005620:	2000adf8 	.word	0x2000adf8
- 8005624:	0800cf2c 	.word	0x0800cf2c
- 8005628:	0800cc80 	.word	0x0800cc80
+ 8005624:	0800cf34 	.word	0x0800cf34
+ 8005628:	0800cc88 	.word	0x0800cc88
  800562c:	2000ae04 	.word	0x2000ae04
  8005630:	2000ae3c 	.word	0x2000ae3c
 	...
@@ -20038,7 +20038,7 @@ void dacPutChannelX(DACDriver *dacp, dacchannel_t channel, dacsample_t sample) {
  8005668:	2000      	movs	r0, #0
 }
  800566a:	bd38      	pop	{r3, r4, r5, pc}
- 800566c:	0800cf1c 	.word	0x0800cf1c
+ 800566c:	0800cf24 	.word	0x0800cf24
 
 08005670 <Vector108>:
 
@@ -20257,7 +20257,7 @@ static inline void chSysUnlockFromISR(void) {
  8005730:	f042 0202 	orr.w	r2, r2, #2
  8005734:	60da      	str	r2, [r3, #12]
  8005736:	e7bd      	b.n	80056b4 <Vector108+0x44>
- 8005738:	0800cd50 	.word	0x0800cd50
+ 8005738:	0800cd58 	.word	0x0800cd58
  800573c:	20000818 	.word	0x20000818
  8005740:	2000a0b4 	.word	0x2000a0b4
  8005744:	20009ef8 	.word	0x20009ef8
@@ -21668,23 +21668,23 @@ void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value) {
  8005c68:	f7ff fbf2 	bl	8005450 <dbg_print>
  8005c6c:	e6e1      	b.n	8005a32 <chibios_container_thread.lto_priv.61+0x52>
  8005c6e:	bf00      	nop
- 8005c70:	0800cd7c 	.word	0x0800cd7c
- 8005c74:	0800cd9c 	.word	0x0800cd9c
+ 8005c70:	0800cd84 	.word	0x0800cd84
+ 8005c74:	0800cda4 	.word	0x0800cda4
  8005c78:	feedcafe 	.word	0xfeedcafe
- 8005c7c:	0800cda8 	.word	0x0800cda8
- 8005c80:	0800cdc4 	.word	0x0800cdc4
- 8005c84:	0800cddc 	.word	0x0800cddc
- 8005c88:	0800cdf8 	.word	0x0800cdf8
- 8005c8c:	0800ce18 	.word	0x0800ce18
- 8005c90:	0800cd84 	.word	0x0800cd84
+ 8005c7c:	0800cdb0 	.word	0x0800cdb0
+ 8005c80:	0800cdcc 	.word	0x0800cdcc
+ 8005c84:	0800cde4 	.word	0x0800cde4
+ 8005c88:	0800ce00 	.word	0x0800ce00
+ 8005c8c:	0800ce20 	.word	0x0800ce20
+ 8005c90:	0800cd8c 	.word	0x0800cd8c
  8005c94:	20000818 	.word	0x20000818
  8005c98:	2000a0b4 	.word	0x2000a0b4
  8005c9c:	2000081c 	.word	0x2000081c
- 8005ca0:	0800ce98 	.word	0x0800ce98
- 8005ca4:	0800ce2c 	.word	0x0800ce2c
- 8005ca8:	0800ce68 	.word	0x0800ce68
- 8005cac:	0800cc20 	.word	0x0800cc20
- 8005cb0:	0800ceb0 	.word	0x0800ceb0
+ 8005ca0:	0800cea0 	.word	0x0800cea0
+ 8005ca4:	0800ce34 	.word	0x0800ce34
+ 8005ca8:	0800ce70 	.word	0x0800ce70
+ 8005cac:	0800cc28 	.word	0x0800cc28
+ 8005cb0:	0800ceb8 	.word	0x0800ceb8
  8005cb4:	2000b288 	.word	0x2000b288
   //        }
   //     }
@@ -21876,9 +21876,9 @@ msg_t chMBFetchTimeoutS(mailbox_t *mbp, msg_t *msgp, sysinterval_t timeout) {
  8005d80:	4803      	ldr	r0, [pc, #12]	; (8005d90 <chibios_container_thread.lto_priv.61+0x3b0>)
  8005d82:	f7ff fb65 	bl	8005450 <dbg_print>
  8005d86:	e654      	b.n	8005a32 <chibios_container_thread.lto_priv.61+0x52>
- 8005d88:	0800cf08 	.word	0x0800cf08
- 8005d8c:	0800ce4c 	.word	0x0800ce4c
- 8005d90:	0800ce7c 	.word	0x0800ce7c
+ 8005d88:	0800cf10 	.word	0x0800cf10
+ 8005d8c:	0800ce54 	.word	0x0800ce54
+ 8005d90:	0800ce84 	.word	0x0800ce84
 	...
 
 08005da0 <sys_time_set_wake_up>:
@@ -22017,10 +22017,10 @@ static inline void chSysUnlock(void) {
  8005e24:	20009ef8 	.word	0x20009ef8
  8005e28:	20000818 	.word	0x20000818
  8005e2c:	2000b288 	.word	0x2000b288
- 8005e30:	0800cecc 	.word	0x0800cecc
+ 8005e30:	0800ced4 	.word	0x0800ced4
  8005e34:	2000adf8 	.word	0x2000adf8
- 8005e38:	0800ceec 	.word	0x0800ceec
- 8005e3c:	0800cc2c 	.word	0x0800cc2c
+ 8005e38:	0800cef4 	.word	0x0800cef4
+ 8005e3c:	0800cc34 	.word	0x0800cc34
 
 08005e40 <eval_callrts>:
   //TODO: hold_reg1 and hold_reg2 should contain indices to the int pool
@@ -25097,7 +25097,7 @@ void *chCoreAllocFromTopI(size_t size, unsigned align, size_t offset) {
 }
  8006aea:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
  8006aec:	2000bb10 	.word	0x2000bb10
- 8006af0:	0800d018 	.word	0x0800d018
+ 8006af0:	0800d020 	.word	0x0800d020
 	...
 
 08006b00 <chCoreAllocAlignedI.lto_priv.77>:
@@ -25219,7 +25219,7 @@ __STATIC_FORCEINLINE uint32_t __get_PSP(void)
  8006b52:	f000 fd9d 	bl	8007690 <chSysHalt>
  8006b56:	bf00      	nop
  8006b58:	2000b288 	.word	0x2000b288
- 8006b5c:	0800cfdc 	.word	0x0800cfdc
+ 8006b5c:	0800cfe4 	.word	0x0800cfe4
 
 08006b60 <chSchGoSleepTimeoutS>:
  * @return              The wakeup message.
@@ -25800,8 +25800,8 @@ static inline void st_lld_stop_alarm(void) {
  8006cda:	bf00      	nop
  8006cdc:	2000b288 	.word	0x2000b288
  8006ce0:	080077d1 	.word	0x080077d1
- 8006ce4:	0800cf98 	.word	0x0800cf98
- 8006ce8:	0800d044 	.word	0x0800d044
+ 8006ce4:	0800cfa0 	.word	0x0800cfa0
+ 8006ce8:	0800d04c 	.word	0x0800d04c
  8006cec:	00000000 	.word	0x00000000
 
 08006cf0 <_port_irq_epilogue>:
@@ -26237,7 +26237,7 @@ thread_t *chSchReadyAheadI(thread_t *tp) {
  8006e36:	f000 fc2b 	bl	8007690 <chSysHalt>
  8006e3a:	bf00      	nop
  8006e3c:	2000b288 	.word	0x2000b288
- 8006e40:	0800d004 	.word	0x0800d004
+ 8006e40:	0800d00c 	.word	0x0800d00c
 	...
 
 08006e50 <chSchDoReschedule>:
@@ -26328,7 +26328,7 @@ __STATIC_FORCEINLINE uint32_t __get_PSP(void)
  8006e8e:	f000 fbff 	bl	8007690 <chSysHalt>
  8006e92:	bf00      	nop
  8006e94:	2000b288 	.word	0x2000b288
- 8006e98:	0800cfdc 	.word	0x0800cfdc
+ 8006e98:	0800cfe4 	.word	0x0800cfe4
  8006e9c:	00000000 	.word	0x00000000
 
 08006ea0 <chSchRescheduleS>:
@@ -26439,7 +26439,7 @@ void chSchDoRescheduleAhead(void) {
  8006eee:	4802      	ldr	r0, [pc, #8]	; (8006ef8 <chSchRescheduleS+0x58>)
  8006ef0:	f000 fbce 	bl	8007690 <chSysHalt>
  8006ef4:	2000b288 	.word	0x2000b288
- 8006ef8:	0800cfdc 	.word	0x0800cfdc
+ 8006ef8:	0800cfe4 	.word	0x0800cfe4
  8006efc:	00000000 	.word	0x00000000
 
 08006f00 <chSchReadyI>:
@@ -26525,7 +26525,7 @@ thread_t *chSchReadyI(thread_t *tp) {
  8006f36:	f000 fbab 	bl	8007690 <chSysHalt>
  8006f3a:	bf00      	nop
  8006f3c:	2000b288 	.word	0x2000b288
- 8006f40:	0800cfec 	.word	0x0800cfec
+ 8006f40:	0800cff4 	.word	0x0800cff4
 	...
 
 08006f50 <chEvtBroadcastFlagsI>:
@@ -26711,8 +26711,8 @@ void chEvtBroadcastFlagsI(event_source_t *esp, eventflags_t flags) {
   chDbgCheck(esp != NULL);
  8006fd6:	4802      	ldr	r0, [pc, #8]	; (8006fe0 <chEvtBroadcastFlagsI+0x90>)
  8006fd8:	f000 fb5a 	bl	8007690 <chSysHalt>
- 8006fdc:	0800cfa4 	.word	0x0800cfa4
- 8006fe0:	0800cfc4 	.word	0x0800cfc4
+ 8006fdc:	0800cfac 	.word	0x0800cfac
+ 8006fe0:	0800cfcc 	.word	0x0800cfcc
 	...
 
 08006ff0 <chThdExit>:
@@ -26831,7 +26831,7 @@ static inline bool ch_list_notempty(ch_list_t *lp) {
  800703a:	4802      	ldr	r0, [pc, #8]	; (8007044 <chThdExit+0x54>)
  800703c:	f000 fb28 	bl	8007690 <chSysHalt>
  8007040:	2000b288 	.word	0x2000b288
- 8007044:	0800cff8 	.word	0x0800cff8
+ 8007044:	0800d000 	.word	0x0800d000
 	...
 
 08007050 <chPoolFree>:
@@ -26898,9 +26898,9 @@ static inline void chSysUnlock(void) {
  8007098:	bd38      	pop	{r3, r4, r5, pc}
  800709a:	4803      	ldr	r0, [pc, #12]	; (80070a8 <chPoolFree+0x58>)
  800709c:	f000 faf8 	bl	8007690 <chSysHalt>
- 80070a0:	0800cf5c 	.word	0x0800cf5c
+ 80070a0:	0800cf64 	.word	0x0800cf64
  80070a4:	2000b288 	.word	0x2000b288
- 80070a8:	0800d054 	.word	0x0800d054
+ 80070a8:	0800d05c 	.word	0x0800d05c
  80070ac:	00000000 	.word	0x00000000
 
 080070b0 <chCoreAllocFromTop>:
@@ -26965,7 +26965,7 @@ static inline void chSysUnlock(void) {
  80070ee:	4802      	ldr	r0, [pc, #8]	; (80070f8 <chCoreAllocFromTop+0x48>)
  80070f0:	f000 face 	bl	8007690 <chSysHalt>
  80070f4:	2000b288 	.word	0x2000b288
- 80070f8:	0800d130 	.word	0x0800d130
+ 80070f8:	0800d138 	.word	0x0800d138
  80070fc:	00000000 	.word	0x00000000
 
 08007100 <chRegFindThreadByWorkingArea>:
@@ -27716,12 +27716,12 @@ static inline void chSysUnlock(void) {
  80073d2:	f8c9 b038 	str.w	fp, [r9, #56]	; 0x38
  80073d6:	e7ca      	b.n	800736e <chRegFindThreadByWorkingArea+0x26e>
  80073d8:	2000b288 	.word	0x2000b288
- 80073dc:	0800d038 	.word	0x0800d038
+ 80073dc:	0800d040 	.word	0x0800d040
  80073e0:	0800c75c 	.word	0x0800c75c
- 80073e4:	0800cfb4 	.word	0x0800cfb4
- 80073e8:	0800d060 	.word	0x0800d060
- 80073ec:	0800cf74 	.word	0x0800cf74
- 80073f0:	0800cf68 	.word	0x0800cf68
+ 80073e4:	0800cfbc 	.word	0x0800cfbc
+ 80073e8:	0800d068 	.word	0x0800d068
+ 80073ec:	0800cf7c 	.word	0x0800cf7c
+ 80073f0:	0800cf70 	.word	0x0800cf70
  80073f4:	464c      	mov	r4, r9
  80073f6:	f8dd 9008 	ldr.w	r9, [sp, #8]
  * @return              The removed element pointer.
@@ -27995,8 +27995,8 @@ static inline bool ch_queue_notempty(const ch_queue_t *qp) {
  80074fc:	3301      	adds	r3, #1
  80074fe:	f841 3c04 	str.w	r3, [r1, #-4]
  8007502:	e7ac      	b.n	800745e <chRegFindThreadByWorkingArea+0x35e>
- 8007504:	0800cf80 	.word	0x0800cf80
- 8007508:	0800d02c 	.word	0x0800d02c
+ 8007504:	0800cf88 	.word	0x0800cf88
+ 8007508:	0800d034 	.word	0x0800d034
  800750c:	00000000 	.word	0x00000000
 
 08007510 <chThdSleep>:
@@ -28061,7 +28061,7 @@ static inline void chThdSleepS(sysinterval_t ticks) {
  8007552:	bf00      	nop
  8007554:	2000b288 	.word	0x2000b288
  8007558:	0800c75c 	.word	0x0800c75c
- 800755c:	0800cf8c 	.word	0x0800cf8c
+ 800755c:	0800cf94 	.word	0x0800cf94
 
 08007560 <trace_next>:
 /**
@@ -28406,7 +28406,7 @@ void chDbgCheckClassS(void) {
  80076e2:	f7ff ffd5 	bl	8007690 <chSysHalt>
  80076e6:	bf00      	nop
  80076e8:	2000b288 	.word	0x2000b288
- 80076ec:	0800d07c 	.word	0x0800d07c
+ 80076ec:	0800d084 	.word	0x0800d084
 
 080076f0 <chDbgCheckClassI>:
  *          an I-class API function. A panic is generated if the state is
@@ -28430,7 +28430,7 @@ void chDbgCheckClassI(void) {
  8007702:	4802      	ldr	r0, [pc, #8]	; (800770c <chDbgCheckClassI+0x1c>)
  8007704:	f7ff ffc4 	bl	8007690 <chSysHalt>
  8007708:	2000b288 	.word	0x2000b288
- 800770c:	0800d084 	.word	0x0800d084
+ 800770c:	0800d08c 	.word	0x0800d08c
 
 08007710 <_dbg_check_leave_isr>:
 /**
@@ -28467,7 +28467,7 @@ __STATIC_FORCEINLINE void __set_BASEPRI(uint32_t basePri)
  800772e:	f381 8811 	msr	BASEPRI, r1
  8007732:	bd08      	pop	{r3, pc}
  8007734:	2000b288 	.word	0x2000b288
- 8007738:	0800d08c 	.word	0x0800d08c
+ 8007738:	0800d094 	.word	0x0800d094
  800773c:	00000000 	.word	0x00000000
 
 08007740 <_dbg_check_enter_isr>:
@@ -28499,7 +28499,7 @@ void _dbg_check_enter_isr(void) {
  800775e:	f381 8811 	msr	BASEPRI, r1
  8007762:	bd08      	pop	{r3, pc}
  8007764:	2000b288 	.word	0x2000b288
- 8007768:	0800d094 	.word	0x0800d094
+ 8007768:	0800d09c 	.word	0x0800d09c
  800776c:	00000000 	.word	0x00000000
 
 08007770 <_dbg_check_unlock_from_isr>:
@@ -28534,7 +28534,7 @@ void _dbg_check_unlock_from_isr(void) {
  8007786:	4802      	ldr	r0, [pc, #8]	; (8007790 <_dbg_check_unlock_from_isr+0x20>)
  8007788:	f7ff ff82 	bl	8007690 <chSysHalt>
  800778c:	2000b288 	.word	0x2000b288
- 8007790:	0800d09c 	.word	0x0800d09c
+ 8007790:	0800d0a4 	.word	0x0800d0a4
 	...
 
 080077a0 <_dbg_check_lock_from_isr>:
@@ -28563,7 +28563,7 @@ void _dbg_check_lock_from_isr(void) {
  80077b8:	bd08      	pop	{r3, pc}
  80077ba:	bf00      	nop
  80077bc:	2000b288 	.word	0x2000b288
- 80077c0:	0800d0a4 	.word	0x0800d0a4
+ 80077c0:	0800d0ac 	.word	0x0800d0ac
 	...
 
 080077d0 <wakeup.lto_priv.112>:
@@ -28699,7 +28699,7 @@ void _dbg_check_unlock(void) {
  8007852:	4802      	ldr	r0, [pc, #8]	; (800785c <_dbg_check_unlock+0x1c>)
  8007854:	f7ff ff1c 	bl	8007690 <chSysHalt>
  8007858:	2000b288 	.word	0x2000b288
- 800785c:	0800d0ac 	.word	0x0800d0ac
+ 800785c:	0800d0b4 	.word	0x0800d0b4
 
 08007860 <_dbg_check_lock>:
 /**
@@ -28725,7 +28725,7 @@ void _dbg_check_lock(void) {
  8007874:	635a      	str	r2, [r3, #52]	; 0x34
  8007876:	bd08      	pop	{r3, pc}
  8007878:	2000b288 	.word	0x2000b288
- 800787c:	0800d0b4 	.word	0x0800d0b4
+ 800787c:	0800d0bc 	.word	0x0800d0bc
 
 08007880 <__early_init>:
 
@@ -29728,9 +29728,9 @@ static inline void chSysUnlockFromISR(void) {
  8007c54:	e798      	b.n	8007b88 <VectorB0+0x28>
  8007c56:	4803      	ldr	r0, [pc, #12]	; (8007c64 <VectorB0+0x104>)
  8007c58:	f7ff fd1a 	bl	8007690 <chSysHalt>
- 8007c5c:	0800d0d4 	.word	0x0800d0d4
+ 8007c5c:	0800d0dc 	.word	0x0800d0dc
  8007c60:	2000b288 	.word	0x2000b288
- 8007c64:	0800d0bc 	.word	0x0800d0bc
+ 8007c64:	0800d0c4 	.word	0x0800d0c4
 	...
 
 08007c70 <usb_lld_start_in>:
@@ -30060,7 +30060,7 @@ OSAL_IRQ_HANDLER(STM32_OTG2_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8007dd2:	f7fe bf8d 	b.w	8006cf0 <_port_irq_epilogue>
  8007dd6:	bf00      	nop
- 8007dd8:	0800d0c8 	.word	0x0800d0c8
+ 8007dd8:	0800d0d0 	.word	0x0800d0d0
  8007ddc:	2000a03c 	.word	0x2000a03c
 
 08007de0 <Vector14C>:
@@ -30096,7 +30096,7 @@ OSAL_IRQ_HANDLER(STM32_OTG1_HANDLER) {
   OSAL_IRQ_EPILOGUE();
  8007e02:	f7fe bf75 	b.w	8006cf0 <_port_irq_epilogue>
  8007e06:	bf00      	nop
- 8007e08:	0800d070 	.word	0x0800d070
+ 8007e08:	0800d078 	.word	0x0800d078
  8007e0c:	20009fc4 	.word	0x20009fc4
 
 08007e10 <long_to_string_with_divisor.constprop.36>:
@@ -30242,7 +30242,7 @@ static inline ch_queue_t *ch_queue_fifo_remove(ch_queue_t *qp) {
  8007e9e:	d1eb      	bne.n	8007e78 <chThdDequeueAllI.constprop.56+0x18>
  8007ea0:	e7f0      	b.n	8007e84 <chThdDequeueAllI.constprop.56+0x24>
  8007ea2:	bf00      	nop
- 8007ea4:	0800d11c 	.word	0x0800d11c
+ 8007ea4:	0800d124 	.word	0x0800d124
 	...
 
 08007eb0 <chThdDequeueNextI.constprop.54>:
@@ -30291,7 +30291,7 @@ static inline ch_queue_t *ch_queue_fifo_remove(ch_queue_t *qp) {
 }
  8007ed4:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
  8007ed8:	f7ff b812 	b.w	8006f00 <chSchReadyI>
- 8007edc:	0800d11c 	.word	0x0800d11c
+ 8007edc:	0800d124 	.word	0x0800d124
 
 08007ee0 <dac_lld_put_channel.constprop.50>:
  * @param[in] channel   DAC channel number
@@ -30356,7 +30356,7 @@ void dac_lld_put_channel(DACDriver *dacp,
  8007f18:	3308      	adds	r3, #8
  8007f1a:	f843 1022 	str.w	r1, [r3, r2, lsl #2]
  8007f1e:	bd08      	pop	{r3, pc}
- 8007f20:	0800d0e0 	.word	0x0800d0e0
+ 8007f20:	0800d0e8 	.word	0x0800d0e8
 	...
 
 08007f30 <chprintf.constprop.34>:
@@ -31239,7 +31239,7 @@ static char *ch_ltoa(char *p, long num, unsigned radix) {
  80082d4:	2520      	movs	r5, #32
  80082d6:	e76c      	b.n	80081b2 <chprintf.constprop.34+0x282>
  80082d8:	2000adf8 	.word	0x2000adf8
- 80082dc:	0800d10c 	.word	0x0800d10c
+ 80082dc:	0800d114 	.word	0x0800d114
 
 080082e0 <chSchWakeupS.constprop.33>:
  * @param[in] ntp       the thread to be made ready
@@ -31426,8 +31426,8 @@ void chSchWakeupS(thread_t *ntp, msg_t msg) {
  8008348:	6883      	ldr	r3, [r0, #8]
  800834a:	e7d6      	b.n	80082fa <chSchWakeupS.constprop.33+0x1a>
  800834c:	2000b288 	.word	0x2000b288
- 8008350:	0800d0fc 	.word	0x0800d0fc
- 8008354:	0800cfdc 	.word	0x0800cfdc
+ 8008350:	0800d104 	.word	0x0800d104
+ 8008354:	0800cfe4 	.word	0x0800cfe4
 	...
 
 08008360 <vmc_heap_alloc_n.constprop.20>:
@@ -31677,8 +31677,8 @@ caddr_t _sbrk_r(struct _reent *r, int incr) {
  8008426:	bf00      	nop
  8008428:	2000bb10 	.word	0x2000bb10
  800842c:	2000b288 	.word	0x2000b288
- 8008430:	0800d130 	.word	0x0800d130
- 8008434:	0800d0f4 	.word	0x0800d0f4
+ 8008430:	0800d138 	.word	0x0800d138
+ 8008434:	0800d0fc 	.word	0x0800d0fc
 	...
 
 08008440 <heap_mark>:
@@ -34001,7 +34001,7 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  8008e94:	e00d      	b.n	8008eb2 <_svfprintf_r+0x2b2>
  8008e96:	bf00      	nop
 	...
- 8008ea0:	0800d150 	.word	0x0800d150
+ 8008ea0:	0800d158 	.word	0x0800d158
  8008ea4:	f1aa 0a10 	sub.w	sl, sl, #16
  8008ea8:	f1ba 0f10 	cmp.w	sl, #16
  8008eac:	f104 0408 	add.w	r4, r4, #8
@@ -34499,10 +34499,10 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  80093c6:	781d      	ldrb	r5, [r3, #0]
  80093c8:	4619      	mov	r1, r3
  80093ca:	e46e      	b.n	8008caa <_svfprintf_r+0xaa>
- 80093cc:	0800d184 	.word	0x0800d184
- 80093d0:	0800d170 	.word	0x0800d170
- 80093d4:	0800d140 	.word	0x0800d140
- 80093d8:	0800d150 	.word	0x0800d150
+ 80093cc:	0800d18c 	.word	0x0800d18c
+ 80093d0:	0800d178 	.word	0x0800d178
+ 80093d4:	0800d148 	.word	0x0800d148
+ 80093d8:	0800d158 	.word	0x0800d158
  80093dc:	9306      	str	r3, [sp, #24]
  80093de:	9b03      	ldr	r3, [sp, #12]
  80093e0:	f88d 2067 	strb.w	r2, [sp, #103]	; 0x67
@@ -34819,11 +34819,11 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  800971a:	f8cd a024 	str.w	sl, [sp, #36]	; 0x24
  800971e:	970c      	str	r7, [sp, #48]	; 0x30
  8009720:	f7ff bb88 	b.w	8008e34 <_svfprintf_r+0x234>
- 8009724:	0800d164 	.word	0x0800d164
- 8009728:	0800d184 	.word	0x0800d184
- 800972c:	0800d088 	.word	0x0800d088
- 8009730:	0800d160 	.word	0x0800d160
- 8009734:	0800d140 	.word	0x0800d140
+ 8009724:	0800d16c 	.word	0x0800d16c
+ 8009728:	0800d18c 	.word	0x0800d18c
+ 800972c:	0800d090 	.word	0x0800d090
+ 8009730:	0800d168 	.word	0x0800d168
+ 8009734:	0800d148 	.word	0x0800d148
  8009738:	9812      	ldr	r0, [sp, #72]	; 0x48
  800973a:	46bb      	mov	fp, r7
  800973c:	ea4f 1318 	mov.w	r3, r8, lsr #4
@@ -35454,10 +35454,10 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  8009dac:	f04f 0b06 	mov.w	fp, #6
  8009db0:	e771      	b.n	8009c96 <_svfprintf_r+0x1096>
  8009db2:	bf00      	nop
- 8009db4:	0800d16c 	.word	0x0800d16c
- 8009db8:	0800d168 	.word	0x0800d168
- 8009dbc:	0800d088 	.word	0x0800d088
- 8009dc0:	0800d140 	.word	0x0800d140
+ 8009db4:	0800d174 	.word	0x0800d174
+ 8009db8:	0800d170 	.word	0x0800d170
+ 8009dbc:	0800d090 	.word	0x0800d090
+ 8009dc0:	0800d148 	.word	0x0800d148
  8009dc4:	9804      	ldr	r0, [sp, #16]
  8009dc6:	4631      	mov	r1, r6
  8009dc8:	aa21      	add	r2, sp, #132	; 0x84
@@ -35751,7 +35751,7 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  800a0ba:	6013      	str	r3, [r2, #0]
  800a0bc:	f04f 30ff 	mov.w	r0, #4294967295	; 0xffffffff
  800a0c0:	f7fe be70 	b.w	8008da4 <_svfprintf_r+0x1a4>
- 800a0c4:	0800d10c 	.word	0x0800d10c
+ 800a0c4:	0800d114 	.word	0x0800d114
  800a0c8:	66666667 	.word	0x66666667
 
 0800a0cc <quorem>:
@@ -36135,13 +36135,13 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  800a4c0:	509f79fb 	.word	0x509f79fb
  800a4c4:	3fd34413 	.word	0x3fd34413
  800a4c8:	7ff00000 	.word	0x7ff00000
- 800a4cc:	0800d089 	.word	0x0800d089
- 800a4d0:	0800d1a4 	.word	0x0800d1a4
+ 800a4cc:	0800d091 	.word	0x0800d091
+ 800a4d0:	0800d1ac 	.word	0x0800d1ac
  800a4d4:	fffffc0e 	.word	0xfffffc0e
  800a4d8:	3ff80000 	.word	0x3ff80000
- 800a4dc:	0800d1b8 	.word	0x0800d1b8
- 800a4e0:	0800d198 	.word	0x0800d198
- 800a4e4:	0800d088 	.word	0x0800d088
+ 800a4dc:	0800d1c0 	.word	0x0800d1c0
+ 800a4e0:	0800d1a0 	.word	0x0800d1a0
+ 800a4e4:	0800d090 	.word	0x0800d090
  800a4e8:	40240000 	.word	0x40240000
  800a4ec:	f7f6 f97e 	bl	80007ec <__aeabi_dmul>
  800a4f0:	2200      	movs	r2, #0
@@ -36881,8 +36881,8 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  800ac60:	2b00      	cmp	r3, #0
  800ac62:	f47f ad44 	bne.w	800a6ee <_dtoa_r+0x4f6>
  800ac66:	e7ac      	b.n	800abc2 <_dtoa_r+0x9ca>
- 800ac68:	0800d1b8 	.word	0x0800d1b8
- 800ac6c:	0800d290 	.word	0x0800d290
+ 800ac68:	0800d1c0 	.word	0x0800d1c0
+ 800ac6c:	0800d298 	.word	0x0800d298
  800ac70:	3ff00000 	.word	0x3ff00000
  800ac74:	401c0000 	.word	0x401c0000
  800ac78:	3fe00000 	.word	0x3fe00000
@@ -37219,8 +37219,8 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  800afe8:	f7ff badd 	b.w	800a5a6 <_dtoa_r+0x3ae>
  800afec:	401c0000 	.word	0x401c0000
  800aff0:	40140000 	.word	0x40140000
- 800aff4:	0800d1b8 	.word	0x0800d1b8
- 800aff8:	0800d290 	.word	0x0800d290
+ 800aff4:	0800d1c0 	.word	0x0800d1c0
+ 800aff8:	0800d298 	.word	0x0800d298
  800affc:	40240000 	.word	0x40240000
  800b000:	3fe00000 	.word	0x3fe00000
  800b004:	4643      	mov	r3, r8
@@ -38219,7 +38219,7 @@ int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){
  800b9c2:	6003      	str	r3, [r0, #0]
  800b9c4:	e7be      	b.n	800b944 <__pow5mult+0x18>
  800b9c6:	bf00      	nop
- 800b9c8:	0800d280 	.word	0x0800d280
+ 800b9c8:	0800d288 	.word	0x0800d288
 
 0800b9cc <__lshift>:
  800b9cc:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
