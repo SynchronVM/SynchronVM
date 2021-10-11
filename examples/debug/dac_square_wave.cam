@@ -8,13 +8,10 @@ after t ev = syncT t 0 ev
 tone1 : Int
 tone1 = 160860
 
-tone2 : Int
-tone2 = 95424
-
 dacC : Channel Int
 dacC = channel ()
 
-noteC : Channel Int
+noteC : Channel ()
 noteC = channel ()
 
 noteDuration : Int
@@ -22,13 +19,13 @@ noteDuration = 42000000
 
 playerP : () -> ()
 playerP void =
-  let _ = after tone2 (send noteC 5) in
+  let _ = after noteDuration (send noteC ()) in
   playerP ()
 
 tuneP : Int -> Int -> () -> ()
 tuneP timePeriod vol void =
-  let _ = sync (recv noteC) in
-  let _ = after timePeriod (send dacC (vol * 4095)) in
+  let _ = after timePeriod (choose (recv noteC)
+                                   (send dacC (vol * 4095))) in
   tuneP timePeriod (not vol) void
 
 main =
