@@ -63,11 +63,6 @@ void chibios_register_dbg_print(void (*f)(const char *str, va_list args)) {
   dbg_print_fun = f;
 }
 
-
-/* TODO: This is broken
-   possibly resolve by using some function stdarg
-   vsnprintf for example.
-*/
 void dbg_print(const char *str, ...) {
   va_list args;
 
@@ -196,7 +191,7 @@ static THD_FUNCTION(chibios_container_thread, arg) {
   }
 
   /* TODO read_message_poll */
-  scheduler(container, NULL, read_message_block, mailbox_num_used, dbg_print);
+  scheduler(container, NULL, read_message_block, mailbox_num_used);
 
   /* If we return to here, do something in relation to the
      return value of the scheduler function.*/

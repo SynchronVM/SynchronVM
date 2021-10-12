@@ -21,13 +21,8 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  */
 /* SOFTWARE.									  */
 /**********************************************************************************/
-#ifdef DEBUG
-#include <stdio.h>
-# define DEBUG_PRINT(x) printf x
-#else
-# define DEBUG_PRINT(x) do {} while (0)
-#endif
 
+#include <SVM_DEBUG.h>
 #include<chan_recv_queue.h>
 
 int chan_recv_q_init(chan_recv_queue_t *q, uint8_t *mem, unsigned int size_bytes){

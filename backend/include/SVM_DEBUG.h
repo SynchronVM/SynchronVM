@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2021 Abhiroop Sarkar, Joel Svensson             		  */
+/* Copyright (c) 2021 Abhiroop Sarkar and Joel Svensson          		  */ 
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,18 +22,13 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef _SCHEDULER_H_
-#define _SCHEDULER_H_
+#ifndef SVM_DEBUG_H_
+#define SVM_DEBUG_H_
 
-#include <VMC.h>
-
-// Scheduler must be called within some lower level thread abstraction
-extern int scheduler(vmc_t *container,
-		     message_read_poll_fun poll_msg,
-		     message_read_block_fun block_msg,
-		     message_queue_num_used_fun msgq_num_used);
-
-
+#if DEBUG // set with compiler flag -DDEBUG
+# define DEBUG_PRINT(x) dbg_print x
+#else
+# define DEBUG_PRINT(x) do {} while (0)
 #endif
 
-
+#endif 

@@ -27,7 +27,8 @@
 
 
 
-
+// require from all platforms
+extern void dbg_print(const char *str, ...);
 
 /********************/
 /* VM Configuration */

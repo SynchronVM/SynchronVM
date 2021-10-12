@@ -23,12 +23,7 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifdef DEBUG
-#include <stdio.h>
-# define DEBUG_PRINT(x) printf x
-#else
-# define DEBUG_PRINT(x) do {} while (0)
-#endif
+#include <SVM_DEBUG.h>
 
 #define SYNC_DRIVER 7
 
@@ -352,7 +347,7 @@ static int postSync( vmc_t *container
     DEBUG_PRINT(("Stack push failed in post-syncer"));
     return -1;
   }
-
+  
   container->contexts[ctx_id].pc = label.value;
 
   return 1;

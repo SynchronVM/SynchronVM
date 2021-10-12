@@ -22,6 +22,8 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
+#include <SVM_DEBUG.h>
+
 #include <scheduler.h>
 #include <heap.h>
 #include <CAM.h>
@@ -32,7 +34,7 @@
 /* Scheduler tracing */
 
 //#define TRACE_ON
-#define MAX_TRACE_LENGTH 100
+#define MAX_TRACE_LENGTH 50
 
 typedef struct scheduler_trace_s {
   UUID context_id;
@@ -117,16 +119,12 @@ static void initLogicalTime(vmc_t *vmc){
 
 
 
-
 /*************/
 /* Scheduler */
-
-
 int scheduler(vmc_t *container,
 	      message_read_poll_fun poll_msg,
 	      message_read_block_fun block_msg,
-	      message_queue_num_used_fun msgq_num_used,
-        void (*dbg_print)(const char *str, ...)) {
+	      message_queue_num_used_fun msgq_num_used) {
 
   //type: poll_msg(vmc_t *vmc, svm_msg_t *msg);
   //type: block_msg(vmc_t *vmc, svm_msg_t *msg);
@@ -186,6 +184,9 @@ int scheduler(vmc_t *container,
        - threads cooperative.
        -
     */
+
+    //bool activation = false; 
+    
     /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
 
@@ -194,17 +195,19 @@ int scheduler(vmc_t *container,
 /* #ifdef TRACE_ON */
 /*       trace_print(dbg_print, 25); */
 /* #endif	 */
-      dbg_print("Blocking in wait for message \r\n");
+      //   dbg_print("Blocking in wait for message \r\n");
       block_msg(container, &msg);
 #ifdef TRACE_ON
       total_msgs ++;
 #endif
 
+      //activation = true;
+      
       /* dbg_print("Message received: blocking\r\n"); */
       /* dbg_print("  Sender: %u\r\n", msg.sender_id); */
       /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
       /* dbg_print("  data: %u\r\n", msg.data); */
-      dbg_print("  time: %llu\r\n", msg.timestamp);
+      //      dbg_print("  time: %llu\r\n", msg.timestamp);
       /*handle msg */
       int msg_r = handle_msg(container, &msg);
       if (msg_r  <= 0) {
@@ -217,21 +220,24 @@ int scheduler(vmc_t *container,
 	return -1;
 	/* continue as if nothing has happend.
 	   This should be like throwing the message away */
-      } else {
-	uint32_t baseline_low;
-	uint32_t baseline_high;
-	uint32_t t_low;
-	uint32_t t_high;
-	Time t = sys_time_get_current_ticks();
-	t_low = t;
-	t_high = t >> 32;
-	baseline_low = container->contexts[container->current_running_context_id].logicalTime;
-	baseline_high = container->contexts[container->current_running_context_id].logicalTime >> 32;
-
-	dbg_print("Current ctx: %d   (Baseline: %u, %u) (t: %u, %u)\r\n",
-		  container->current_running_context_id,
-		  baseline_high,baseline_low, t_high, t_low);
       }
+
+      /* else { */
+      /* 	uint32_t baseline_low; */
+      /* 	uint32_t baseline_high; */
+      /* 	uint32_t t_low; */
+      /* 	uint32_t t_high; */
+      /* 	Time t = sys_time_get_current_ticks(); */
+      /* 	t_low = t; */
+      /* 	t_high = t >> 32; */
+      /* 	baseline_low = container->contexts[container->current_running_context_id].logicalTime; */
+      /* 	baseline_high = container->contexts[container->current_running_context_id].logicalTime >> 32; */
+
+      /* 	dbg_print("Current ctx: %d   (Baseline: %u, %u) (t: %u, %u)\r\n", */
+      /* 		  container->current_running_context_id, */
+      /* 		  baseline_high,baseline_low, t_high, t_low); */
+      /* } */
+      
       /* while (poll_msg(container, &msg) == 0) { */
       /* 	dbg_print("message received: poll loop in blocking\r\n"); */
       /* 	dbg_print("  driver: %u\r\n", msg.driver_id); */
@@ -251,6 +257,8 @@ int scheduler(vmc_t *container,
     if (container->current_running_context_id != UUID_NONE) {
 
       INT *pc = (INT *)&container->contexts[container->current_running_context_id].pc;
+      //dbg_print("%x\r\n", (uint32_t)pc);
+      
       /* dbg_print("*****************************************************\r\n"); */
       /* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
       /* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
@@ -265,7 +273,8 @@ int scheduler(vmc_t *container,
       uint8_t current_inst = container->code_memory[*pc];
 
       if (current_inst > (sizeof(evaluators) / 4)) {
-        dbg_print("current_inst is invalid\r\n");
+	
+        dbg_print("current_inst = %u at pc = %d is invalid   (ctx = %u) \r\n", current_inst, *pc, container->current_running_context_id);
 	/* dbg_print("*****************************************************\r\n"); */
 	/* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
 	/* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
@@ -281,8 +290,6 @@ int scheduler(vmc_t *container,
         evaluators[current_inst](container, pc);
       }
 
-
-
       if(*pc  == -1){
         dbg_print("Instruction %u failed",current_inst);
 #ifdef TRACE_ON
@@ -290,7 +297,6 @@ int scheduler(vmc_t *container,
 #endif
         return -1; // error
       }
-
     }
   }
   /* end */

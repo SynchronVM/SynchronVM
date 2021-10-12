@@ -21,12 +21,8 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  */
 /* SOFTWARE.									  */
 /**********************************************************************************/
-#ifdef DEBUG
-#include <stdio.h>
-# define DEBUG_PRINT(x) printf x
-#else
-# define DEBUG_PRINT(x) do {} while (0)
-#endif
+
+#include <SVM_DEBUG.h>
 
 #include <stddef.h>
 #include <VMC.h>
