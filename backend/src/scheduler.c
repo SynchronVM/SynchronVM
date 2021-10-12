@@ -146,9 +146,9 @@ int scheduler(vmc_t *container,
   // set logical time
   initLogicalTime(container);
 
-  
+
   while (true) {
-    
+
 #ifdef TRACE_ON
     uint32_t num_msgs = msgq_num_used(container);
 
@@ -195,16 +195,16 @@ int scheduler(vmc_t *container,
 /*       trace_print(dbg_print, 25); */
 /* #endif	 */
       dbg_print("Blocking in wait for message \r\n");
-      block_msg(container, &msg);      
+      block_msg(container, &msg);
 #ifdef TRACE_ON
       total_msgs ++;
 #endif
-     
+
       /* dbg_print("Message received: blocking\r\n"); */
       /* dbg_print("  Sender: %u\r\n", msg.sender_id); */
       /* dbg_print("  msg_typ: %u\r\n", msg.msg_type); */
       /* dbg_print("  data: %u\r\n", msg.data); */
-      /* dbg_print("  time: %llu\r\n", msg.timestamp); */
+      dbg_print("  time: %llu\r\n", msg.timestamp);
       /*handle msg */
       int msg_r = handle_msg(container, &msg);
       if (msg_r  <= 0) {
@@ -218,7 +218,19 @@ int scheduler(vmc_t *container,
 	/* continue as if nothing has happend.
 	   This should be like throwing the message away */
       } else {
-	dbg_print("Current ctx: %d\r\n",container->current_running_context_id);
+	uint32_t baseline_low;
+	uint32_t baseline_high;
+	uint32_t t_low;
+	uint32_t t_high;
+	Time t = sys_time_get_current_ticks();
+	t_low = t;
+	t_high = t >> 32;
+	baseline_low = container->contexts[container->current_running_context_id].logicalTime;
+	baseline_high = container->contexts[container->current_running_context_id].logicalTime >> 32;
+
+	dbg_print("Current ctx: %d   (Baseline: %u, %u) (t: %u, %u)\r\n",
+		  container->current_running_context_id,
+		  baseline_high,baseline_low, t_high, t_low);
       }
       /* while (poll_msg(container, &msg) == 0) { */
       /* 	dbg_print("message received: poll loop in blocking\r\n"); */
@@ -268,8 +280,8 @@ int scheduler(vmc_t *container,
       } else {
         evaluators[current_inst](container, pc);
       }
-      
-      
+
+
 
       if(*pc  == -1){
         dbg_print("Instruction %u failed",current_inst);

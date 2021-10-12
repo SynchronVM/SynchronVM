@@ -35,6 +35,11 @@
 
 #include <ll/ll_driver.h>
 
+/* Combinators */
+
+#define IF_COMB 4294967295
+
+
 /* Each eval function is called with the vmc state and the
  * current index of the program counter (pointed at the opcode).
  * The eval function internally increments the pc_idx. The
@@ -1231,7 +1236,7 @@ static int handle_spawn(vmc_t *vmc){
   cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
   cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
 
-  if(heap_s.value == 4294967295){ // if combinator
+  if(heap_s.value == IF_COMB){ // if combinator
 
     cam_value_t label = heap_f;
 
