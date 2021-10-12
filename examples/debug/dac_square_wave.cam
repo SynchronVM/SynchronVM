@@ -1,35 +1,35 @@
-not : Int -> Int
-not 1 = 0
-not 0 = 1
-
-after : Int -> Event a -> a
-after t ev = syncT t 0 ev
-
 tone1 : Int
-tone1 = 160860
+tone1 = 1608600
 
 dacC : Channel Int
 dacC = channel ()
 
-noteC : Channel ()
-noteC = channel ()
+chan1 : Channel Int
+chan1 = channel ()
+
+chan2 : Channel Int
+chan2 = channel ()
+
 
 noteDuration : Int
 noteDuration = 42000000
 
-playerP : () -> ()
-playerP void =
-  let _ = after noteDuration (send noteC ()) in
-  playerP ()
+process1 : () -> ()
+process1 void =
+  let _ = sync (send chan1 5) in
+  process1 ()
 
-tuneP : Int -> Int -> () -> ()
-tuneP timePeriod vol void =
-  let _ = after timePeriod (choose (recv noteC)
-                                   (send dacC (vol * 4095))) in
-  tuneP timePeriod (not vol) void
+process2 : () -> ()
+process2 void =
+  let _ = sync (send chan2 3) in
+  process2 ()
+
+process3 : () -> ()
+process3 void =
+  let i = sync (choose (recv chan1) (recv chan2)) in
+  process3 ()
 
 main =
-  let _ = spawnExternal dacC 0 in
-  let _ = spawn playerP in
-  tuneP tone1 1 ()
-
+  let _ = spawn process1 in
+  let _ = spawn process2 in
+  process3 ()

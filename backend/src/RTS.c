@@ -800,7 +800,16 @@ int time(vmc_t *container, Time baseline, Time deadline){
   container->contexts[container->current_running_context_id].deadline
     = finishTime;
 
-  if(baseline == 0){
+
+  //EXPERIMENT
+  Time actualTime = sys_time_get_current_ticks();
+  Time absoluteBaseline = currentTime + baseline;
+  Time absoluteDeadline = currentTime + baseline + deadline;
+  bool cond1 = actualTime > absoluteDeadline;
+  bool cond2 = (actualTime >= absoluteBaseline) &&
+    (actualTime <= absoluteDeadline);
+  bool cond3 = baseline < 300000;
+  if(baseline == 0 || cond1 || cond2 || cond3){
 
     //XXX: `sync` above uses a cooperative schduler
     // which could lead to issues outlined in Scheduler.md.
