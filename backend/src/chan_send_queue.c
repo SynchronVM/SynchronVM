@@ -49,7 +49,7 @@ static inline bool is_empty(chan_send_queue_t *q)
 int chan_send_q_enqueue(chan_send_queue_t *q, send_data_t send_data){
 
   if (is_full(q)){
-    DEBUG_PRINT(("Chan recv queue is full\n"));
+    DEBUG_PRINT(("Chan send queue is full\n"));
     return -1;
   }
   q->rear = (q->rear + 1)%q->capacity;
