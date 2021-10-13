@@ -140,6 +140,10 @@ static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev)
 
 static int blockAllEvents(vmc_t *container, event_t *evts){
   heap_index index = *evts;
+
+  //Create dirty flag = false
+  cam_value_t df_pointer = create_dirty_flag(container, false);
+
   do{
 
     cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
@@ -176,10 +180,6 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
 
     if(bevt_simple.e_type == SEND){
 
-      //Create dirty flag = false
-      cam_value_t df_pointer = create_dirty_flag(container, false);
-
-
 
       //XXX: Instead of copying the whole message send its reference.
       // send_data_t should have the field cam_value_t *message
@@ -198,9 +198,6 @@ static int blockAllEvents(vmc_t *container, event_t *evts){
       }
 
     } else if (bevt_simple.e_type == RECV){ // recvEvt
-
-      // create dirty flag = false
-      cam_value_t df_pointer = create_dirty_flag(container, false);
 
       recv_data_t recv_data =
         {   .context_id = container->current_running_context_id
