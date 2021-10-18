@@ -10,10 +10,10 @@ data Move where
   B : Move
 
 tone1 : Int
-tone1 = 16086000
+tone1 = 1608600
 
 tone2 : Int
-tone2 = 9542400
+tone2 = 954240
 
 dacC : Channel Int
 dacC = channel ()
@@ -22,7 +22,7 @@ noteC : Channel Move
 noteC = channel ()
 
 noteDuration : Int
-noteDuration = 420000000
+noteDuration = 42000000
 
 playerP : Int -> () -> ()
 playerP n void =
