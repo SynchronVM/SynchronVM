@@ -69,6 +69,45 @@ static cam_value_t create_dirty_flag(vmc_t *container, bool b){
 
 }
 
+static int cleanupChannels(vmc_t *container, event_t *evts){
+  // When message passing between two threads complete the sender or receiver
+  // (depending on who synchronised second) will call this method on the
+  // corresponding receiver or sender to clean all the channels which got blocked.
+
+  heap_index index = *evts;
+
+  while(index != HEAP_NULL){
+
+    cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
+
+    cam_value_t base_evt_ptr =
+      heap_fst(&container->heap, (heap_index)cam_evt_pointer.value);
+
+    cam_value_t base_evt_simple =
+      heap_fst(&container->heap, (heap_index)base_evt_ptr.value);
+
+
+    base_evt_simple_t bevt_simple =
+      {   .e_type     = extract_bits(base_evt_simple.value,  8, 8)
+        , .channel_id = extract_bits(base_evt_simple.value,  0, 8)
+      };
+
+    /****************************************************/
+    // polling the channel queuss cleans the dirty entries
+    if(bevt_simple.e_type == SEND)
+      poll_sendq(container, &container->channels[bevt_simple.channel_id].sendq);
+    else if (bevt_simple.e_type == RECV)
+      poll_recvq(container, &container->channels[bevt_simple.channel_id].recvq);
+
+    // continue the while loop
+
+    cam_value_t pointer_to_next = heap_snd(&container->heap, index);
+    index = (heap_index)pointer_to_next.value;
+  }
+
+  return 1;
+
+}
 
 static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev){
   heap_index index = *evts;
@@ -362,6 +401,13 @@ static int message_pass( vmc_t *container
   // If yes; it calls postSync otherwise simply places the msg on the env
   cam_value_t event = container->contexts[ctx_id].env;
   heap_index index  = event.value;
+
+  // Additionally now we cleanup the channels of the thread that we are
+  // synchronising with. Without this the events which lost will
+  // accumulate entries for all the times that it lost the synchronisation race.
+  event_t syncingThreadEvt = (event_t)index;
+  cleanupChannels(container, &syncingThreadEvt);
+
   do{
     cam_value_t cam_evt_pointer = heap_fst(&container->heap, index);
 
