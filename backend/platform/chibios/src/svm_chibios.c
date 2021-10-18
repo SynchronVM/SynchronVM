@@ -77,7 +77,7 @@ void dbg_print(const char *str, ...) {
 /********************************************************/
 /* Declare stacks, threads and mailboxes for containers */
 
-#define STACK_SIZE  1024
+#define STACK_SIZE  4096
 #define MAX_MESSAGES 64
 
 static mailbox_t mb[VMC_NUM_CONTAINERS];
@@ -144,7 +144,10 @@ static int read_message_block(vmc_t* vmc, svm_msg_t *msg) {
 
 static uint32_t mailbox_num_used(vmc_t* vmc) {
   chibios_interop_t *interop = (chibios_interop_t*)vmc->backend_custom;
-  return (uint32_t)chMBGetUsedCountI(interop->mb);
+  osalSysLock();
+  uint32_t count = (uint32_t)chMBGetUsedCountI(interop->mb);
+  osalSysUnlock();
+  return count;
 }
 
 // A chibios message is large enough to hold a pointer.
