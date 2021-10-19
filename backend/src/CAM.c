@@ -503,7 +503,8 @@ void eval_switch(vmc_t *vmc, INT *pc_idx) {
   uint8_t switch_size = vmc->code_memory[switch_size_idx];
 
   int label_to_jump = -1;
-  for(uint8_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
+
+  for(uint32_t i = (switch_size_idx + 1); i <= (switch_size_idx + (switch_size * 4)); i+=4){
     INT tag_idx1 = i;
     INT tag_idx2 = i + 1;
     uint16_t tag =
