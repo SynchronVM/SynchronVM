@@ -33,7 +33,7 @@
 
 /* Combinators */
 
-#define IF_COMB 4294967295
+#define COMB 4294967295
 
 
 /* Each eval function is called with the vmc state and the
@@ -390,7 +390,7 @@ void eval_app(vmc_t *vmc, INT *pc_idx) {
   cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
   cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
 
-  if(heap_s.value == 4294967295){ // if combinator
+  if(heap_s.value == COMB){ // if combinator
 
     cam_value_t label = heap_f;
 
@@ -1131,7 +1131,7 @@ void eval_comb(vmc_t *vmc, INT *pc_idx){
 
     // This value is used to demarcate a heap cell as
     // storing a combinator value rather than a closure
-    cam_value_t dummy_val = { .value = 4294967295 };
+    cam_value_t dummy_val = { .value = COMB };
 
 
     heap_set(&vmc->heap, hi, cam_label, dummy_val);
@@ -1232,7 +1232,7 @@ static int handle_spawn(vmc_t *vmc){
   cam_value_t heap_f = heap_fst(&vmc->heap, closure_address);
   cam_value_t heap_s = heap_snd(&vmc->heap, closure_address);
 
-  if(heap_s.value == IF_COMB){ // if combinator
+  if(heap_s.value == COMB){ // if combinator
 
     cam_value_t label = heap_f;
 
