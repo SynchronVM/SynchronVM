@@ -31,6 +31,30 @@
 #include <stdbool.h>
 #include <ll/ll_driver.h>
 
+
+/* Consider the communication between a sender and receiver. Depending on which
+   is scheduled first the behaviour of postSync will change.
+
+   When something is scheduled first it gets blocked and its PC is incremented
+   by 2. When running postSync on this thread when we jump to the wrapped
+   function we store the PC on the stack because it is already at PC(SYNC) + 2.
+
+   When something is scheduled second that means there is another thread waiting
+   for communication already so the current thread's PC is at SYNC. When we jump
+   to the wrapped function we want to store the PC + 2 on the stack so that
+   after executing the `wrap`ped function we jump to PC(SYNC) + 2
+
+   The following enum is used to make that distinction.
+
+  */
+
+typedef enum {
+  SCHEDULED_FIRST,
+  SCHEDULED_SECOND
+} sched_order_t;
+
+
+
 static inline UINT extract_bits(UINT value, int lsbstart, int numbits){
   // counting begins with 0
   //  Bit pattern -> 0 1 0 0 1 1
@@ -328,7 +352,7 @@ int dispatch(vmc_t *container){
     container->current_running_context_id = UUID_NONE;
     return -1;
   }
-  DEBUG_PRINT(("Queueing\n"));
+  DEBUG_PRINT(("Switching to thread : %u\n", thread_info.context_id));
   container->current_running_context_id = thread_info.context_id;
   return 1;
 }
@@ -336,7 +360,8 @@ int dispatch(vmc_t *container){
 static int postSync( vmc_t *container
                    , cam_value_t wrap_fptr
                    , cam_value_t msg_content
-                   , UUID ctx_id){
+                   , UUID ctx_id
+                   , sched_order_t sched_order){
 
 
   heap_index closure_address = wrap_fptr.value;
@@ -375,7 +400,13 @@ static int postSync( vmc_t *container
   // update the PC
   UINT current_pc =
     container->contexts[ctx_id].pc;
-  cam_value_t j_add = { .value = current_pc };
+
+  cam_value_t j_add;
+  if(sched_order == SCHEDULED_FIRST)
+    j_add = (cam_value_t){ .value = current_pc };
+  else if (sched_order == SCHEDULED_SECOND)
+    j_add = (cam_value_t){ .value = current_pc + 2};
+
   int q =
     stack_push(  &container->contexts[ctx_id].stack
                , j_add);
@@ -394,7 +425,8 @@ static int message_pass( vmc_t *container
                        , UUID ctx_id
                        , cam_value_t msg
                        , UUID chan_id
-                       , event_type_t ety){
+                       , event_type_t ety
+                       , sched_order_t sched_order){
   //This function looks at the environment of the blocked context;
   // It finds the event which demanded synchronization and checks
   // if there are post synchronization actions associated with it
@@ -431,7 +463,8 @@ static int message_pass( vmc_t *container
         int q = postSync( container
                         , wrap_fptr
                         , msg
-                        , ctx_id);
+                        , ctx_id
+                        , sched_order);
         if(q == -1){
           DEBUG_PRINT(("Post synchronization error\n"));
           return q;
@@ -495,7 +528,8 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
                         , recv_context_id
                         , message
                         , bevt_simple.channel_id
-                        , RECV);
+                        , RECV
+                        , SCHEDULED_FIRST); // receiver got scheduled first
     if(k == -1){
       DEBUG_PRINT(("Error in message passing"));
       return -1;
@@ -527,7 +561,8 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
       int q = postSync( container
                       , wrap_fptr
                       , empty_tuple
-                      , container->current_running_context_id);
+                      , container->current_running_context_id
+                      , SCHEDULED_SECOND); // sender scheduled second
       if(q == -1){
         DEBUG_PRINT(("Post synchronization error\n"));
         return q;
@@ -539,7 +574,6 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
         = empty_tuple;
     }
     /* NOTE Post synchronization actions ends */
-
 
     // the receiving thread will run now
     container->current_running_context_id = recv_context_id;
@@ -567,21 +601,17 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
     /* NOTE Message passing begins */
 
 
-    if((heap_index)wrap_fptr.value != HEAP_NULL){
-
-      int q = postSync( container
-                      , wrap_fptr
-                      , sender_data.message
-                      , container->current_running_context_id);
-      if(q == -1){
-        DEBUG_PRINT(("Post synchronization error\n"));
-        return q;
-      }
-
-
-    } else {
-      container->contexts[container->current_running_context_id].env
-        = sender_data.message;
+    cam_value_t empty_tuple = { .value = 0, .flags = 0 };
+    /* container->contexts[sender_data.context_id].env = empty_tuple; */
+    int k = message_pass(  container
+                         , sender_data.context_id
+                         , empty_tuple
+                         , bevt_simple.channel_id
+                         , SEND
+                         , SCHEDULED_FIRST); // sender got scheduled first
+    if(k == -1){
+      DEBUG_PRINT(("Error in message passing"));
+      return -1;
     }
 
 
@@ -601,19 +631,29 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
       return -1;
     }
 
+    /* NOTE Post synchronization actions begins */
 
-    cam_value_t empty_tuple = { .value = 0, .flags = 0 };
-    /* container->contexts[sender_data.context_id].env = empty_tuple; */
-    int k = message_pass( container
-                        , sender_data.context_id
-                        , empty_tuple
-                        , bevt_simple.channel_id
-                        , SEND);
-    if(k == -1){
-      DEBUG_PRINT(("Error in message passing"));
-      return -1;
+    if((heap_index)wrap_fptr.value != HEAP_NULL){
+
+      DEBUG_PRINT(("WRAP from RECV \n"));
+
+      int q = postSync( container
+                      , wrap_fptr
+                      , sender_data.message
+                      , container->current_running_context_id
+                      , SCHEDULED_SECOND); // receiver got scheduled second
+      if(q == -1){
+        DEBUG_PRINT(("Post synchronization error\n"));
+        return q;
+      }
+
+
+    } else {
+      container->contexts[container->current_running_context_id].env
+        = sender_data.message;
     }
 
+    /* NOTE Post synchronization actions ends */
 
     // the receiver will automatically run because we are now executing its context
     return 1;
@@ -976,7 +1016,9 @@ static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){
     int q = postSync( container
                     , wrap_fptr
                     , val_before_post_sync
-                    , container->current_running_context_id);
+                    , container->current_running_context_id
+                    , SCHEDULED_SECOND); // a synchronised driver like LED is always ready with the message
+                                         // so the receiving software thread is scheduled second
     if(q == -1){
       DEBUG_PRINT(("Post synchronization error\n"));
       return q;
@@ -1030,7 +1072,9 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
                       , recv_context_id
                       , msg
                       , chan_id
-                      , RECV);
+                      , RECV
+                      , SCHEDULED_FIRST);// the receiving thread was scheduled first but
+                                         // the interrupt arrived later
   if(k == -1){
     DEBUG_PRINT(("Error in message passing"));
     return -2;

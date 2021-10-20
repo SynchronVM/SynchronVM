@@ -1,0 +1,40 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+after : Int -> Event a -> a
+after t ev = syncT t 0 ev
+
+tone1 : Int
+tone1 = 16086000
+
+tone2 : Int
+tone2 = 9542400
+
+dacC : Channel Int
+dacC = channel ()
+
+noteC : Channel Int
+noteC = channel ()
+
+noteDuration : Int
+noteDuration = 420000000
+
+playerP : Int -> () -> ()
+playerP n void =
+  let _ = after noteDuration (send noteC 50) in
+  playerP 0 void
+
+
+tuneP : Int -> Int -> () -> ()
+tuneP timePeriod vol void =
+  let _ = after timePeriod (choose (wrap (recv noteC) (\x -> ()))
+                                     (send dacC (vol * 4095))) in
+  tuneP timePeriod (not vol) void
+
+
+main =
+  let _ = spawnExternal dacC 0 in
+  let _ = spawn (playerP 1) in
+  let _ = spawn (tuneP tone1 1) in
+  ()

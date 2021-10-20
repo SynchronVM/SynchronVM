@@ -27,7 +27,7 @@
 
 
 
-
+extern void dbg_print(const char *str, ...);
 
 /********************/
 /* VM Configuration */
