@@ -77,7 +77,7 @@ void dbg_print(const char *str, ...) {
 /********************************************************/
 /* Declare stacks, threads and mailboxes for containers */
 
-#define STACK_SIZE  1024
+#define STACK_SIZE  2048
 #define MAX_MESSAGES 64
 
 static mailbox_t mb[VMC_NUM_CONTAINERS];
