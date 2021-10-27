@@ -414,8 +414,20 @@ static int postSync( vmc_t *container
     DEBUG_PRINT(("Stack push failed in post-syncer"));
     return -1;
   }
-  
-  container->contexts[ctx_id].pc = label.value;
+
+  // XXX: HACK! We originally did the following:
+  //
+  // container->contexts[ctx_id].pc = label.value;
+  //
+  // but after the postSync action is executed, inside
+  // CAM.c a "*pc_idx = (*pc_idx) + 2" increments the PC
+  // futher and corrupts the PC. So we instead do the
+  // following and then in CAM.C the +2 increment sets
+  // the final PC at the desired label position
+  if(ctx_id == container->current_running_context_id)
+    container->contexts[ctx_id].pc = label.value - 2;
+  else
+    container->contexts[ctx_id].pc = label.value;
 
   return 1;
 
@@ -577,6 +589,7 @@ static int synchronizeNow(vmc_t *container, cam_event_t cev){
 
     // the receiving thread will run now
     container->current_running_context_id = recv_context_id;
+    DEBUG_PRINT(("Context switch\n"));
 
     return 1;
 

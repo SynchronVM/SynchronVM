@@ -271,6 +271,12 @@ int scheduler(vmc_t *container,
       /* Execute an instruction */
 
       uint8_t current_inst = container->code_memory[*pc];
+      /* if (current_inst == 55){ */
+      /*   uint8_t next_inst = container->code_memory[*pc+1]; */
+      /*   DEBUG_PRINT(("%u %u\n", current_inst, next_inst)); */
+      /* } else { */
+      /*   DEBUG_PRINT(("%u\n", current_inst)); */
+      /* } */
 
       if (current_inst > (sizeof(evaluators) / 4)) {
 	

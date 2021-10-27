@@ -44,7 +44,10 @@ int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 }
 
 int stack_push(cam_stack_t *s, cam_value_t cvalue) {
-  if (s->sp == s->size) return 0;
+  if (s->sp == s->size) {
+    DEBUG_PRINT(("Stack Overflow!!\n"));
+    return 0;
+  }
   s->data[s->sp] = cvalue.value;
   s->flags[s->sp++] = cvalue.flags;
   return 1;

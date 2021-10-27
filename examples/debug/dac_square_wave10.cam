@@ -1,0 +1,23 @@
+noteC : Channel Int
+noteC = channel ()
+
+
+playerP : () -> ()
+playerP void =
+  let _ = sync (send noteC 10) in
+  playerP void
+
+mutrec
+  recvHandler : Int -> ()
+  recvHandler i = tuneP ()
+
+  tuneP : () -> ()
+  tuneP void =
+    let _ = sync (wrap (recv noteC) recvHandler) in
+    tuneP void
+
+
+main =
+  let _ = spawn playerP in
+  let _ = spawn tuneP in
+  ()

@@ -1,0 +1,15 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+dacC : Channel Int
+dacC = channel ()
+
+tuneP : Int -> Int -> () -> ()
+tuneP tp vol void =
+  let tpNew = sync (wrap (send dacC (vol * 4095)) (\x -> tp)) in
+  tuneP tpNew (not vol) void
+
+main =
+  let _ = spawnExternal dacC 0 in
+  tuneP 1608600 1 ()

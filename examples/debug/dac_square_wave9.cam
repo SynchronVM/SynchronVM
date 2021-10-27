@@ -1,0 +1,23 @@
+dacC : Channel Int
+dacC = channel ()
+
+noteC : Channel Int
+noteC = channel ()
+
+playerP : () -> ()
+playerP void =
+  let _ = sync (send noteC 5) in
+  playerP void
+
+
+tuneP : () -> ()
+tuneP void =
+  let _ = sync (choose (send dacC 1)
+                       (wrap (recv noteC) (\x -> ()))) in
+  tuneP void
+
+
+main =
+  let _ = spawn playerP in
+  let _ = spawn tuneP in
+  ()
