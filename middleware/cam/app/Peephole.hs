@@ -184,9 +184,22 @@ lookupFun l func@((Labeled l1 x):xs) | l == l1 =
                                      | otherwise = lookupFun l xs
   where
     grabFunc :: [FlatCAM] -> Maybe [Instruction]
-    grabFunc ((Labeled l1 (Ins i)):(Plain (Ins RETURN)):xs) = Just [i]
+    grabFunc ((Labeled l1 (Ins i)):(Plain (Ins RETURN)):xs) = Just [i] 
     grabFunc _ = Nothing
 lookupFun l (x:xs) = lookupFun l xs
+
+
+lookupLabGoto :: Label -> [FlatCAM] -> Maybe [Instruction]
+lookupLabGoto l [] = Nothing
+lookupLabGoto l func@((Labeled l1 x):xs) | l == l1 =
+                                       grabFunc func
+                                     | otherwise = lookupLabGoto l xs
+  where
+    -- In the goto case we need to retain the return. 
+    grabFunc :: [FlatCAM] -> Maybe [Instruction]
+    grabFunc ((Labeled l1 (Ins i)):(Plain (Ins RETURN)):xs) = Just [i, RETURN]
+    grabFunc _ = Nothing
+lookupLabGoto l (x:xs) = lookupLabGoto l xs
 
 
 
@@ -199,6 +212,10 @@ oneOPRule c (CALL l) = case is of
                          (Just is') -> (is', -1)
                          Nothing    -> ([CALL l], 1)
   where is = lookupFun l c
+oneOPRule c (GOTO l) = case is of
+                         (Just is') -> (is', -1)
+                         Nothing    -> ([GOTO l], 1)
+  where is = lookupLabGoto l c
 oneOPRule _ i        = ([i]  ,  1)
 
 twoOPRule :: Instruction -> Instruction -> ([Instruction], Offset)
