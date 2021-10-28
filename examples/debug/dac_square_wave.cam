@@ -37,13 +37,13 @@ noteC : Channel Int
 noteC = channel ()
 
 noteDuration : Int
-noteDuration = msec 500
+noteDuration = msec 900
 
 playerP : List Int -> Int -> () -> ()
 playerP melody n void =
   if (n == 14)
   then let _ = after noteDuration (send noteC (usec (head twinkle))) in
-       playerP twinkle 1 void
+       playerP twinkle 2 void
   else let _ = after noteDuration (send noteC (usec (head melody))) in
        playerP (tail melody) (n + 1) void
 
