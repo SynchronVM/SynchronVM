@@ -1,15 +1,34 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+head : List a -> a
+head (Cons x xs) = x
+
+tail : List a -> List a
+tail Nil = Nil
+tail (Cons x xs) = xs
+
 not : Int -> Int
 not 1 = 0
 not 0 = 1
 
+msec : Int -> Int
+msec t = t * 84000
+
+usec : Int -> Int
+usec t = t * 84 * 4
+
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev
 
-tone1 : Int
-tone1 = 1608600
 
-tone2 : Int
-tone2 = 954240
+
+
+twinkle : List Int
+twinkle = Cons  1915 (Cons 1915 (Cons 1275 (Cons 1275 (Cons 1136
+          (Cons 1136 (Cons 1275 (Cons 1432 (Cons 1432 (Cons 1519
+          (Cons 1519 (Cons 1700 (Cons 1700 (Cons 1915 Nil)))))))))))))
 
 dacC : Channel Int
 dacC = channel ()
@@ -18,29 +37,27 @@ noteC : Channel Int
 noteC = channel ()
 
 noteDuration : Int
-noteDuration = 42000000
+noteDuration = msec 500
 
-playerP : Int -> () -> ()
-playerP n void =
-  if (n == 1)
-  then let _ = after noteDuration (send noteC tone2) in
-       playerP 0 void
-  else let _ = after noteDuration (send noteC tone1) in
-       playerP 1 void
-
+playerP : List Int -> Int -> () -> ()
+playerP melody n void =
+  if (n == 14)
+  then let _ = after noteDuration (send noteC (usec (head twinkle))) in
+       playerP twinkle 1 void
+  else let _ = after noteDuration (send noteC (usec (head melody))) in
+       playerP (tail melody) (n + 1) void
 
 
 tuneP : Int -> Int -> () -> ()
 tuneP timePeriod vol void =
-  let tpNew =
-       after timePeriod (choose (recv noteC)
-                                (wrap (send dacC (vol * 4095))
-                                      (\x -> timePeriod))) in
-  tuneP tpNew (not vol) void
-
+  let newtp =
+      after timePeriod (choose (recv noteC)
+                               (wrap (send dacC (vol * 4095))
+                                     (\x -> timePeriod))) in
+  tuneP newtp (not vol) void
 
 main =
   let _ = spawnExternal dacC 0 in
-  let _ = spawn (tuneP tone1 1) in
-  let _ = spawn (playerP 1) in
+  let _ = spawn (tuneP (usec (head twinkle)) 1) in
+  let _ = spawn (playerP (tail twinkle) 2) in
   ()
