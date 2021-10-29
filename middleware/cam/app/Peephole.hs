@@ -58,6 +58,8 @@ optimiser = do
     is <- getInstrs
     pure is
   else do
+    o <- applyThreeOPRule
+    incPCBy o
     o <- applyTwoOPRule
     incPCBy o
     o'<- applyOneOPRule
@@ -104,6 +106,57 @@ applyTwoOPRule = do
       _ -> pure 0 -- maybe the OneOPRule applies so don't increment PC
 
   else pure 0 -- if there is only one instruction and applyOneOPRule applies
+
+{-
+The 3 op rule was added to deal with certain scenarios
+which arise in the `else` branch of an if-then-else construct.
+We end up with bytecode sequences like:
+
+CALL L1 -- L1 will be the beginning of the if statement
+L2 : SKIP
+RETURN
+
+We would like to optimise this to
+
+CALL L1
+L2 : RETURN
+
+and then
+
+GOTO L1
+
+But because of the labeled SKIP instuction this is quite complicated in
+the current machinery. The 3-OP rule studies this specific sequence
+and transforms this to:
+
+GOTO L1
+L2 : SKIP
+RETURN
+
+The last 2 bytecodes *might* be dead code. But we need a dedicated dead-code
+elimination pass which studies the whole bytecode and figures this out.
+
+-}
+applyThreeOPRule :: Optimise Offset
+applyThreeOPRule = do
+  is <- getInstrs
+  pc <- getPC
+  b  <- atleastNInstrs 3
+  if b
+  then do
+    let i1 = is !! pc
+    let i2 = is !! (pc + 1) -- the if check makes sure that PC doesnt go out of bound
+    let i3 = is !! (pc + 2) -- the if check makes sure that PC doesnt go out of bound
+    case (i1, i2, i3) of
+      (Plain (Ins (CALL lab)), Labeled l (Ins SKIP), Plain (Ins RETURN)) -> do
+          replaceNInstrs 1 Nothing [GOTO lab]
+          pure 1
+      _ -> pure 0 -- maybe the twoOp/OneOPRule applies so don't increment PC
+
+  else pure 0 -- apply twoOpRule, oneOpRule etc
+
+
+
 
 incPCBy :: Offset -> Optimise ()
 incPCBy offset = do
