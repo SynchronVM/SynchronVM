@@ -46,6 +46,11 @@ int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 int stack_push(cam_stack_t *s, cam_value_t cvalue) {
   if (s->sp == s->size) {
     DEBUG_PRINT(("Stack Overflow!!\n"));
+
+    // Stack overflow debugging toolkit; Uncomment when necessary
+    /* unsigned int failedsp = s->sp; */
+    /* DEBUG_PRINT(("Stack Pointer %u \n Stack size %u\n Elements : %u, %u, %u, %u, %u, %u, %u, %u, %u, %u\n", s->sp, s->size, s->data[failedsp], s->data[failedsp-1], s->data[failedsp-2], s->data[failedsp-3], s->data[failedsp-4], s->data[failedsp-5], s->data[failedsp-6], s->data[failedsp-7], s->data[failedsp-8], s->data[failedsp-9])); */
+
     return 0;
   }
   s->data[s->sp] = cvalue.value;
@@ -67,7 +72,10 @@ int stack_push(cam_stack_t *s, cam_value_t cvalue) {
 /*   return 1; */
 /* } */
 int stack_pop(cam_stack_t *s, cam_register_t *r) {
-  if (s->sp == 0) return 0;
+  if (s->sp == 0){
+    DEBUG_PRINT(("Stack Underflow!!\n"));
+    return 0;
+  }
 
   s->sp--;
   r->value = s->data[s->sp];

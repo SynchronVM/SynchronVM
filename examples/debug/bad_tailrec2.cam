@@ -1,0 +1,9 @@
+playerP : Int -> () -> ()
+playerP n void =
+  if (n == 1)
+  then let x = 250 * (356 + 960) in
+       playerP 0 void
+  else let x = 750 * (856 + 960) in
+       playerP 1 void
+
+main = playerP 1 ()
