@@ -1,0 +1,23 @@
+/ {
+    leds {
+        compatible = "gpio-leds";
+        led4: led_4 {
+            gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+            label = "Fake GPIO LED";
+        };
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        button4: button_4 {
+            gpios = <&gpio0 25 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+            label = "Fake GPIO Button";
+        };
+    };
+
+     aliases {
+       svm-button0 = &button4;
+       svm-led0 = &led4;
+    };
+
+};
