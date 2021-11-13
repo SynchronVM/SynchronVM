@@ -1,0 +1,10 @@
+foo : () -> ()
+foo _ = foo ()
+
+bar : () -> ()
+bar _ = bar ()
+
+main =
+  let _ = spawn foo in
+  let _ = spawn bar in 
+  foo ()

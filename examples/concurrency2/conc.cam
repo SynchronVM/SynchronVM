@@ -1,0 +1,18 @@
+chan : Channel Int
+chan = channel ()
+
+foo : () -> ()
+foo _ =
+  let _ = sync (recv chan) in
+  foo ()    	
+
+
+bar : () -> ()
+bar _ =
+  let _ = sync (send chan 1) in
+  bar ()
+
+
+main =
+  let _ = spawn foo in
+  foo ()

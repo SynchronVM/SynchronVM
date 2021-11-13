@@ -1,0 +1,6 @@
+foo : () -> ()
+foo _ = foo ()
+
+main =
+  let _ = spawn foo in
+  foo ()

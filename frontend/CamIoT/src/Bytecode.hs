@@ -361,7 +361,7 @@ rewriteLet (SELet _ (SPNAdt _ (AST.UIdent constr) (Just pat)) ebound ein) =
 
 
 
-rewriteLet _ = error "Let not rewritten"
+rewriteLet e = error $ "Let not rewritten: " ++ show e
 
 
 
@@ -765,6 +765,10 @@ rewriteCasePair (SECase ty1 econd pm@(SPM tup@(SPTup ty2 p1 p2) e :_)) = do
     genTree (SPVar vty _) = do
       tempVar <- fresh
       pure $ SPVar vty (AST.Ident tempVar)
+
+    -- Added a const case 
+    genTree const@(SPConst _ _) = do
+      pure const
     genTree (SPTup tty p1 p2) = do
       p1' <- genTree p1
       p2' <- genTree p2
@@ -858,7 +862,7 @@ deleteN i (a:as)
    | otherwise = a : deleteN (i-1) as
 
 patToVar (SPVar vty ident) = SEVar vty ident
-patToVar _ = error "Non var patterns not allowed"
+patToVar e = error $ "Non var patterns not allowed: " ++ show e
 
 
 {- EXAMPLE 1
