@@ -31,6 +31,7 @@
 #include <stdbool.h>
 #include <ll/ll_driver.h>
 
+#define COMB 4294967295
 
 /* Consider the communication between a sender and receiver. Depending on which
    is scheduled first the behaviour of postSync will change.
@@ -373,7 +374,7 @@ static int postSync( vmc_t *container
 
 
   //update the env
-  if(heap_s.value == 4294967295){ // if combinator
+  if(heap_s.value == COMB){ // if combinator
 
     label = heap_f;
 

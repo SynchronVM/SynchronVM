@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -std=c99 -g -O0 -DDEBUG # -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -std=c99 -O2 -ggdb -fomit-frame-pointer -falign-functions=16
   #USE_OPT += -DBOARD_OTG_NOVBUSSENS
 endif
 
