@@ -35,7 +35,7 @@ noteC : Channel Int
 noteC = channel ()
 
 noteDuration : Int
-noteDuration = msec 500
+noteDuration = msec 600
 
 playerP : List Int -> Int -> () -> ()
 playerP melody n void =
