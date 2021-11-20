@@ -17,10 +17,13 @@ msec : Int -> Int
 msec t = t * 84000
 
 usec : Int -> Int
-usec t = t * 84
+usec t = t * 84 * 5
 
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev
+
+afterUrgent : Int -> Event a -> a
+afterUrgent t ev = syncT t 1 ev
 
 
 twinkle : List Int
@@ -35,7 +38,7 @@ noteC : Channel Int
 noteC = channel ()
 
 noteDuration : Int
-noteDuration = msec 500
+noteDuration = msec 900
 
 playerP : List Int -> Int -> () -> ()
 playerP melody n void =
