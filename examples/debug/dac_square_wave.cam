@@ -38,6 +38,7 @@ noteC : Channel Int
 noteC = channel ()
 
 noteDuration : Int
+
 noteDuration = msec 900
 
 playerP : List Int -> Int -> () -> ()

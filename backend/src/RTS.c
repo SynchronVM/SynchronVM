@@ -1141,14 +1141,30 @@ static int handle_timer_msg(vmc_t *vmc){
   int k = pq_getMin(&vmc->waitQ, &timedThread2);
   if (k == 1){
 
-    // if there are waiting threads then set alarm
+    // if there are waiting threads then set alarm / put them in rdyQ
 
-    //Step 3.1  Set alarm for the baseline of timedThread2
-    Time alarmTime = timedThread2.baseline;
-    int q = setAlarm(alarmTime);
-    if(q == -1){
-      DEBUG_PRINT(("Setting alarm has failed \n"));
-      return -2;
+    //Step 3.1  If the following condition hold put timedThread2 in the rdyQ
+    //          it is ready to run; no need to set alarm
+    Time actualTime = sys_time_get_current_ticks();
+    bool cond1 = actualTime > timedThread2.deadline;
+    bool cond2 = (actualTime >= timedThread2.baseline) &&
+      (actualTime <= timedThread2.deadline);
+    bool cond3 = timedThread2.baseline < 300000;
+    if(cond1 || cond2 || cond3){
+
+      int k = pq_insert(&vmc->rdyQ, timedThread2);
+      if(k == -1){
+        DEBUG_PRINT(("Cannot enqueue in rdyQ \n"));
+        return k;
+      }
+    } else {
+      //Step 3.2  Above conditions not true; Set alarm for the baseline of timedThread2
+      Time alarmTime = timedThread2.baseline;
+      int q = setAlarm(alarmTime);
+      if(q == -1){
+        DEBUG_PRINT(("Setting alarm has failed \n"));
+        return -2;
+      }
     }
   } else {
     DEBUG_PRINT(("Wait queue is empty \n"));
