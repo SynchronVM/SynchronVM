@@ -82,11 +82,11 @@ bool sys_time_init(void *os_interop) {
   tim->ARR = 0xFFFFFFFF; // Value when counter should flip to zero.
 
   tim->CCR[0] = 0xFFFFFFFF; /* init compare values */
-  tim->CCR[1] = 0xFFFFFFFF;
-  tim->CCR[2] = 0xFFFFFFFF;
-  tim->CCR[3] = 0xFFFFFFFF;
+  tim->CCR[1] = 0x0;
+  tim->CCR[2] = 0x0;
+  tim->CCR[3] = 0x0;
 
-  tim->CCER |= 0x1; /* activate compare on ccr channel 1 */
+  tim->CCER = 0x1; /* activate compare on ccr channel 1 */
 
   /* TODO: make sure we get "greater than or equal to" comparison on the CCR */
 
@@ -101,65 +101,82 @@ bool sys_time_init(void *os_interop) {
 
 OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
   OSAL_IRQ_PROLOGUE();
-
+  
+  uint32_t hw = counter_high_word;
+  
   if (tim->SR & 0x1 ) { /* This indicates and update event (overflow?) */
     /* TODO: Not 100% certain this is definitely an overflow. Couldn't it
        be other "events"?  */
     uint32_t sr = tim->SR;
-    sr &= tim->DIER & STM32_TIM_DIER_IRQ_MASK;
+    sr &= 0x1 & STM32_TIM_DIER_IRQ_MASK;
     tim->SR = ~sr; /* clear update event flag */
+
 
     counter_high_word++;
 
     if (alarm.active) {
       if (counter_high_word == alarm.alarm_time >> 32) {
-    	tim->CCR[0] = alarm.alarm_time;
+     	tim->CCR[0] = (uint32_t)alarm.alarm_time;
     	tim->DIER |= 0x2; /* activate interrupt on ccr channel 1 */
       }
     }
-  } else {
+  }
 
-
+  if (tim->SR & 0x2) {
+    uint32_t low_word;
+    uint32_t high_word;
+    Time time;
+    
     uint32_t sr = tim->SR;
-    sr &= tim->DIER & STM32_TIM_DIER_IRQ_MASK;
-    tim->SR = ~sr;  /* wipe sr */
+    sr &= 0x2 & STM32_TIM_DIER_IRQ_MASK;
+    tim->SR = ~sr; /* clear ccr event flag */
+
 
     tim->DIER &= ~0x2; /* disable interrupt on ccr channel 1 */
+
+    low_word = tim->CNT;
+    time = hw;
+    time <<= 32;
+    time |= low_word;
     
     svm_msg_t msg;
     msg.sender_id = SYS_TIME_SENDER_ID;
-    msg.timestamp = sys_time_get_current_ticks();
+    msg.timestamp = time; //sys_time_get_current_ticks();
     msg.data = 0xDEADBEEF;
     msg.msg_type = 0;
 
-    osalSysLockFromISR();
+    osalSysLockFromISR(); 
     interop->send_message(interop, msg); /* check for error */
-    osalSysUnlockFromISR();
+    osalSysUnlockFromISR();  
 
     alarm.active = false;
-
   }
+
+
   OSAL_IRQ_EPILOGUE();
 }
 
 
 Time sys_time_get_current_ticks(void) {
-
+  chSysLock();
   Time time = 0;
   uint32_t low_word;
   uint32_t high_word;
-  uint32_t high_word2;
+  //uint32_t high_word2;
 
-  do {
-    high_word = counter_high_word;
-    low_word = tim->CNT;
-    high_word2 = counter_high_word;
-  } while (high_word != high_word2); /* todo execute body at most twice */
+  /* do { */
+  /*   high_word = counter_high_word; */
+  /*   low_word = tim->CNT; */
+  /*   high_word2 = counter_high_word; */
+  /* } while (high_word != high_word2); /\* todo execute body at most twice *\/ */
 
+  high_word = counter_high_word;
+  low_word = tim->CNT;
+  
   time = high_word;
   time <<= 32;
   time |= low_word;
-
+  chSysUnlock();
   return time;
 }
 
@@ -184,6 +201,8 @@ bool sys_time_set_wake_up(Time absolute) {
   if (high_word == alarm.alarm_time >> 32) {
     tim->CCR[0] = absolute; /* low 32 bits */
     tim->DIER |= 0x2; /* enable interrups on CCR[0] */
+  } else {
+    tim->DIER &= ~0x2;
   }
 
   /* uint32_t high_word = 0; */
@@ -217,6 +236,7 @@ Time sys_get_wake_up_time(void){
 }
 
 bool sys_is_alarm_set(void){
+  
   return alarm.active;
 }
 

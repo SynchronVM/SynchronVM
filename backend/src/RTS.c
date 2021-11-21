@@ -862,8 +862,9 @@ static int setAlarm(Time alarmTime){
     b = sys_time_set_wake_up(alarmTime);
   } else {
     Time wakeupTimeSet = sys_get_wake_up_time();
-    if(alarmTime < wakeupTimeSet)
+    if(alarmTime < wakeupTimeSet) {
       b = sys_time_set_wake_up(alarmTime);
+    }
   }
 
   if(!b){
