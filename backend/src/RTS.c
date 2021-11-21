@@ -1132,9 +1132,11 @@ static int handle_timer_msg(vmc_t *vmc){
     return -3;
   }
 
+  Time time_now = timedThread.baseline;
+
   //Step 2. Increment logical time of the thread for which the interrupt
   //        arrived
-  vmc->contexts[timedThread.context_id].logicalTime = timedThread.baseline;
+  vmc->contexts[timedThread.context_id].logicalTime = time_now;
 
   //Step 3. Peek at the top of the waitQ and get that baseline to set the alarm
   pq_data_t timedThread2;
@@ -1149,14 +1151,29 @@ static int handle_timer_msg(vmc_t *vmc){
     bool cond1 = actualTime > timedThread2.deadline;
     bool cond2 = (actualTime >= timedThread2.baseline) &&
       (actualTime <= timedThread2.deadline);
-    bool cond3 = timedThread2.baseline < 300000;
+    bool cond3 = (actualTime - timedThread2.baseline)  < 300000;
     if(cond1 || cond2 || cond3){
 
-      int k = pq_insert(&vmc->rdyQ, timedThread2);
+      // pop it from waitQ
+      pq_data_t timedThread2Popped;
+      int j = pq_extractMin(&vmc->waitQ, &timedThread2Popped);
+      if (j == -1){
+        DEBUG_PRINT(("Cannot dequeue from wait queue \n"));
+        return -4;
+      }
+
+      int k = pq_insert(&vmc->rdyQ, timedThread2Popped);
       if(k == -1){
         DEBUG_PRINT(("Cannot enqueue in rdyQ \n"));
         return k;
       }
+      time_now = timedThread2Popped.baseline;
+
+      //Update clocks
+
+      vmc->contexts[timedThread.context_id].logicalTime = time_now;
+
+      vmc->contexts[timedThread2Popped.context_id].logicalTime = time_now;
     } else {
       //Step 3.2  Above conditions not true; Set alarm for the baseline of timedThread2
       Time alarmTime = timedThread2.baseline;
@@ -1175,6 +1192,9 @@ static int handle_timer_msg(vmc_t *vmc){
   //        for which the interrupt arrived
   if(vmc->current_running_context_id == UUID_NONE){
     vmc->current_running_context_id = timedThread.context_id;
+    vmc->contexts[vmc->current_running_context_id].deadline
+      = timedThread.deadline;
+
   } else {
     // Some thread is running
 
@@ -1186,7 +1206,7 @@ static int handle_timer_msg(vmc_t *vmc){
       // Step 5.1. Put the current thread to rdyQ
       pq_data_t currentThreadInfo =
         {   .context_id = vmc->current_running_context_id
-          , .baseline = 0
+          , .baseline = time_now // the current logical time
           , .deadline = vmc->contexts[vmc->current_running_context_id].deadline
         };
       int z = pq_insert(&vmc->rdyQ, currentThreadInfo);
@@ -1197,6 +1217,11 @@ static int handle_timer_msg(vmc_t *vmc){
 
       // Step 5.2 Put the timed thread as currently running
       vmc->current_running_context_id = timedThread.context_id;
+
+      // Step 5.3 Update the correct deadline
+      vmc->contexts[vmc->current_running_context_id].deadline
+        = timedThread.deadline;
+
 
     } else {
 
@@ -1209,7 +1234,10 @@ static int handle_timer_msg(vmc_t *vmc){
         return r;
       }
 
-      // No need to make any changes to the currently running thread
+
+      // Step 5.4 Update clock of the currently running thread
+      vmc->contexts[vmc->current_running_context_id].logicalTime
+        = time_now;
 
     }
   }

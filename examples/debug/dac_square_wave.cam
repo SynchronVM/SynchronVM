@@ -17,7 +17,7 @@ msec : Int -> Int
 msec t = t * 84000
 
 usec : Int -> Int
-usec t = t * 84 * 5
+usec t = t * 84 * 4
 
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev
@@ -38,8 +38,7 @@ noteC : Channel Int
 noteC = channel ()
 
 noteDuration : Int
-
-noteDuration = msec 900
+noteDuration = msec 1000
 
 playerP : List Int -> Int -> () -> ()
 playerP melody n void =
