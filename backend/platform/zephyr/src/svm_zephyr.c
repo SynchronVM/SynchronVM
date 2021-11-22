@@ -148,6 +148,15 @@ uint32_t message_queue_num_used(vmc_t *vmc) {
   return k_msgq_num_used_get(interop->msgq);
 }
 
+/***************/
+/* debug print */
+
+void dbg_print(const char *str, ...) {
+  /* TODO: Implement */ 
+  return;   
+}
+
+
 /***********************************************/
 /*  Thoughts on threads                        */
 /*
@@ -193,7 +202,7 @@ void zephyr_container_thread(void* vmc, void* b, void* c) {
     return;
   }
 
-  scheduler(container, read_message_poll, read_message_block, message_queue_num_used, printk);
+  scheduler(container, read_message_poll, read_message_block, message_queue_num_used);
 
   /* If we return to this point, do something with the 
      return value of scheduler*/

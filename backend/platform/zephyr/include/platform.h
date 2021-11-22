@@ -25,9 +25,11 @@
 #ifndef __PLATFORM_H_
 #define __PLATFORM_H_
 
+// SVM Time values in us are multiplied by this factor to give ticks
+#define PLATFORM_TIME_FACTOR 16
 
-
-
+// require from all platforms
+extern void dbg_print(const char *str, ...);
 
 /********************/
 /* VM Configuration */

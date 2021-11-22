@@ -124,7 +124,7 @@ OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
 
   if (tim->SR & 0x2) {
     uint32_t low_word;
-    uint32_t high_word;
+    //uint32_t high_word;
     Time time;
     
     uint32_t sr = tim->SR;
@@ -226,7 +226,7 @@ bool sys_time_set_wake_up(Time absolute) {
   /*   high_word2 = counter_high_word; */
   /* } while (high_word != high_word2); */
 
-  uint32_t low_word_now = tim->CNT;
+  //uint32_t low_word_now = tim->CNT;
   
   chSysUnlock();
   //chprintf((BaseSequentialStream *)&SDU1, "alarm set at high word: %u\r\n", high_word);

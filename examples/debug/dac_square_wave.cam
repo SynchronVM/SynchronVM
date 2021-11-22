@@ -14,10 +14,10 @@ not 1 = 0
 not 0 = 1
 
 msec : Int -> Int
-msec t = t * 84000
+msec t = t * 1000
 
 usec : Int -> Int
-usec t = t * 84
+usec t = t
 
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev
