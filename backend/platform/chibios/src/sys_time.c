@@ -226,8 +226,8 @@ bool sys_time_set_wake_up(Time absolute) {
   
   chSysUnlock();
   //chprintf((BaseSequentialStream *)&SDU1, "alarm set at high word: %u\r\n", high_word);
-  chprintf((BaseSequentialStream *)&SDU1, "Now low word         : %u\r\n", low_word_now);
-  chprintf((BaseSequentialStream *)&SDU1, "alarm set at low word: %u\r\n", tim->CCR[0]);
+  //chprintf((BaseSequentialStream *)&SDU1, "Now low word         : %u\r\n", low_word_now);
+  //chprintf((BaseSequentialStream *)&SDU1, "alarm set at low word: %u\r\n", tim->CCR[0]);
   return true;
 }
 
