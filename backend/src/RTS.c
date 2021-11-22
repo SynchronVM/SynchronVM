@@ -32,6 +32,7 @@
 #include <ll/ll_driver.h>
 
 #define COMB 4294967295
+#define SET_ALARM_AFTER 300000
 
 /* Consider the communication between a sender and receiver. Depending on which
    is scheduled first the behaviour of postSync will change.
@@ -906,7 +907,7 @@ int time(vmc_t *container, Time baseline, Time deadline){
   bool cond1 = actualTime > absoluteDeadline;
   bool cond2 = (actualTime >= absoluteBaseline) &&
     (actualTime <= absoluteDeadline);
-  bool cond3 = baseline < 300000;
+  bool cond3 = baseline < SET_ALARM_AFTER;
   if(baseline == 0 || cond1 || cond2 || cond3){
 
     //XXX: `sync` above uses a cooperative schduler
@@ -1152,7 +1153,7 @@ static int handle_timer_msg(vmc_t *vmc){
     bool cond1 = actualTime > timedThread2.deadline;
     bool cond2 = (actualTime >= timedThread2.baseline) &&
       (actualTime <= timedThread2.deadline);
-    bool cond3 = (actualTime - timedThread2.baseline)  < 300000;
+    bool cond3 = (actualTime - timedThread2.baseline)  < SET_ALARM_AFTER;
     if(cond1 || cond2 || cond3){
 
       // pop it from waitQ
