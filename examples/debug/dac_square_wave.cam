@@ -17,7 +17,7 @@ msec : Int -> Int
 msec t = t * 84000
 
 usec : Int -> Int
-usec t = t * 84 * 4
+usec t = t * 84
 
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev

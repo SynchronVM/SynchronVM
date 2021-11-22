@@ -199,7 +199,11 @@ bool sys_time_set_wake_up(Time absolute) {
 
   high_word = counter_high_word;
   if (high_word == alarm.alarm_time >> 32) {
-    tim->CCR[0] = absolute; /* low 32 bits */
+    if ((uint32_t)absolute < tim->CNT) {
+      tim->CCR[0] = tim->CNT + 1000;
+    } else {
+      tim->CCR[0] = (uint32_t)absolute; /* low 32 bits */
+    }
     tim->DIER |= 0x2; /* enable interrups on CCR[0] */
   } else {
     tim->DIER &= ~0x2;
