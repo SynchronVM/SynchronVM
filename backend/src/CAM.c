@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include <ll/ll_driver.h>
+#include <platform.h>
 
 /* Combinators */
 
@@ -1442,9 +1443,10 @@ static int handle_time(vmc_t *vmc){
     return -1;
   }
 
-  Time baseline = (Time)hold_reg1.value;
-
-  Time deadline = (Time)hold_reg2.value;
+  /* Is this a good place to multiply by PLATFORM_TIME_FACTOR? */
+  Time baseline = (Time)(hold_reg1.value * PLATFORM_TIME_FACTOR);
+  
+  Time deadline = (Time)(hold_reg2.value * PLATFORM_TIME_FACTOR);
 
   // After calling the rts function `time` make sure the
   // env register points to `ev` so that we can `sync` next
