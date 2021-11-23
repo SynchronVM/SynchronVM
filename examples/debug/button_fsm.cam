@@ -2,9 +2,9 @@ but1Chan = channel ()
 but2Chan = channel ()
 but3Chan = channel ()
 but4Chan = channel ()
-l1Chan = channel ()
-l2Chan = channel ()
-errLChan = channel()
+l1Chan   = channel ()
+l2Chan   = channel ()
+errLChan = channel ()
 
 glowLED1 = sync (send l1Chan 1)
 
