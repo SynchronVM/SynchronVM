@@ -1,0 +1,64 @@
+but1Chan = channel ()
+but2Chan = channel ()
+but3Chan = channel ()
+but4Chan = channel ()
+l1Chan   = channel ()
+l2Chan   = channel ()
+errLChan = channel ()
+
+
+syncHandle ev handler = 
+   let _ = sync ev in handler
+
+glowLED1 handler   = syncHandle (send l1Chan 1) handler
+
+glowLED2 handler   = syncHandle (send l2Chan 1) handler
+
+glowErrLED handler = syncHandle (send errLChan 1) handler
+
+
+fail1ev = choose (recv but1Chan) 
+                 (choose (recv but3Chan) (recv but4Chan))
+
+fail2ev = choose (recv but3Chan) 
+                 (choose (recv but1Chan) (recv but2Chan))
+
+
+
+
+ignoreEv ev = let _ = sync ev in ()
+
+
+
+ignore1OFF     = ignoreEv (recv but1Chan)
+ignore2OFF     = ignoreEv (recv but2Chan)
+ignore3OFF     = ignoreEv (recv but3Chan)
+ignore4OFF     = ignoreEv (recv but4Chan)
+ignorefail1OFF = ignoreEv fail1ev
+ignorefail2OFF = ignoreEv fail2ev
+
+program : () -> ()
+program void =
+  let fsm1 = 
+      wrap (recv but1Chan) (\ x -> (
+      let _ = ignore1OFF in
+      sync (choose (wrap (recv but2Chan) (\ x -> glowLED1 ignore2OFF))
+                   (wrap fail1ev         (\ x -> glowErrLED ignorefail1OFF))))) in
+  let fsm2 = 
+      wrap (recv but3Chan) (\ x -> (
+      let _ = ignore3OFF in
+      sync (choose (wrap (recv but4Chan) (\ x -> glowLED2 ignore4OFF))
+                   (wrap fail2ev         (\ x -> glowErrLED ignorefail2OFF))))) in
+  let _ = sync (choose fsm1 fsm2) in
+  program void
+
+  
+main = 
+  let _ = spawnExternal but1Chan 1 in
+  let _ = spawnExternal but2Chan 2 in
+  let _ = spawnExternal but3Chan 3 in
+  let _ = spawnExternal but4Chan 4 in
+  let _ = spawnExternal l1Chan   5 in
+  let _ = spawnExternal l2Chan   6 in
+  let _ = spawnExternal errLChan 7 in
+  program ()
