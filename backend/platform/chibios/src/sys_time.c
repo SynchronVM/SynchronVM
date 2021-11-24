@@ -104,7 +104,7 @@ OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
   
   uint32_t hw = counter_high_word;
   
-  if (tim->SR & 0x1 ) { /* This indicates and update event (overflow?) */
+  if ((tim->SR & tim->DIER) & 0x1 ) { /* This indicates and update event (overflow?) */
     /* TODO: Not 100% certain this is definitely an overflow. Couldn't it
        be other "events"?  */
     uint32_t sr = tim->SR;
@@ -122,7 +122,7 @@ OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
     }
   }
 
-  if (tim->SR & 0x2) {
+  if ((tim->SR & tim->DIER) & 0x2) {
     uint32_t low_word;
     //uint32_t high_word;
     Time time;
@@ -151,8 +151,7 @@ OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {
 
     alarm.active = false;
   }
-
-
+  
   OSAL_IRQ_EPILOGUE();
 }
 
