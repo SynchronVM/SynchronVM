@@ -1,0 +1,18 @@
+butchan : Channel Int
+butchan = channel ()
+
+ledchan : Channel Int
+ledchan = channel ()
+
+glowled : Int -> ()
+glowled i = sync (send ledchan i)
+
+foo : ()
+foo =
+ let _ = sync (wrap (recv butchan) glowled) in
+ foo
+
+main =
+  let _ = spawnExternal butchan 0 in
+  let _ = spawnExternal ledchan 1 in
+  foo
