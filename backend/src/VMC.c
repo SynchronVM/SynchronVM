@@ -106,9 +106,34 @@ static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size
 ll_button_driver_t ll_button;
 #endif
 
+#if VMC_CONTAINER_1_USE_BUTTON_1
+ll_button_driver_t ll_button1;
+#endif
+
+#if VMC_CONTAINER_1_USE_BUTTON_2
+ll_button_driver_t ll_button2;
+#endif
+
+#if VMC_CONTAINER_1_USE_BUTTON_3
+ll_button_driver_t ll_button3;
+#endif
+
 #if VMC_CONTAINER_1_USE_LED_0
 ll_led_driver_t ll_led;
 #endif
+
+#if VMC_CONTAINER_1_USE_LED_1
+ll_led_driver_t ll_led1;
+#endif
+
+#if VMC_CONTAINER_1_USE_LED_2
+ll_led_driver_t ll_led2;
+#endif
+
+#if VMC_CONTAINER_1_USE_LED_3
+ll_led_driver_t ll_led3;
+#endif
+
 
 #if VMC_CONTAINER_1_USE_PWM_0
 ll_pwm_driver_group_t ll_pwm_driver_group0;
@@ -229,6 +254,45 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   }
   #endif
 
+  #if VMC_CONTAINER_1_USE_BUTTON_1
+  {
+    LL_BUTTON_DRIVER_INIT(ll_button1, 1, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
+
+    ll_driver_t lld;
+    //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
+    if (ll_button_init(&lld, &ll_button1)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    }
+  }
+  #endif
+
+  #if VMC_CONTAINER_1_USE_BUTTON_2
+  {
+    LL_BUTTON_DRIVER_INIT(ll_button2, 2, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
+
+    ll_driver_t lld;
+    //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
+    if (ll_button_init(&lld, &ll_button2)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    }
+  }
+  #endif
+
+  #if VMC_CONTAINER_1_USE_BUTTON_3
+  {
+    LL_BUTTON_DRIVER_INIT(ll_button3, 3, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
+
+    ll_driver_t lld;
+    //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
+    if (ll_button_init(&lld, &ll_button3)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    }
+  }
+  #endif
+  
   #if VMC_CONTAINER_1_USE_LED_0
   {
     LL_LED_DRIVER_INIT(ll_led, 0, drv_num);
@@ -243,6 +307,50 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   }
   #endif
 
+  #if VMC_CONTAINER_1_USE_LED_1
+  {
+    LL_LED_DRIVER_INIT(ll_led1, 1, drv_num);
+
+    ll_driver_t lld;
+    if (ll_led_init(&lld, &ll_led1)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+
+  #if VMC_CONTAINER_1_USE_LED_2
+  {
+    LL_LED_DRIVER_INIT(ll_led2, 2, drv_num);
+
+    ll_driver_t lld;
+    if (ll_led_init(&lld, &ll_led2)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+
+  #if VMC_CONTAINER_1_USE_LED_3
+  {
+    LL_LED_DRIVER_INIT(ll_led3, 3, drv_num);
+
+    ll_driver_t lld;
+    if (ll_led_init(&lld, &ll_led3)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+
+
+  
   /*  Theres a lot of possible combinations of all these... */
   /*  Some form of autogeneration is needed */
   
