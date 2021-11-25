@@ -1,0 +1,46 @@
+but1Chan = channel ()
+but2Chan = channel ()
+but3Chan = channel ()
+but4Chan = channel ()
+l1Chan   = channel ()
+l2Chan   = channel ()
+errLChan = channel ()
+
+glowLED1 x = sync (send l1Chan x)
+
+glowLED2 x = sync (send l2Chan x)
+
+glowErrLED x = sync (send errLChan x)
+
+
+fail1ev = choose (recv but1Chan) 
+                 (choose (recv but3Chan) (recv but4Chan))
+
+fail2ev = choose (recv but3Chan) 
+                 (choose (recv but1Chan) (recv but2Chan))
+
+program : () -> ()
+program void =
+  let fsm1 = 
+      wrap (recv but1Chan) (\ x -> (
+      sync (choose (wrap (recv but2Chan) (\ x -> glowLED1 x))
+                   (wrap fail1ev         (\ x -> glowErrLED x))))) in
+
+  let fsm2 = 
+      wrap (recv but3Chan) (\ x -> (
+      sync (choose (wrap (recv but4Chan) (\ x -> glowLED2 x))
+                   (wrap fail2ev         (\ x -> glowErrLED x))))) in
+
+  let _ = sync (choose fsm1 fsm2) in
+  program void
+
+  
+main = 
+  let _ = spawnExternal but1Chan 0 in
+  let _ = spawnExternal but2Chan 1 in
+  let _ = spawnExternal but3Chan 2 in
+  let _ = spawnExternal but4Chan 3 in
+  let _ = spawnExternal l1Chan   4 in
+  let _ = spawnExternal l2Chan   5 in
+  let _ = spawnExternal errLChan 6 in
+  program ()
