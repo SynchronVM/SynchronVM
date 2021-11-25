@@ -5,3 +5,4 @@ all:
 
 clean:
 	rm -r build/
+	rm choose_four.svm
