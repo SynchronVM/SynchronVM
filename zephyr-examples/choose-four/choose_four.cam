@@ -22,13 +22,10 @@ ledchan2 = channel ()
 ledchan3 : Channel Int
 ledchan3 = channel ()
 
-glowled : Int -> ()
-glowled i = sync (send ledchan i)
-
-press  = (wrap (recv butchan) (\x -> sync (send ledchan x)))
-press1 = (wrap (recv butchan1) (\x -> sync (send ledchan1 x)))
-press2 = (wrap (recv butchan2) (\x -> sync (send ledchan2 x)))
-press3 = (wrap (recv butchan3) (\x -> sync (send ledchan3 x)))
+press  = wrap (recv butchan) (\x -> sync (send ledchan x))
+press1 = wrap (recv butchan1) (\x -> sync (send ledchan1 x))
+press2 = wrap (recv butchan2) (\x -> sync (send ledchan2 x))
+press3 = wrap (recv butchan3) (\x -> sync (send ledchan3 x))
 
 anybutton = choose press (choose press1 (choose press2 press3))
 
