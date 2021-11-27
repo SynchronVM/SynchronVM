@@ -1066,8 +1066,11 @@ static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){
   if(deq_status == -1){ //empty queue
     DEBUG_PRINT(( "Recv Queue of %u empty for sending interrupt \n"
                   , chan_id));
-    //XXX: Need to do something here
-    return -1;
+
+    // A message with no registered handler has arrived
+    // we ignore the message and let the scheduler continue
+    // blocking; See scheduler.c
+    return 2;
   }
 
   UUID recv_context_id = recv_data.context_id;
