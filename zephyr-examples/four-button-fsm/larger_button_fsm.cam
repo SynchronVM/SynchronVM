@@ -1,36 +1,24 @@
 butchan1 : Channel Int
 butchan1 = channel ()
-
 butchan2 : Channel Int
 butchan2 = channel ()
-
 butchan3 : Channel Int
 butchan3 = channel ()
-
 butchan4 : Channel Int
 butchan4 = channel ()
 
 ledchan1 : Channel Int
 ledchan1 = channel ()
-
 ledchan2 : Channel Int
 ledchan2 = channel ()
-
 ledchan3 : Channel Int
 ledchan3 = channel ()
-
 ledchan4 : Channel Int
 ledchan4 = channel ()
 
 not : Int -> Int
 not 1 = 0
 not 0 = 1
-
-recvMsg : Channel a -> a
-recvMsg ch = sync (recv ch)
-
-sendMsg : Channel a -> a -> a
-sendMsg ch a = sync (send ch a)
 
 errorLed x = ledchan3
 
@@ -46,7 +34,7 @@ led1Handler x =
 led1 : Int -> ()
 led1 state =
   let ch = sync (wrap (recv butchan1) led1Handler) in
-  let _ = sendMsg ch (not state) in
+  let _ = sync (send ch (not state)) in
   led1 (not state)
 
 led2Handler x =
@@ -55,7 +43,7 @@ led2Handler x =
 led2 : Int -> () -> ()
 led2 state void =
   let ch = sync (wrap (recv butchan3) led2Handler) in
-  let _ = sendMsg ch (not state) in
+  let _ = sync (send ch (not state)) in
   led2 (not state) ()
 
 
