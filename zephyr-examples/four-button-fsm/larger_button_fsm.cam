@@ -1,0 +1,74 @@
+butchan1 : Channel Int
+butchan1 = channel ()
+
+butchan2 : Channel Int
+butchan2 = channel ()
+
+butchan3 : Channel Int
+butchan3 = channel ()
+
+butchan4 : Channel Int
+butchan4 = channel ()
+
+ledchan1 : Channel Int
+ledchan1 = channel ()
+
+ledchan2 : Channel Int
+ledchan2 = channel ()
+
+ledchan3 : Channel Int
+ledchan3 = channel ()
+
+ledchan4 : Channel Int
+ledchan4 = channel ()
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+recvMsg : Channel a -> a
+recvMsg ch = sync (recv ch)
+
+sendMsg : Channel a -> a -> a
+sendMsg ch a = sync (send ch a)
+
+errorLed x = ledchan3
+
+fail1ev = choose (wrap (recv butchan4) errorLed) 
+                 (wrap (recv butchan1) errorLed)
+
+fail2ev = choose (wrap (recv butchan2) errorLed) 
+                 (wrap (recv butchan3) errorLed)
+
+led1Handler x =
+   sync (choose (wrap (recv butchan2) (\x -> ledchan1)) fail1ev)
+
+led1 : Int -> ()
+led1 state =
+  let ch = sync (wrap (recv butchan1) led1Handler) in
+  let _ = sendMsg ch (not state) in
+  led1 (not state)
+
+led2Handler x =
+   sync (choose (wrap (recv butchan4) (\x -> ledchan2)) fail2ev)
+
+led2 : Int -> () -> ()
+led2 state void =
+  let ch = sync (wrap (recv butchan3) led2Handler) in
+  let _ = sendMsg ch (not state) in
+  led2 (not state) ()
+
+
+
+
+main =
+  let _ = spawnExternal butchan1  0 in
+  let _ = spawnExternal butchan2 1 in
+  let _ = spawnExternal butchan3 2 in
+  let _ = spawnExternal butchan4 3 in
+  let _ = spawnExternal ledchan1  4 in
+  let _ = spawnExternal ledchan2 5 in	
+  let _ = spawnExternal ledchan3 6 in
+  let _ = spawnExternal ledchan4 7 in
+  let _ = spawn (led2 0) in
+  led1 0
