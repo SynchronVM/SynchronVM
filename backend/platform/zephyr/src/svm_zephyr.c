@@ -29,6 +29,7 @@
 /*********************/
 /* stdlib includes   */
 #include <stdbool.h>
+#include <stdio.h>
 
 /********************/
 /* SenseVM Includes */
@@ -41,6 +42,18 @@
 // #include <sys/sys_debug_uart.h>
 
 #include <svm_zephyr.h>
+
+/******************/
+/* Debug printing */
+void dbg_print(const char* str, ...) {
+  va_list args;
+  char buf[256];
+  
+  vsnprintf(buf, 256, str, args);
+  printk("%s",buf);
+}
+
+
 
 /***************************************************/
 /* Check for configurations that are not sensible. */
@@ -147,15 +160,6 @@ uint32_t message_queue_num_used(vmc_t *vmc) {
 
   return k_msgq_num_used_get(interop->msgq);
 }
-
-/***************/
-/* debug print */
-
-void dbg_print(const char *str, ...) {
-  /* TODO: Implement */ 
-  return;   
-}
-
 
 /***********************************************/
 /*  Thoughts on threads                        */

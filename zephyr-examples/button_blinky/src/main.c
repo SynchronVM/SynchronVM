@@ -18,6 +18,9 @@
 /* SenseVM include */
 #include <svm_zephyr.h> /* <hal/zephyr/svm_zephyr.h> */
 #include <vm-conf.h>
+
+//#include <usb_cdc.h>
+
 //#include <VMC.h>
 //#include <CAM.h>
 
@@ -62,6 +65,10 @@ void t_info_dump(const struct k_thread *cthread, void *user_data) {
 
 void main(void) {
 
+
+  //start_usb_cdc_thread();
+
+  
   PRINT("Pause 2 seconds\r\n");
   k_sleep(K_SECONDS(2));
 
@@ -80,11 +87,11 @@ void main(void) {
 
   k_sleep(K_SECONDS(1));
 
-  while (true) {
-    Time t =  sys_time_get_current_ticks();
-    printk("%llu\r\n", t);
-    k_sleep(K_SECONDS(1));
-  }
+  /* while (true) { */
+  /*   Time t =  sys_time_get_current_ticks(); */
+  /*   printk("%llu\r\n", t); */
+  /*   k_sleep(K_SECONDS(1)); */
+  /* } */
 
 
   
