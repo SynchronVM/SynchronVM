@@ -22,11 +22,13 @@ not 0 = 1
 
 errorLed x = ledchan3
 
-fail1ev = choose (wrap (recv butchan4) errorLed) 
-                 (wrap (recv butchan1) errorLed)
+fail1ev = choose (wrap (recv butchan1) errorLed)
+         (choose (wrap (recv butchan3) errorLed) 
+                 (wrap (recv butchan4) errorLed))
 
-fail2ev = choose (wrap (recv butchan2) errorLed) 
-                 (wrap (recv butchan3) errorLed)
+fail2ev = choose (wrap (recv butchan1) errorLed)
+         (choose (wrap (recv butchan2) errorLed)
+                 (wrap (recv butchan3) errorLed))
 
 led1Handler x =
    sync (choose (wrap (recv butchan2) (\x -> ledchan1)) fail1ev)
@@ -41,7 +43,6 @@ led state =
   let ch = sync (choose fsm1 fsm2) in
   let _ = sync (send ch (not state)) in
   led (not state)
-
 
 main =
   let _ = spawnExternal butchan1  0 in
