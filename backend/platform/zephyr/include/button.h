@@ -53,6 +53,21 @@ extern void button_pressed_cb(const struct device *dev,
 #define BUTTON_PIN(X)          DT_GPIO_PIN(DT_ALIAS(X), gpios)
 #define BUTTON_FLAGS(X)        (GPIO_INPUT | GPIO_INT_DEBOUNCE | DT_GPIO_FLAGS(DT_ALIAS(X), gpios))
 
+#if DT_NODE_EXISTS(button_mode)
+#define BUTTON_MODE(X) 
+#else
+#define BUTTON_MODE(X) "DT_INT_EDGE_BOTH"
+#endif
+
+#define BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE(XbdrvX, XbidX, XMX) \
+  if (XMX == GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE) {\
+      gpio_pin_interrupt_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, GPIO_INT_EDGE_TO_ACTIVE); \
+  } else  if (XMX == GPIO_INTERRUPT_MODE_EDGE_TO_INACTIVE) {						\
+    gpio_pin_interrupt_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, GPIO_INT_EDGE_TO_INACTIVE); \
+  } else { \
+    gpio_pin_interrupt_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, GPIO_INT_EDGE_BOTH); \
+  } 
+
 #define BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX)	\
   {\
   XbdrvX.internal.dev = NULL;\
@@ -62,7 +77,6 @@ extern void button_pressed_cb(const struct device *dev,
   XbdrvX.internal.interop = (zephyr_interop_t *)(XcustomX);\
   XbdrvX.internal.dev = device_get_binding(BUTTON_DEVICE_LABEL(svm_button##XbidX));\
   gpio_pin_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, BUTTON_FLAGS(svm_button##XbidX)); \
-  gpio_pin_interrupt_configure(XbdrvX.internal.dev, XbdrvX.internal.pin, GPIO_INT_EDGE_BOTH); \
   gpio_init_callback(&XbdrvX.internal.cb_data, button_pressed_cb, BIT(BUTTON_PIN(svm_button##XbidX))); \
   gpio_add_callback(XbdrvX.internal.dev, &XbdrvX.internal.cb_data);\
   }

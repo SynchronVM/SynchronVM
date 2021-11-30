@@ -42,6 +42,11 @@ typedef struct {
 
 extern void button_cb(void *arg);
 
+#define BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE(XbdrvX, XbidX, XMX )
+
+//  #WARNING BUTTON Interrupt mode not configurable yet using the ChibiOs implementation
+
+
 #define BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX) \
   {\
   palSetPadMode(BUTTON##XbidX##_GPIO,\

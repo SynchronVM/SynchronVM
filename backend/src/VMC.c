@@ -34,6 +34,7 @@
 #include <ll/ll_driver.h>
 
 #include <sys_gpio_printf.h>
+#include <CONFIG_DEFINES.h>
 
 /* TODO: We need a better way to manage these
    conditional includes. */
@@ -244,7 +245,12 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_CONTAINER_1_USE_BUTTON_0
   {
     LL_BUTTON_DRIVER_INIT(ll_button, 0, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
-
+    #ifdef BUTTON_0_MODE
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button, 0, BUTTON_0_MODE);
+    #else
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button, 0, GPIO_INTERRUPT_MODE_EDGE_BOTH);
+    #endif
+    
     ll_driver_t lld;
     //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
     if (ll_button_init(&lld, &ll_button)) {
@@ -257,7 +263,11 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_CONTAINER_1_USE_BUTTON_1
   {
     LL_BUTTON_DRIVER_INIT(ll_button1, 1, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
-
+    #ifdef BUTTON_1_MODE
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button1, 1, BUTTON_1_MODE);
+    #else 
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button1, 1, GPIO_INTERRUPT_MODE_EDGE_BOTH);
+    #endif
     ll_driver_t lld;
     //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
     if (ll_button_init(&lld, &ll_button1)) {
@@ -270,7 +280,12 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_CONTAINER_1_USE_BUTTON_2
   {
     LL_BUTTON_DRIVER_INIT(ll_button2, 2, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
-
+    #ifdef BUTTON_2_MODE
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button2, 2, BUTTON_1_MODE);
+    #else 
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button2, 2, GPIO_INTERRUPT_MODE_EDGE_BOTH);
+    #endif
+    
     ll_driver_t lld;
     //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
     if (ll_button_init(&lld, &ll_button2)) {
@@ -283,7 +298,12 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   #if VMC_CONTAINER_1_USE_BUTTON_3
   {
     LL_BUTTON_DRIVER_INIT(ll_button3, 3, drv_num, vm_containers[VMC_CONTAINER_1].backend_custom );
-
+    #ifdef BUTTON_3_MODE
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button3, 3, BUTTON_1_MODE);
+    #else 
+    LL_BUTTON_DRIVER_INTERRUPT_MODE(ll_button3, 3, GPIO_INTERRUPT_MODE_EDGE_BOTH);
+    #endif
+    
     ll_driver_t lld;
     //if (ll_button_init(&lld, drv_num,, vm_containers[VMC_CONTAINER_1].backend_custom 0)) {
     if (ll_button_init(&lld, &ll_button3)) {

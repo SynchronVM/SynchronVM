@@ -22,28 +22,15 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef LL_BUTTON_H_
-#define LL_BUTTON_H_
+#ifndef CONFIG_DEFINES_
+#define CONFIG_DEFINES_
 
-#include <stdint.h>
-#include <stdbool.h>
+/****************************/
+/* GPIO Related definitions */
 
-#include <button.h>
-#include <ll/ll_driver.h>
-#include <CONFIG_DEFINES.h>
+#define GPIO_INTERRUPT_MODE_EDGE_BOTH        0
+#define GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE   1
+#define GPIO_INTERRUPT_MODE_EDGE_TO_INACTIVE 2
 
-typedef struct {
-  BUTTON_DRIVER_INTERNAL;
-} ll_button_driver_t;
 
-#define LL_BUTTON_DRIVER_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX) \
-  BUTTON_DRIVER_INTERNAL_INIT(XbdrvX, XbidX, Xdrv_idX, XcustomX)
-
-#define LL_BUTTON_DRIVER_INTERRUPT_MODE(XbdrvX, XbidX, XMX) \
-  BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE(XbdrvX, XbidX, XMX)
-
-extern bool ll_button_init(ll_driver_t* lld, ll_button_driver_t *bdrv);
-
-  
-#endif
-
+#endif 
