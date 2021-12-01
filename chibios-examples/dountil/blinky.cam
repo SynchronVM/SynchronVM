@@ -1,0 +1,32 @@
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+ledchan : Channel Int
+ledchan = channel ()
+
+after t ev = syncT t 0 ev
+
+data Message where
+  COMPLETE   : Message
+  INCOMPLETE : Message
+
+c : Channel Message
+c = channel ()
+
+process1 : () -> ()
+process1 x = after 10000000 (send c COMPLETE)
+
+
+do_until : Int -> ()
+do_until val =
+ let m = after 1000000  (choose (recv c)
+                                (wrap (send ledchan val) (\ x -> INCOMPLETE))) in
+ case m of
+   COMPLETE -> ()
+   INCOMPLETE -> do_until (not val)
+
+main =
+  let _ = spawnExternal ledchan 1 in
+  let _ = spawn process1 in
+  do_until 1
