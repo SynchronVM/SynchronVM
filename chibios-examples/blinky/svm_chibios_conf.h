@@ -5,10 +5,15 @@
 #ifndef SVM_CHIBIOS_CONF_H_
 #define SVM_CHIBIOS_CONF_H_
 
-
+// Discovery board led
 #define LED0_GPIO GPIOD
 #define LED0_PIN  13
 #define LED0_MODE PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST
+
+// a pin pretending to be an led
+//#define LED0_GPIO GPIOB
+//#define LED0_PIN  12
+//#define LED0_MODE PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST
 
 #define LED1_GPIO GPIOD
 #define LED1_PIN  12

@@ -143,7 +143,7 @@ int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {
   DBG_GPIO_CLR(DBG0);
   DBG_GPIO_CLR(DBG1);
   
-  if (!mem || !heap || size_bytes < 1024) return 0;
+  if (!mem || !heap || size_bytes < 8) return 0;
 
   unsigned int n_cells = size_bytes / (sizeof(heap_cell_t) + sizeof(heap_flags_t) + sizeof(uint8_t));
 

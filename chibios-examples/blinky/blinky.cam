@@ -7,7 +7,7 @@ ledchan = channel ()
 
 foo : Int -> ()
 foo val =
- let _ = syncT 1000000 0 (send ledchan val) in
+ let _ = syncT 500000 0 (send ledchan val) in
  foo (not val)
 
 main =

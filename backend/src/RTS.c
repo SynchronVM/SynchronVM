@@ -32,7 +32,7 @@
 #include <ll/ll_driver.h>
 
 #define COMB 4294967295
-#define SET_ALARM_AFTER 50000
+#define SET_ALARM_AFTER 30000
 
 /* Consider the communication between a sender and receiver. Depending on which
    is scheduled first the behaviour of postSync will change.

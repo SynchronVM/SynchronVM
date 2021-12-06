@@ -38,7 +38,7 @@ void main(void)
 
   const struct device *led_dev = device_get_binding(DT_GPIO_LABEL(LED_NODE, gpios));
   const struct device *but_dev = device_get_binding(DT_GPIO_LABEL(BUTTON_NODE,gpios));
-	
+
   uint32_t led_pin = DT_GPIO_PIN(LED_NODE, gpios);
   uint32_t but_pin = DT_GPIO_PIN(BUTTON_NODE, gpios);
 
@@ -46,13 +46,13 @@ void main(void)
     printk("led device is null\n");
     return;
   }
-	
+
   if (but_dev == NULL) {
     printk("button device is null\n");
     return;
   }
-	
-  ret = gpio_pin_configure(but_dev, but_pin, GPIO_INPUT);
+
+  ret = gpio_pin_configure(but_dev, but_pin, GPIO_INPUT | DT_GPIO_FLAGS(BUTTON_NODE, gpios));
   if (ret != 0) {
     printk("Error configure button\n");
     return;
@@ -71,8 +71,8 @@ void main(void)
   /* printk("Set up button at %s pin %d\n", button.port->name, button.pin); */
 
 
-  ret = gpio_pin_configure(led_dev, led_pin,  GPIO_OUTPUT);
-  if (ret != 0) {	  
+  ret = gpio_pin_configure(led_dev, led_pin,  GPIO_OUTPUT | DT_GPIO_FLAGS(LED_NODE, gpios));
+  if (ret != 0) {
     printk("error configuring led\n");
   } else {
     printk("LED OK!\n");
@@ -82,7 +82,7 @@ void main(void)
   while (1) {
     int val = gpio_pin_get(but_dev, but_pin);
     gpio_pin_set(led_dev,led_pin, val);
- 
+
     //k_msleep(SLEEP_TIME_MS);
   }
 }
