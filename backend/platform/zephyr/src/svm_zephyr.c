@@ -48,12 +48,11 @@
 void dbg_print(const char* str, ...) {
   va_list args;
   char buf[256];
-  
+  va_start (args, str);
   vsnprintf(buf, 256, str, args);
+  va_end(args);
   printk("%s",buf);
 }
-
-
 
 /***************************************************/
 /* Check for configurations that are not sensible. */
