@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 project(lldriver-test)
 
+# set(CMAKE_C_FLAGS "-DDebug")
+
 set(LLBC   ../../backend/src/ll)
 
 set(SENSE_VM ../../backend/src)       
