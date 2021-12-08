@@ -28,10 +28,7 @@
 /***********************************************/
 /* Sense-VM Application Configuration Settings */
 /***********************************************/
-#define BUTTON_0_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
-#define BUTTON_1_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
-#define BUTTON_2_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
-#define BUTTON_3_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
+
 
 /********************************************/
 /* Virtual Machine Container (VMC) settings */
@@ -39,23 +36,19 @@
 
 #define VMC_NUM_CONTAINERS 1 // Defines the number of Virtual Machine Containers to run
 
+
 /*********/
 /* VMC 1 */
 /*********/
 #define VMC_CONTAINER_1_HEAP_SIZE_BYTES       2048
-#define VMC_CONTAINER_1_BYTECODE_FILE         "button_fsm.svm"
+#define VMC_CONTAINER_1_BYTECODE_FILE         "twinkle.svm"
 #define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
 #define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  0 // 4096
 
 //#define VMC_CONTAINER_1_USE_UART_0            1      /* not using this yet */
-#define VMC_CONTAINER_1_USE_BUTTON_0          1
-#define VMC_CONTAINER_1_USE_BUTTON_1          1
-#define VMC_CONTAINER_1_USE_BUTTON_2          1
-#define VMC_CONTAINER_1_USE_BUTTON_3          1
-#define VMC_CONTAINER_1_USE_LED_0             1
-#define VMC_CONTAINER_1_USE_LED_1             1
-#define VMC_CONTAINER_1_USE_LED_2             1
-#define VMC_CONTAINER_1_USE_LED_3             1
+//#define VMC_CONTAINER_1_USE_BUTTON_0          1
+//#define VMC_CONTAINER_1_USE_LED_0             1
+#define VMC_CONTAINER_1_USE_DAC_0             1  
 
 /*
   Each channel has a max capacity of storing 3 elements
@@ -68,8 +61,6 @@
 */
 
 #define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  9600
-
-#define BUTTON_0_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
 
 /*********/
 /* VMC 2 */
