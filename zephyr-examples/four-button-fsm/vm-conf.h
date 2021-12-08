@@ -28,7 +28,10 @@
 /***********************************************/
 /* Sense-VM Application Configuration Settings */
 /***********************************************/
-
+#define BUTTON_0_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
+#define BUTTON_1_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
+#define BUTTON_2_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
+#define BUTTON_3_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
 
 /********************************************/
 /* Virtual Machine Container (VMC) settings */
