@@ -66,6 +66,8 @@
 
 #define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES  9600
 
+#define BUTTON_0_MODE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE
+
 /*********/
 /* VMC 2 */
 /*********/
