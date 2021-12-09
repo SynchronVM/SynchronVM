@@ -39,4 +39,6 @@
 
 #define N_MAX_HEAP_CELLS 6000
 
+#define PLATFORM_TIME_FACTOR 84
+
 #endif

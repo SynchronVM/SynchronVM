@@ -36,7 +36,7 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
 TEST_SOURCES = $(wildcard *.c)
 TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))
 
-TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I.
+TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I$(SENSEVM_DIR)/platform/macosx/include -I.
 
 all: $(TEST_EXECS) 
 

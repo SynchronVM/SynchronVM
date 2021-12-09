@@ -73,8 +73,7 @@ static int setup_and_run(vmc_t *container, uint8_t *code, uint32_t c_size){
   int scheduler_status = scheduler(  container
                                      , mock_read_message_poll
                                      , mock_read_message_block
-                                     , mock_message_queue_num_used
-                                     , mock_debug_print);
+                                     , mock_message_queue_num_used);
 
   if (scheduler_status == -1){
     printf("scheduler has failed");

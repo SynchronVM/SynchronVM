@@ -133,8 +133,8 @@ int scheduler(vmc_t *container,
 
   svm_msg_t msg;
 
-  dbg_print("Entered Scheduler\r\n");
-  dbg_print("container address: %u\r\n", (uint32_t)container);
+  DEBUG_PRINT(("Entered Scheduler\r\n"));
+  DEBUG_PRINT(("container address: %u\r\n", (uint32_t)container));
 
 #ifdef TRACE_ON
   uint32_t total_msgs = 0;
@@ -211,7 +211,7 @@ int scheduler(vmc_t *container,
       /*handle msg */
       int msg_r = handle_msg(container, &msg);
       if (msg_r  <= 0) {
-	dbg_print("Error in handle_msg: %d\r\n",msg_r);
+	DEBUG_PRINT(("Error in handle_msg: %d\r\n",msg_r));
 
 #ifdef TRACE_ON
 	trace_print(dbg_print, 1000);
@@ -280,7 +280,7 @@ int scheduler(vmc_t *container,
 
       if (current_inst > (sizeof(evaluators) / 4)) {
 	
-        dbg_print("current_inst = %u at pc = %d is invalid   (ctx = %u) \r\n", current_inst, *pc, container->current_running_context_id);
+        DEBUG_PRINT(("current_inst = %u at pc = %d is invalid   (ctx = %u) \r\n", current_inst, *pc, container->current_running_context_id));
 	/* dbg_print("*****************************************************\r\n"); */
 	/* dbg_print("executing ctx: %d\r\n", container->current_running_context_id); */
 	/* dbg_print("ctx pc: %d\r\n", container->contexts[container->current_running_context_id].pc); */
@@ -297,7 +297,7 @@ int scheduler(vmc_t *container,
       }
 
       if(*pc  == -1){
-        dbg_print("Instruction %u failed",current_inst);
+        DEBUG_PRINT(("Instruction %u failed",current_inst));
 #ifdef TRACE_ON
 	trace_print(dbg_print, 25);
 #endif
@@ -306,6 +306,6 @@ int scheduler(vmc_t *container,
     }
   }
   /* end */
-  dbg_print("Closing down scheduler\r\n");
+  DEBUG_PRINT(("Closing down scheduler\r\n"));
   return 1;
 }
