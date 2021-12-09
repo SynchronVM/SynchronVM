@@ -22,9 +22,6 @@ usec t = t
 after : Int -> Event a -> a
 after t ev = syncT t 0 ev
 
-afterUrgent : Int -> Event a -> a
-afterUrgent t ev = syncT t 1 ev
-
 
 twinkle : List Int
 twinkle = Cons  1915 (Cons 1915 (Cons 1275 (Cons 1275 (Cons 1136
