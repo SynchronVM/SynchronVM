@@ -44,3 +44,4 @@
     and any cell not referenced from the VRT can be reclaimed.". It doesn't account for cycles and uses GC to collect them.
 - [Ulterior Reference Counting: Fast Garbage collection without a long wait](https://users.cecs.anu.edu.au/~steveb/pubs/papers/urc-oopsla-2003.pdf)
 - [Counting Immutable Bean. RC for purely functional languages](https://arxiv.org/pdf/1908.05647.pdf)
+- [Practical Principle of Least Privilege for Secure Embedded Systems](http://sjero.net/pubs/2021_RTAS_Patina.pdf)
