@@ -31,7 +31,7 @@
     Key idea of this paper is - "The generally admitted generational hypothesis states that connected objects will tend to have a similar lifetime. Accordingly, we propose to put each data structure (i.e. each maximal set of connected objects) in a distinct region. The idea is that most objects are either short-lived, and so they should be placed in a short-lived region, or long-lived, because they are integrated in a large lasting structure, and they should be placed together with the rest of the structure." The paper then presents its main contribution - *a static analysis pass to over-approximate the object connectivities* and accordingly place connected objects in the same region. The work involves the programmer by warning of potential leaks and the programmer can accordingly restructure their program.
  - IBM's Metronome Collector
    - [The canonical paper](https://dl.acm.org/doi/abs/10.1145/640128.604155)
-   - [Popular presentation](https://dl.acm.org/doi/10.1145/1217256.1217268)
+   - [Popular presentation](https://dl.acm.org/doi/10.1145/1217256.1217268) - The broad idea seems to be about making the time of the application pause deterministic rather than removing pauses altogether. In the paper when the pause times are plotted they are almost always equally spaced. The collector requires two important application parameters - the maximum live memory that it uses and the maximum long-term allocation rate.
  - [Schism: Fragmentation-Tolerant Real-Time Garbage Collection](https://dl.acm.org/doi/abs/10.1145/1809028.1806615)
 
 
