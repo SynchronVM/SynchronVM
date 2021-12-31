@@ -21,6 +21,8 @@
 - [A real-time garbage collector based on the lifetime of objects](https://dl.acm.org/doi/abs/10.1145/358141.358147)
 - [RTMLTon](https://link.springer.com/chapter/10.1007%2F978-3-030-39197-3_8)
 - [One Pass Real-Time Generational Mark-Sweep Garbage Collection](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.7791&rep=rep1&type=pdf)
+- [A Hard Look at Hard Real-Time Garbage Collection](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.69.3943&rep=rep1&type=pdf)
+- [Semi-Automatic Region-Based Memory Management for Real-Time Java Embedded Systems](https://ieeexplore.ieee.org/document/4296838)
 
 
 #### Stack vs Heap for closures
