@@ -23,6 +23,12 @@
 - [One Pass Real-Time Generational Mark-Sweep Garbage Collection](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.7791&rep=rep1&type=pdf)
 - [A Hard Look at Hard Real-Time Garbage Collection](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.69.3943&rep=rep1&type=pdf)
 - [Semi-Automatic Region-Based Memory Management for Real-Time Java Embedded Systems](https://ieeexplore.ieee.org/document/4296838)
+  - This identifies a very common problem in region-based memory managers - all objects gets allocated to one long-lived region and that particular region
+    never ends up being destroyed, leading to memory leaks. The paper believes this problem is common enough to be given its own name - *region explosion syndrome*.
+    It mentions several works including, ML-based region-inferencing algorithms as well as programmer-managed manual regions suffering from the region
+    explosion syndrome.
+    
+    Key idea of this paper is - "The generally admitted generational hypothesis states that connected objects will tend to have a similar lifetime. Accordingly, we propose to put each data structure (i.e. each maximal set of connected objects) in a distinct region. The idea is that most objects are either short-lived, and so they should be placed in a short-lived region, or long- lived, because they are integrated in a large lasting structure, and they should be placed together with the rest of the struc- ture." The paper then presents its main contribution - *a static analysis pass to over-approximate the object connectivities* and accordingly place connected objects in the same region. The work involves the programmer by warning of potential leaks and the programmer can accordingly restructure their program. 
 
 
 #### Stack vs Heap for closures
