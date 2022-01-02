@@ -7,6 +7,7 @@
 
 #### Memory Management(Static)
 
+- [A Brief Introduction to Regions](https://dl.acm.org/doi/abs/10.1145/301589.286882)
 - [Memory Efficient Hard Real-Time Garbage Collection](http://liu.diva-portal.org/smash/get/diva2:20899/FULLTEXT01.pdf)
 - [ASAP: As Static As Possible memory management](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-908.pdf)
 - [Towards region-based memory management for Go](https://dl.acm.org/doi/abs/10.1145/2247684.2247695)
