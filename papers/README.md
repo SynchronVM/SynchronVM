@@ -41,6 +41,7 @@
 
 #### Real Time and Functional Languages
 - [A survey of real‐time capabilities in functional languages and compilers](https://onlinelibrary.wiley.com/doi/full/10.1002/cpe.4902)
+- [Actor Systems for Realtime computations - Henry Baker's 1978 PhD Thesis](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.18.4791&rep=rep1&type=pdf)
 
 
 ### RELATED WORK 2
