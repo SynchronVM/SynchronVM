@@ -1,4 +1,6 @@
-# Sense-VM (Work in progress)
+# Sense-VM
+
+<img src="https://raw.githubusercontent.com/svenssonjoel/Sense-VM/master/logo/bergsget_blue_small.png" width="200" height="250" />
 
 Sense-VM is a bytecode-vm for microcontrollers such as STM32, and
 NRF52. Sense-VM is based on the Categorical Abstract Machine but is augmented
