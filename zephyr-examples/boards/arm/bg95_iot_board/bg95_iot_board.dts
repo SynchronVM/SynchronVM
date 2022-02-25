@@ -1,0 +1,98 @@
+/*
+ * Copyright (c) 2017 Linaro Limited
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/f4/stm32f405Xg.dtsi>
+#include <st/f4/stm32f405rgtx-pinctrl.dtsi>
+
+/ {
+	model = "BG95 IOT Board";
+	compatible = "st,bg95_iot_board";
+
+	chosen {
+		/*zephyr,console = &usart2; */
+		/*zephyr,shell-uart = &usart2; */
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,ccm = &ccm0;
+		zephyr,can-primary = &can2;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		green_led_0: led_0 {
+			gpios = <&gpioc 8 GPIO_ACTIVE_HIGH>;
+			label = "D1";
+		};
+		red_led_1: led_1 {
+			gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
+			label = "D2";
+		};
+	};
+
+	aliases {
+		led0 = &green_led_0;
+		led1 = &red_led_1;
+	};
+};
+
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&usart2 {
+	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3 &usart2_rts_pa1 &usart2_cts_pa0>;
+	current-speed = <115200>; /* <115200>; */
+/*	hw-flow-control; */
+
+	status = "okay";
+};
+
+
+&uart4 {
+       pinctrl-0 = <&uart4_tx_pc10 &uart4_rx_pc11>;
+       current-speed = <115200>;
+       status = "okay";
+};
+
+
+&uart5 {
+       pinctrl-0 = <&uart5_tx_pc12 &uart5_rx_pd2>;
+       current-speed = <115200>;
+       status = "okay";
+};
+
+&timers2 {
+	status = "okay";
+
+	pwm2: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim2_ch1_pa0>;
+	};
+};
+
+&rtc {
+	status = "okay";
+};
+
+&usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+	status = "okay";
+};
+
+&can1 {
+	pinctrl-0 = <&can1_rx_pb8 &can1_tx_pb9>;
+	bus-speed = <125000>;
+	status = "disabled";
+};
+
+&can2 {
+	pinctrl-0 = <&can2_rx_pb5 &can2_tx_pb13>;
+	bus-speed = <125000>;
+	status = "okay";
+};
