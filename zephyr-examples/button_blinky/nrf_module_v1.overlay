@@ -27,7 +27,7 @@
      buttons {
      	     compatible = "gpio-keys";
 	     button100: button_100 {
-	     		gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+	     		gpios = <&gpio0 25 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
 			label = "Experiment button";
 	     };
      };
