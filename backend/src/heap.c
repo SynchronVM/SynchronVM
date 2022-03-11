@@ -220,7 +220,8 @@ heap_index heap_allocate(heap_t *heap) {
 
 //void heap_mark(heap_t * heap, UINT value, value_flags_t v_flags) {
 void heap_mark(heap_t *heap, cam_value_t v) {
-  
+
+  DBG_GPIO_SET(DBG1);
   bool done = false;
   cam_value_t curr = v;
   cam_value_t prev = get_cam_val(HEAP_NULL, VALUE_PTR_BIT);
@@ -268,6 +269,7 @@ void heap_mark(heap_t *heap, cam_value_t v) {
       heap_set_snd(heap, prev.value, next);
     }
   }
+  DBG_GPIO_CLR(DBG1);
 }
 
 /*******************/

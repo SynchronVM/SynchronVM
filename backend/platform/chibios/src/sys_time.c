@@ -234,6 +234,11 @@ bool sys_time_set_wake_up(Time absolute) {
   return true;
 }
 
+uint32_t sys_get_timestamp(void) {
+  systime_t t = chVTGetSystemTime();
+  return (uint32_t) (100 * t);
+}
+
 Time sys_get_wake_up_time(void){
   return alarm.alarm_time;
 }

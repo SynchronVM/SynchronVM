@@ -713,7 +713,7 @@ heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 }
 
 heap_index vmc_heap_alloc_withGC(vmc_t *container) {
-
+  
   heap_index hi = heap_allocate(&container->heap);
   if(hi == HEAP_NULL){
     // heap full; time to do a GC
@@ -725,7 +725,7 @@ heap_index vmc_heap_alloc_withGC(vmc_t *container) {
 
 
     // if heap_allocate_helper returns HEAP_NULL again need to resize heap
-    return heap_allocate(&container->heap);
+    hi =  heap_allocate(&container->heap);
   }
 
   return hi;

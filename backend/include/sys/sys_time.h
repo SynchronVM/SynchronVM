@@ -57,4 +57,6 @@ extern bool      sys_is_alarm_set(void);
 /* put OS thread to sleep, risky operation */
 extern void      sys_sleep_ms(uint32_t ms);
 
+extern uint32_t sys_get_timestamp(void);
+
 #endif

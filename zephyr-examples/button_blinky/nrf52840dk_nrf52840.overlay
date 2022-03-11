@@ -1,12 +1,12 @@
 / {
 
   aliases {
-     svm-button0 = &button0;
+     svm-button0 = &button100;
      svm-button1 = &button1;
      svm-button2 = &button2;
      svm-button3 = &button3;
 
-     svm-led0 = &led0;
+     svm-led0 = &led100;
      svm-led1 = &led1;
      svm-led2 = &led2;
      svm-led3 = &led3;
