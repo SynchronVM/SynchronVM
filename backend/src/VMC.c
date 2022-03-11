@@ -34,6 +34,7 @@
 #include <ll/ll_driver.h>
 
 #include <sys_gpio_printf.h>
+#include <sys_time.h>
 #include <CONFIG_DEFINES.h>
 
 /* TODO: We need a better way to manage these
@@ -156,6 +157,8 @@ ll_pwm_driver_t ll_pwm3;
 #if VMC_CONTAINER_1_USE_DAC_0
 ll_dac_driver_t ll_dac;
 #endif
+ 
+static vmc_statistics_t vmc_stats;  
 
 int vmc_init(vmc_t *vm_containers, int max_num_containers) {
 
@@ -163,6 +166,11 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   int rl = 0;
   uint32_t drv_num = 0;
 
+  vmc_stats.gc_time_max = 0;
+  vmc_stats.gc_time_min = UINT32_MAX;
+  vmc_stats.gc_time_total = 0;
+  vmc_stats.gc_num = 0;
+  
   if (VMC_NUM_CONTAINERS > max_num_containers) {
     return -1; /* error! */
   }

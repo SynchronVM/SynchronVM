@@ -64,6 +64,13 @@ typedef struct {
 
 } vmc_t;
 
+typedef struct {
+  uint32_t gc_time_max;
+  uint32_t gc_time_min;
+  uint32_t gc_time_total;
+  uint32_t gc_num;     
+} vmc_statistics_t;
+
 /****************************************************/
 /* low-level message queue interface function types */ 
 
