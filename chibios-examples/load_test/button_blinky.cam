@@ -1,0 +1,25 @@
+ledchan : Channel Int
+ledchan = channel ()
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+loop : Int -> Int -> Int -> Int -> Int
+loop i a b n = 
+  if i == n 
+  then a
+  else loop (i+1) (b) (a+b) n
+
+fib : Int -> Int
+fib n = loop 0 0 1 n 
+
+
+load : Int -> ()
+load i = let _ = fib 155 in
+         let _ = syncT 8000 0 (send ledchan i) in
+         load (not i)
+
+main =
+  let _ = spawnExternal ledchan 0 in
+  load 1

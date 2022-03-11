@@ -92,7 +92,7 @@ void main(void)
   printk("Press the button\n");
   int s = 0;
   while (1) {
-    k_msgq_get(&message_queue, (void*)&s, K_NO_WAIT );
+    k_msgq_get(&message_queue, (void*)&s, K_FOREVER );
     gpio_pin_set(led_dev, led_pin, s);
   }
 }

@@ -18,7 +18,7 @@
    leds {
         compatible = "gpio-leds";
         led100: led_100 {
-            gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+            gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
             label = "Fake GPIO LED";
         };
     };
