@@ -39,7 +39,7 @@
 /*********/
 /* VMC 1 */
 /*********/
-#define VMC_CONTAINER_1_HEAP_SIZE_BYTES       256
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES       8192
 #define VMC_CONTAINER_1_BYTECODE_FILE         "button_blinky.svm"
 #define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
 #define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  0 // 4096

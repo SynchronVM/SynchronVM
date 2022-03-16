@@ -184,6 +184,11 @@ bool sys_time_set_wake_up(Time absolute) {
   return true;
 }
 
+uint32_t sys_get_timestamp(void) {
+  return 0; // TODO:
+}
+
+
 Time sys_get_wake_up_time(void){
   return alarm.alarm_time;
 }
