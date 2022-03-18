@@ -84,7 +84,7 @@ typedef uint32_t (*message_queue_num_used_fun)(vmc_t *vmc);
 /**********************/
 /* External Interface */
 /**********************/
-
+extern void vmc_get_stats(vmc_statistics_t *stats);
 extern int vmc_init(vmc_t *vm_containers, int max_num_containers);
 
 extern int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...));

@@ -1,0 +1,92 @@
+data List a where
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+head : List a -> a
+head (Cons x xs) = x
+
+tail : List a -> List a
+tail Nil = Nil
+tail (Cons x xs) = xs
+
+not : Int -> Int
+not 1 = 0
+not 0 = 1
+
+msec : Int -> Int
+msec t = t * 1000
+
+usec : Int -> Int
+usec t = t
+
+after : Int -> Event a -> a
+after t ev = syncT t 0 ev
+
+g : Int
+g = usec 2551
+
+a : Int
+a = usec 2273
+
+b : Int
+b = usec 2025
+
+c : Int
+c = usec 1911
+
+d : Int
+d = usec 1703
+
+e : Int
+e = usec 1517
+
+hn : Int
+hn = msec 1000
+
+qn : Int
+qn = msec 500
+
+twinkle : List Int
+twinkle = Cons  g (Cons g (Cons d (Cons d (Cons e (Cons e (Cons d
+          (Cons c (Cons c (Cons b (Cons b (Cons a (Cons a (Cons g
+          (Cons d (Cons d (Cons c (Cons c (Cons b (Cons b (Cons a 
+          (Cons d (Cons d (Cons c (Cons c (Cons b (Cons b (Cons a Nil)
+          ))))))))))))))))))))))))))
+
+durations : List Int
+durations = Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons hn
+            (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons hn
+            (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons hn
+            (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons qn (Cons hn Nil)
+            ))))))))))))))))))))))))))
+
+dacC : Channel Int
+dacC = channel ()
+
+noteC : Channel Int
+noteC = channel ()
+
+noteDuration : Int
+noteDuration = msec 500
+
+playerP : List Int -> List Int -> Int -> () -> ()
+playerP melody nt n void =
+  if (n == 29)
+  then let _ = after (head nt) (send noteC (head twinkle)) in
+       playerP (tail twinkle) durations 2 void
+  else let _ = after (head nt) (send noteC (head melody)) in
+       playerP (tail melody) (tail nt) (n + 1) void
+
+tuneP : Int -> Int -> () -> ()
+tuneP timePeriod vol void =
+  let newtp =
+      after timePeriod (choose (recv noteC)
+                               (wrap (send dacC (vol * 4095))
+                                     (\x -> timePeriod))) in
+  tuneP newtp (not vol) void
+
+main =
+  let _ = spawnExternal dacC 0 in
+  let _ = spawn (tuneP (head twinkle) 1) in
+  let _ = spawn (playerP (tail twinkle) durations 2) in
+  ()

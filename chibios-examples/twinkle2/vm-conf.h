@@ -42,7 +42,7 @@
 /*********/
 #define VMC_CONTAINER_1_HEAP_SIZE_BYTES       8192
 #define VMC_CONTAINER_1_BYTECODE_FILE         "twinkle.svm"
-#define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES      2048
 #define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  0 // 4096
 
 //#define VMC_CONTAINER_1_USE_UART_0            1      /* not using this yet */

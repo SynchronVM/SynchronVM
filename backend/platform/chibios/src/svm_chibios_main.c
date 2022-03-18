@@ -34,6 +34,7 @@
 
 #include <svm_chibios.h>
 #include <sys/sys_time.h>
+#include "VMC.h"
 
 /**********************************/
 /* Debug printing function        */
@@ -84,9 +85,47 @@ int main(void) {
 
   // Why is this needed ??
   // Why can we not just let the main thread die here ?
+
+  systime_t last_time = 0;
+
+  static const char *states[] = {CH_STATE_NAMES};
+
+  char buf[64];
+
+  uint32_t tot_gc_time_last = 0;
   
   while (true) {
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(4000);
+    thread_t *tp;
+    
+    tp = chRegFirstThread();
+    chprintf((BaseSequentialStream *)&SDU1,"-----------------------------------------------------\r\n");
+    do {
+      double cpu_usage = 100.0 * ((float)tp->time / (float)(chVTGetSystemTimeX() - last_time));
+
+      const char *tstate = states[tp->state];
+      snprintf(buf,64,"%.1f", cpu_usage);
+      
+      chprintf((BaseSequentialStream *)&SDU1,"%14s %14s %8s %u\r\n", tp->name, tstate, buf, tp->time); 
+      tp->time = 0;
+      tp = chRegNextThread(tp);
+    } while (tp != NULL);
+    last_time = chVTGetSystemTimeX();
+
+    vmc_statistics_t stats;
+    vmc_get_stats(&stats);
+    float avg = (float)stats.gc_time_total / (float)stats.gc_num;
+    snprintf(buf, 64, "%f", avg);
+    chprintf((BaseSequentialStream *)&SDU1,"GC time avg: %s us\r\n", buf);
+    snprintf(buf, 64, "%f", 0.0001 *  (float)(stats.gc_time_total - tot_gc_time_last));
+    chprintf((BaseSequentialStream *)&SDU1,"GC time tot (last 4 seconds): %s ms\r\n", buf);
+    chprintf((BaseSequentialStream *)&SDU1,"GC time min: %d us\r\n", stats.gc_time_min);
+    chprintf((BaseSequentialStream *)&SDU1,"GC time max: %d us\r\n", stats.gc_time_max);
+    tot_gc_time_last = stats.gc_time_total;
+            
   }
+
+ 
+  
   return 0;
 }

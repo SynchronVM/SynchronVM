@@ -55,7 +55,6 @@
 #include <ll/ll_pwm.h>
 #endif
 
-
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
 #if VMC_NUM_CONTAINERS >= 1 && VMC_NUM_CONTAINERS <= 2
@@ -720,7 +719,10 @@ heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
   return head;
 }
 
+
 heap_index vmc_heap_alloc_withGC(vmc_t *container) {
+
+  uint32_t t0 = sys_get_timestamp();
   
   heap_index hi = heap_allocate(&container->heap);
   if(hi == HEAP_NULL){
@@ -736,5 +738,21 @@ heap_index vmc_heap_alloc_withGC(vmc_t *container) {
     hi =  heap_allocate(&container->heap);
   }
 
+  uint32_t t1 = sys_get_timestamp();
+  uint32_t tdiff = t1 - t0;
+  if (tdiff > vmc_stats.gc_time_max)
+    vmc_stats.gc_time_max = tdiff;
+  if (tdiff < vmc_stats.gc_time_min)
+    vmc_stats.gc_time_min = tdiff;
+  vmc_stats.gc_time_total += tdiff;
+  vmc_stats.gc_num ++;
+      
   return hi;
+}
+
+void vmc_get_stats(vmc_statistics_t *stats) {
+  stats->gc_time_max = vmc_stats.gc_time_max;
+  stats->gc_time_min = vmc_stats.gc_time_min;
+  stats->gc_time_total = vmc_stats.gc_time_total;
+  stats->gc_num = vmc_stats.gc_num;
 }

@@ -3,7 +3,8 @@
 module HindleyMilner.TypeInference where
 
 import Parser.AbsTinyCamiot ( Ident, Type(..) )
-import HindleyMilner.HM ( Unify(..) )
+import Parser.PrintTinyCamiot
+import HindleyMilner.HM ( Unify(..) ,UniError(..) )
 import Typechecker.Substitution ( Substitutable(ftv, apply) )
 
 import qualified Data.Map as Map
@@ -20,7 +21,7 @@ instance Unify Type where
     compose s1 s2 = Map.map (apply s1) s2 `Map.union` s1
 
 
-unify' :: Type -> Type -> Maybe Subst
+unify' :: Type -> Type -> Either UniError Subst
 unify' (TLam t1 t2) (TLam t1' t2') = do
     s1 <- unify t1 t1'
     s2 <- unify (refine s1 t2) (refine s1 t2')
@@ -33,7 +34,7 @@ unify' (TAdt con []) (TAdt con' [])  | con == con' = return $ trivial @Type
 unify' (TAdt con types) (TAdt con' types') | con == con' =
        foldlM doOne (trivial @Type) (zip types types')
     where
-        doOne :: Subst -> (Type, Type) -> Maybe Subst
+        doOne :: Subst -> (Type, Type) -> Either UniError Subst
         doOne subst (t1,t2) = do
             s' <- unify (refine subst t1) (refine subst t2)
             return $ compose @Type s' subst
@@ -45,13 +46,13 @@ unify' TInt TInt     = return $ trivial @Type
 unify' TBool TBool   = return $ trivial @Type
 unify' TFloat TFloat = return $ trivial @Type
 unify' TNil TNil     = return $ trivial @Type
-unify' _ _           = Nothing
+unify' a b           = Left $ UniError $ "cannot unify: " ++ printTree a ++ " with " ++ printTree b
 
 
 -- | Returns a substitution where the identifier has been bound to the type.
-bind :: Ident -> Type -> Maybe Subst
+bind :: Ident -> Type -> Either UniError Subst
 bind a t  | t == TVar a      = return $ trivial @Type
-          | occursCheck a t  = Nothing
+          | occursCheck a t  = Left $ UniError $ "Occurs check error"
           | otherwise        = return $ Map.singleton a t
 
 occursCheck :: Ident -> Type -> Bool

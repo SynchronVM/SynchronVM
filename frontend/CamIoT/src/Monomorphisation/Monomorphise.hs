@@ -6,7 +6,7 @@ import Typechecker.AstUtils
 import Monomorphisation.Environment
 import LambdaLifting.LambdaLifting
 import Typechecker.Substitution ( Substitutable(apply) )
-import HindleyMilner.HM ( runUnify )
+import HindleyMilner.HM ( runUnify, UniError(..) )
 import HindleyMilner.TypeInference () -- importing an instance
 
 import Control.Monad.State
@@ -274,8 +274,9 @@ specializeFunction oldid newt = do
           we can apply over the polymorphic definition. -}
           typeEnv :: Map.Map Ident Type
           typeEnv = case runUnify [[(typeOfDef, newt)]] of
-            Just s  -> s
-            Nothing -> error $ "Monomorphiser failed unification for " <> show [[(typeOfDef, newt)]]
+            Right s  -> s
+            Left (UniError e) -> error $ "Monomorphiser failed unification for " ++ (show [[(typeOfDef, newt)]]) ++  "\n"
+               ++  e 
 
           -- | Type of the definition
           typeOfDef :: Type

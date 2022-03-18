@@ -28,6 +28,7 @@ import Typechecker.Substitution hiding (Subst)
 import Typechecker.Environment
 import Typechecker.AstUtils hiding (recursive)
 import Typechecker.TCUtils
+import HindleyMilner.HM ( UniError(..) )
 
 import Control.Monad.State
 import Control.Monad.Reader
@@ -50,8 +51,8 @@ typecheck tc = do
         Right (tc', constraints) -> do
                     let esubst = runUnify (convCons constraints)
                     case esubst of
-                        Just subst -> return (Right (tc',subst))
-                        Nothing    -> undefined 
+                        Right subst -> return (Right (tc',subst))
+                        Left (UniError e) -> error $ e 
 
 convCons :: [Constraint] -> [[(Type, Type)]]
 convCons []                   = []
