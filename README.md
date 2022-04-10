@@ -1,9 +1,9 @@
-# Sense-VM
+# SynchronVM
 
 <img src="https://raw.githubusercontent.com/svenssonjoel/Sense-VM/master/logo/bergsget_blue_small.png" width="200" height="250" />
 
-Sense-VM is a bytecode-vm for microcontrollers such as STM32, and
-NRF52. Sense-VM is based on the Categorical Abstract Machine but is augmented
+SynchronVM is a bytecode-vm for microcontrollers such as STM32, and
+NRF52. SynchronVM is based on the Categorical Abstract Machine but is augmented
 to support Concurrent ML style concurrency.
 
 ## MPLR 2021 paper snapshot
@@ -91,7 +91,7 @@ The `button_blinky` example consists of the following files:
  - `vm-conf` contains specification of virtual machine parameters. 
 
 The `svm_chibios_conf.h` contains microcontroller and board specific
-mappings of hardware (pins/peripherals) to concepts known to SenseVM. 
+mappings of hardware (pins/peripherals) to concepts known to SynchronVM. 
 
 ``` C
 #ifndef SVM_CHIBIOS_CONF_H_
@@ -144,7 +144,7 @@ to the programming interface on the discovery board).
 
 ### What about Zephyr??!?!
 
-SenseVM can be built on top of ChibiOS or ZephyrOS, currently the
+SynchronVM can be built on top of ChibiOS or ZephyrOS, currently the
 "user friendly" examples are just set up to use ChibiOS. There is no
 real reason for this other than it is what we had time to do first. 
 
@@ -154,6 +154,6 @@ Examples on top of ZephyrOS will appear when time allows.
 
 First commit 8 July 2020.
 
-## Papers on SenseVM
+## Papers on SynchronVM
 
 [Higher-Order Concurrency for Microcontroller](https://abhiroop.github.io/pubs/sensevm_mplr.pdf) - MPLR '21
