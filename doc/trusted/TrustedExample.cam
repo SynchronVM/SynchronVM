@@ -1,0 +1,49 @@
+data Key -- some string like data type
+
+-- These two functions should be part of the TCB
+encrypt : Key -> Byte [] -> Byte []
+generateSymKey : () -> Key
+
+
+data TrustedState = TS { req : Channel (Byte [])
+					   , resp : Channel (Byte [])
+					   , done : Bool
+					   , secretKey : Key 
+					   }
+
+
+recvMsg = sync . recv
+sendMsg = sync . send
+
+reqCh = channel ()
+respCh = channel ()
+
+main =
+  let state = TS { req = reqCh,
+                 , resp = respCh
+                 , done = False
+                 , secretKey = null -- some default value
+                 } in
+  let _ = spawnTrusted (trustedProcess state) in
+  let _ = spawnExternal extCh io in -- something to communicate with externally
+  encryptMsg
+
+encryptMsg : ()
+encryptMsg =
+  let m = recvMsg extCh in
+  let _ = sendMsg reqCh in
+  let eM = recvMsg respCh in
+  let _ = sendMsg extCh eM in
+  encryptMsg
+
+
+
+-- trusted process below
+trustedProcess ts@TS{ req = r, resp = rs, done = d, secretKey = sK} ()
+  = if d
+    then let msg = recvMsg r in
+         let eMsg = encrypt sk msg  in -- using the TCB
+         let _ = sendMsg rs eMsg in
+         trustedProcess ts ()
+    else let key = generateSymKey () in
+         trustedProcess (TS {secretKey = key}) ()
