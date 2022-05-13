@@ -10,7 +10,7 @@ Need to modify:
   - vmc_init is hard coded for container one. Make it able to initialize multiple containers
   - think about inter-container message-passing/scheduling
   - figure out how to schedule the evaluation of multiple containers
-
+  - Perhaps have a scheduler per container
 
 thread1 
   sync (send c 5) block
