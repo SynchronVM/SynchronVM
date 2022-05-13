@@ -1,0 +1,20 @@
+
+
+
+Run multiple containers, starting with 2
+
+Need to modify:
+  - Modify timer so that it can react to several alarms
+  - Modify evaluator to add spawn secure, case 9 (CAM.c)
+  - Either modify evaluator, or launch two concurrent ones
+  - vmc_init is hard coded for container one. Make it able to initialize multiple containers
+  - think about inter-container message-passing/scheduling
+  - figure out how to schedule the evaluation of multiple containers
+
+
+thread1 
+  sync (send c 5) block
+
+
+thread2
+  sync (recv c)
