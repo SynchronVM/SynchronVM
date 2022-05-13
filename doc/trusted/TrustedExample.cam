@@ -6,10 +6,10 @@ generateSymKey : () -> Key
 
 
 data TrustedState = TS { req : Channel (Byte [])
-					   , resp : Channel (Byte [])
-					   , done : Bool
-					   , secretKey : Key 
-					   }
+		       , resp : Channel (Byte [])
+		       , done : Bool
+		       , secretKey : Key 
+		       }
 
 
 recvMsg = sync . recv
