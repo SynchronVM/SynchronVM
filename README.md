@@ -10,6 +10,9 @@ to support Concurrent ML style concurrency.
 
 [V0.1.0](https://github.com/svenssonjoel/Sense-VM/releases/tag/v0.1.0)
 
+## ECOOP 2022 preprint
+
+[can be found here](https://2022.ecoop.org/details/ecoop-2022-papers/19/Synchron-An-API-and-Runtime-for-Embedded-Systems)
 
 ## Building the compiler
 
