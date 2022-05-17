@@ -35,6 +35,7 @@ runR ra =
                                 ,((Ident "spawnExternal"), (Ident "spawnExternal"))
                                 ,((Ident "wrap") , (Ident "wrap"))
                                 ,((Ident "syncT"), (Ident "syncT"))
+                                ,((Ident "spawnTrusted")  , (Ident "spawnTrusted"))
                                 ]
 
 

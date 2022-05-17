@@ -1,0 +1,4 @@
+trustedProcess : Int -> () -> ()
+trustedProcess n void = ()
+
+main = let _ = spawnTrusted (trustedProcess 5) in ()

@@ -97,6 +97,7 @@ emptyEnv = TEnv $ Map.fromList $
   , (Ident "spawnExternal", Forall [a] $ TLam channel (TLam TInt unit))
   , (Ident "wrap" , Forall [a, b] $ TLam event (TLam (TLam ta tb) eventb))
   , (Ident "syncT", Forall [a]    $ TLam TInt (TLam TInt (TLam event ta)))
+  , (Ident "spawnTrusted"  , Forall []  $ TLam (TLam unit unit) TInt)
   ]
   --  syncT : Time -> Time -> Event a -> a
   --  wrap  : Event a -> (a -> b) -> Event b
