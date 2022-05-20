@@ -146,6 +146,7 @@ gatherDataDecs (d:ds) = case d of
 
 data Function a = FN Ident (Maybe Type) [Def a]
                 | FMutrec [(Ident, Maybe Type, [Def a])]
+                | ForeignFN Ident Type
 
 -- | Given a list of definitions, return a list of typechecked and annotated definitions.
 checkProgram :: [Def ()] -> TC [Def Type]
@@ -194,13 +195,14 @@ checkProgram ds = do
         -- | Given a `Function a`, returns the name of the function.
         getName :: Function a -> Ident
         getName (FN n _ _) = n
-
+        getName (ForeignFN name _) = name
         {-- | Given a value of type Function Type, constructs a list of definitions
         that represent the same information.
         -}
         unwrapDef :: Function Type -> [Def Type]
         unwrapDef (FN _ Nothing ds)  = ds
         unwrapDef (FN n (Just t) ds) = (DTypeSig n t) : ds
+        unwrapDef (ForeignFN name ty) = [DForeignType name ty]
         unwrapDef (FMutrec idsTysDefs) =
           [DMutRec $
            map (\(id,(Just t),defs ) -> (DTypeSig id t, defs)) idsTysDefs
@@ -262,6 +264,7 @@ makeFunctions ds =
     makeFun :: [Def ()] -> Function ()
     makeFun ((DTypeSig name t):ds)        = FN name (Just t) ds
     makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
+    makeFun ((DForeignType name t):ds)    = ForeignFN name t
 
     mutRecToFuns :: Def () -> Function ()
     mutRecToFuns (DMutRec tydefs) =
@@ -287,6 +290,7 @@ function. If the functions is recursive but lacks a type signature, we raise an 
 -}
 checkFunction :: Function () -> TC (Type, Function Type)
 checkFunction (FN name (Just t) []) = throwError $ AloneTypeSignature name t
+checkFunction (ForeignFN name t) = return (t, (ForeignFN name t))
 checkFunction fun@(FN name sig clauses) = do
     clauses' <- case recursive fun of
         True  -> case hasTypeSig fun of

@@ -49,6 +49,7 @@ functionsMap defs = Map.fromList pairs
       name :: Def Type -> Ident
       name (DTypeSig id _)      = id
       name (DEquation _ id _ _) = id
+      name (DForeignType id _)  = id
 
       (.||.) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
       (.||.) f g a = f a || g a
@@ -71,6 +72,7 @@ hasPolymorphicType id = do
         Just d  -> case d of
             (DTypeSig _ t:_)      -> return $ containsTypeVariable t
             (DEquation t _ _ _:_) -> return $ containsTypeVariable t
+            (DForeignType _ t:_)  -> return False
         Nothing -> return False
 
 -- | Generate a fresh name

@@ -68,6 +68,7 @@ monomorphiseFunctions defs = do defs'   <- withoutPoly grouped
     name :: [Def Type] -> Ident
     name (DTypeSig id _:_)      = id
     name (DEquation _ id _ _:_) = id
+    name (DForeignType id _:_)  = id
 
 {- | Monomorphise a single function. If it uses any polymorphic functions they will be
 specialized and a new function call replaces the old one. The specialized functions
@@ -84,6 +85,7 @@ monomorphiseFunction defs = do defs' <- monoAllDefinitions defs --undefined
     monoAllDefinitions (d:ds) = case d of
       DDataDec _ _ _           -> monoAllDefinitions ds >>= \ds' -> return (d:ds')
       DTypeSig id t            -> monoAllDefinitions ds >>= \ds' -> return (d:ds')
+      DForeignType _ _         -> monoAllDefinitions ds >>= \ds' -> return (d:ds')
       DEquation t id args body -> do body' <- removePolyAppsInExp body
                                      args' <- mapM removePolyADTsInPats args
                                      let d' = DEquation t id args' body'
@@ -373,6 +375,7 @@ updateTypeOfDef :: Map.Map Type Type -> Def Type -> Def Type
 updateTypeOfDef m d = case d of
     DDataDec uid args cons   -> DDataDec uid args (map (updateCons m) cons)
     DTypeSig id t            -> DTypeSig id (updateType m t)
+    DForeignType id t        -> DForeignType id (updateType m t)
     DEquation t id args body -> let t'    = updateType m t
                                     args' = map  (fmap (updateType m)) args
                                     body' = fmap (updateType m) body

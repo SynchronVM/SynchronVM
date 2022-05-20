@@ -54,7 +54,7 @@ type Parser a = Parsec Void Text a
 
 -- | Parser that parses a program
 pProgram :: Parser [Def ()]
-pProgram = some $ pDataDec <|> try pTypeSignature <|> pEquation <|> pMutRec
+pProgram = some $ pForeignType <|> pDataDec <|> try pTypeSignature <|> pEquation <|> pMutRec
 
 -- parse types
 pClosed :: Parser Type
@@ -185,6 +185,19 @@ pDataDec = do
     pChar '}'
     pChar ';'
     return $ DDataDec tycon variables constructors
+
+  -- parse FFI
+pForeignType :: Parser (Def ())
+pForeignType = do
+    pSymbol "foreign"
+    pSpace
+    pSymbol "import"
+    pSpace
+    name <- pIdent
+    pChar ':'
+    t <- pType
+    pChar ';'
+    return $ DForeignType name t
 
   -- parse type signatures
 pTypeSignature :: Parser (Def ())

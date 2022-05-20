@@ -1,0 +1,7 @@
+foreign import add : Int -> Int -> Int
+
+sub : Int -> Int -> Int
+sub 5 0 = 5
+sub x y = x - y
+
+main = add 3 5
