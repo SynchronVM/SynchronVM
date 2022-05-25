@@ -32,6 +32,8 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/VMC.c \
               $(SOURCE_DIR)/ll/ll_driver.c \
               $(SOURCE_DIR)/trusted/Trustedscheduler.c \
+	      $(SOURCE_DIR)/trusted/TrustedVMC.c \
+	      $(SOURCE_DIR)/trusted/TrustedRTS.c \
               $(PLATFORM_SRC)/sys_time.c
 
 TEST_SOURCES = $(wildcard *.c)

@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2022 Abhiroop Sarkar                            		  */
+/* Copyright (c) 2020 Abhiroop Sarkar                            		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,37 +22,48 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __TRUSTEDRTS_H_
-#define __TRUSTEDRTS_H_
+#include <SVM_DEBUG.h>
 
-#include <trusted/TrustedVMC.h>
 #include <event.h>
-#include <sys/sys_time.h>
 
-extern int channel_trusted(vmc_trusted_t *container, UUID    *chan_id);
+bool poll_sendq(vmc_t *container, chan_send_queue_t *q){
+  while(true){
+    send_data_t send_data;
+    int op_status = chan_send_q_front(q, &send_data);
+    if(op_status == -1){ //empty queue
+      return false;
+    } else {
+      cam_value_t dirty_flag =
+        heap_fst(  &container->heap
+                 , (heap_index)send_data.dirty_flag_pointer.value);
+      if((dirty_flag.value & 1) == 1){ // if dirty flag is SET
+        send_data_t temp;
+        chan_send_q_dequeue(q, &temp); // no need to check status we know there is data
+      } else {
+        return true; // the actual dequeing should happen inside doFn
+      }
+    }
+  }
+}
 
-extern int dispatch_trusted(vmc_trusted_t *container);
+bool poll_recvq(vmc_t *container, chan_recv_queue_t *q){
+  while(true){
+    recv_data_t recv_data;
+    int op_status = chan_recv_q_front(q, &recv_data);
+    if(op_status == -1){ //empty queue
+      return false;
+    } else {
+      cam_value_t dirty_flag =
+        heap_fst(  &container->heap
+                 , (heap_index)recv_data.dirty_flag_pointer.value);
 
-extern int spawn_trusted  (vmc_trusted_t *container, uint16_t label  );
-
-extern int sync_trusted   (vmc_trusted_t *container, event_t   *evts);
-
-extern int sendEvt_trusted( vmc_trusted_t *container
-                          , UUID          *chan_id
-                          , cam_value_t    msg
-                          , event_t       *sevt);
-
-extern int recvEvt_trusted( vmc_trusted_t   *container
-                          , UUID            *chan_id
-                          , event_t         *revt);
-
-extern int choose_trusted ( vmc_trusted_t  *container
-                          , event_t        *evt1
-                          , event_t        *evt2
-                          , event_t        *evts);
-
-extern int time_trusted (vmc_trusted_t *container, Time baseline, Time deadline);
-
-extern int handle_msg_trusted(vmc_trusted_t *vmc, svm_msg_t *m);
-
-#endif
+      if((dirty_flag.value & 1) == 1){ // if dirty flag is SET
+        recv_data_t temp;
+        chan_recv_q_dequeue(q, &temp); // no need to check status
+                                       // we know there is data
+      } else {
+        return true; // the actual dequeing should happen inside doFn
+      }
+    }
+  }
+}

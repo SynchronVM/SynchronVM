@@ -86,7 +86,7 @@ static cam_value_t create_dirty_flag(vmc_trusted_t *container, bool b){
   else
     dirty_flag = (cam_value_t){ .value = 0, .flags = 0 }; // false
 
-  heap_index dirty_flag_idx = vmc_heap_alloc_withGC(container);
+  heap_index dirty_flag_idx = vmc_heap_alloc_withGC_trusted(container);
   heap_set_fst(&container->heap, dirty_flag_idx, dirty_flag);
   cam_value_t dirty_flag_pointer =
     { .value = (UINT)dirty_flag_idx, .flags = VALUE_PTR_BIT };
@@ -288,7 +288,7 @@ static int blockAllEvents(vmc_trusted_t *container, event_t *evts){
 }
 
 
-int channel(vmc_trusted_t *container, UUID *chan_id){
+int channel_trusted(vmc_trusted_t *container, UUID *chan_id){
   for(int i = 0; i < MAX_CHANNELS; i++){
      if(container->channels[i].in_use == false){
       container->channels[i].in_use = true;
@@ -300,7 +300,7 @@ int channel(vmc_trusted_t *container, UUID *chan_id){
   return -1;
 }
 
-int spawn(vmc_trusted_t *container, uint16_t label){
+int spawn_trusted(vmc_trusted_t *container, uint16_t label){
   for(int i = 0; i < VMC_MAX_CONTEXTS; i++){
     if(container->context_used[i] == false){
       container->contexts[i].pc = (UINT)label;
@@ -341,7 +341,7 @@ int spawn(vmc_trusted_t *container, uint16_t label){
   return -1;
 }
 
-int dispatch(vmc_trusted_t *container){
+int dispatch_trusted(vmc_trusted_t *container){
   pq_data_t thread_info;
   int de_q_status = pq_extractMin(&container->rdyQ, &thread_info);
   if (de_q_status == -1){
@@ -386,7 +386,7 @@ static int postSync( vmc_trusted_t *container
     cam_value_t val = heap_f;
     label = heap_s;
 
-    heap_index hi = vmc_heap_alloc_withGC(container);
+    heap_index hi = vmc_heap_alloc_withGC_trusted(container);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation failed in post-syncer"));
       return -1;
@@ -680,7 +680,7 @@ static int synchronizeNow(vmc_trusted_t *container, cam_event_t cev){
 
 static int synchronizeSyncDriver(vmc_trusted_t *container, cam_event_t cev);
 
-int sync(vmc_trusted_t *container, event_t *evts){
+int sync_trusted(vmc_trusted_t *container, event_t *evts){
   cam_event_t cev;
   int i = findSynchronizable(container, evts, &cev);
 
@@ -708,14 +708,14 @@ int sync(vmc_trusted_t *container, event_t *evts){
     }
     /* Return value not checked?
        It can be 1 or -1. neither case looks like an error though */
-    dispatch(container);
+    dispatch_trusted(container);
 
   }
 
   return 1;
 }
 
-int sendEvt(vmc_trusted_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
+int sendEvt_trusted(vmc_trusted_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){
 
   cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
@@ -727,7 +727,7 @@ int sendEvt(vmc_trusted_t *container, UUID *chan_id, cam_value_t msg, event_t *s
    */
 
   /* Allocate all memory needed in one go */
-  heap_index cells = vmc_heap_alloc_n(container,3);
+  heap_index cells = vmc_heap_alloc_n_trusted(container,3);
   if ((INT)cells == HEAP_NULL) {
     DEBUG_PRINT(("heap allocation of 3 cells for event has failed"));
     return -1;
@@ -766,7 +766,7 @@ int sendEvt(vmc_trusted_t *container, UUID *chan_id, cam_value_t msg, event_t *s
 
 }
 
-int recvEvt(vmc_trusted_t *container, UUID *chan_id, event_t *revt){
+int recvEvt_trusted(vmc_trusted_t *container, UUID *chan_id, event_t *revt){
 
   cam_value_t null  = {.value = (UINT)HEAP_NULL, .flags = 0};
 
@@ -780,7 +780,7 @@ int recvEvt(vmc_trusted_t *container, UUID *chan_id, event_t *revt){
 
 
   /* Allocating all cells needed in one go */
-  heap_index cells = vmc_heap_alloc_n(container,3);
+  heap_index cells = vmc_heap_alloc_n_trusted(container,3);
   if (cells == HEAP_NULL) {
     DEBUG_PRINT(("heap allocation of 3 cells for event has failed"));
     return -1;
@@ -823,7 +823,7 @@ int recvEvt(vmc_trusted_t *container, UUID *chan_id, event_t *revt){
 
 }
 
-int choose (vmc_trusted_t *container, event_t *evt1, event_t *evt2, event_t *evts){
+int choose_trusted (vmc_trusted_t *container, event_t *evt1, event_t *evt2, event_t *evts){
   heap_index index1 = *evt1;
 
   heap_index original_e1_idx = index1;
@@ -878,7 +878,7 @@ static int setAlarm(Time alarmTime){
 
 }
 
-int time(vmc_trusted_t *container, Time baseline, Time deadline){
+int time_trusted(vmc_trusted_t *container, Time baseline, Time deadline){
 
   // use the logical time of the current thread
   Time currentTime =
@@ -928,7 +928,7 @@ int time(vmc_trusted_t *container, Time baseline, Time deadline){
       return k;
     }
 
-    dispatch(container);
+    dispatch_trusted(container);
 
     return 1;
 
@@ -951,7 +951,7 @@ int time(vmc_trusted_t *container, Time baseline, Time deadline){
 
   // The running thread will sleep till the baseline
   // dispatch other threads.
-  dispatch(container);
+  dispatch_trusted(container);
 
   return 1;
 }
@@ -1252,7 +1252,7 @@ static int handle_timer_msg(vmc_trusted_t *vmc){
 
 }
 
-int handle_msg(vmc_trusted_t *vmc, svm_msg_t *m){
+int handle_msg_trusted(vmc_trusted_t *vmc, svm_msg_t *m){
 
   if (m->sender_id == 255) // Timer interrupt
     return handle_timer_msg(vmc);

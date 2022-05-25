@@ -83,7 +83,7 @@ int scheduler_trusted(vmc_trusted_t *container) {
     /* If we are doing nothing, block on the message queue */
     if (container->current_running_context_id == UUID_NONE) {
       /*handle msg */
-      int msg_r = handle_msg(container, &msg);
+      int msg_r = handle_msg_trusted(container, &msg);
       if (msg_r  <= 0) {
         DEBUG_PRINT(("Error in handle_msg: %d\r\n",msg_r));
 

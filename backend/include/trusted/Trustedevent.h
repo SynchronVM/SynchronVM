@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2022 Abhiroop Sarkar                            		  */
+/* Copyright (c) 2020 Abhiroop Sarkar             		  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,37 +22,48 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __TRUSTEDRTS_H_
-#define __TRUSTEDRTS_H_
+#ifndef __TRUSTEDEVENT_H_
+#define __TRUSTEDEVENT_H_
 
-#include <trusted/TrustedVMC.h>
-#include <event.h>
-#include <sys/sys_time.h>
+#include <VMC.h>
 
-extern int channel_trusted(vmc_trusted_t *container, UUID    *chan_id);
+typedef enum {
+   SEND,
+   RECV
+} event_type_t;
 
-extern int dispatch_trusted(vmc_trusted_t *container);
+typedef struct {
+  event_type_t e_type; //  8 bits
+  UUID channel_id;     //  8 bits
+} base_evt_simple_t;
 
-extern int spawn_trusted  (vmc_trusted_t *container, uint16_t label  );
+typedef struct {
+  base_evt_simple_t  evt_details;   // stored in a cam_value_t with 16 bits free
+  cam_value_t wrap_func_ptr; // 32 bits
+} base_event_t;
 
-extern int sync_trusted   (vmc_trusted_t *container, event_t   *evts);
 
-extern int sendEvt_trusted( vmc_trusted_t *container
-                          , UUID          *chan_id
-                          , cam_value_t    msg
-                          , event_t       *sevt);
+typedef struct {
+  base_event_t bev; // 32 bits
+  cam_value_t  msg; // 32 bits; NULL for recv
+} cam_event_t;
 
-extern int recvEvt_trusted( vmc_trusted_t   *container
-                          , UUID            *chan_id
-                          , event_t         *revt);
+typedef heap_index event_t;
 
-extern int choose_trusted ( vmc_trusted_t  *container
-                          , event_t        *evt1
-                          , event_t        *evt2
-                          , event_t        *evts);
+extern bool poll_sendq(vmc_t *container, chan_send_queue_t *q);
+extern bool poll_recvq(vmc_t *container, chan_recv_queue_t *q);
 
-extern int time_trusted (vmc_trusted_t *container, Time baseline, Time deadline);
-
-extern int handle_msg_trusted(vmc_trusted_t *vmc, svm_msg_t *m);
+/*
+ *  Proposed heap structure
+ *  base_event_t -> fst = top    16 bits free;
+ *                        bottom 16 bits base_evt_simple_t
+ *               -> snd = pointer to wrap_func - [v:l] or [l]
+ *
+ *  cam_event_t -> fst = pointer to base_event_t
+ *              -> snd = message or pointer to message or null for recv
+ *
+ *  heap_cell_list -> fst = pointer to cam_event_t
+ *                 -> snd = pointer to next heap_cell_ev
+ */
 
 #endif
