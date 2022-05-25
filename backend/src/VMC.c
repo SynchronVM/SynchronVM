@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Joel Svensson, Abhiroop Sarkar             				  */
+/* Copyright (c) 2020 ,2022 Joel Svensson, Abhiroop Sarkar             				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -54,6 +54,10 @@
 #if VMC_CONTAINER_1_USE_PWM_0
 #include <ll/ll_pwm.h>
 #endif
+#if VMC_CONTAINER_1_USE_MIDI_0
+#include <ll/ll_midi.h>
+#endif
+
 
 /* This is just an experiment and if we end up building on it, the
    range of numbers can be extended */
@@ -155,6 +159,10 @@ ll_pwm_driver_t ll_pwm3;
 
 #if VMC_CONTAINER_1_USE_DAC_0
 ll_dac_driver_t ll_dac;
+#endif
+
+#if VMC_CONTAINER_1_USE_MIDI_0
+ll_midi_driver_t ll_midi;
 #endif
  
 static vmc_statistics_t vmc_stats;  
@@ -447,6 +455,20 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
     ll_driver_t lld;
     if (ll_dac_init(&lld, &ll_dac)) {
        vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
+      drv_num++;
+    } else {
+      return -1;
+    }
+  }
+  #endif
+
+  #if VMC_CONTAINER_1_USE_MIDI_0
+  {
+    dbg_print("Adding MIDI as driver: %d\r\n", drv_num );
+    LL_MIDI_DRIVER_INIT(ll_midi, 0, drv_num,  vm_containers[VMC_CONTAINER_1].backend_custom);
+    ll_driver_t lld;
+    if (ll_midi_init(&lld, &ll_midi)) {
+      vm_containers[VMC_CONTAINER_1].drivers[drv_num] = lld;
       drv_num++;
     } else {
       return -1;
