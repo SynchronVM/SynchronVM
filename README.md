@@ -159,4 +159,5 @@ First commit 8 July 2020.
 
 ## Papers on SynchronVM
 
-[Higher-Order Concurrency for Microcontroller](https://abhiroop.github.io/pubs/sensevm_mplr.pdf) - MPLR '21
+- [Higher-Order Concurrency for Microcontroller](https://abhiroop.github.io/pubs/sensevm_mplr.pdf) - MPLR '21
+- [Synchron - An API and Runtime for Embedded Systems](abhiroop.github.io/pubs/SynchronECOOPOriginal.pdf) - ECOOP '22
