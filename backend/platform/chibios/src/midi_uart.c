@@ -75,11 +75,15 @@ static uint32_t ll_midi_write(struct ll_driver_s *this, uint8_t *data, uint32_t 
   ll_midi_driver_t *m = (ll_midi_driver_t*)this->driver_info;
 
   int r = 0;
+  uint8_t d[3];
+  d[0] = data[2];
+  d[1] = data[1];
+  d[2] = data[0];
   /* Locking this to only work with midi 3 byte commants. 
      encoded into a 4 byte word */
   if (data_size == 4) {
-  sdWriteTimeout(m->internal.serial_driver, data, 3, 500);
-  r = 4;
+    sdWriteTimeout(m->internal.serial_driver, d, 3, 100);
+    r = 4;
   }
   return r;
 }
