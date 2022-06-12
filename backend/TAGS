@@ -1,0 +1,2020 @@
+
+app-template/main.c,44
+int main(int argc, char **argv) {main9,61
+
+app-template/vm-conf.h,500
+#define __VM_CONF_H___VM_CONF_H_26,1498
+#define VMC_NUM_CONTAINERS VMC_NUM_CONTAINERS37,1814
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES VMC_CONTAINER_1_HEAP_SIZE_BYTES43,1940
+#define VMC_CONTAINER_1_BYTECODE_FILE VMC_CONTAINER_1_BYTECODE_FILE44,1991
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES VMC_CONTAINER_1_STACK_SIZE_BYTES45,2046
+#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES46,2097
+#define VMC_CONTAINER_1_USE_UART_0 VMC_CONTAINER_1_USE_UART_048,2149
+
+app-template/Makefile,444
+SENSEVM_DIR = ../SENSEVM_DIR2,1
+SOURCE_DIR = $(SENSEVM_DIR)srcSOURCE_DIR6,55
+INCLUDE_DIR = $(SENSEVM_DIR)includeINCLUDE_DIR7,86
+INCLUDES = -I$(INCLUDE_DIR) -I$(SENSEVM_DIR)$(PLATFORM_INCLUDE) -I.INCLUDES9,123
+SOURCES_P = $(wildcard $(SOURCE_DIR)/*.c) $(wildcard $(SENSEVM_DIR)$(PLATFORM_SOURCE)/*.c)SOURCES_P14,281
+SOURCES = $(notdir $(SOURCES_P))SOURCES15,372
+OBJECTS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(SOURCES))OBJECTS16,405
+
+include/flags.h,244
+#define __FLAGS_H___FLAGS_H_26,1511
+typedef uint16_t value_flags_t;value_flags_t28,1531
+  value_flags_t fst;fst31,1581
+  value_flags_t snd;snd32,1602
+} heap_flags_t;heap_flags_t33,1623
+#define     VALUE_PTR_BIT VALUE_PTR_BIT38,1727
+
+include/priorityqueue.h,442
+#define __PRIORITYQUEUE_H___PRIORITYQUEUE_H_26,1504
+  BASELINE,BASELINE32,1591
+  DEADLINEDEADLINE33,1603
+} Comparator_t;Comparator_t34,1614
+  UUID context_id;context_id37,1648
+  Time baseline;baseline38,1667
+  Time deadline;deadline39,1684
+} pq_data_t;pq_data_t40,1701
+  pq_data_t *data;data45,1734
+  int capacity;capacity46,1753
+  int size;size47,1769
+  Comparator_t cmp;cmp48,1781
+} PriorityQ_t;PriorityQ_t49,1801
+
+include/register.h,143
+#define __REGISTER_H___REGISTER_H_26,1514
+typedef cam_value_t cam_register_t; // a register can only hold a CAM valuecam_register_t30,1560
+
+include/chan_send_queue.h,431
+#define __CHAN_SEND_QUEUE_H___CHAN_SEND_QUEUE_H_26,1506
+  UUID         context_id;context_id32,1597
+  cam_value_t  message;message33,1624
+  cam_value_t dirty_flag_pointer;dirty_flag_pointer34,1648
+} send_data_t;send_data_t35,1682
+  send_data_t *data;data38,1715
+  int capacity;capacity39,1736
+  int front;front40,1752
+  int rear;rear41,1765
+  int size;size42,1777
+} chan_send_queue_t;chan_send_queue_t43,1789
+
+include/trusted/TrustedVMC.h,1428
+#define __TRUSTEDVMC_H___TRUSTEDVMC_H_26,1516
+#define VMC_CONTAINER_1 VMC_CONTAINER_139,1759
+#define VMC_CONTAINER_2 VMC_CONTAINER_240,1785
+#define VMC_MAX_CONTEXTS VMC_MAX_CONTEXTS42,1812
+#define VMC_MAX_DRIVERS VMC_MAX_DRIVERS43,1839
+#define CONTEXT_STACK_SPACE CONTEXT_STACK_SPACE44,1867
+#define MAX_CHANNELS MAX_CHANNELS46,1900
+#define MAX_WAIT_PARTICIPANTS MAX_WAIT_PARTICIPANTS47,2002
+  heap_t        heap;heap50,2052
+  uint8_t       *stack_memory;stack_memory51,2074
+  uint8_t       *arrays_memory;arrays_memory52,2105
+  const uint8_t *code_memory;code_memory53,2137
+  UINT          code_size;code_size54,2167
+  UUID          current_running_context_id;current_running_context_id55,2194
+  Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */contexts56,2238
+  bool          context_used[VMC_MAX_CONTEXTS];context_used57,2311
+  Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */channels58,2359
+  PriorityQ_t   rdyQ;rdyQ59,2435
+  PriorityQ_t   waitQ;waitQ60,2457
+  ll_driver_t   drivers[VMC_MAX_DRIVERS];drivers61,2480
+  void*         backend_custom; /* Can be used by a backend for low level integration */backend_custom62,2522
+  bool          all_contexts_stopped;all_contexts_stopped63,2611
+} vmc_trusted_t;vmc_trusted_t65,2650
+#define VMC_MESSAGE_RECEIVED VMC_MESSAGE_RECEIVED71,2781
+#define VMC_NO_MESSAGE VMC_NO_MESSAGE72,2812
+
+include/trusted/TrustedCAM.h,117
+#define __TRUSTEDCAM_H___TRUSTEDCAM_H_26,1516
+typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);eval_fun33,1648
+
+include/trusted/Trustedscheduler.h,58
+#define _TRUSTEDSCHEDULER_H__TRUSTEDSCHEDULER_H_26,1521
+
+include/trusted/TrustedRTS.h,48
+#define __TRUSTEDRTS_H___TRUSTEDRTS_H_26,1516
+
+include/svmdefs.h,448
+#define _SVMDEFS_H__SVMDEFS_H_26,1514
+  uint32_t sender_id;     // Id of the sender of this message (driver ID in the case of a driver)sender_id31,1575
+  uint32_t msg_type;      // Encode what kind of message ? msg_type32,1673
+  uint32_t data;          // Data payload, driver specific message or pointer  data33,1733
+  Time timestamp;timestamp34,1813
+} svm_msg_t;svm_msg_t35,1831
+#define SENDER_ID_SYS_TIME SENDER_ID_SYS_TIME37,1845
+
+include/VMC.h,1907
+#define __VMC_H___VMC_H_26,1509
+#define VMC_CONTAINER_1 VMC_CONTAINER_139,1745
+#define VMC_CONTAINER_2 VMC_CONTAINER_240,1771
+#define VMC_MAX_CONTEXTS VMC_MAX_CONTEXTS42,1798
+#define VMC_MAX_DRIVERS VMC_MAX_DRIVERS43,1825
+#define CONTEXT_STACK_SPACE CONTEXT_STACK_SPACE44,1853
+#define MAX_CHANNELS MAX_CHANNELS46,1886
+#define MAX_WAIT_PARTICIPANTS MAX_WAIT_PARTICIPANTS47,1988
+  heap_t        heap;heap50,2038
+  uint8_t       *stack_memory;stack_memory51,2060
+  uint8_t       *arrays_memory;arrays_memory52,2091
+  const uint8_t *code_memory;code_memory53,2123
+  UINT          code_size;code_size54,2153
+  UUID          current_running_context_id;current_running_context_id55,2180
+  Context_t     contexts[VMC_MAX_CONTEXTS];     /* Will likely change */contexts56,2224
+  bool          context_used[VMC_MAX_CONTEXTS];context_used57,2297
+  Channel_t     channels[MAX_CHANNELS]; /* Might be declared outside vmc */channels58,2345
+  PriorityQ_t   rdyQ;rdyQ59,2421
+  PriorityQ_t   waitQ;waitQ60,2443
+  ll_driver_t   drivers[VMC_MAX_DRIVERS];drivers61,2466
+  void*         backend_custom; /* Can be used by a backend for low level integration */backend_custom62,2508
+  bool          all_contexts_stopped;all_contexts_stopped63,2597
+} vmc_t;vmc_t65,2636
+  uint32_t gc_time_max;gc_time_max68,2663
+  uint32_t gc_time_min;gc_time_min69,2687
+  uint32_t gc_time_total;gc_time_total70,2711
+  uint32_t gc_num;     gc_num71,2737
+} vmc_statistics_t;vmc_statistics_t72,2761
+#define VMC_MESSAGE_RECEIVED VMC_MESSAGE_RECEIVED77,2894
+#define VMC_NO_MESSAGE VMC_NO_MESSAGE78,2925
+typedef int (*message_read_poll_fun)(vmc_t *vmc, svm_msg_t *msg);message_read_poll_fun80,2959
+typedef int (*message_read_block_fun)(vmc_t *vmc, svm_msg_t *msg);message_read_block_fun81,3025
+typedef uint32_t (*message_queue_num_used_fun)(vmc_t *vmc);message_queue_num_used_fun82,3092
+
+include/typedefs.h,408
+#define __TYPEDEFS_H___TYPEDEFS_H_26,1516
+typedef uint32_t UINT;UINT31,1579
+typedef int32_t  INT;INT32,1602
+typedef uint8_t  UUID;UUID33,1624
+typedef uint64_t Time;Time34,1647
+#define UUID_NONE UUID_NONE36,1671
+#define DRIVER_NULL DRIVER_NULL37,1694
+#define TIME_MAX TIME_MAX38,1719
+  value_flags_t flags;flags41,1765
+  UINT          value;value42,1788
+} cam_value_t;cam_value_t43,1811
+
+include/stack.h,215
+#define __STACK_H___STACK_H_26,1511
+  value_flags_t *flags;flags33,1612
+  UINT          *data;data34,1636
+  unsigned int   sp;sp35,1659
+  unsigned int   size;size36,1680
+} cam_stack_t;cam_stack_t37,1703
+
+include/CONFIG_DEFINES.h,303
+#define CONFIG_DEFINES_CONFIG_DEFINES_26,1506
+#define GPIO_INTERRUPT_MODE_EDGE_BOTH GPIO_INTERRUPT_MODE_EDGE_BOTH31,1594
+#define GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE GPIO_INTERRUPT_MODE_EDGE_TO_ACTIVE32,1641
+#define GPIO_INTERRUPT_MODE_EDGE_TO_INACTIVE GPIO_INTERRUPT_MODE_EDGE_TO_INACTIVE33,1688
+
+include/queue.h,272
+#define __QUEUE_H___QUEUE_H_26,1496
+  UUID *data;  /* Prototype; Type of content may change from UUID to cam_value_t */data32,1577
+  int capacity;capacity33,1661
+  int front;front34,1677
+  int rear;rear35,1690
+  int size;size36,1702
+} Queue_t;Queue_t37,1714
+
+include/event.h,647
+#define __EVENT_H___EVENT_H_26,1496
+   SEND,SEND31,1549
+   RECVRECV32,1558
+} event_type_t;event_type_t33,1566
+  event_type_t e_type; //  8 bitse_type36,1600
+  UUID channel_id;     //  8 bitschannel_id37,1634
+} base_evt_simple_t;base_evt_simple_t38,1668
+  base_evt_simple_t  evt_details;   // stored in a cam_value_t with 16 bits freeevt_details41,1707
+  cam_value_t wrap_func_ptr; // 32 bitswrap_func_ptr42,1788
+} base_event_t;base_event_t43,1828
+  base_event_t bev; // 32 bitsbev47,1863
+  cam_value_t  msg; // 32 bits; NULL for recvmsg48,1894
+} cam_event_t;cam_event_t49,1940
+typedef heap_index event_t;event_t51,1956
+
+include/CAM.h,103
+#define __CAM_H___CAM_H_26,1509
+typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);eval_fun33,1604
+
+include/Context.h,265
+#define __CONTEXT_H___CONTEXT_H_26,1513
+  cam_register_t env;env34,1637
+  UINT           pc;pc35,1659
+  cam_stack_t    stack;stack36,1680
+  Time        logicalTime;logicalTime37,1704
+  Time        deadline;deadline38,1731
+} Context_t;Context_t39,1755
+
+include/scheduler.h,44
+#define _SCHEDULER_H__SCHEDULER_H_26,1514
+
+include/ll/ll_pwm.h,440
+#define LL_PWM_H_LL_PWM_H_26,1500
+  PWM_DRIVER_INTERNAL;PWM_DRIVER_INTERNAL32,1580
+} ll_pwm_driver_t;ll_pwm_driver_t33,1603
+  PWM_DRIVER_GROUP_INTERNAL;PWM_DRIVER_GROUP_INTERNAL36,1640
+} ll_pwm_driver_group_t; ll_pwm_driver_group_t37,1669
+#define LL_PWM_DRIVER_GROUP_INIT(LL_PWM_DRIVER_GROUP_INIT40,1697
+#define LL_PWM_DRIVER_INIT(LL_PWM_DRIVER_INIT43,1799
+#define LL_PWM_DRIVER_GROUP_START(LL_PWM_DRIVER_GROUP_START46,1940
+
+include/ll/ll_driver.h,862
+#define LL_DRIVER_H_LL_DRIVER_H_26,1503
+#define LL_DRIVER_CONTROL_FAILURE LL_DRIVER_CONTROL_FAILURE37,1727
+#define LL_DRIVER_CONTROL_SUCCESS LL_DRIVER_CONTROL_SUCCESS38,1765
+typedef struct ll_driver_s{ll_driver_s43,1862
+  void *driver_info;driver_info44,1890
+  bool is_synchronous;is_synchronous45,1911
+  uint32_t (*ll_read_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);ll_read_fun46,1934
+  uint32_t (*ll_write_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);ll_write_fun47,2008
+  uint32_t (*ll_control_fun)(struct ll_driver_s *this, uint8_t *, uint32_t);ll_control_fun48,2083
+  uint32_t (*ll_data_readable_fun)(struct ll_driver_s *this);ll_data_readable_fun49,2160
+  uint32_t (*ll_data_writeable_fun)(struct ll_driver_s *this);ll_data_writeable_fun50,2222
+  UUID channel_id;channel_id52,2286
+} ll_driver_t;ll_driver_t53,2305
+
+include/ll/ll_button.h,290
+#define LL_BUTTON_H_LL_BUTTON_H_26,1503
+  BUTTON_DRIVER_INTERNAL;BUTTON_DRIVER_INTERNAL36,1659
+} ll_button_driver_t;ll_button_driver_t37,1685
+#define LL_BUTTON_DRIVER_INIT(LL_BUTTON_DRIVER_INIT39,1708
+#define LL_BUTTON_DRIVER_INTERRUPT_MODE(LL_BUTTON_DRIVER_INTERRUPT_MODE42,1841
+
+include/ll/ll_uart.h,1221
+#define LL_UART_H_LL_UART_H_27,1502
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF036,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF136,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF236,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF336,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF436,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF536,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF636,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;UART_IF736,1823
+typedef enum { UART_IF0 = 0, UART_IF1, UART_IF2, UART_IF3, UART_IF4, UART_IF5, UART_IF6, UART_IF7 } ll_uart_if_t;ll_uart_if_t36,1823
+
+include/ll/ll_led.h,185
+#define LL_LED_H_LL_LED_H_26,1500
+  LED_DRIVER_INTERNAL;LED_DRIVER_INTERNAL32,1580
+} ll_led_driver_t;ll_led_driver_t33,1603
+#define LL_LED_DRIVER_INIT(LL_LED_DRIVER_INIT35,1623
+
+include/ll/ll_als.h,36
+#define LL_ALS_H_LL_ALS_H_26,1500
+
+include/ll/common/cs43l22_defs.h,2232
+#define CS43L22_DEFS_H_CS43L22_DEFS_H_26,1506
+#define CS43L22_ID_REG CS43L22_ID_REG30,1582
+#define CS43L22_PWR_CTL_1_REG CS43L22_PWR_CTL_1_REG31,1622
+#define CS43L22_PWR_CTL_2_REG CS43L22_PWR_CTL_2_REG32,1662
+#define CS43L22_CLK_CTL_REG CS43L22_CLK_CTL_REG33,1702
+#define CS43L22_IF_CTL_1_REG CS43L22_IF_CTL_1_REG34,1742
+#define CS43L22_IF_CTL_2_REG CS43L22_IF_CTL_2_REG35,1805
+#define CS43L22_PT_SEL_A_REG CS43L22_PT_SEL_A_REG36,1845
+#define CS43L22_PT_SEL_B_REG CS43L22_PT_SEL_B_REG37,1911
+#define CS43L22_ANALOG_REG CS43L22_ANALOG_REG38,1951
+#define CS43L22_PT_GANG_REG CS43L22_PT_GANG_REG39,1991
+#define CS43L22_PLAYBACK_CTL_1 CS43L22_PLAYBACK_CTL_140,2031
+#define CS43L22_MISC_CTL CS43L22_MISC_CTL41,2071
+#define CS43L22_PLAYBACK_CTL_2 CS43L22_PLAYBACK_CTL_242,2111
+#define CS43L22_PT_VOL_A CS43L22_PT_VOL_A43,2151
+#define CS43L22_PT_VOL_B CS43L22_PT_VOL_B44,2191
+#define CS43L22_PCMA_VOL CS43L22_PCMA_VOL45,2231
+#define CS43L22_PCMB_VOL CS43L22_PCMB_VOL46,2271
+#define CS43L22_BEEP_FRQ_ONTIME CS43L22_BEEP_FRQ_ONTIME47,2311
+#define CS43L22_BEEP_VOL_OFFTIME CS43L22_BEEP_VOL_OFFTIME48,2351
+#define CS43L22_BEEP_TONE CS43L22_BEEP_TONE49,2391
+#define CS43L22_TONE_CTL CS43L22_TONE_CTL50,2431
+#define CS43L22_MASTER_VOL_A CS43L22_MASTER_VOL_A51,2494
+#define CS43L22_MASTER_VOL_B CS43L22_MASTER_VOL_B52,2554
+#define CS43L22_PHONES_VOL_A CS43L22_PHONES_VOL_A53,2595
+#define CS43L22_PHONES_VOL_B CS43L22_PHONES_VOL_B54,2659
+#define CS43L22_SPEAKER_VOL_A CS43L22_SPEAKER_VOL_A55,2699
+#define CS43L22_SPEAKER_VOL_B CS43L22_SPEAKER_VOL_B56,2739
+#define CS43L22_MIX_SWAP CS43L22_MIX_SWAP57,2779
+#define CS43L22_LIMIT_CTL_1 CS43L22_LIMIT_CTL_158,2819
+#define CS43L22_LIMIT_CTL_2 CS43L22_LIMIT_CTL_259,2859
+#define CS43L22_LIMIT_ATTACK CS43L22_LIMIT_ATTACK60,2899
+#define CS43L22_OVERFLOW_CLKSTAT CS43L22_OVERFLOW_CLKSTAT61,2939
+#define CS43L22_BAT_COMPENSATION CS43L22_BAT_COMPENSATION62,2979
+#define CS43L22_BAT_LEVEL CS43L22_BAT_LEVEL63,3019
+#define CS43L22_SPEAKER_STATUS CS43L22_SPEAKER_STATUS64,3059
+#define CS43L22_CHARGE_PUMP_FRQ CS43L22_CHARGE_PUMP_FRQ65,3099
+#define CS43L22_CHIP_ID(CS43L22_CHIP_ID70,3195
+#define CS43L22_REV_ID(CS43L22_REV_ID71,3233
+
+include/ll/ll_dac.h,185
+#define LL_DAC_H_LL_DAC_H_26,1500
+  DAC_DRIVER_INTERNAL;DAC_DRIVER_INTERNAL32,1580
+} ll_dac_driver_t;ll_dac_driver_t33,1603
+#define LL_DAC_DRIVER_INIT(LL_DAC_DRIVER_INIT35,1623
+
+include/ll/ll_bme280.h,42
+#define LL_BME280_H_LL_BME280_H_26,1503
+
+include/RTS.h,34
+#define __RTS_H___RTS_H_26,1509
+
+include/SVM_DEBUG.h,126
+#define SVM_DEBUG_H_SVM_DEBUG_H_26,1514
+# define DEBUG_PRINT(DEBUG_PRINT29,1580
+# define DEBUG_PRINT(DEBUG_PRINT31,1622
+
+include/heap.h,900
+#define __HEAP_H___HEAP_H_26,1510
+#define  HEAP_NULL HEAP_NULL36,1645
+#define  HEAP_GC_MARK_BIT HEAP_GC_MARK_BIT39,1685
+#define  HEAP_GC_FLAG_BIT HEAP_GC_FLAG_BIT40,1726
+typedef INT heap_index; /* size of pointers are platform specificheap_index42,1768
+  UINT fst;fst48,1965
+  UINT snd;snd49,1977
+} heap_cell_t;heap_cell_t50,1989
+  heap_cell_t  *cells;cells54,2023
+  uintptr_t    bptr;bptr55,2046
+  unsigned int size_bytes;size_bytes56,2067
+  heap_index   size_cells;size_cells57,2094
+  heap_index   sweep_pos;sweep_pos58,2121
+  heap_flags_t *value_flags;     // Security and is_ptr flagsvalue_flags59,2147
+  uint8_t      *flags;           // GC flagsflags60,2209
+} heap_t;heap_t61,2254
+  uint64_t num_mark_phases;num_mark_phases64,2283
+  uint64_t num_recovered;num_recovered65,2311
+  uint64_t num_allocated;num_allocated66,2337
+} gc_stats_t;gc_stats_t67,2363
+
+include/chan_recv_queue.h,384
+#define __CHAN_RECV_QUEUE_H___CHAN_RECV_QUEUE_H_26,1506
+  UUID  context_id;context_id32,1597
+  cam_value_t dirty_flag_pointer;dirty_flag_pointer33,1617
+} recv_data_t;recv_data_t34,1651
+  recv_data_t *data;data38,1685
+  int capacity;capacity39,1706
+  int front;front40,1722
+  int rear;rear41,1735
+  int size;size42,1747
+} chan_recv_queue_t;chan_recv_queue_t43,1759
+
+include/sys/sys_time.h,95
+#define SYS_TIME_H_SYS_TIME_H_26,1502
+#define SYS_TIME_SENDER_ID SYS_TIME_SENDER_ID38,1795
+
+include/sys/sys_debug_uart.h,126
+#define SYS_DEBUG_UART_H_SYS_DEBUG_UART_H_26,1508
+#define DBG_PRINT(DBG_PRINT31,1569
+#define DBG_PRINT(DBG_PRINT33,1634
+
+include/sys/sys_gpio_printf.h,398
+#define SYS_GPIO_PRINTF_SYS_GPIO_PRINTF_26,1507
+#define DBG_GPIO_INIT(DBG_GPIO_INIT34,1625
+#define DBG_GPIO_SET(DBG_GPIO_SET36,1678
+#define DBG_GPIO_CLR(DBG_GPIO_CLR37,1728
+#define DBG_GPIO_GET(DBG_GPIO_GET38,1778
+#define DBG_GPIO_INIT(DBG_GPIO_INIT42,1835
+#define DBG_GPIO_SET(DBG_GPIO_SET44,1861
+#define DBG_GPIO_CLR(DBG_GPIO_CLR45,1885
+#define DBG_GPIO_GET(DBG_GPIO_GET46,1909
+
+include/channel.h,247
+#define __CHANNEL_H___CHANNEL_H_26,1498
+  chan_send_queue_t sendq;sendq35,1640
+  chan_recv_queue_t recvq;recvq36,1667
+  bool         in_use;in_use37,1694
+  UUID         sync_driver_no;sync_driver_no38,1717
+} Channel_t;Channel_t39,1748
+
+platform/zephyr/include/button.h,775
+#define BUTTON_H_BUTTON_H_26,1500
+  struct gpio_callback cb_data;cb_data38,1673
+  uint32_t pin;pin39,1705
+  uint32_t state;state40,1721
+  uint32_t drv_id;drv_id41,1739
+  const struct device *dev;dev42,1758
+  zephyr_interop_t *interop;interop43,1786
+} button_driver_internal_t; button_driver_internal_t44,1815
+#define BUTTON_DRIVER_INTERNAL BUTTON_DRIVER_INTERNAL46,1845
+#define BUTTON_DEVICE_LABEL(BUTTON_DEVICE_LABEL52,2027
+#define BUTTON_PIN(BUTTON_PIN53,2092
+#define BUTTON_FLAGS(BUTTON_FLAGS54,2155
+#define BUTTON_MODE(BUTTON_MODE57,2288
+#define BUTTON_MODE(BUTTON_MODE59,2318
+#define BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE(BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE62,2368
+#define BUTTON_DRIVER_INTERNAL_INIT(BUTTON_DRIVER_INTERNAL_INIT71,2883
+
+platform/zephyr/include/bme280.h,153
+#define BME280_H_BME280_H_26,1500
+#define BME280 BME28037,1616
+#define BME280_LABEL BME280_LABEL40,1694
+#define BME280_LABEL BME280_LABEL43,1813
+
+platform/zephyr/include/timerman.h,40
+#define TIMERMAN_H_TIMERMAN_H_26,1502
+
+platform/zephyr/include/powerman.h,40
+#define POWERMAN_H_POWERMAN_H_26,1502
+
+platform/zephyr/include/defines.h,392
+#define DEFINES_HDEFINES_H2,18
+struct remote_device {remote_device20,338
+	struct bt_uuid* uuid;uuid22,390
+	struct bt_uuid* service;service25,452
+	struct bt_uuid* characteristic;characteristic28,524
+	struct bt_gatt_write_params handle;handle32,639
+	bt_addr_le_t address;address35,710
+	signed long long delta_time;delta_time39,821
+	struct bt_conn* connection;connection42,895
+
+platform/zephyr/include/svm_zephyr.h,274
+#define SVM_ZEPHYR_H_SVM_ZEPHYR_H_26,1514
+typedef struct zephyr_interop_s {zephyr_interop_s31,1615
+  struct k_msgq *msgq;msgq32,1649
+  int (*send_message)(struct zephyr_interop_s* this, svm_msg_t msg);send_message35,1725
+} zephyr_interop_t;zephyr_interop_t37,1795
+
+platform/zephyr/include/ltr_303als.h,1620
+#define LTR_303ALS_H_LTR_303ALS_H_26,1504
+#define I2C_ADDR I2C_ADDR32,1589
+#define ALS_CONTROL_REG ALS_CONTROL_REG34,1619
+#define ALS_MEAS_RATE_REG ALS_MEAS_RATE_REG35,1656
+#define ALS_PART_ID_REG ALS_PART_ID_REG36,1693
+#define ALS_MANUFACT_ID_REG ALS_MANUFACT_ID_REG37,1730
+#define ALS_DATA_CH_1_LOW_REG ALS_DATA_CH_1_LOW_REG38,1767
+#define ALS_DATA_CH_1_HIGH_REG ALS_DATA_CH_1_HIGH_REG39,1804
+#define ALS_DATA_CH_0_LOW_REG ALS_DATA_CH_0_LOW_REG40,1841
+#define ALS_DATA_CH_0_HIGH_REG ALS_DATA_CH_0_HIGH_REG41,1878
+#define ALS_STATUS_REG ALS_STATUS_REG42,1915
+#define ALS_INTERRUPT_REG ALS_INTERRUPT_REG43,1952
+#define ALS_THRES_UP_0_REG ALS_THRES_UP_0_REG44,1989
+#define ALS_THRES_UP_1_REG ALS_THRES_UP_1_REG45,2026
+#define ALS_THRES_LOW_0_REG ALS_THRES_LOW_0_REG46,2063
+#define ALS_THRES_LOW_1_REG ALS_THRES_LOW_1_REG47,2100
+#define ALS_RESET ALS_RESET49,2138
+#define ALS_ACTIVE ALS_ACTIVE50,2166
+#define ALS_STATUS_DATA_VALID_MASK ALS_STATUS_DATA_VALID_MASK52,2195
+#define ALS_STATUS_GAIN_MASK ALS_STATUS_GAIN_MASK53,2241
+#define ALS_STATUS_INTERRUPT_MASK ALS_STATUS_INTERRUPT_MASK54,2287
+#define ALS_STATUS_DATA_NEW_MASK ALS_STATUS_DATA_NEW_MASK55,2333
+#define ALS_GAIN_1X ALS_GAIN_1X57,2380
+#define ALS_GAIN_2X ALS_GAIN_2X58,2405
+#define ALS_GAIN_4X ALS_GAIN_4X59,2430
+#define ALS_GAIN_8X ALS_GAIN_8X60,2455
+#define ALS_GAIN_48X ALS_GAIN_48X61,2480
+#define ALS_GAIN_96X ALS_GAIN_96X62,2505
+#define ALS_STARTUP_TIME_MS ALS_STARTUP_TIME_MS65,2613
+#define ALS_WAKEUP_TIME_MS ALS_WAKEUP_TIME_MS66,2653
+#define ALS_STANDBY_TIME_MS ALS_STANDBY_TIME_MS67,2692
+
+platform/zephyr/include/uart.h,250
+#define UART_H_UART_H_26,1498
+  struct ring_buf in_ringbuf;in_ringbuf36,1657
+  struct ring_buf out_ringbuf;out_ringbuf37,1687
+  const struct device *dev;dev38,1718
+  zephyr_interop_t* interop;interop39,1746
+} uart_dev_t;uart_dev_t40,1775
+
+platform/zephyr/include/platform.h,154
+#define __PLATFORM_H___PLATFORM_H_26,1499
+#define PLATFORM_TIME_FACTOR PLATFORM_TIME_FACTOR29,1591
+#define N_MAX_HEAP_CELLS N_MAX_HEAP_CELLS38,1770
+
+platform/zephyr/include/led.h,452
+#define LED_H_LED_H_26,1497
+  uint32_t pin;pin32,1572
+  uint32_t id;id33,1588
+  bool state;state34,1603
+  const struct device *dev;dev35,1617
+} led_driver_internal_t;led_driver_internal_t36,1645
+#define LED_DRIVER_INTERNAL LED_DRIVER_INTERNAL38,1671
+#define LED_DEVICE_LABEL(LED_DEVICE_LABEL40,1731
+#define LED_PIN(LED_PIN41,1793
+#define LED_FLAGS(LED_FLAGS42,1853
+#define LED_DRIVER_INTERNAL_INIT(LED_DRIVER_INTERNAL_INIT45,1917
+
+platform/zephyr/include/platform_gpio.printf.h,306
+#define PLATFORM_GPIO_PRINTF_PLATFORM_GPIO_PRINTF_26,1512
+#define PLATFORM_DBG_GPIO_INIT(PLATFORM_DBG_GPIO_INIT30,1608
+#define PLATFORM_DBG_GPIO_SET(PLATFORM_DBG_GPIO_SET31,1645
+#define PLATFORM_DBG_GPIO_CLR(PLATFORM_DBG_GPIO_CLR32,1679
+#define PLATFORM_DBG_GPIO_GET(PLATFORM_DBG_GPIO_GET33,1713
+
+platform/zephyr/include/usb_cdc.h,40
+#define _USB_CDC_H__USB_CDC_H_26,1502
+
+platform/zephyr/src/sys_debug_uart.c,535
+static const struct device* dev;dev33,1697
+static struct ring_buf debug_in_ringbuf;debug_in_ringbuf34,1730
+static struct ring_buf debug_out_ringbuf;debug_out_ringbuf35,1771
+static void debug_uart_isr(const struct device *dev, void *args)debug_uart_isr40,1879
+void debug_uart_init(uint32_t buffer_size) {debug_uart_init74,2655
+int debug_printf(const char* format, ...) {debug_printf78,2713
+void debug_uart_init(uint32_t buffer_size) {debug_uart_init84,2779
+int debug_printf(const char* format, ...) {debug_printf88,2837
+
+platform/zephyr/src/button.c,727
+void button_pressed_cb(const struct device *dev,button_pressed_cb34,1629
+static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_button_control60,2396
+static uint32_t ll_button_data_available(struct ll_driver_s *this) {ll_button_data_available64,2508
+static uint32_t ll_button_data_writeable(struct ll_driver_s *this) {ll_button_data_writeable68,2592
+static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_button_read72,2676
+static uint32_t ll_button_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_button_write89,3061
+bool ll_button_init(ll_driver_t* lld, ll_button_driver_t *bdrv) {ll_button_init93,3171
+
+platform/zephyr/src/usb_cdc.c,952
+#define RING_BUF_SIZE RING_BUF_SIZE34,1633
+uint8_t in_ring_buffer[RING_BUF_SIZE];in_ring_buffer35,1660
+uint8_t out_ring_buffer[RING_BUF_SIZE];out_ring_buffer36,1699
+struct ring_buf in_ringbuf;in_ringbuf38,1740
+struct ring_buf out_ringbuf;out_ringbuf39,1768
+static const struct device *usb_dev;usb_dev41,1798
+static volatile bool usb_cdc_enabled = false;usb_cdc_enabled43,1836
+static void interrupt_handler(const struct device *dev, void *user_data)interrupt_handler45,1883
+void usb_printf(char *format, ...) {usb_printf83,2774
+int usb_get_char(void) {usb_get_char106,3264
+void usb_put_char(int i) {usb_put_char119,3454
+int usb_has_data(void) {usb_has_data131,3673
+int usb_readl(char *buffer, int size) {usb_readl135,3743
+void usb_cdc_thread_main(void * a, void* b, void *c) {usb_cdc_thread_main172,4551
+struct k_thread usb_cdc_thread;usb_cdc_thread229,5709
+void start_usb_cdc_thread(void)  {start_usb_cdc_thread232,5743
+
+platform/zephyr/src/ltr_303als.c,1138
+const struct device *ltr_303als_dev;ltr_303als_dev32,1596
+bool als_init(void) {als_init34,1634
+extern bool als_status(uint8_t *als_status){als_status43,1827
+bool als_activate(uint8_t gain) {als_activate54,2034
+bool als_standby(void) {als_standby73,2447
+bool als_read_data_sequential(uint8_t *data, uint32_t data_size) {als_read_data_sequential97,3030
+bool als_read_data_bytes(uint8_t *ch0_low, uint8_t *ch0_high,als_read_data_bytes111,3355
+bool als_read_data(uint16_t *ch0, uint16_t *ch1) {als_read_data132,4009
+static uint32_t ll_als_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_als_control160,4435
+static uint32_t ll_als_data_available(struct ll_driver_s *this) {ll_als_data_available164,4544
+static uint32_t ll_als_data_writeable(struct ll_driver_s *this) {ll_als_data_writeable167,4692
+static uint32_t ll_als_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_als_read171,4773
+static uint32_t ll_als_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_als_write180,5067
+bool ll_als_init(ll_driver_t* lld, uint8_t gain) {ll_als_init184,5175
+
+platform/zephyr/src/timerman.c,0
+
+platform/zephyr/src/sys_time.c,1389
+#define COUNTER COUNTER37,1702
+  struct counter_alarm_cfg alarm_cfg;alarm_cfg40,1770
+  bool  active;active41,1808
+  Time  alarm_time;alarm_time42,1824
+}sys_time_alarm_t;sys_time_alarm_t43,1844
+static sys_time_alarm_t alarm;alarm46,1865
+static struct counter_top_cfg overflow_cfg;overflow_cfg48,1897
+static const struct device *counter_dev = NULL;counter_dev50,1942
+static zephyr_interop_t *zephyr_interop;zephyr_interop52,1991
+static volatile uint32_t      counter_high_word;counter_high_word54,2033
+static uint32_t      counter_freq;counter_freq55,2082
+void alarm_callback(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_data) {alarm_callback58,2119
+void overflow_callback(const struct device *dev, void* user_data) {overflow_callback76,2617
+bool sys_time_init(void *os_interop) {sys_time_init92,3017
+Time sys_time_get_current_ticks(void) {sys_time_get_current_ticks129,4089
+uint32_t sys_time_get_alarm_channels(void) {sys_time_get_alarm_channels154,4646
+uint32_t sys_time_get_clock_freq(void) {sys_time_get_clock_freq158,4745
+bool sys_time_set_wake_up(Time absolute) {sys_time_set_wake_up162,4812
+uint32_t sys_get_timestamp(void) {sys_get_timestamp187,5477
+Time sys_get_wake_up_time(void){sys_get_wake_up_time192,5537
+bool sys_is_alarm_set(void){sys_is_alarm_set196,5600
+void sys_sleep_ms(uint32_t ms) {sys_sleep_ms200,5655
+
+platform/zephyr/src/svm_zephyr.c,1500
+void dbg_print(const char* str, ...) {dbg_print48,1884
+#define STACK_SIZE STACK_SIZE72,2487
+#define MAX_MESSAGES MAX_MESSAGES73,2512
+#define MSG_ALIGNMENT MSG_ALIGNMENT74,2537
+struct k_thread vmc_zephyr_thread[VMC_NUM_CONTAINERS];vmc_zephyr_thread76,2562
+k_thread_stack_t *vmc_zephyr_stack[VMC_NUM_CONTAINERS];vmc_zephyr_stack77,2617
+vmc_t vm_containers[VMC_NUM_CONTAINERS]; /* SenseVM containers */vm_containers79,2674
+const char* container_names[4] = { "C0", "C1", "C2", "C3" };container_names81,2741
+k_thread_stack_t *vmc_zephyr_stack_0 = NULL;vmc_zephyr_stack_087,2893
+k_thread_stack_t *vmc_zephyr_stack_1 = NULL;vmc_zephyr_stack_192,3034
+k_thread_stack_t *vmc_zephyr_stack_2 = NULL;vmc_zephyr_stack_297,3175
+k_thread_stack_t *vmc_zephyr_stack_3 = NULL;vmc_zephyr_stack_3102,3316
+zephyr_interop_t zephyr_interop[4];zephyr_interop105,3369
+struct k_msgq *message_queues[VMC_NUM_CONTAINERS];message_queues124,3907
+int send_message(zephyr_interop_t* this, svm_msg_t msg) {send_message130,4029
+int read_message_poll(vmc_t *vmc, svm_msg_t *msg) {read_message_poll135,4147
+int read_message_block(vmc_t *vmc, svm_msg_t *msg) {read_message_block146,4434
+uint32_t message_queue_num_used(vmc_t *vmc) {message_queue_num_used157,4722
+void zephyr_container_thread(void* vmc, void* b, void* c) {zephyr_container_thread193,5941
+bool zephyr_start_container_threads(void) {zephyr_start_container_threads217,6626
+bool zephyr_sensevm_init(void) {zephyr_sensevm_init241,7128
+
+platform/zephyr/src/uart.c,1509
+uart_dev_t uarts[8];uarts38,1770
+static void uart_isr(const struct device *dev, void *args)uart_isr44,1858
+uart_dev_t* uart_init(ll_uart_if_t uif,uart_init80,2729
+bool uart_get_baudrate(uart_dev_t *u, uint32_t *baud) {uart_get_baudrate157,4811
+bool uart_data_available(uart_dev_t *dev) {uart_data_available164,5034
+uint32_t uart_ndata_available(uart_dev_t *dev) {uart_ndata_available168,5131
+uint32_t uart_ndata_writeable(uart_dev_t *dev) {uart_ndata_writeable174,5282
+int uart_get_char(uart_dev_t *buffs) {uart_get_char183,5472
+int uart_put_char(uart_dev_t *buffs, char c) {uart_put_char198,5849
+uint32_t uart_read_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size) {uart_read_bytes208,6059
+uint32_t uart_write_bytes(uart_dev_t *dev, uint8_t *data, uint32_t data_size) {uart_write_bytes219,6388
+void uart_printf(uart_dev_t *buffs, char *format, ...) {uart_printf230,6736
+static uint32_t ll_uart_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_uart_control260,7306
+static uint32_t ll_uart_data_available(struct ll_driver_s *this) {ll_uart_data_available264,7440
+static uint32_t ll_uart_data_writeable(struct ll_driver_s *this) {ll_uart_data_writeable268,7573
+static uint32_t ll_uart_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_uart_read272,7706
+static uint32_t ll_uart_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_uart_write276,7876
+bool ll_uart_init(ll_driver_t* lld,ll_uart_init281,8049
+
+platform/zephyr/src/bme280.c,1090
+const struct device *bme280_dev;bme280_dev28,1531
+bool bme_init(void) {bme_init31,1566
+bool bme_sample(void) {bme_sample39,1708
+static bool bme_sensor_get(enum sensor_channel chan, int32_t *i, int32_t *d) {bme_sensor_get52,1995
+bool bme_get_temperature(int32_t *i, int32_t *d) {bme_get_temperature69,2267
+bool bme_get_pressure(int32_t *i, int32_t *d) {bme_get_pressure73,2378
+bool bme_get_humidity(int32_t *i, int32_t *d) {bme_get_humidity77,2479
+static uint32_t ll_bme280_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_bme280_control88,2648
+static uint32_t ll_bme280_data_available(struct ll_driver_s *this) {ll_bme280_data_available92,2760
+static uint32_t ll_bme280_data_writeable(struct ll_driver_s *this) {ll_bme280_data_writeable96,2845
+static uint32_t ll_bme280_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_bme280_read107,3159
+static uint32_t ll_bme280_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_bme280_write155,4411
+bool ll_bme280_init(ll_driver_t* lld) {ll_bme280_init159,4522
+
+platform/zephyr/src/led.c,613
+static uint32_t ll_led_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_led_control35,1607
+static uint32_t ll_led_data_available(struct ll_driver_s *this) {ll_led_data_available39,1716
+static uint32_t ll_led_data_writeable(struct ll_driver_s *this) {ll_led_data_writeable43,1797
+static uint32_t ll_led_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_led_read49,1979
+static uint32_t ll_led_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_led_write61,2335
+bool ll_led_init(ll_driver_t* lld, ll_led_driver_t *ldrv) {ll_led_init73,2755
+
+platform/zephyr/src/powerman.c,695
+char *power_states[] = { "PM_STATE_ACTIVE",power_states33,1593
+volatile static enum pm_state curr_state = PM_STATE_ACTIVE;curr_state41,1813
+struct pm_notifier power_state_change;power_state_change43,1874
+static void powerman_state_entry(enum pm_state s) {powerman_state_entry45,1914
+static void powerman_state_exit(enum pm_state s) {powerman_state_exit50,1971
+__weak void pm_power_state_exit_post_ops(struct pm_state_info info) {pm_power_state_exit_post_ops59,2165
+__weak void pm_power_state_set(struct pm_state_info info) {pm_power_state_set67,2420
+struct pm_state_info pm_policy_next_state(int ticks)pm_policy_next_state71,2526
+bool powerman_init(void) {powerman_init99,3247
+
+platform/zephyr/src/defines.c,915
+#define EXTRA EXTRA20,343
+struct remote_device* new_remote_device( uint8_t* uuidnew_remote_device22,363
+void free_device(struct remote_device* device) {free_device45,1359
+void set_handle(uint16_t handle, struct remote_device* device) {set_handle56,1672
+void set_message_payload(const void* data, uint16_t len, struct remote_device* device) {set_message_payload60,1776
+void set_addr(bt_addr_le_t addr, struct remote_device* device) {set_addr65,1935
+int connect(bt_addr_le_t* addr, struct remote_device* device) {connect69,2031
+void set_connection(struct bt_conn* conn, struct remote_device* device) {set_connection76,2293
+static char value[6];value80,2417
+static ssize_t read_value( struct bt_conn *connread_value81,2439
+static ssize_t write_value( struct bt_conn *connwrite_value88,2717
+int register_service(struct bt_uuid* service, struct bt_uuid* characteristic) {register_service102,3104
+
+platform/chibios/include/button.h,493
+#define BUTTON_H_BUTTON_H_26,1500
+  stm32_gpio_t *port;port33,1610
+  uint16_t pad;pad34,1632
+  uint32_t id;id35,1648
+  uint32_t state;state36,1663
+  chibios_interop_t *interop;interop37,1681
+} button_driver_internal_t;button_driver_internal_t38,1711
+#define BUTTON_DRIVER_INTERNAL BUTTON_DRIVER_INTERNAL41,1792
+#define BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE(BUTTON_DRIVER_INTERNAL_INTERRUPT_MODE45,1893
+#define BUTTON_DRIVER_INTERNAL_INIT(BUTTON_DRIVER_INTERNAL_INIT50,2052
+
+platform/chibios/include/pwm.h,696
+#define CHIBIOS_PWM_H_CHIBIOS_PWM_H_26,1505
+  PWMConfig pwmc;pwmc37,1664
+  PWMDriver *pwm;pwm38,1682
+} pwm_driver_group_internal_t;pwm_driver_group_internal_t39,1700
+#define PWM_DRIVER_GROUP_INTERNAL PWM_DRIVER_GROUP_INTERNAL41,1732
+  uint32_t id;id44,1821
+  uint32_t channel;channel45,1836
+  pwm_driver_group_internal_t *group;group46,1856
+} pwm_driver_internal_t;pwm_driver_internal_t47,1894
+#define PWM_DRIVER_INTERNAL PWM_DRIVER_INTERNAL49,1920
+#define PWM_DRIVER_GROUP_INTERNAL_INIT(PWM_DRIVER_GROUP_INTERNAL_INIT52,1981
+#define PWM_DRIVER_INTERNAL_INIT(PWM_DRIVER_INTERNAL_INIT67,2652
+#define PWM_DRIVER_GROUP_INTERNAL_START(PWM_DRIVER_GROUP_INTERNAL_START76,3030
+
+platform/chibios/include/gpio.h,332
+#define GPIO_H_GPIO_H_26,1498
+  stm32_gpio_t *port;port33,1587
+  uint16_t pad;pad34,1609
+  uint32_t mode;mode35,1625
+} gpio_pad_t;gpio_pad_t36,1642
+  stm32_gpio_t *port;port40,1675
+  uint16_t pad;pad41,1697
+  uint32_t mode;mode42,1713
+  uint32_t event_mode;event_mode43,1730
+} gpio_button_t;gpio_button_t44,1753
+
+platform/chibios/include/usbcfg.h,33
+#define USBCFG_HUSBCFG_H18,659
+
+platform/chibios/include/svm_chibios.h,317
+#define SVM_CHIBIOS_H_SVM_CHIBIOS_H_26,1515
+typedef struct chibios_interop_s {chibios_interop_s34,1651
+  memory_pool_t *msg_pool;msg_pool35,1686
+  mailbox_t *mb;mb36,1713
+  int (*send_message)(struct chibios_interop_s* this, svm_msg_t msg);send_message39,1783
+} chibios_interop_t;chibios_interop_t41,1854
+
+platform/chibios/include/platform_gpio_printf.h,306
+#define PLATFORM_GPIO_PRINTF_PLATFORM_GPIO_PRINTF_26,1512
+#define PLATFORM_DBG_GPIO_INIT(PLATFORM_DBG_GPIO_INIT33,1628
+#define PLATFORM_DBG_GPIO_SET(PLATFORM_DBG_GPIO_SET37,1731
+#define PLATFORM_DBG_GPIO_CLR(PLATFORM_DBG_GPIO_CLR38,1793
+#define PLATFORM_DBG_GPIO_GET(PLATFORM_DBG_GPIO_GET39,1857
+
+platform/chibios/include/dac.h,466
+#define CHIBIOS_DAC_H_CHIBIOS_DAC_H_26,1505
+  stm32_gpio_t *port;port35,1637
+  uint16_t pad;pad36,1659
+  uint32_t id;id37,1675
+  uint32_t state;state38,1690
+  DACDriver *dacd;dacd39,1708
+  DACConfig dacc;dacc40,1727
+} dac_driver_internal_t;dac_driver_internal_t41,1745
+#define DAC_DRIVER_INTERNAL DAC_DRIVER_INTERNAL50,1949
+static const DACConfig dac_config = {dac_config52,2009
+#define DAC_DRIVER_INTERNAL_INIT(DAC_DRIVER_INTERNAL_INIT70,2417
+
+platform/chibios/include/platform.h,154
+#define __PLATFORM_H___PLATFORM_H_26,1499
+#define PLATFORM_TIME_FACTOR PLATFORM_TIME_FACTOR30,1592
+#define N_MAX_HEAP_CELLS N_MAX_HEAP_CELLS39,1771
+
+platform/chibios/include/led.h,342
+#define CHIBIOS_LED_H_CHIBIOS_LED_H_26,1505
+  stm32_gpio_t *port;port35,1637
+  uint16_t pad;pad36,1659
+  uint32_t id;id37,1675
+  bool state;state38,1690
+} led_driver_internal_t;led_driver_internal_t39,1704
+#define LED_DRIVER_INTERNAL LED_DRIVER_INTERNAL41,1730
+#define LED_DRIVER_INTERNAL_INIT(LED_DRIVER_INTERNAL_INIT43,1790
+
+platform/chibios/src/button.c,698
+void button_cb(void *arg) {button_cb30,1551
+static uint32_t ll_button_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_button_control55,2100
+static uint32_t ll_button_data_available(struct ll_driver_s *this) {ll_button_data_available62,2262
+static uint32_t ll_button_data_writeable(struct ll_driver_s *this) {ll_button_data_writeable67,2361
+static uint32_t ll_button_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_button_read72,2460
+static uint32_t ll_button_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_button_write88,2848
+bool ll_button_init(ll_driver_t* lld, ll_button_driver_t *bdrv) {ll_button_init95,3008
+
+platform/chibios/src/dac.c,612
+static uint32_t ll_dac_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_dac_control30,1544
+static uint32_t ll_dac_data_available(struct ll_driver_s *this) {ll_dac_data_available37,1703
+static uint32_t ll_dac_data_writeable(struct ll_driver_s *this) {ll_dac_data_writeable42,1799
+static uint32_t ll_dac_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_dac_read49,1997
+static uint32_t ll_dac_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_dac_write70,2490
+bool ll_dac_init(ll_driver_t* lld, ll_dac_driver_t *ldrv){ll_dac_init86,2916
+
+platform/chibios/src/pwm.c,612
+static uint32_t ll_pwm_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_pwm_control33,1577
+static uint32_t ll_pwm_data_available(struct ll_driver_s *this) {ll_pwm_data_available40,1736
+static uint32_t ll_pwm_data_writeable(struct ll_driver_s *this) {ll_pwm_data_writeable45,1832
+static uint32_t ll_pwm_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_pwm_read50,1928
+static uint32_t ll_pwm_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_pwm_write57,2074
+bool ll_pwm_init(ll_driver_t* lld, ll_pwm_driver_t *pdrv){ll_pwm_init81,2849
+
+platform/chibios/src/svm_chibios_main.c,122
+char buf[2048];buf42,1808
+void print_it(const char *str, va_list args) {print_it44,1825
+int main(void) {main53,1988
+
+platform/chibios/src/sys_time.c,1159
+#define COMB_EXPAND0(COMB_EXPAND040,1743
+#define COMB_EXPAND(COMB_EXPAND41,1774
+#define TIM TIM43,1818
+stm32_tim_t * tim = TIM;tim45,1866
+chibios_interop_t *interop;interop47,1892
+  bool active;active50,1938
+  Time alarm_time;alarm_time51,1953
+} sys_time_alarm_t;sys_time_alarm_t52,1972
+static sys_time_alarm_t alarm;alarm54,1993
+static volatile uint32_t counter_high_word;counter_high_word55,2024
+static uint32_t counter_freq;counter_freq56,2068
+bool sys_time_init(void *os_interop) {sys_time_init59,2100
+OSAL_IRQ_HANDLER(COMB_EXPAND(STM32_TIM,COMB_EXPAND(SYS_TIMER, _HANDLER))) {COMB_EXPAND102,3311
+Time sys_time_get_current_ticks(void) {sys_time_get_current_ticks159,4720
+uint32_t sys_time_alarm_channels(void) {sys_time_alarm_channels182,5221
+uint32_t sys_time_get_clock_freq(void) {sys_time_get_clock_freq186,5277
+bool sys_time_set_wake_up(Time absolute) {sys_time_set_wake_up191,5345
+uint32_t sys_get_timestamp(void) {sys_get_timestamp237,6757
+Time sys_get_wake_up_time(void){sys_get_wake_up_time242,6863
+bool sys_is_alarm_set(void){sys_is_alarm_set246,6926
+void sys_sleep_ms(uint32_t ms) {sys_sleep_ms252,6985
+
+platform/chibios/src/svm_chibios.c,1659
+void (*dbg_print_fun)(const char *str, va_list args) = NULL;dbg_print_fun60,2208
+void chibios_register_dbg_print(void (*f)(const char *str, va_list args)) {chibios_register_dbg_print62,2270
+void dbg_print(const char *str, ...) {dbg_print66,2370
+#define STACK_SIZE STACK_SIZE80,2657
+#define MAX_MESSAGES MAX_MESSAGES81,2682
+static mailbox_t mb[VMC_NUM_CONTAINERS];mb83,2707
+static msg_t b[VMC_NUM_CONTAINERS][MAX_MESSAGES];b84,2748
+static svm_msg_t msgs[VMC_NUM_CONTAINERS][MAX_MESSAGES] __attribute__((aligned((4))));msgs86,2799
+static memory_pool_t* msg_pools[VMC_NUM_CONTAINERS];msg_pools88,2887
+chibios_interop_t chibios_interop[VMC_NUM_CONTAINERS];chibios_interop103,3414
+static int send_message(chibios_interop_t *this, svm_msg_t msg) {send_message105,3470
+static int read_message_block(vmc_t* vmc, svm_msg_t *msg) {read_message_block125,3853
+static uint32_t mailbox_num_used(vmc_t* vmc) {mailbox_num_used145,4272
+static thread_t *threads[VMC_NUM_CONTAINERS];threads160,4740
+vmc_t vm_containers[4];vm_containers162,4787
+const char* container_names[4] = { "C0", "C1", "C2", "C3" };container_names164,4812
+#define CONTAINER_PRIORITY CONTAINER_PRIORITY166,4874
+  vmc_t* container;container172,5002
+  const char* container_name;container_name173,5022
+} chibios_svm_thread_data_t;chibios_svm_thread_data_t174,5052
+chibios_svm_thread_data_t thread_data[VMC_NUM_CONTAINERS];thread_data176,5082
+static THD_FUNCTION(chibios_container_thread, arg) {THD_FUNCTION182,5206
+bool chibios_start_container_threads(void) {chibios_start_container_threads204,5760
+bool chibios_sensevm_init(void) {chibios_sensevm_init223,6171
+
+platform/chibios/src/gpio.c,0
+
+platform/chibios/src/led.c,612
+static uint32_t ll_led_control(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_led_control30,1544
+static uint32_t ll_led_data_available(struct ll_driver_s *this) {ll_led_data_available37,1703
+static uint32_t ll_led_data_writeable(struct ll_driver_s *this) {ll_led_data_writeable42,1799
+static uint32_t ll_led_read(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_led_read49,1997
+static uint32_t ll_led_write(struct ll_driver_s *this, uint8_t *data, uint32_t data_size) {ll_led_write61,2354
+bool ll_led_init(ll_driver_t* lld, ll_led_driver_t *ldrv){ll_led_init70,2751
+
+platform/chibios/src/usbcfg.c,1560
+SerialUSBDriver SDU1;SDU120,697
+#define USB1_DATA_REQUEST_EP USB1_DATA_REQUEST_EP25,767
+#define USB1_DATA_AVAILABLE_EP USB1_DATA_AVAILABLE_EP26,810
+#define USB1_INTERRUPT_REQUEST_EP USB1_INTERRUPT_REQUEST_EP27,853
+static const uint8_t vcom_device_descriptor_data[18] = {vcom_device_descriptor_data32,934
+static const USBDescriptor vcom_device_descriptor = {vcom_device_descriptor50,1998
+static const uint8_t vcom_configuration_descriptor_data[67] = {vcom_configuration_descriptor_data56,2176
+static const USBDescriptor vcom_configuration_descriptor = {vcom_configuration_descriptor135,7601
+static const uint8_t vcom_string0[] = {vcom_string0143,7800
+static const uint8_t vcom_string1[] = {vcom_string1152,8115
+static const uint8_t vcom_string2[] = {vcom_string2163,8514
+static const uint8_t vcom_string3[] = {vcom_string3175,8983
+static const USBDescriptor vcom_strings[] = {vcom_strings186,9313
+static const USBDescriptor *get_descriptor(USBDriver *usbp,get_descriptor197,9626
+static USBInEndpointState ep1instate;ep1instate219,10221
+static USBOutEndpointState ep1outstate;ep1outstate224,10300
+static const USBEndpointConfig ep1config = {ep1config229,10414
+static USBInEndpointState ep2instate;ep2instate245,10650
+static const USBEndpointConfig ep2config = {ep2config250,10754
+static void usb_event(USBDriver *usbp, usbevent_t event) {usb_event266,10990
+static void sof_handler(USBDriver *usbp) {sof_handler315,12160
+const USBConfig usbcfg = {usbcfg327,12342
+const SerialUSBConfig serusbcfg = {serusbcfg337,12495
+
+platform/linux-x86/include/platform.h,154
+#define __PLATFORM_H___PLATFORM_H_30,1578
+#define N_MAX_HEAP_CELLS N_MAX_HEAP_CELLS40,1675
+#define PLATFORM_TIME_FACTOR PLATFORM_TIME_FACTOR42,1706
+
+platform/linux-x86/src/sys_debug_uart.c,134
+void debug_uart_init(uint32_t buffer_size) {debug_uart_init28,1534
+int debug_printf(const char *format, ...) {debug_printf32,1592
+
+platform/linux-x86/src/sys_time.c,458
+bool sys_time_init(void *os_interop){sys_time_init27,1509
+Time sys_time_get_current_ticks(void){sys_time_get_current_ticks33,1612
+uint32_t sys_time_get_clock_freq(void){sys_time_get_clock_freq38,1693
+bool sys_time_set_wake_up(Time absolute){sys_time_set_wake_up44,1776
+Time sys_get_wake_up_time(void){sys_get_wake_up_time50,1881
+bool sys_is_alarm_set(void){sys_is_alarm_set55,1956
+void sys_sleep_ms(uint32_t ms){ (void)ms; }sys_sleep_ms62,2033
+
+platform/macosx/include/platform.h,154
+#define __PLATFORM_H___PLATFORM_H_26,1501
+#define N_MAX_HEAP_CELLS N_MAX_HEAP_CELLS36,1642
+#define PLATFORM_TIME_FACTOR PLATFORM_TIME_FACTOR38,1673
+
+platform/macosx/src/sys_time.c,458
+bool sys_time_init(void *os_interop){sys_time_init27,1509
+Time sys_time_get_current_ticks(void){sys_time_get_current_ticks33,1612
+uint32_t sys_time_get_clock_freq(void){sys_time_get_clock_freq38,1693
+bool sys_time_set_wake_up(Time absolute){sys_time_set_wake_up44,1776
+Time sys_get_wake_up_time(void){sys_get_wake_up_time50,1881
+bool sys_is_alarm_set(void){sys_is_alarm_set55,1956
+void sys_sleep_ms(uint32_t ms){ (void)ms; }sys_sleep_ms61,2032
+
+runinfer.sh,0
+
+runsa.sh,0
+
+sense-vm.mk,1979
+  BUILD_DIR = build/linux-x86BUILD_DIR2,16
+  CCFLAGS =  -O2 -Wall -Wextra -pedantic -std=c99CCFLAGS3,46
+  CC=gccCC4,96
+  AR=arAR5,105
+  PLATFORM_INCLUDE = platform/linux-x86/includePLATFORM_INCLUDE6,113
+  PLATFORM_SOURCE  = platform/linux-x86/srcPLATFORM_SOURCE7,161
+  CC=${CROSS_COMPILE}gccCC9,210
+  AR=${CROSS_COMPILE}arAR10,235
+  BUILD_DIR = build/macosxBUILD_DIR14,293
+  CCFLAGS =  -O2 -Wall -Wextra -pedantic -std=c99CCFLAGS15,320
+  CC=gccCC16,370
+  AR=arAR17,379
+  PLATFORM_INCLUDE = platform/macosx/includePLATFORM_INCLUDE18,387
+  PLATFORM_SOURCE  = platform/macosx/srcPLATFORM_SOURCE19,432
+  CROSS_COMPILE = arm-none-eabi-CROSS_COMPILE23,505
+  BUILD_DIR = build/zynqBUILD_DIR24,538
+  CCFLAGS = -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -O2 -Wall -Wextra -pedanticCCFLAGS25,563
+  PLATFORM_INCLUDE = platform/zync-7000/includePLATFORM_INCLUDE26,648
+  PLATFORM_SOURCE  = platform/zync-7000/srcPLATFORM_SOURCE27,696
+  CROSS_COMPILE = arm-none-eabi-CROSS_COMPILE31,775
+  BUILD_DIR = build/stm32f4BUILD_DIR32,808
+  CCFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O2 -Wall -Wextra -pedanticCCFLAGS33,836
+  PLATFORM_INCLUDE = platform/stm32f4/includePLATFORM_INCLUDE35,987
+  PLATFORM_SOURCE  = platform/stm32f4/srcPLATFORM_SOURCE36,1033
+  CROSS_COMPILE = arm-none-eabi-CROSS_COMPILE40,1111
+  BUILD_DIR = build/nrf52840BUILD_DIR41,1144
+  CCFLAGS =  -mcpu=cortex-m4  -mthumb -ffunction-sections -fdata-sections -mabi=aapcs -march=armv7e-m -O2 -Wall -Wextra -pedanticCCFLAGS42,1173
+  PLATFORM_INCLUDE = platform/nrf52840/includePLATFORM_INCLUDE43,1303
+  PLATFORM_SOURCE  = platform/nrf52840/srcPLATFORM_SOURCE44,1350
+  CROSS_COMPILE = aarch64CROSS_COMPILE48,1423
+  BUILD_DIR = /build/piBUILD_DIR49,1449
+  CCFLAGS = -O2 -Wall -Wextra -pedantic -std=c11CCFLAGS50,1473
+  PLATFORM_INCLUDE = platform/pi/includePLATFORM_INCLUDE51,1522
+  PLATFORM_SOURCE  = platform/pi/srcPLATFORM_SOURCE52,1563
+
+src/CAM.c,4577
+#define COMB COMB37,1649
+eval_fun evaluators[] =evaluators113,4641
+uint16_t get_label(vmc_t *vmc, INT *pc_idx){get_label173,5655
+uint16_t get_tag(vmc_t *vmc, INT *pc_idx){get_tag181,5887
+static bool is_all_contexts_stopped(vmc_t *vmc){is_all_contexts_stopped189,6113
+void eval_fst(vmc_t *vmc, INT *pc_idx) {eval_fst197,6295
+void eval_snd(vmc_t *vmc, INT *pc_idx) {eval_snd204,6546
+void eval_acc(vmc_t *vmc, INT *pc_idx) {eval_acc212,6798
+void eval_rest(vmc_t *vmc, INT *pc_idx)  {eval_rest225,7354
+void eval_push(vmc_t *vmc, INT *pc_idx) {eval_push236,7744
+void eval_swap(vmc_t *vmc, INT *pc_idx) {eval_swap247,8049
+void eval_loadi(vmc_t *vmc, INT *pc_idx) {eval_loadi266,8670
+void eval_loadb(vmc_t *vmc, INT *pc_idx) {eval_loadb283,9416
+void eval_clear(vmc_t *vmc, INT *pc_idx) {eval_clear291,9686
+void eval_cons(vmc_t *vmc, INT *pc_idx) {eval_cons297,9871
+void eval_cur(vmc_t *vmc, INT *pc_idx) {eval_cur322,10699
+void eval_pack(vmc_t *vmc, INT *pc_idx) {eval_pack341,11316
+void eval_skip(vmc_t *vmc, INT *pc_idx) {eval_skip360,11924
+void eval_stop(vmc_t *vmc, INT *pc_idx) {eval_stop365,11997
+void eval_app(vmc_t *vmc, INT *pc_idx) {eval_app377,12283
+void eval_return(vmc_t *vmc, INT *pc_idx) {eval_return444,14322
+void eval_call(vmc_t *vmc, INT *pc_idx) {eval_call455,14648
+void eval_goto(vmc_t *vmc, INT *pc_idx) {eval_goto468,15061
+void eval_gotofalse(vmc_t *vmc, INT *pc_idx) {eval_gotofalse474,15219
+void eval_switch(vmc_t *vmc, INT *pc_idx) {eval_switch491,15783
+void eval_abs(vmc_t *vmc, INT *pc_idx) {eval_abs547,17593
+void eval_neg(vmc_t *vmc, INT *pc_idx) {eval_neg556,17898
+void eval_not(vmc_t *vmc, INT *pc_idx) {eval_not566,18220
+void eval_dec(vmc_t *vmc, INT *pc_idx) {eval_dec576,18494
+void eval_add_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_add_unsignedi587,18893
+void eval_mul_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_mul_unsignedi602,19440
+void eval_min_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_min_unsignedi617,19987
+void eval_add_signedi(vmc_t *vmc, INT *pc_idx) {eval_add_signedi632,20534
+void eval_mul_signedi(vmc_t *vmc, INT *pc_idx) {eval_mul_signedi653,21258
+void eval_min_signedi(vmc_t *vmc, INT *pc_idx) {eval_min_signedi674,21982
+void eval_addf(vmc_t *vmc, INT *pc_idx) {eval_addf696,22707
+void eval_mulf(vmc_t *vmc, INT *pc_idx) {eval_mulf717,23432
+void eval_minf(vmc_t *vmc, INT *pc_idx) {eval_minf738,24157
+void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_gt_unsignedi759,24882
+void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_lt_unsignedi774,25411
+void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_ge_unsignedi789,25940
+void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_le_unsignedi804,26470
+void eval_gt_signedi(vmc_t *vmc, INT *pc_idx) {eval_gt_signedi819,27000
+void eval_lt_signedi(vmc_t *vmc, INT *pc_idx) {eval_lt_signedi840,27723
+void eval_ge_signedi(vmc_t *vmc, INT *pc_idx) {eval_ge_signedi861,28446
+void eval_le_signedi(vmc_t *vmc, INT *pc_idx) {eval_le_signedi882,29170
+void eval_gtf(vmc_t *vmc, INT *pc_idx) {eval_gtf904,29895
+void eval_ltf(vmc_t *vmc, INT *pc_idx) {eval_ltf925,30619
+void eval_gef(vmc_t *vmc, INT *pc_idx) {eval_gef946,31343
+void eval_lef(vmc_t *vmc, INT *pc_idx) {eval_lef967,32068
+void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_eq_unsignedi991,32821
+void eval_eq_signedi(vmc_t *vmc, INT *pc_idx) {eval_eq_signedi1006,33368
+void eval_eqf(vmc_t *vmc, INT *pc_idx) {eval_eqf1027,34092
+void eval_eq_bool(vmc_t *vmc, INT *pc_idx) {eval_eq_bool1049,34818
+void eval_move(vmc_t *vmc, INT *pc_idx){eval_move1064,35374
+void eval_pop (vmc_t *vmc, INT *pc_idx){eval_pop1080,35805
+void eval_snoc(vmc_t *vmc, INT *pc_idx){eval_snoc1092,36113
+void eval_comb(vmc_t *vmc, INT *pc_idx){eval_comb1118,36898
+void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){eval_gotoifalse1145,37613
+void eval_switchi(vmc_t *vmc, INT *pc_idx){eval_switchi1156,37863
+static int handle_spawn(vmc_t *vmc){handle_spawn1199,39095
+static int handle_channel(vmc_t *vmc){handle_channel1258,40844
+static int handle_sendevt(vmc_t *vmc){handle_sendevt1270,41171
+static int handle_recvevt(vmc_t *vmc){handle_recvevt1295,41849
+static int handle_sync(vmc_t *vmc){handle_sync1313,42331
+static int handle_choose(vmc_t *vmc){handle_choose1335,42822
+static int handle_spawnExternal(vmc_t *vmc){handle_spawnExternal1362,43428
+static int handle_wrap(vmc_t *vmc){handle_wrap1390,44139
+static int handle_time(vmc_t *vmc){handle_time1424,45229
+void eval_callrts(vmc_t *vmc, INT *pc_idx){eval_callrts1471,46525
+
+src/RTS.c,1969
+#define SYNC_DRIVER SYNC_DRIVER28,1517
+#define COMB COMB34,1605
+#define SET_ALARM_AFTER SET_ALARM_AFTER35,1629
+  SCHEDULED_FIRST,SCHEDULED_FIRST54,2419
+  SCHEDULED_SECONDSCHEDULED_SECOND55,2438
+} sched_order_t;sched_order_t56,2457
+static inline UINT extract_bits(UINT value, int lsbstart, int numbits){extract_bits60,2477
+static inline UINT set_bottom_16_bits(uint8_t first8bits, uint8_t second8bits){set_bottom_16_bits70,2761
+static cam_value_t create_dirty_flag(vmc_t *container, bool b){create_dirty_flag80,2949
+static int cleanupChannels(vmc_t *container, event_t *evts){cleanupChannels98,3448
+static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev){findSynchronizable138,4782
+static int blockAllEvents(vmc_t *container, event_t *evts){blockAllEvents206,6671
+int channel(vmc_t *container, UUID *chan_id){channel291,8936
+int spawn(vmc_t *container, uint16_t label){spawn303,9248
+int dispatch(vmc_t *container){dispatch344,10715
+static int postSync( vmc_t *containerpostSync362,11400
+static int message_pass( vmc_t *containermessage_pass438,13445
+static int synchronizeNow(vmc_t *container, cam_event_t cev){synchronizeNow502,15661
+int sync(vmc_t *container, event_t *evts){sync683,20942
+int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){sendEvt718,21731
+int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){recvEvt769,23195
+int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){choose826,24698
+static int setAlarm(Time alarmTime){setAlarm854,25371
+int time(vmc_t *container, Time baseline, Time deadline){time881,25924
+static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){synchronizeSyncDriver962,28180
+static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){handle_driver_msg1054,30900
+static int handle_timer_msg(vmc_t *vmc){handle_timer_msg1112,32587
+int handle_msg(vmc_t *vmc, svm_msg_t *m){handle_msg1255,37056
+
+src/priorityqueue.c,894
+static inline void swapElems(pq_data_t *x, pq_data_t *y)swapElems31,1551
+static inline int parentIdx(int i) { return (i-1)/2; }parentIdx38,1660
+static inline int leftIdx(int i) { return (2*i + 1); }leftIdx40,1716
+static inline int rightIdx(int i) { return (2*i + 2); }rightIdx42,1772
+static inline bool lessThan(pq_data_t *d1, pq_data_t *d2, Comparator_t c){lessThan44,1829
+static inline bool greaterThan(pq_data_t *d1, pq_data_t *d2, Comparator_t c){greaterThan51,2018
+static void minHeapify(PriorityQ_t *pq, int i)minHeapify58,2210
+int pq_init(  PriorityQ_t *pqpq_init79,2671
+int pq_insert(PriorityQ_t *pq, pq_data_t pq_data){pq_insert95,3024
+int pq_extractMin(PriorityQ_t *pq, pq_data_t *pq_data){pq_extractMin117,3559
+int pq_getMin(PriorityQ_t *pq, pq_data_t *pq_data){pq_getMin139,3962
+bool pq_isEmpty(PriorityQ_t *pq) { return (pq->size == 0); }pq_isEmpty150,4146
+
+src/stack.c,363
+int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes) {stack_init29,1538
+int stack_push(cam_stack_t *s, cam_value_t cvalue) {stack_push46,1939
+int stack_pop(cam_stack_t *s, cam_register_t *r) {stack_pop74,2983
+unsigned int stack_get_sp(cam_stack_t *s) {stack_get_sp87,3227
+void stack_show(cam_stack_t *stack, int size){stack_show92,3303
+
+src/VMC.c,2507
+uint8_t vmc_container_1_heap[VMC_CONTAINER_1_HEAP_SIZE_BYTES];vmc_container_1_heap72,2578
+uint8_t vmc_container_1_stack[VMC_CONTAINER_1_STACK_SIZE_BYTES];vmc_container_1_stack73,2641
+uint8_t vmc_container_1_arrays[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];vmc_container_1_arrays74,2706
+uint8_t vmc_container_1_channels[VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES];vmc_container_1_channels75,2776
+uint8_t vmc_container_1_rdyq [sizeof(pq_data_t) * VMC_MAX_CONTEXTS];vmc_container_1_rdyq76,2850
+uint8_t vmc_container_1_waitq[sizeof(pq_data_t) * VMC_MAX_CONTEXTS];vmc_container_1_waitq77,2919
+const uint8_t vmc_container_1_code[] = {vmc_container_1_code79,2989
+uint8_t vmc_container_2_heap[VMC_CONTAINER_2_HEAP_SIZE_BYTES];vmc_container_2_heap85,3110
+uint8_t vmc_container_2_stack[VMC_CONTAINER_2_STACK_SIZE_BYTES];vmc_container_2_stack86,3173
+uint8_t vmc_container_2_arrays[VMC_CONTAINER_2_ARRAY_MEM_SIZE_BYTES];vmc_container_2_arrays87,3238
+const uint8_t vmc_container_2_code[] = {vmc_container_2_code89,3309
+ll_button_driver_t ll_button;ll_button107,3803
+ll_button_driver_t ll_button1;ll_button1111,3874
+ll_button_driver_t ll_button2;ll_button2115,3946
+ll_button_driver_t ll_button3;ll_button3119,4018
+ll_led_driver_t ll_led;ll_led123,4087
+ll_led_driver_t ll_led1;ll_led1127,4149
+ll_led_driver_t ll_led2;ll_led2131,4212
+ll_led_driver_t ll_led3;ll_led3135,4275
+ll_pwm_driver_group_t ll_pwm_driver_group0;ll_pwm_driver_group0140,4339
+ll_pwm_driver_t ll_pwm0;ll_pwm0143,4425
+ll_pwm_driver_t ll_pwm1;ll_pwm1146,4492
+ll_pwm_driver_t ll_pwm2;ll_pwm2149,4559
+ll_pwm_driver_t ll_pwm3;ll_pwm3152,4626
+ll_dac_driver_t ll_dac;ll_dac157,4690
+static vmc_statistics_t vmc_stats;  vmc_stats160,4723
+int vmc_init(vmc_t *vm_containers, int max_num_containers) {vmc_init162,4761
+int vmc_run(vmc_t *container,void (*dbg_print)(const char *str, ...)) {vmc_run474,13131
+static bool init_all_chans(Channel_t *c, uint8_t *mem){init_all_chans545,15408
+static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size){init_all_contexts588,16611
+static inline void mark_heap_context(Context_t *context, heap_t *heap){mark_heap_context637,18066
+static void heap_mark_phase(vmc_t *container) {heap_mark_phase651,18466
+heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {vmc_heap_alloc_n692,19730
+heap_index vmc_heap_alloc_withGC(vmc_t *container) {vmc_heap_alloc_withGC723,20376
+void vmc_get_stats(vmc_statistics_t *stats) {vmc_get_stats753,21214
+
+src/scheduler.c,953
+#define MAX_TRACE_LENGTH MAX_TRACE_LENGTH37,1679
+typedef struct scheduler_trace_s {scheduler_trace_s39,1708
+  UUID context_id;context_id40,1743
+  cam_register_t env;env41,1762
+  UINT pc;pc42,1784
+  uint8_t instr;instr43,1795
+  uint8_t  bytes[4];bytes44,1812
+  unsigned int sp;sp45,1833
+  uint32_t num_msgs;num_msgs46,1852
+  uint32_t total_msgs;total_msgs47,1873
+  gc_stats_t gc_stats;gc_stats48,1896
+  struct scheduler_trace_s *next;next49,1919
+} scheduler_trace_t;scheduler_trace_t50,1953
+scheduler_trace_t trace_storage[MAX_TRACE_LENGTH];trace_storage52,1975
+int trace_next = 0;trace_next53,2026
+scheduler_trace_t *trace = NULL;trace55,2047
+void trace_add(UUID cid, cam_register_t env, UINT pc,trace_add57,2081
+void trace_print(void (*dbg_print)(const char *str, ...), int num) {trace_print87,2794
+static void initLogicalTime(vmc_t *vmc){initLogicalTime113,3793
+int scheduler(vmc_t *container,scheduler124,4022
+
+src/event.c,152
+bool poll_sendq(vmc_t *container, chan_send_queue_t *q){poll_sendq29,1536
+bool poll_recvq(vmc_t *container, chan_recv_queue_t *q){poll_recvq49,2179
+
+src/trusted/TrustedCAM.c,4577
+#define COMB COMB37,1679
+eval_fun evaluators[] =evaluators113,4671
+uint16_t get_label(vmc_t *vmc, INT *pc_idx){get_label173,5685
+uint16_t get_tag(vmc_t *vmc, INT *pc_idx){get_tag181,5917
+static bool is_all_contexts_stopped(vmc_t *vmc){is_all_contexts_stopped189,6143
+void eval_fst(vmc_t *vmc, INT *pc_idx) {eval_fst197,6325
+void eval_snd(vmc_t *vmc, INT *pc_idx) {eval_snd204,6576
+void eval_acc(vmc_t *vmc, INT *pc_idx) {eval_acc212,6828
+void eval_rest(vmc_t *vmc, INT *pc_idx)  {eval_rest225,7384
+void eval_push(vmc_t *vmc, INT *pc_idx) {eval_push236,7774
+void eval_swap(vmc_t *vmc, INT *pc_idx) {eval_swap247,8079
+void eval_loadi(vmc_t *vmc, INT *pc_idx) {eval_loadi266,8700
+void eval_loadb(vmc_t *vmc, INT *pc_idx) {eval_loadb283,9446
+void eval_clear(vmc_t *vmc, INT *pc_idx) {eval_clear291,9716
+void eval_cons(vmc_t *vmc, INT *pc_idx) {eval_cons297,9901
+void eval_cur(vmc_t *vmc, INT *pc_idx) {eval_cur322,10729
+void eval_pack(vmc_t *vmc, INT *pc_idx) {eval_pack341,11346
+void eval_skip(vmc_t *vmc, INT *pc_idx) {eval_skip360,11954
+void eval_stop(vmc_t *vmc, INT *pc_idx) {eval_stop365,12027
+void eval_app(vmc_t *vmc, INT *pc_idx) {eval_app377,12313
+void eval_return(vmc_t *vmc, INT *pc_idx) {eval_return444,14352
+void eval_call(vmc_t *vmc, INT *pc_idx) {eval_call455,14678
+void eval_goto(vmc_t *vmc, INT *pc_idx) {eval_goto468,15091
+void eval_gotofalse(vmc_t *vmc, INT *pc_idx) {eval_gotofalse474,15249
+void eval_switch(vmc_t *vmc, INT *pc_idx) {eval_switch491,15813
+void eval_abs(vmc_t *vmc, INT *pc_idx) {eval_abs547,17623
+void eval_neg(vmc_t *vmc, INT *pc_idx) {eval_neg556,17928
+void eval_not(vmc_t *vmc, INT *pc_idx) {eval_not566,18250
+void eval_dec(vmc_t *vmc, INT *pc_idx) {eval_dec576,18524
+void eval_add_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_add_unsignedi587,18923
+void eval_mul_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_mul_unsignedi602,19470
+void eval_min_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_min_unsignedi617,20017
+void eval_add_signedi(vmc_t *vmc, INT *pc_idx) {eval_add_signedi632,20564
+void eval_mul_signedi(vmc_t *vmc, INT *pc_idx) {eval_mul_signedi653,21288
+void eval_min_signedi(vmc_t *vmc, INT *pc_idx) {eval_min_signedi674,22012
+void eval_addf(vmc_t *vmc, INT *pc_idx) {eval_addf696,22737
+void eval_mulf(vmc_t *vmc, INT *pc_idx) {eval_mulf717,23462
+void eval_minf(vmc_t *vmc, INT *pc_idx) {eval_minf738,24187
+void eval_gt_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_gt_unsignedi759,24912
+void eval_lt_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_lt_unsignedi774,25441
+void eval_ge_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_ge_unsignedi789,25970
+void eval_le_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_le_unsignedi804,26500
+void eval_gt_signedi(vmc_t *vmc, INT *pc_idx) {eval_gt_signedi819,27030
+void eval_lt_signedi(vmc_t *vmc, INT *pc_idx) {eval_lt_signedi840,27753
+void eval_ge_signedi(vmc_t *vmc, INT *pc_idx) {eval_ge_signedi861,28476
+void eval_le_signedi(vmc_t *vmc, INT *pc_idx) {eval_le_signedi882,29200
+void eval_gtf(vmc_t *vmc, INT *pc_idx) {eval_gtf904,29925
+void eval_ltf(vmc_t *vmc, INT *pc_idx) {eval_ltf925,30649
+void eval_gef(vmc_t *vmc, INT *pc_idx) {eval_gef946,31373
+void eval_lef(vmc_t *vmc, INT *pc_idx) {eval_lef967,32098
+void eval_eq_unsignedi(vmc_t *vmc, INT *pc_idx) {eval_eq_unsignedi991,32851
+void eval_eq_signedi(vmc_t *vmc, INT *pc_idx) {eval_eq_signedi1006,33398
+void eval_eqf(vmc_t *vmc, INT *pc_idx) {eval_eqf1027,34122
+void eval_eq_bool(vmc_t *vmc, INT *pc_idx) {eval_eq_bool1049,34848
+void eval_move(vmc_t *vmc, INT *pc_idx){eval_move1064,35404
+void eval_pop (vmc_t *vmc, INT *pc_idx){eval_pop1080,35835
+void eval_snoc(vmc_t *vmc, INT *pc_idx){eval_snoc1092,36143
+void eval_comb(vmc_t *vmc, INT *pc_idx){eval_comb1118,36928
+void eval_gotoifalse(vmc_t *vmc, INT *pc_idx){eval_gotoifalse1145,37643
+void eval_switchi(vmc_t *vmc, INT *pc_idx){eval_switchi1156,37893
+static int handle_spawn(vmc_t *vmc){handle_spawn1199,39125
+static int handle_channel(vmc_t *vmc){handle_channel1258,40874
+static int handle_sendevt(vmc_t *vmc){handle_sendevt1270,41201
+static int handle_recvevt(vmc_t *vmc){handle_recvevt1295,41879
+static int handle_sync(vmc_t *vmc){handle_sync1313,42361
+static int handle_choose(vmc_t *vmc){handle_choose1335,42852
+static int handle_spawnExternal(vmc_t *vmc){handle_spawnExternal1362,43458
+static int handle_wrap(vmc_t *vmc){handle_wrap1390,44169
+static int handle_time(vmc_t *vmc){handle_time1424,45259
+void eval_callrts(vmc_t *vmc, INT *pc_idx){eval_callrts1471,46555
+
+src/trusted/Trustedscheduler.c,969
+#define MAX_TRACE_LENGTH MAX_TRACE_LENGTH37,1709
+typedef struct scheduler_trace_s {scheduler_trace_s39,1738
+  UUID context_id;context_id40,1773
+  cam_register_t env;env41,1792
+  UINT pc;pc42,1814
+  uint8_t instr;instr43,1825
+  uint8_t  bytes[4];bytes44,1842
+  unsigned int sp;sp45,1863
+  uint32_t num_msgs;num_msgs46,1882
+  uint32_t total_msgs;total_msgs47,1903
+  gc_stats_t gc_stats;gc_stats48,1926
+  struct scheduler_trace_s *next;next49,1949
+} scheduler_trace_t;scheduler_trace_t50,1983
+scheduler_trace_t trace_storage[MAX_TRACE_LENGTH];trace_storage52,2005
+int trace_next = 0;trace_next53,2056
+scheduler_trace_t *trace = NULL;trace55,2077
+void trace_add(UUID cid, cam_register_t env, UINT pc,trace_add57,2111
+void trace_print(void (*dbg_print)(const char *str, ...), int num) {trace_print87,2824
+static void initLogicalTime(vmc_t *vmc){initLogicalTime113,3823
+int scheduler_trusted(vmc_t *container,scheduler_trusted124,4052
+
+src/trusted/TrustedVMC.c,2597
+uint8_t vmc_container_1_heap_trusted[VMC_CONTAINER_1_HEAP_SIZE_BYTES];vmc_container_1_heap_trusted72,2608
+uint8_t vmc_container_1_stack_trusted[VMC_CONTAINER_1_STACK_SIZE_BYTES];vmc_container_1_stack_trusted73,2679
+uint8_t vmc_container_1_arrays_trusted[VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES];vmc_container_1_arrays_trusted74,2752
+uint8_t vmc_container_1_channels_trusted[VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES];vmc_container_1_channels_trusted75,2830
+uint8_t vmc_container_1_rdyq_trusted [sizeof(pq_data_t) * VMC_MAX_CONTEXTS];vmc_container_1_rdyq_trusted76,2912
+uint8_t vmc_container_1_waitq_trusted[sizeof(pq_data_t) * VMC_MAX_CONTEXTS];vmc_container_1_waitq_trusted77,2989
+const uint8_t vmc_container_1_code_trusted[] = {vmc_container_1_code_trusted79,3067
+uint8_t vmc_container_2_heap[VMC_CONTAINER_2_HEAP_SIZE_BYTES];vmc_container_2_heap85,3196
+uint8_t vmc_container_2_stack[VMC_CONTAINER_2_STACK_SIZE_BYTES];vmc_container_2_stack86,3259
+uint8_t vmc_container_2_arrays[VMC_CONTAINER_2_ARRAY_MEM_SIZE_BYTES];vmc_container_2_arrays87,3324
+const uint8_t vmc_container_2_code[] = {vmc_container_2_code89,3395
+ll_button_driver_t ll_button;ll_button107,3889
+ll_button_driver_t ll_button1;ll_button1111,3960
+ll_button_driver_t ll_button2;ll_button2115,4032
+ll_button_driver_t ll_button3;ll_button3119,4104
+ll_led_driver_t ll_led;ll_led123,4173
+ll_led_driver_t ll_led1;ll_led1127,4235
+ll_led_driver_t ll_led2;ll_led2131,4298
+ll_led_driver_t ll_led3;ll_led3135,4361
+ll_pwm_driver_group_t ll_pwm_driver_group0;ll_pwm_driver_group0140,4425
+ll_pwm_driver_t ll_pwm0;ll_pwm0143,4511
+ll_pwm_driver_t ll_pwm1;ll_pwm1146,4578
+ll_pwm_driver_t ll_pwm2;ll_pwm2149,4645
+ll_pwm_driver_t ll_pwm3;ll_pwm3152,4712
+ll_dac_driver_t ll_dac;ll_dac157,4776
+int vmc_init_trusted(vmc_trusted_t *vm_containers, int max_num_containers) {vmc_init_trusted162,4811
+int vmc_run_trusted(vmc_trusted_t *container,void (*dbg_print)(const char *str, ...)) {vmc_run_trusted469,13136
+static bool init_all_chans(Channel_t *c, uint8_t *mem){init_all_chans540,15429
+static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size){init_all_contexts583,16632
+static inline void mark_heap_context(Context_t *context, heap_t *heap){mark_heap_context632,18087
+static void heap_mark_phase(vmc_trusted_t *container) {heap_mark_phase646,18487
+heap_index vmc_heap_alloc_n_trusted(vmc_trusted_t *container, unsigned int n) {vmc_heap_alloc_n_trusted687,19759
+heap_index vmc_heap_alloc_withGC_trusted(vmc_trusted_t *container) {vmc_heap_alloc_withGC_trusted718,20421
+
+src/trusted/TrustedRTS.c,1969
+#define SYNC_DRIVER SYNC_DRIVER28,1517
+#define COMB COMB34,1620
+#define SET_ALARM_AFTER SET_ALARM_AFTER35,1644
+  SCHEDULED_FIRST,SCHEDULED_FIRST54,2434
+  SCHEDULED_SECONDSCHEDULED_SECOND55,2453
+} sched_order_t;sched_order_t56,2472
+static inline UINT extract_bits(UINT value, int lsbstart, int numbits){extract_bits60,2492
+static inline UINT set_bottom_16_bits(uint8_t first8bits, uint8_t second8bits){set_bottom_16_bits70,2776
+static cam_value_t create_dirty_flag(vmc_t *container, bool b){create_dirty_flag80,2964
+static int cleanupChannels(vmc_t *container, event_t *evts){cleanupChannels98,3463
+static int findSynchronizable(vmc_t *container, event_t *evts, cam_event_t *cev){findSynchronizable138,4797
+static int blockAllEvents(vmc_t *container, event_t *evts){blockAllEvents206,6686
+int channel(vmc_t *container, UUID *chan_id){channel291,8951
+int spawn(vmc_t *container, uint16_t label){spawn303,9263
+int dispatch(vmc_t *container){dispatch344,10730
+static int postSync( vmc_t *containerpostSync362,11415
+static int message_pass( vmc_t *containermessage_pass438,13460
+static int synchronizeNow(vmc_t *container, cam_event_t cev){synchronizeNow502,15676
+int sync(vmc_t *container, event_t *evts){sync683,20957
+int sendEvt(vmc_t *container, UUID *chan_id, cam_value_t msg, event_t *sevt){sendEvt718,21746
+int recvEvt(vmc_t *container, UUID *chan_id, event_t *revt){recvEvt769,23210
+int choose (vmc_t *container, event_t *evt1, event_t *evt2, event_t *evts){choose826,24713
+static int setAlarm(Time alarmTime){setAlarm854,25386
+int time(vmc_t *container, Time baseline, Time deadline){time881,25939
+static int synchronizeSyncDriver(vmc_t *container, cam_event_t cev){synchronizeSyncDriver962,28195
+static int handle_driver_msg(vmc_t *vmc, svm_msg_t *m){handle_driver_msg1054,30915
+static int handle_timer_msg(vmc_t *vmc){handle_timer_msg1112,32602
+int handle_msg(vmc_t *vmc, svm_msg_t *m){handle_msg1255,37071
+
+src/heap.c,1602
+gc_stats_t gc_stats;gc_stats32,1584
+void heap_clear_stats(void) {heap_clear_stats34,1606
+extern gc_stats_t heap_get_stats(void) {heap_get_stats40,1762
+cam_value_t get_cam_val(UINT ui, value_flags_t f){get_cam_val67,2531
+cam_value_t heap_fst(heap_t *heap, heap_index i) {heap_fst71,2647
+cam_value_t heap_snd(heap_t *heap, heap_index i) {heap_snd75,2769
+void heap_set(heap_t *heap, heap_index i, cam_value_t f, cam_value_t s) {heap_set79,2891
+void heap_set_fst(heap_t *heap, heap_index i, cam_value_t value) {heap_set_fst86,3108
+void heap_set_snd(heap_t *heap, heap_index i, cam_value_t value) {heap_set_snd91,3256
+static inline void set_gc_mark(heap_t *heap, heap_index i) {set_gc_mark96,3404
+static inline void set_gc_flag(heap_t *heap, heap_index i) {set_gc_flag100,3506
+static inline void clr_gc_mark(heap_t *heap, heap_index i) {clr_gc_mark104,3608
+static inline void clr_gc_flag(heap_t *heap, heap_index i) {clr_gc_flag108,3711
+static inline int is_atomic(cam_value_t v) {is_atomic112,3814
+static inline int is_pointer(cam_value_t v) {is_pointer116,3903
+static inline int get_gc_mark(heap_t *heap, heap_index i) {get_gc_mark120,3988
+static inline int get_gc_flag(heap_t *heap, heap_index i) {get_gc_flag124,4095
+static inline void clr_cell(heap_t *heap, heap_index i) {clr_cell128,4202
+int heap_init(heap_t *heap, uint8_t *mem, unsigned int size_bytes) {heap_init139,4518
+heap_index heap_allocate(heap_t *heap) {heap_allocate182,5697
+void heap_mark(heap_t *heap, cam_value_t v) {heap_mark222,6784
+void heap_show(heap_t *heap, int size){heap_show283,8451
+
+src/channel.c,97
+int channel_init(Channel_t *c, chan_send_queue_t sq, chan_recv_queue_t rq){channel_init29,1502
+
+src/queue.c,731
+int q_init(Queue_t *q, uint8_t *mem, unsigned int size_bytes){q_init30,1542
+static inline bool is_full(Queue_t *q)is_full42,1827
+static inline bool is_empty(Queue_t *q)is_empty45,1906
+int q_enqueue(Queue_t *q, UUID context_id){q_enqueue48,1975
+int q_dequeue(Queue_t *q, UUID *context_id){q_dequeue61,2213
+int q_front(Queue_t *q, UUID *context_id){q_front74,2458
+bool q_isempty(Queue_t *q){q_isempty86,2632
+static inline void remove_pos_linear(Queue_t *q, int pos){remove_pos_linear90,2688
+static inline void remove_pos_circular(Queue_t *q, int pos){remove_pos_circular97,2836
+static inline void remove_from_q(  UUID *context_idremove_from_q110,3097
+int q_remove(Queue_t *q, UUID *context_id){q_remove125,3492
+
+src/ll/ll_driver.c,417
+bool ll_driver_init(void) {ll_driver_init28,1510
+uint32_t ll_read(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {ll_read32,1621
+uint32_t ll_write(ll_driver_t *drv, uint8_t *data, uint32_t data_size) {ll_write36,1766
+uint32_t ll_data_readable(ll_driver_t *drv) { /* bytes available */ll_data_readable40,1913
+uint32_t ll_data_writeable(ll_driver_t *drv) { /* bytes writeable */ll_data_writeable44,2046
+
+src/chan_send_queue.c,534
+int chan_send_q_init(chan_send_queue_t *q, uint8_t *mem, unsigned int size_bytes){chan_send_q_init29,1532
+static inline bool is_full(chan_send_queue_t *q)is_full43,1866
+static inline bool is_empty(chan_send_queue_t *q)is_empty46,1955
+int chan_send_q_enqueue(chan_send_queue_t *q, send_data_t send_data){chan_send_q_enqueue49,2034
+int chan_send_q_dequeue(chan_send_queue_t *q, send_data_t *send_data){chan_send_q_dequeue62,2303
+int chan_send_q_front  (chan_send_queue_t *q, send_data_t *send_data){chan_send_q_front74,2578
+
+src/chan_recv_queue.c,534
+int chan_recv_q_init(chan_recv_queue_t *q, uint8_t *mem, unsigned int size_bytes){chan_recv_q_init28,1531
+static inline bool is_full(chan_recv_queue_t *q)is_full40,1863
+static inline bool is_empty(chan_recv_queue_t *q)is_empty43,1952
+int chan_recv_q_enqueue(chan_recv_queue_t *q, recv_data_t chan_data){chan_recv_q_enqueue46,2031
+int chan_recv_q_dequeue(chan_recv_queue_t *q, recv_data_t *chan_data){chan_recv_q_dequeue59,2300
+int chan_recv_q_front  (chan_recv_queue_t *q, recv_data_t *chan_data){chan_recv_q_front71,2575
+
+tests/ll/source_me_zephyr.sh,0
+
+tests/ll/lldriver-test/stm_flash.sh,0
+
+tests/ll/lldriver-test/src/main.c,522
+#define PRINT PRINT28,538
+uint8_t uart0_in_buffer[1024];uart0_in_buffer33,605
+uint8_t uart0_out_buffer[1024];uart0_out_buffer34,636
+#define MAX_MESSAGES MAX_MESSAGES38,729
+#define MSG_ALIGNMENT MSG_ALIGNMENT39,754
+int send_message(zephyr_interop_t* this, svm_msg_t msg) {send_message43,857
+zephyr_interop_t zephyr_interop;zephyr_interop48,975
+static int t_counter = 0; t_counter53,1060
+void t_info_dump(const struct k_thread *cthread, void *user_data) { t_info_dump55,1088
+void main(void) {main75,1580
+
+tests/ll/lldriver-test/Makefile,0
+
+tests/ll/lldriver-test/nrf_flash.sh,0
+
+tests/rts/vmc_test.c,1075
+int mock_read_message_poll(vmc_t *vmc, svm_msg_t *msg){mock_read_message_poll34,1639
+int mock_read_message_block(vmc_t *vmc, svm_msg_t *msg){mock_read_message_block40,1737
+uint32_t mock_message_queue_num_used(vmc_t *vmc) {mock_message_queue_num_used46,1836
+void mock_debug_print(const char* str, ...){ (void)str; }mock_debug_print51,1915
+static int setup_and_run(vmc_t *container, uint8_t *code, uint32_t c_size){setup_and_run54,1975
+bool vmc_run_1_test(){vmc_run_1_test92,2720
+bool vmc_run_2_test(){vmc_run_2_test116,3149
+bool vmc_run_3_test(){vmc_run_3_test144,3706
+bool vmc_run_4_test(){vmc_run_4_test171,4151
+bool vmc_run_5_test(){vmc_run_5_test219,5139
+bool vmc_run_6_test(){vmc_run_6_test243,5751
+bool vmc_run_7_test(){vmc_run_7_test267,6506
+bool vmc_run_8_test(){vmc_run_8_test293,7109
+bool vmc_run_9_test(){vmc_run_9_test319,7590
+bool vmc_run_10_test(){vmc_run_10_test354,8289
+bool vmc_run_11_test(){vmc_run_11_test393,9100
+void test_stat(char *s, int *tot, bool t){test_stat431,9934
+int main(int argc, char **argv) {main440,10100
+
+tests/rts/stack_test_0.c,47
+int main(int argc, char **argv) {main32,1596
+
+tests/rts/runsa.sh,0
+
+tests/rts/runinfer.sh,0
+
+tests/rts/vm-conf.h,524
+#define __VM_CONF_H___VM_CONF_H_26,1508
+#define VMC_NUM_CONTAINERS VMC_NUM_CONTAINERS37,1824
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES VMC_CONTAINER_1_HEAP_SIZE_BYTES43,1950
+#define VMC_CONTAINER_1_BYTECODE_FILE VMC_CONTAINER_1_BYTECODE_FILE44,2001
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES VMC_CONTAINER_1_STACK_SIZE_BYTES45,2056
+#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES46,2107
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES61,2541
+
+tests/rts/heap_test_3.c,47
+int main(int argc, char **argv) {main32,1572
+
+tests/rts/heap_test_0.c,47
+int main(int argc, char **argv) {main30,1535
+
+tests/rts/heap_test_2.c,47
+int main(int argc, char **argv) {main33,1574
+
+tests/rts/eval_test_1.c,3172
+bool eval_fst_test(){eval_fst_test34,1596
+bool eval_snd_test(){eval_snd_test55,2341
+bool eval_push_test(){eval_push_test76,3086
+bool eval_cons_test(){eval_cons_test113,3981
+bool eval_cur_test(){eval_cur_test173,5480
+bool eval_acc_test(){eval_acc_test221,6692
+bool eval_rest_test(){eval_rest_test292,8618
+bool eval_skip_test(){eval_skip_test361,10523
+bool eval_swap_test(){eval_swap_test372,10715
+bool eval_clear_test(){eval_clear_test418,11880
+bool eval_add_unsignedi_test(){eval_add_unsignedi_test440,12443
+bool eval_mul_unsignedi_test(){eval_mul_unsignedi_test477,13370
+bool eval_min_unsignedi_test(){eval_min_unsignedi_test514,14297
+bool eval_add_signedi_test(){eval_add_signedi_test552,15225
+bool eval_mul_signedi_test(){eval_mul_signedi_test596,16313
+bool eval_min_signedi_test(){eval_min_signedi_test641,17404
+bool eval_addf_test(){eval_addf_test685,18494
+bool eval_mulf_test(){eval_mulf_test730,19584
+bool eval_minf_test(){eval_minf_test774,20673
+bool eval_call_test(){eval_call_test819,21763
+bool eval_goto_test(){eval_goto_test859,22734
+bool eval_return_test(){eval_return_test877,23061
+bool eval_app_test(){eval_app_test915,23861
+bool eval_gotofalse_t_test(){eval_gotofalse_t_test1023,27163
+bool eval_gotofalse_f_test(){eval_gotofalse_f_test1060,28100
+bool eval_loadi_test(){eval_loadi_test1101,29192
+bool eval_loadb_test(){eval_loadb_test1118,29701
+bool eval_abs_test(){eval_abs_test1134,30087
+bool eval_neg_test(){eval_neg_test1153,30538
+bool eval_not_test(){eval_not_test1172,31009
+bool eval_dec_test(){eval_dec_test1196,31606
+bool eval_gt_unsignedi_test(){eval_gt_unsignedi_test1215,32082
+bool eval_lt_unsignedi_test(){eval_lt_unsignedi_test1252,33009
+bool eval_ge_unsignedi_test(){eval_ge_unsignedi_test1289,33936
+bool eval_le_unsignedi_test(){eval_le_unsignedi_test1326,34864
+bool eval_gt_signedi_test(){eval_gt_signedi_test1363,35790
+bool eval_lt_signedi_test(){eval_lt_signedi_test1407,36876
+bool eval_ge_signedi_test(){eval_ge_signedi_test1451,37962
+bool eval_le_signedi_test(){eval_le_signedi_test1496,39050
+bool eval_gtf_test(){eval_gtf_test1541,40138
+bool eval_ltf_test(){eval_ltf_test1586,41224
+bool eval_gef_test(){eval_gef_test1631,42310
+bool eval_lef_test(){eval_lef_test1676,43397
+bool eval_eq_unsignedi_test(){eval_eq_unsignedi_test1721,44484
+bool eval_eq_signedi_test(){eval_eq_signedi_test1758,45412
+bool eval_eqf_test(){eval_eqf_test1802,46499
+bool eval_eq_bool_test(){eval_eq_bool_test1846,47585
+bool eval_pack_test(){eval_pack_test1883,48516
+bool eval_switch_test(){eval_switch_test1929,49724
+bool eval_move_test(){eval_move_test2059,54205
+bool eval_pop_test(){eval_pop_test2098,55173
+bool eval_snoc_test(){eval_snoc_test2138,56052
+bool eval_comb_test(){eval_comb_test2199,57537
+bool eval_gotoifalse_t_test(){eval_gotoifalse_t_test2248,58774
+bool eval_gotoifalse_f_test(){eval_gotoifalse_f_test2270,59242
+bool eval_appcomb_test(){eval_appcomb_test2294,59863
+bool eval_switchi_test(){eval_switchi_test2398,62898
+void test_stat(char *s, int *tot, bool t){test_stat2484,66118
+int main(int argc, char **argv) {main2493,66284
+
+tests/rts/Makefile,553
+SENSEVM_DIR = ../../SENSEVM_DIR4,10
+SOURCE_DIR = $(SENSEVM_DIR)/srcSOURCE_DIR8,67
+PLATFORM_SRC = $(SENSEVM_DIR)/platform/linux-x86/srcPLATFORM_SRC16,275
+PLATFORM_H   = $(SENSEVM_DIR)/platform/linux-x86/includePLATFORM_H17,328
+SVM_SOURCES = $(SOURCE_DIR)/CAM.c \SVM_SOURCES21,418
+TEST_SOURCES = $(wildcard *.c)TEST_SOURCES37,1045
+TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))TEST_EXECS38,1076
+TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I$(SENSEVM_DIR)/platform/linux-x86/include -I.TEST_INCLUDES40,1130
+
+tests/rts/run_tests.sh,0
+
+tests/rts/heap_test_1.c,47
+int main(int argc, char **argv) {main30,1535
+
+tests/hal/zephyr/test_hal/vm-conf.h,668
+#define __VM_CONF_H___VM_CONF_H_26,1508
+#define VMC_NUM_CONTAINERS VMC_NUM_CONTAINERS37,1824
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES VMC_CONTAINER_1_HEAP_SIZE_BYTES42,1949
+#define VMC_CONTAINER_1_BYTECODE_FILE VMC_CONTAINER_1_BYTECODE_FILE43,2000
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES VMC_CONTAINER_1_STACK_SIZE_BYTES44,2055
+#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES45,2106
+#define VMC_CONTAINER_1_USE_BUTTON_0 VMC_CONTAINER_1_USE_BUTTON_048,2243
+#define VMC_CONTAINER_1_USE_LED_0 VMC_CONTAINER_1_USE_LED_049,2291
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES61,2621
+
+tests/hal/zephyr/test_hal/stm_flash.sh,0
+
+tests/hal/zephyr/test_hal/src/main.c,299
+#define PRINT PRINT32,609
+uint8_t uart0_in_buffer[1024];uart0_in_buffer37,676
+uint8_t uart0_out_buffer[1024];uart0_out_buffer38,707
+static int t_counter = 0;t_counter43,791
+void t_info_dump(const struct k_thread *cthread, void *user_data) {t_info_dump45,818
+void main(void) {main67,1341
+
+tests/hal/zephyr/test_hal/Makefile,0
+
+tests/hal/zephyr/test_hal/nrf_flash.sh,0
+
+tests/hal/zephyr/source_me_zephyr_abhi.sh,0
+
+tests/hal/zephyr/source_me_zephyr_joel.sh,0
+
+tests/hal/chibios/test_hal/usbcfg.h,33
+#define USBCFG_HUSBCFG_H18,659
+
+tests/hal/chibios/test_hal/chconf.h,4175
+#define CHCONF_HCHCONF_H29,972
+#define _CHIBIOS_RT_CONF__CHIBIOS_RT_CONF_31,992
+#define _CHIBIOS_RT_CONF_VER_6_1__CHIBIOS_RT_CONF_VER_6_1_32,1019
+#define CH_CFG_ST_RESOLUTION CH_CFG_ST_RESOLUTION46,1408
+#define CH_CFG_ST_FREQUENCY CH_CFG_ST_FREQUENCY55,1686
+#define CH_CFG_INTERVALS_SIZE CH_CFG_INTERVALS_SIZE63,1884
+#define CH_CFG_TIME_TYPES_SIZE CH_CFG_TIME_TYPES_SIZE71,2072
+#define CH_CFG_ST_TIMEDELTA CH_CFG_ST_TIMEDELTA83,2532
+#define CH_CFG_TIME_QUANTUM CH_CFG_TIME_QUANTUM108,3512
+#define CH_CFG_NO_IDLE_THREAD CH_CFG_NO_IDLE_THREAD119,3908
+#define CH_CFG_OPTIMIZE_SPEED CH_CFG_OPTIMIZE_SPEED140,4521
+#define CH_CFG_USE_TM CH_CFG_USE_TM160,5015
+#define CH_CFG_USE_REGISTRY CH_CFG_USE_REGISTRY170,5272
+#define CH_CFG_USE_WAITEXIT CH_CFG_USE_WAITEXIT181,5558
+#define CH_CFG_USE_SEMAPHORES CH_CFG_USE_SEMAPHORES191,5813
+#define CH_CFG_USE_SEMAPHORES_PRIORITY CH_CFG_USE_SEMAPHORES_PRIORITY204,6236
+#define CH_CFG_USE_MUTEXES CH_CFG_USE_MUTEXES214,6483
+#define CH_CFG_USE_MUTEXES_RECURSIVE CH_CFG_USE_MUTEXES_RECURSIVE226,6832
+#define CH_CFG_USE_CONDVARS CH_CFG_USE_CONDVARS238,7166
+#define CH_CFG_USE_CONDVARS_TIMEOUT CH_CFG_USE_CONDVARS_TIMEOUT250,7548
+#define CH_CFG_USE_EVENTS CH_CFG_USE_EVENTS260,7802
+#define CH_CFG_USE_EVENTS_TIMEOUT CH_CFG_USE_EVENTS_TIMEOUT272,8156
+#define CH_CFG_USE_MESSAGES CH_CFG_USE_MESSAGES283,8442
+#define CH_CFG_USE_MESSAGES_PRIORITY CH_CFG_USE_MESSAGES_PRIORITY296,8852
+#define CH_CFG_USE_DYNAMIC CH_CFG_USE_DYNAMIC309,9255
+#define CH_CFG_USE_MAILBOXES CH_CFG_USE_MAILBOXES330,9810
+#define CH_CFG_USE_MEMCORE CH_CFG_USE_MEMCORE341,10093
+#define CH_CFG_MEMCORE_SIZE CH_CFG_MEMCORE_SIZE356,10710
+#define CH_CFG_USE_HEAP CH_CFG_USE_HEAP370,11141
+#define CH_CFG_USE_MEMPOOLS CH_CFG_USE_MEMPOOLS381,11431
+#define CH_CFG_USE_OBJ_FIFOS CH_CFG_USE_OBJ_FIFOS392,11704
+#define CH_CFG_USE_PIPES CH_CFG_USE_PIPES403,11957
+#define CH_CFG_USE_OBJ_CACHES CH_CFG_USE_OBJ_CACHES414,12233
+#define CH_CFG_USE_DELEGATES CH_CFG_USE_DELEGATES425,12512
+#define CH_CFG_USE_JOBS CH_CFG_USE_JOBS436,12776
+#define CH_CFG_USE_FACTORY CH_CFG_USE_FACTORY456,13280
+#define CH_CFG_FACTORY_MAX_NAMES_LENGTH CH_CFG_FACTORY_MAX_NAMES_LENGTH465,13581
+#define CH_CFG_FACTORY_OBJECTS_REGISTRY CH_CFG_FACTORY_OBJECTS_REGISTRY472,13749
+#define CH_CFG_FACTORY_GENERIC_BUFFERS CH_CFG_FACTORY_GENERIC_BUFFERS479,13915
+#define CH_CFG_FACTORY_SEMAPHORES CH_CFG_FACTORY_SEMAPHORES486,14071
+#define CH_CFG_FACTORY_MAILBOXES CH_CFG_FACTORY_MAILBOXES493,14225
+#define CH_CFG_FACTORY_OBJ_FIFOS CH_CFG_FACTORY_OBJ_FIFOS500,14383
+#define CH_CFG_FACTORY_PIPES CH_CFG_FACTORY_PIPES507,14553
+#define CH_DBG_STATISTICS CH_DBG_STATISTICS525,14962
+#define CH_DBG_SYSTEM_STATE_CHECK CH_DBG_SYSTEM_STATE_CHECK536,15265
+#define CH_DBG_ENABLE_CHECKS CH_DBG_ENABLE_CHECKS547,15565
+#define CH_DBG_ENABLE_ASSERTS CH_DBG_ENABLE_ASSERTS559,15964
+#define CH_DBG_TRACE_MASK CH_DBG_TRACE_MASK569,16231
+#define CH_DBG_TRACE_BUFFER_SIZE CH_DBG_TRACE_BUFFER_SIZE578,16527
+#define CH_DBG_ENABLE_STACK_CHECK CH_DBG_ENABLE_STACK_CHECK592,17046
+#define CH_DBG_FILL_THREADS CH_DBG_FILL_THREADS604,17443
+#define CH_DBG_THREADS_PROFILING CH_DBG_THREADS_PROFILING617,17891
+#define CH_CFG_SYSTEM_EXTRA_FIELDS CH_CFG_SYSTEM_EXTRA_FIELDS633,18295
+#define CH_CFG_SYSTEM_INIT_HOOK(CH_CFG_SYSTEM_INIT_HOOK641,18600
+#define CH_CFG_THREAD_EXTRA_FIELDS CH_CFG_THREAD_EXTRA_FIELDS649,18898
+#define CH_CFG_THREAD_INIT_HOOK(CH_CFG_THREAD_INIT_HOOK659,19275
+#define CH_CFG_THREAD_EXIT_HOOK(CH_CFG_THREAD_EXIT_HOOK667,19557
+#define CH_CFG_CONTEXT_SWITCH_HOOK(CH_CFG_CONTEXT_SWITCH_HOOK675,19837
+#define CH_CFG_IRQ_PROLOGUE_HOOK(CH_CFG_IRQ_PROLOGUE_HOOK682,20039
+#define CH_CFG_IRQ_EPILOGUE_HOOK(CH_CFG_IRQ_EPILOGUE_HOOK689,20240
+#define CH_CFG_IDLE_ENTER_HOOK(CH_CFG_IDLE_ENTER_HOOK699,20635
+#define CH_CFG_IDLE_LEAVE_HOOK(CH_CFG_IDLE_LEAVE_HOOK709,21032
+#define CH_CFG_IDLE_LOOP_HOOK(CH_CFG_IDLE_LOOP_HOOK717,21306
+#define CH_CFG_SYSTEM_TICK_HOOK(CH_CFG_SYSTEM_TICK_HOOK726,21645
+#define CH_CFG_SYSTEM_HALT_HOOK(CH_CFG_SYSTEM_HALT_HOOK735,21959
+#define CH_CFG_TRACE_HOOK(CH_CFG_TRACE_HOOK744,22259
+
+tests/hal/chibios/test_hal/main.c,84
+void print_it(const char *str, ...) {print_it32,940
+int main(void) {main40,1091
+
+tests/hal/chibios/test_hal/vm-conf.h,731
+#define __VM_CONF_H___VM_CONF_H_26,1508
+#define VMC_ENABLE_GPIO_PRINTF VMC_ENABLE_GPIO_PRINTF32,1681
+#define VMC_NUM_CONTAINERS VMC_NUM_CONTAINERS39,1858
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES VMC_CONTAINER_1_HEAP_SIZE_BYTES45,1984
+#define VMC_CONTAINER_1_BYTECODE_FILE VMC_CONTAINER_1_BYTECODE_FILE46,2035
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES VMC_CONTAINER_1_STACK_SIZE_BYTES47,2090
+#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES48,2141
+#define VMC_CONTAINER_1_USE_BUTTON_0 VMC_CONTAINER_1_USE_BUTTON_051,2278
+#define VMC_CONTAINER_1_USE_LED_0 VMC_CONTAINER_1_USE_LED_052,2326
+#define VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES VMC_CONTAINER_1_CHANNEL_MEM_SIZE_BYTES64,2656
+
+tests/hal/chibios/test_hal/flash.sh,0
+
+tests/hal/chibios/test_hal/mcuconf.h,16237
+#define MCUCONF_HMCUCONF_H18,660
+#define STM32F4xx_MCUCONFSTM32F4xx_MCUCONF34,1078
+#define STM32F405_MCUCONFSTM32F405_MCUCONF35,1105
+#define STM32F415_MCUCONFSTM32F415_MCUCONF36,1132
+#define STM32F407_MCUCONFSTM32F407_MCUCONF37,1159
+#define STM32F417_MCUCONFSTM32F417_MCUCONF38,1186
+#define STM32_NO_INIT STM32_NO_INIT43,1256
+#define STM32_PVD_ENABLE STM32_PVD_ENABLE44,1307
+#define STM32_PLS STM32_PLS45,1358
+#define STM32_BKPRAM_ENABLE STM32_BKPRAM_ENABLE46,1418
+#define STM32_HSI_ENABLED STM32_HSI_ENABLED47,1469
+#define STM32_LSI_ENABLED STM32_LSI_ENABLED48,1519
+#define STM32_HSE_ENABLED STM32_HSE_ENABLED49,1569
+#define STM32_LSE_ENABLED STM32_LSE_ENABLED50,1619
+#define STM32_CLOCK48_REQUIRED STM32_CLOCK48_REQUIRED51,1670
+#define STM32_SW STM32_SW52,1720
+#define STM32_PLLSRC STM32_PLLSRC53,1778
+#define STM32_PLLM_VALUE STM32_PLLM_VALUE54,1840
+#define STM32_PLLN_VALUE STM32_PLLN_VALUE55,1887
+#define STM32_PLLP_VALUE STM32_PLLP_VALUE56,1936
+#define STM32_PLLQ_VALUE STM32_PLLQ_VALUE57,1983
+#define STM32_HPRE STM32_HPRE58,2030
+#define STM32_PPRE1 STM32_PPRE159,2091
+#define STM32_PPRE2 STM32_PPRE260,2153
+#define STM32_RTCSEL STM32_RTCSEL61,2215
+#define STM32_RTCPRE_VALUE STM32_RTCPRE_VALUE62,2277
+#define STM32_MCO1SEL STM32_MCO1SEL63,2324
+#define STM32_MCO1PRE STM32_MCO1PRE64,2387
+#define STM32_MCO2SEL STM32_MCO2SEL65,2451
+#define STM32_MCO2PRE STM32_MCO2PRE66,2517
+#define STM32_I2SSRC STM32_I2SSRC67,2581
+#define STM32_PLLI2SN_VALUE STM32_PLLI2SN_VALUE68,2646
+#define STM32_PLLI2SR_VALUE STM32_PLLI2SR_VALUE69,2695
+#define STM32_IRQ_EXTI0_PRIORITY STM32_IRQ_EXTI0_PRIORITY74,2778
+#define STM32_IRQ_EXTI1_PRIORITY STM32_IRQ_EXTI1_PRIORITY75,2825
+#define STM32_IRQ_EXTI2_PRIORITY STM32_IRQ_EXTI2_PRIORITY76,2872
+#define STM32_IRQ_EXTI3_PRIORITY STM32_IRQ_EXTI3_PRIORITY77,2919
+#define STM32_IRQ_EXTI4_PRIORITY STM32_IRQ_EXTI4_PRIORITY78,2966
+#define STM32_IRQ_EXTI5_9_PRIORITY STM32_IRQ_EXTI5_9_PRIORITY79,3013
+#define STM32_IRQ_EXTI10_15_PRIORITY STM32_IRQ_EXTI10_15_PRIORITY80,3060
+#define STM32_IRQ_EXTI16_PRIORITY STM32_IRQ_EXTI16_PRIORITY81,3107
+#define STM32_IRQ_EXTI17_PRIORITY STM32_IRQ_EXTI17_PRIORITY82,3154
+#define STM32_IRQ_EXTI18_PRIORITY STM32_IRQ_EXTI18_PRIORITY83,3202
+#define STM32_IRQ_EXTI19_PRIORITY STM32_IRQ_EXTI19_PRIORITY84,3249
+#define STM32_IRQ_EXTI20_PRIORITY STM32_IRQ_EXTI20_PRIORITY85,3296
+#define STM32_IRQ_EXTI21_PRIORITY STM32_IRQ_EXTI21_PRIORITY86,3343
+#define STM32_IRQ_EXTI22_PRIORITY STM32_IRQ_EXTI22_PRIORITY87,3391
+#define STM32_ADC_ADCPRE STM32_ADC_ADCPRE92,3482
+#define STM32_ADC_USE_ADC1 STM32_ADC_USE_ADC193,3547
+#define STM32_ADC_USE_ADC2 STM32_ADC_USE_ADC294,3597
+#define STM32_ADC_USE_ADC3 STM32_ADC_USE_ADC395,3648
+#define STM32_ADC_ADC1_DMA_STREAM STM32_ADC_ADC1_DMA_STREAM96,3699
+#define STM32_ADC_ADC2_DMA_STREAM STM32_ADC_ADC2_DMA_STREAM97,3770
+#define STM32_ADC_ADC3_DMA_STREAM STM32_ADC_ADC3_DMA_STREAM98,3841
+#define STM32_ADC_ADC1_DMA_PRIORITY STM32_ADC_ADC1_DMA_PRIORITY99,3912
+#define STM32_ADC_ADC2_DMA_PRIORITY STM32_ADC_ADC2_DMA_PRIORITY100,3959
+#define STM32_ADC_ADC3_DMA_PRIORITY STM32_ADC_ADC3_DMA_PRIORITY101,4006
+#define STM32_ADC_IRQ_PRIORITY STM32_ADC_IRQ_PRIORITY102,4053
+#define STM32_ADC_ADC1_DMA_IRQ_PRIORITY STM32_ADC_ADC1_DMA_IRQ_PRIORITY103,4100
+#define STM32_ADC_ADC2_DMA_IRQ_PRIORITY STM32_ADC_ADC2_DMA_IRQ_PRIORITY104,4147
+#define STM32_ADC_ADC3_DMA_IRQ_PRIORITY STM32_ADC_ADC3_DMA_IRQ_PRIORITY105,4194
+#define STM32_CAN_USE_CAN1 STM32_CAN_USE_CAN1110,4284
+#define STM32_CAN_USE_CAN2 STM32_CAN_USE_CAN2111,4335
+#define STM32_CAN_CAN1_IRQ_PRIORITY STM32_CAN_CAN1_IRQ_PRIORITY112,4386
+#define STM32_CAN_CAN2_IRQ_PRIORITY STM32_CAN_CAN2_IRQ_PRIORITY113,4434
+#define STM32_DAC_DUAL_MODE STM32_DAC_DUAL_MODE118,4525
+#define STM32_DAC_USE_DAC1_CH1 STM32_DAC_USE_DAC1_CH1119,4576
+#define STM32_DAC_USE_DAC1_CH2 STM32_DAC_USE_DAC1_CH2120,4627
+#define STM32_DAC_DAC1_CH1_IRQ_PRIORITY STM32_DAC_DAC1_CH1_IRQ_PRIORITY121,4678
+#define STM32_DAC_DAC1_CH2_IRQ_PRIORITY STM32_DAC_DAC1_CH2_IRQ_PRIORITY122,4726
+#define STM32_DAC_DAC1_CH1_DMA_PRIORITY STM32_DAC_DAC1_CH1_DMA_PRIORITY123,4774
+#define STM32_DAC_DAC1_CH2_DMA_PRIORITY STM32_DAC_DAC1_CH2_DMA_PRIORITY124,4821
+#define STM32_DAC_DAC1_CH1_DMA_STREAM STM32_DAC_DAC1_CH1_DMA_STREAM125,4868
+#define STM32_DAC_DAC1_CH2_DMA_STREAM STM32_DAC_DAC1_CH2_DMA_STREAM126,4939
+#define STM32_GPT_USE_TIM1 STM32_GPT_USE_TIM1131,5053
+#define STM32_GPT_USE_TIM2 STM32_GPT_USE_TIM2132,5104
+#define STM32_GPT_USE_TIM3 STM32_GPT_USE_TIM3133,5155
+#define STM32_GPT_USE_TIM4 STM32_GPT_USE_TIM4134,5206
+#define STM32_GPT_USE_TIM5 STM32_GPT_USE_TIM5135,5257
+#define STM32_GPT_USE_TIM6 STM32_GPT_USE_TIM6136,5308
+#define STM32_GPT_USE_TIM7 STM32_GPT_USE_TIM7137,5359
+#define STM32_GPT_USE_TIM8 STM32_GPT_USE_TIM8138,5410
+#define STM32_GPT_USE_TIM9 STM32_GPT_USE_TIM9139,5461
+#define STM32_GPT_USE_TIM11 STM32_GPT_USE_TIM11140,5512
+#define STM32_GPT_USE_TIM12 STM32_GPT_USE_TIM12141,5563
+#define STM32_GPT_USE_TIM14 STM32_GPT_USE_TIM14142,5614
+#define STM32_GPT_TIM1_IRQ_PRIORITY STM32_GPT_TIM1_IRQ_PRIORITY143,5665
+#define STM32_GPT_TIM2_IRQ_PRIORITY STM32_GPT_TIM2_IRQ_PRIORITY144,5712
+#define STM32_GPT_TIM3_IRQ_PRIORITY STM32_GPT_TIM3_IRQ_PRIORITY145,5759
+#define STM32_GPT_TIM4_IRQ_PRIORITY STM32_GPT_TIM4_IRQ_PRIORITY146,5806
+#define STM32_GPT_TIM5_IRQ_PRIORITY STM32_GPT_TIM5_IRQ_PRIORITY147,5853
+#define STM32_GPT_TIM6_IRQ_PRIORITY STM32_GPT_TIM6_IRQ_PRIORITY148,5900
+#define STM32_GPT_TIM7_IRQ_PRIORITY STM32_GPT_TIM7_IRQ_PRIORITY149,5947
+#define STM32_GPT_TIM8_IRQ_PRIORITY STM32_GPT_TIM8_IRQ_PRIORITY150,5994
+#define STM32_GPT_TIM9_IRQ_PRIORITY STM32_GPT_TIM9_IRQ_PRIORITY151,6041
+#define STM32_GPT_TIM11_IRQ_PRIORITY STM32_GPT_TIM11_IRQ_PRIORITY152,6088
+#define STM32_GPT_TIM12_IRQ_PRIORITY STM32_GPT_TIM12_IRQ_PRIORITY153,6135
+#define STM32_GPT_TIM14_IRQ_PRIORITY STM32_GPT_TIM14_IRQ_PRIORITY154,6182
+#define STM32_I2C_USE_I2C1 STM32_I2C_USE_I2C1159,6272
+#define STM32_I2C_USE_I2C2 STM32_I2C_USE_I2C2160,6323
+#define STM32_I2C_USE_I2C3 STM32_I2C_USE_I2C3161,6374
+#define STM32_I2C_BUSY_TIMEOUT STM32_I2C_BUSY_TIMEOUT162,6425
+#define STM32_I2C_I2C1_RX_DMA_STREAM STM32_I2C_I2C1_RX_DMA_STREAM163,6473
+#define STM32_I2C_I2C1_TX_DMA_STREAM STM32_I2C_I2C1_TX_DMA_STREAM164,6544
+#define STM32_I2C_I2C2_RX_DMA_STREAM STM32_I2C_I2C2_RX_DMA_STREAM165,6615
+#define STM32_I2C_I2C2_TX_DMA_STREAM STM32_I2C_I2C2_TX_DMA_STREAM166,6686
+#define STM32_I2C_I2C3_RX_DMA_STREAM STM32_I2C_I2C3_RX_DMA_STREAM167,6757
+#define STM32_I2C_I2C3_TX_DMA_STREAM STM32_I2C_I2C3_TX_DMA_STREAM168,6828
+#define STM32_I2C_I2C1_IRQ_PRIORITY STM32_I2C_I2C1_IRQ_PRIORITY169,6899
+#define STM32_I2C_I2C2_IRQ_PRIORITY STM32_I2C_I2C2_IRQ_PRIORITY170,6946
+#define STM32_I2C_I2C3_IRQ_PRIORITY STM32_I2C_I2C3_IRQ_PRIORITY171,6993
+#define STM32_I2C_I2C1_DMA_PRIORITY STM32_I2C_I2C1_DMA_PRIORITY172,7040
+#define STM32_I2C_I2C2_DMA_PRIORITY STM32_I2C_I2C2_DMA_PRIORITY173,7087
+#define STM32_I2C_I2C3_DMA_PRIORITY STM32_I2C_I2C3_DMA_PRIORITY174,7134
+#define STM32_I2C_DMA_ERROR_HOOK(STM32_I2C_DMA_ERROR_HOOK175,7181
+#define STM32_I2S_USE_SPI2 STM32_I2S_USE_SPI2180,7296
+#define STM32_I2S_USE_SPI3 STM32_I2S_USE_SPI3181,7347
+#define STM32_I2S_SPI2_IRQ_PRIORITY STM32_I2S_SPI2_IRQ_PRIORITY182,7398
+#define STM32_I2S_SPI3_IRQ_PRIORITY STM32_I2S_SPI3_IRQ_PRIORITY183,7446
+#define STM32_I2S_SPI2_DMA_PRIORITY STM32_I2S_SPI2_DMA_PRIORITY184,7494
+#define STM32_I2S_SPI3_DMA_PRIORITY STM32_I2S_SPI3_DMA_PRIORITY185,7541
+#define STM32_I2S_SPI2_RX_DMA_STREAM STM32_I2S_SPI2_RX_DMA_STREAM186,7588
+#define STM32_I2S_SPI2_TX_DMA_STREAM STM32_I2S_SPI2_TX_DMA_STREAM187,7659
+#define STM32_I2S_SPI3_RX_DMA_STREAM STM32_I2S_SPI3_RX_DMA_STREAM188,7730
+#define STM32_I2S_SPI3_TX_DMA_STREAM STM32_I2S_SPI3_TX_DMA_STREAM189,7801
+#define STM32_I2S_DMA_ERROR_HOOK(STM32_I2S_DMA_ERROR_HOOK190,7872
+#define STM32_ICU_USE_TIM1 STM32_ICU_USE_TIM1195,7987
+#define STM32_ICU_USE_TIM2 STM32_ICU_USE_TIM2196,8038
+#define STM32_ICU_USE_TIM3 STM32_ICU_USE_TIM3197,8089
+#define STM32_ICU_USE_TIM4 STM32_ICU_USE_TIM4198,8140
+#define STM32_ICU_USE_TIM5 STM32_ICU_USE_TIM5199,8191
+#define STM32_ICU_USE_TIM8 STM32_ICU_USE_TIM8200,8242
+#define STM32_ICU_USE_TIM9 STM32_ICU_USE_TIM9201,8293
+#define STM32_ICU_TIM1_IRQ_PRIORITY STM32_ICU_TIM1_IRQ_PRIORITY202,8344
+#define STM32_ICU_TIM2_IRQ_PRIORITY STM32_ICU_TIM2_IRQ_PRIORITY203,8391
+#define STM32_ICU_TIM3_IRQ_PRIORITY STM32_ICU_TIM3_IRQ_PRIORITY204,8438
+#define STM32_ICU_TIM4_IRQ_PRIORITY STM32_ICU_TIM4_IRQ_PRIORITY205,8485
+#define STM32_ICU_TIM5_IRQ_PRIORITY STM32_ICU_TIM5_IRQ_PRIORITY206,8532
+#define STM32_ICU_TIM8_IRQ_PRIORITY STM32_ICU_TIM8_IRQ_PRIORITY207,8579
+#define STM32_ICU_TIM9_IRQ_PRIORITY STM32_ICU_TIM9_IRQ_PRIORITY208,8626
+#define STM32_MAC_TRANSMIT_BUFFERS STM32_MAC_TRANSMIT_BUFFERS213,8716
+#define STM32_MAC_RECEIVE_BUFFERS STM32_MAC_RECEIVE_BUFFERS214,8763
+#define STM32_MAC_BUFFERS_SIZE STM32_MAC_BUFFERS_SIZE215,8810
+#define STM32_MAC_PHY_TIMEOUT STM32_MAC_PHY_TIMEOUT216,8860
+#define STM32_MAC_ETH1_CHANGE_PHY_STATE STM32_MAC_ETH1_CHANGE_PHY_STATE217,8909
+#define STM32_MAC_ETH1_IRQ_PRIORITY STM32_MAC_ETH1_IRQ_PRIORITY218,8959
+#define STM32_MAC_IP_CHECKSUM_OFFLOAD STM32_MAC_IP_CHECKSUM_OFFLOAD219,9007
+#define STM32_PWM_USE_ADVANCED STM32_PWM_USE_ADVANCED224,9097
+#define STM32_PWM_USE_TIM1 STM32_PWM_USE_TIM1225,9148
+#define STM32_PWM_USE_TIM2 STM32_PWM_USE_TIM2226,9199
+#define STM32_PWM_USE_TIM3 STM32_PWM_USE_TIM3227,9250
+#define STM32_PWM_USE_TIM4 STM32_PWM_USE_TIM4228,9301
+#define STM32_PWM_USE_TIM5 STM32_PWM_USE_TIM5229,9352
+#define STM32_PWM_USE_TIM8 STM32_PWM_USE_TIM8230,9403
+#define STM32_PWM_USE_TIM9 STM32_PWM_USE_TIM9231,9454
+#define STM32_PWM_TIM1_IRQ_PRIORITY STM32_PWM_TIM1_IRQ_PRIORITY232,9505
+#define STM32_PWM_TIM2_IRQ_PRIORITY STM32_PWM_TIM2_IRQ_PRIORITY233,9552
+#define STM32_PWM_TIM3_IRQ_PRIORITY STM32_PWM_TIM3_IRQ_PRIORITY234,9599
+#define STM32_PWM_TIM4_IRQ_PRIORITY STM32_PWM_TIM4_IRQ_PRIORITY235,9646
+#define STM32_PWM_TIM5_IRQ_PRIORITY STM32_PWM_TIM5_IRQ_PRIORITY236,9693
+#define STM32_PWM_TIM8_IRQ_PRIORITY STM32_PWM_TIM8_IRQ_PRIORITY237,9740
+#define STM32_PWM_TIM9_IRQ_PRIORITY STM32_PWM_TIM9_IRQ_PRIORITY238,9787
+#define STM32_RTC_PRESA_VALUE STM32_RTC_PRESA_VALUE243,9877
+#define STM32_RTC_PRESS_VALUE STM32_RTC_PRESS_VALUE244,9925
+#define STM32_RTC_CR_INIT STM32_RTC_CR_INIT245,9975
+#define STM32_RTC_TAMPCR_INIT STM32_RTC_TAMPCR_INIT246,10022
+#define STM32_SDC_SDIO_DMA_PRIORITY STM32_SDC_SDIO_DMA_PRIORITY251,10112
+#define STM32_SDC_SDIO_IRQ_PRIORITY STM32_SDC_SDIO_IRQ_PRIORITY252,10159
+#define STM32_SDC_WRITE_TIMEOUT_MS STM32_SDC_WRITE_TIMEOUT_MS253,10206
+#define STM32_SDC_READ_TIMEOUT_MS STM32_SDC_READ_TIMEOUT_MS254,10256
+#define STM32_SDC_CLOCK_ACTIVATION_DELAY STM32_SDC_CLOCK_ACTIVATION_DELAY255,10306
+#define STM32_SDC_SDIO_UNALIGNED_SUPPORT STM32_SDC_SDIO_UNALIGNED_SUPPORT256,10354
+#define STM32_SDC_SDIO_DMA_STREAM STM32_SDC_SDIO_DMA_STREAM257,10404
+#define STM32_SERIAL_USE_USART1 STM32_SERIAL_USE_USART1262,10521
+#define STM32_SERIAL_USE_USART2 STM32_SERIAL_USE_USART2263,10572
+#define STM32_SERIAL_USE_USART3 STM32_SERIAL_USE_USART3264,10623
+#define STM32_SERIAL_USE_UART4 STM32_SERIAL_USE_UART4265,10674
+#define STM32_SERIAL_USE_UART5 STM32_SERIAL_USE_UART5266,10725
+#define STM32_SERIAL_USE_USART6 STM32_SERIAL_USE_USART6267,10776
+#define STM32_SERIAL_USART1_PRIORITY STM32_SERIAL_USART1_PRIORITY268,10827
+#define STM32_SERIAL_USART2_PRIORITY STM32_SERIAL_USART2_PRIORITY269,10875
+#define STM32_SERIAL_USART3_PRIORITY STM32_SERIAL_USART3_PRIORITY270,10923
+#define STM32_SERIAL_UART4_PRIORITY STM32_SERIAL_UART4_PRIORITY271,10971
+#define STM32_SERIAL_UART5_PRIORITY STM32_SERIAL_UART5_PRIORITY272,11019
+#define STM32_SERIAL_USART6_PRIORITY STM32_SERIAL_USART6_PRIORITY273,11067
+#define STM32_SPI_USE_SPI1 STM32_SPI_USE_SPI1278,11158
+#define STM32_SPI_USE_SPI2 STM32_SPI_USE_SPI2279,11209
+#define STM32_SPI_USE_SPI3 STM32_SPI_USE_SPI3280,11260
+#define STM32_SPI_SPI1_RX_DMA_STREAM STM32_SPI_SPI1_RX_DMA_STREAM281,11311
+#define STM32_SPI_SPI1_TX_DMA_STREAM STM32_SPI_SPI1_TX_DMA_STREAM282,11382
+#define STM32_SPI_SPI2_RX_DMA_STREAM STM32_SPI_SPI2_RX_DMA_STREAM283,11453
+#define STM32_SPI_SPI2_TX_DMA_STREAM STM32_SPI_SPI2_TX_DMA_STREAM284,11524
+#define STM32_SPI_SPI3_RX_DMA_STREAM STM32_SPI_SPI3_RX_DMA_STREAM285,11595
+#define STM32_SPI_SPI3_TX_DMA_STREAM STM32_SPI_SPI3_TX_DMA_STREAM286,11666
+#define STM32_SPI_SPI1_DMA_PRIORITY STM32_SPI_SPI1_DMA_PRIORITY287,11737
+#define STM32_SPI_SPI2_DMA_PRIORITY STM32_SPI_SPI2_DMA_PRIORITY288,11784
+#define STM32_SPI_SPI3_DMA_PRIORITY STM32_SPI_SPI3_DMA_PRIORITY289,11831
+#define STM32_SPI_SPI1_IRQ_PRIORITY STM32_SPI_SPI1_IRQ_PRIORITY290,11878
+#define STM32_SPI_SPI2_IRQ_PRIORITY STM32_SPI_SPI2_IRQ_PRIORITY291,11926
+#define STM32_SPI_SPI3_IRQ_PRIORITY STM32_SPI_SPI3_IRQ_PRIORITY292,11974
+#define STM32_SPI_DMA_ERROR_HOOK(STM32_SPI_DMA_ERROR_HOOK293,12022
+#define STM32_ST_IRQ_PRIORITY STM32_ST_IRQ_PRIORITY298,12136
+#define STM32_ST_USE_TIMER STM32_ST_USE_TIMER299,12183
+#define STM32_UART_USE_USART1 STM32_UART_USE_USART1304,12274
+#define STM32_UART_USE_USART2 STM32_UART_USE_USART2305,12325
+#define STM32_UART_USE_USART3 STM32_UART_USE_USART3306,12376
+#define STM32_UART_USE_UART4 STM32_UART_USE_UART4307,12427
+#define STM32_UART_USE_UART5 STM32_UART_USE_UART5308,12478
+#define STM32_UART_USE_USART6 STM32_UART_USE_USART6309,12529
+#define STM32_UART_USART1_RX_DMA_STREAM STM32_UART_USART1_RX_DMA_STREAM310,12580
+#define STM32_UART_USART1_TX_DMA_STREAM STM32_UART_USART1_TX_DMA_STREAM311,12651
+#define STM32_UART_USART2_RX_DMA_STREAM STM32_UART_USART2_RX_DMA_STREAM312,12722
+#define STM32_UART_USART2_TX_DMA_STREAM STM32_UART_USART2_TX_DMA_STREAM313,12793
+#define STM32_UART_USART3_RX_DMA_STREAM STM32_UART_USART3_RX_DMA_STREAM314,12864
+#define STM32_UART_USART3_TX_DMA_STREAM STM32_UART_USART3_TX_DMA_STREAM315,12935
+#define STM32_UART_UART4_RX_DMA_STREAM STM32_UART_UART4_RX_DMA_STREAM316,13006
+#define STM32_UART_UART4_TX_DMA_STREAM STM32_UART_UART4_TX_DMA_STREAM317,13077
+#define STM32_UART_UART5_RX_DMA_STREAM STM32_UART_UART5_RX_DMA_STREAM318,13148
+#define STM32_UART_UART5_TX_DMA_STREAM STM32_UART_UART5_TX_DMA_STREAM319,13219
+#define STM32_UART_USART6_RX_DMA_STREAM STM32_UART_USART6_RX_DMA_STREAM320,13290
+#define STM32_UART_USART6_TX_DMA_STREAM STM32_UART_USART6_TX_DMA_STREAM321,13361
+#define STM32_UART_USART1_IRQ_PRIORITY STM32_UART_USART1_IRQ_PRIORITY322,13432
+#define STM32_UART_USART2_IRQ_PRIORITY STM32_UART_USART2_IRQ_PRIORITY323,13480
+#define STM32_UART_USART3_IRQ_PRIORITY STM32_UART_USART3_IRQ_PRIORITY324,13528
+#define STM32_UART_UART4_IRQ_PRIORITY STM32_UART_UART4_IRQ_PRIORITY325,13576
+#define STM32_UART_UART5_IRQ_PRIORITY STM32_UART_UART5_IRQ_PRIORITY326,13624
+#define STM32_UART_USART6_IRQ_PRIORITY STM32_UART_USART6_IRQ_PRIORITY327,13672
+#define STM32_UART_USART1_DMA_PRIORITY STM32_UART_USART1_DMA_PRIORITY328,13720
+#define STM32_UART_USART2_DMA_PRIORITY STM32_UART_USART2_DMA_PRIORITY329,13767
+#define STM32_UART_USART3_DMA_PRIORITY STM32_UART_USART3_DMA_PRIORITY330,13814
+#define STM32_UART_UART4_DMA_PRIORITY STM32_UART_UART4_DMA_PRIORITY331,13861
+#define STM32_UART_UART5_DMA_PRIORITY STM32_UART_UART5_DMA_PRIORITY332,13908
+#define STM32_UART_USART6_DMA_PRIORITY STM32_UART_USART6_DMA_PRIORITY333,13955
+#define STM32_UART_DMA_ERROR_HOOK(STM32_UART_DMA_ERROR_HOOK334,14002
+#define STM32_USB_USE_OTG1 STM32_USB_USE_OTG1339,14117
+#define STM32_USB_USE_OTG2 STM32_USB_USE_OTG2340,14167
+#define STM32_USB_OTG1_IRQ_PRIORITY STM32_USB_OTG1_IRQ_PRIORITY341,14217
+#define STM32_USB_OTG2_IRQ_PRIORITY STM32_USB_OTG2_IRQ_PRIORITY342,14265
+#define STM32_USB_OTG1_RX_FIFO_SIZE STM32_USB_OTG1_RX_FIFO_SIZE343,14313
+#define STM32_USB_OTG2_RX_FIFO_SIZE STM32_USB_OTG2_RX_FIFO_SIZE344,14362
+#define STM32_USB_HOST_WAKEUP_DURATION STM32_USB_HOST_WAKEUP_DURATION345,14412
+#define STM32_WDG_USE_IWDG STM32_WDG_USE_IWDG350,14502
+
+tests/hal/chibios/test_hal/svm_chibios_conf.h,905
+#define SVM_CHIBIOS_CONF_H_SVM_CHIBIOS_CONF_H_6,180
+#define LED0_GPIO LED0_GPIO9,210
+#define LED0_PIN LED0_PIN10,234
+#define LED0_MODE LED0_MODE11,255
+#define LED1_GPIO LED1_GPIO13,326
+#define LED1_PIN LED1_PIN14,350
+#define LED1_MODE LED1_MODE15,371
+#define BUTTON0_GPIO BUTTON0_GPIO17,442
+#define BUTTON0_PIN BUTTON0_PIN18,469
+#define BUTTON0_MODE BUTTON0_MODE19,492
+#define BUTTON0_EVENT_MODE BUTTON0_EVENT_MODE20,528
+#define SYS_TIMER SYS_TIMER22,582
+#define DBG0_GPIO DBG0_GPIO27,650
+#define DBG0_PIN DBG0_PIN28,674
+#define DBG0_MODE DBG0_MODE29,693
+#define DBG1_GPIO DBG1_GPIO31,764
+#define DBG1_PIN DBG1_PIN32,788
+#define DBG1_MODE DBG1_MODE33,807
+#define DBG2_GPIO DBG2_GPIO35,878
+#define DBG2_PIN DBG2_PIN36,902
+#define DBG2_MODE DBG2_MODE37,921
+#define DBG3_GPIO DBG3_GPIO39,992
+#define DBG3_PIN DBG3_PIN40,1016
+#define DBG3_MODE DBG3_MODE41,1035
+
+tests/hal/chibios/test_hal/halconf.h,3004
+#define HALCONF_HHALCONF_H29,1016
+#define _CHIBIOS_HAL_CONF__CHIBIOS_HAL_CONF_31,1037
+#define _CHIBIOS_HAL_CONF_VER_7_1__CHIBIOS_HAL_CONF_VER_7_1_32,1065
+#define HAL_USE_PAL HAL_USE_PAL40,1228
+#define HAL_USE_ADC HAL_USE_ADC47,1389
+#define HAL_USE_CAN HAL_USE_CAN54,1551
+#define HAL_USE_CRY HAL_USE_CRY61,1723
+#define HAL_USE_DAC HAL_USE_DAC68,1885
+#define HAL_USE_EFL HAL_USE_EFL75,2050
+#define HAL_USE_GPT HAL_USE_GPT82,2212
+#define HAL_USE_I2C HAL_USE_I2C89,2374
+#define HAL_USE_I2S HAL_USE_I2S96,2536
+#define HAL_USE_ICU HAL_USE_ICU103,2698
+#define HAL_USE_MAC HAL_USE_MAC110,2860
+#define HAL_USE_MMC_SPI HAL_USE_MMC_SPI117,3030
+#define HAL_USE_PWM HAL_USE_PWM124,3192
+#define HAL_USE_RTC HAL_USE_RTC131,3354
+#define HAL_USE_SDC HAL_USE_SDC138,3516
+#define HAL_USE_SERIAL HAL_USE_SERIAL145,3684
+#define HAL_USE_SERIAL_USB HAL_USE_SERIAL_USB152,3865
+#define HAL_USE_SIO HAL_USE_SIO159,4026
+#define HAL_USE_SPI HAL_USE_SPI166,4188
+#define HAL_USE_TRNG HAL_USE_TRNG173,4352
+#define HAL_USE_UART HAL_USE_UART180,4516
+#define HAL_USE_USB HAL_USE_USB187,4678
+#define HAL_USE_WDG HAL_USE_WDG194,4839
+#define HAL_USE_WSPI HAL_USE_WSPI201,5003
+#define PAL_USE_CALLBACKS PAL_USE_CALLBACKS213,5482
+#define PAL_USE_WAIT PAL_USE_WAIT221,5710
+#define ADC_USE_WAIT ADC_USE_WAIT233,6184
+#define ADC_USE_MUTUAL_EXCLUSION ADC_USE_MUTUAL_EXCLUSION241,6458
+#define CAN_USE_SLEEP_MODE CAN_USE_SLEEP_MODE252,6886
+#define CAN_ENFORCE_USE_CALLBACKS CAN_ENFORCE_USE_CALLBACKS259,7103
+#define HAL_CRY_USE_FALLBACK HAL_CRY_USE_FALLBACK274,7793
+#define HAL_CRY_ENFORCE_FALLBACK HAL_CRY_ENFORCE_FALLBACK281,8002
+#define DAC_USE_WAIT DAC_USE_WAIT293,8476
+#define DAC_USE_MUTUAL_EXCLUSION DAC_USE_MUTUAL_EXCLUSION301,8750
+#define I2C_USE_MUTUAL_EXCLUSION I2C_USE_MUTUAL_EXCLUSION312,9192
+#define MAC_USE_ZERO_COPY MAC_USE_ZERO_COPY323,9604
+#define MAC_USE_EVENTS MAC_USE_EVENTS330,9789
+#define MMC_NICE_WAITING MMC_NICE_WAITING346,10542
+#define SDC_INIT_RETRY SDC_INIT_RETRY358,11040
+#define SDC_MMC_SUPPORT SDC_MMC_SUPPORT367,11310
+#define SDC_NICE_WAITING SDC_NICE_WAITING377,11689
+#define SDC_INIT_OCR_V20 SDC_INIT_OCR_V20384,11871
+#define SDC_INIT_OCR SDC_INIT_OCR391,12060
+#define SERIAL_DEFAULT_BITRATE SERIAL_DEFAULT_BITRATE404,12588
+#define SERIAL_BUFFERS_SIZE SERIAL_BUFFERS_SIZE415,12997
+#define SERIAL_USB_BUFFERS_SIZE SERIAL_USB_BUFFERS_SIZE430,13646
+#define SERIAL_USB_BUFFERS_NUMBER SERIAL_USB_BUFFERS_NUMBER438,13867
+#define SPI_USE_WAIT SPI_USE_WAIT450,14337
+#define SPI_USE_CIRCULAR SPI_USE_CIRCULAR458,14576
+#define SPI_USE_MUTUAL_EXCLUSION SPI_USE_MUTUAL_EXCLUSION466,14851
+#define SPI_SELECT_MODE SPI_SELECT_MODE474,15089
+#define UART_USE_WAIT UART_USE_WAIT486,15578
+#define UART_USE_MUTUAL_EXCLUSION UART_USE_MUTUAL_EXCLUSION494,15856
+#define USB_USE_WAIT USB_USE_WAIT506,16330
+#define WSPI_USE_WAIT WSPI_USE_WAIT518,16805
+#define WSPI_USE_MUTUAL_EXCLUSION WSPI_USE_MUTUAL_EXCLUSION526,17082
+
+tests/hal/chibios/test_hal/usbcfg.c,1560
+SerialUSBDriver SDU1;SDU120,697
+#define USB1_DATA_REQUEST_EP USB1_DATA_REQUEST_EP25,767
+#define USB1_DATA_AVAILABLE_EP USB1_DATA_AVAILABLE_EP26,810
+#define USB1_INTERRUPT_REQUEST_EP USB1_INTERRUPT_REQUEST_EP27,853
+static const uint8_t vcom_device_descriptor_data[18] = {vcom_device_descriptor_data32,934
+static const USBDescriptor vcom_device_descriptor = {vcom_device_descriptor50,1998
+static const uint8_t vcom_configuration_descriptor_data[67] = {vcom_configuration_descriptor_data56,2176
+static const USBDescriptor vcom_configuration_descriptor = {vcom_configuration_descriptor135,7601
+static const uint8_t vcom_string0[] = {vcom_string0143,7800
+static const uint8_t vcom_string1[] = {vcom_string1152,8115
+static const uint8_t vcom_string2[] = {vcom_string2163,8514
+static const uint8_t vcom_string3[] = {vcom_string3175,8983
+static const USBDescriptor vcom_strings[] = {vcom_strings186,9313
+static const USBDescriptor *get_descriptor(USBDriver *usbp,get_descriptor197,9626
+static USBInEndpointState ep1instate;ep1instate219,10221
+static USBOutEndpointState ep1outstate;ep1outstate224,10300
+static const USBEndpointConfig ep1config = {ep1config229,10414
+static USBInEndpointState ep2instate;ep2instate245,10650
+static const USBEndpointConfig ep2config = {ep2config250,10754
+static void usb_event(USBDriver *usbp, usbevent_t event) {usb_event266,10990
+static void sof_handler(USBDriver *usbp) {sof_handler315,12160
+const USBConfig usbcfg = {usbcfg327,12342
+const SerialUSBConfig serusbcfg = {serusbcfg337,12495
+
+tests/hal/chibios/test_hal/Makefile,2291
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16USE_OPT8,194
+  USE_COPT = USE_COPT14,374
+  USE_CPPOPT = -fno-rttiUSE_CPPOPT19,470
+  USE_LINK_GC = yesUSE_LINK_GC24,598
+  USE_LDOPT = USE_LDOPT29,680
+  USE_LTO = yesUSE_LTO34,782
+  USE_THUMB = yesUSE_THUMB39,906
+  USE_VERBOSE_COMPILE = yesUSE_VERBOSE_COMPILE44,1030
+  USE_SMART_BUILD = yesUSE_SMART_BUILD50,1221
+  USE_PROCESS_STACKSIZE = 0x400USE_PROCESS_STACKSIZE64,1642
+  USE_EXCEPTIONS_STACKSIZE = 0x400USE_EXCEPTIONS_STACKSIZE70,1855
+  USE_FPU = hardUSE_FPU75,1966
+  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv4-sp-d16 -fsingle-precision-constantUSE_FPU_OPT80,2041
+PROJECT = TESTPROJECT92,2408
+CHIBIOS  := ../../../../../../ChibiOS_20.3.2CHIBIOS95,2461
+BUILDDIR := ./buildBUILDDIR96,2507
+DEPDIR   := ./.depDEPDIR97,2528
+LDSCRIPT= $(STARTUPLD)/STM32F407xG.ldLDSCRIPT122,3491
+SENSE_VM = ../../../../srcSENSE_VM124,3532
+SENSE_VM_H = ../../../../include \SENSE_VM_H125,3560
+PLATFORM_SRC = ../../../../platform/chibios/srcPLATFORM_SRC128,3636
+PLATFORM_H   = ../../../../platform/chibios/includePLATFORM_H129,3685
+SENSE_SRC = $(SENSE_VM)/CAM.c \SENSE_SRC131,3740
+CSRC = $(ALLCSRC) \CSRC152,4519
+CPPSRC = $(ALLCPPSRC)CPPSRC161,4757
+ACSRC =ACSRC166,5003
+ACPPSRC =ACPPSRC171,5236
+TCSRC =TCSRC176,5471
+TCPPSRC =TCPPSRC181,5704
+ASMSRC = $(ALLASMSRC)ASMSRC184,5747
+ASMXSRC = $(ALLXASMSRC)ASMXSRC185,5770
+INCDIR = $(ALLINC) $(TESTINC) $(SENSE_VM_H) $(PLATFORM_H)INCDIR187,5797
+UDEFS = UDEFS198,6131
+UADEFS =UADEFS201,6170
+UINCDIR =  UINCDIR204,6216
+ULIBDIR = ULIBDIR207,6289
+ULIBS = ULIBS210,6335
+MCU  = cortex-m4MCU220,6561
+TRGT = arm-none-eabi-TRGT223,6599
+CC   = $(TRGT)gccCC224,6622
+CPPC = $(TRGT)g++CPPC225,6641
+LD   = $(TRGT)gccLD229,6849
+CP   = $(TRGT)objcopyCP231,6888
+AS   = $(TRGT)gcc -x assembler-with-cppAS232,6911
+AR   = $(TRGT)arAR233,6952
+OD   = $(TRGT)objdumpOD234,6970
+SZ   = $(TRGT)sizeSZ235,6993
+HEX  = $(CP) -O ihexHEX236,7013
+BIN  = $(CP) -O binaryBIN237,7035
+AOPT =AOPT240,7090
+TOPT = -mthumb -DTHUMBTOPT243,7131
+CWARN = -Wall -Wextra -Wundef -Wstrict-prototypesCWARN246,7190
+CPPWARN = -Wall -Wextra -WundefCPPWARN249,7278
+RULESPATH = $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mkRULESPATH255,7419

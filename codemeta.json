@@ -1,0 +1,59 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "codeRepository": "https://github.com/SynchronVM/SynchronVM",
+    "name": "SynchronVM",
+    "version": "0.5.0",
+    "description": "A virtual machine for microcontrollers. ",
+    "applicationCategory": "Programming Languages, Runtime",
+    "funding": "Swedish Foundation for Strategic Research",
+    "developmentStatus": "wip",
+    "referencePublication": "https://doi.org/10.4230/LIPIcs.ECOOP.2022.17",
+    "keywords": [
+        "microcontrollers",
+        "real time",
+        "virtual machine",
+        "concurrency",
+        "functional programming"
+    ],
+    "programmingLanguage": [
+        "C",
+        "Haskell"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-8991-9472",
+            "givenName": "Abhiroop",
+            "familyName": "Sarkar",
+            "email": "sarkara@chalmers.se",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Chalmers Unviersity"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0003-0363-1206",
+            "givenName": "Bo Joel",
+            "familyName": "Svensson",
+            "email": "joels@chalmers.se",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Chalmers University"
+            }
+        }
+    ],
+    "contributor": [
+        {
+            "@type": "Person",
+            "givenName": "Robert",
+            "familyName": "Krook",
+            "email": "krookr@chalmers.se",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Chalmers Unviersity"
+            }
+        }
+    ]
+}
