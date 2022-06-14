@@ -26,7 +26,7 @@
 #define __TRUSTEDRTS_H_
 
 #include <trusted/TrustedVMC.h>
-#include <event.h>
+#include <trusted/Trustedevent.h>
 #include <sys/sys_time.h>
 
 extern int channel_trusted(vmc_trusted_t *container, UUID    *chan_id);

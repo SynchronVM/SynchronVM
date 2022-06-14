@@ -25,7 +25,7 @@
 #ifndef __TRUSTEDEVENT_H_
 #define __TRUSTEDEVENT_H_
 
-#include <VMC.h>
+#include <trusted/TrustedVMC.h>
 
 typedef enum {
    SEND,
@@ -50,8 +50,8 @@ typedef struct {
 
 typedef heap_index event_t;
 
-extern bool poll_sendq(vmc_t *container, chan_send_queue_t *q);
-extern bool poll_recvq(vmc_t *container, chan_recv_queue_t *q);
+extern bool poll_sendq_trusted(vmc_trusted_t *container, chan_send_queue_t *q);
+extern bool poll_recvq_trusted(vmc_trusted_t *container, chan_recv_queue_t *q);
 
 /*
  *  Proposed heap structure

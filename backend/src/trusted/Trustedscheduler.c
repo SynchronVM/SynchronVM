@@ -148,12 +148,12 @@ int scheduler_trusted(vmc_trusted_t *container) {
       /*   DEBUG_PRINT(("%u\n", current_inst)); */
       /* } */
 
-      if (current_inst > (sizeof(evaluators) / 4)) {
+      if (current_inst > (sizeof(evaluators_trusted) / 4)) {
 
         DEBUG_PRINT(("current_inst = %u at pc = %d is invalid   (ctx = %u) \r\n", current_inst, *pc, container->current_running_context_id));
         return -1;
       } else {
-        evaluators[current_inst](container, pc);
+        evaluators_trusted[current_inst](container, pc);
       }
 
       if(*pc  == -1){

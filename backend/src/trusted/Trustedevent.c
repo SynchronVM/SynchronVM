@@ -24,9 +24,9 @@
 
 #include <SVM_DEBUG.h>
 
-#include <event.h>
+#include <trusted/Trustedevent.h>
 
-bool poll_sendq(vmc_t *container, chan_send_queue_t *q){
+bool poll_sendq_trusted(vmc_trusted_t *container, chan_send_queue_t *q){
   while(true){
     send_data_t send_data;
     int op_status = chan_send_q_front(q, &send_data);
@@ -46,7 +46,7 @@ bool poll_sendq(vmc_t *container, chan_send_queue_t *q){
   }
 }
 
-bool poll_recvq(vmc_t *container, chan_recv_queue_t *q){
+bool poll_recvq_trusted(vmc_trusted_t *container, chan_recv_queue_t *q){
   while(true){
     recv_data_t recv_data;
     int op_status = chan_recv_q_front(q, &recv_data);

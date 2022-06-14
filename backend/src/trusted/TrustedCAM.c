@@ -50,127 +50,127 @@
  * address which is the address of the next opcode and jumps
  */
 
-void eval_fst(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_snd(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_acc(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_rest(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_push(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_swap(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_loadi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_loadb(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_clear(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_cons(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_cur(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_pack(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_skip(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_stop(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_app(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_return(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_call(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_goto(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_gotofalse(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_switch(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_abs(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_neg(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_not(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_dec(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_add_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_mul_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_min_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_add_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_mul_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_min_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_addf(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_mulf(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_minf(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_gt_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_lt_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_ge_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_le_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_gt_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_lt_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_ge_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_le_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_gtf(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_ltf(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_gef(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_lef(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_eq_unsignedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_eq_signedi(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_eqf(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_eq_bool(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_fst_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_snd_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_acc_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_rest_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_push_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_swap_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_loadi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_loadb_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_clear_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_cons_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_cur_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_pack_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_skip_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_stop_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_app_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_return_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_call_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_goto_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_gotofalse_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_switch_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_abs_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_neg_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_not_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_dec_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_add_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_mul_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_min_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_add_signedi_trusted(vmc_trusted_t *vmc, INT *pc_i_trusteddx);
+void eval_mul_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_min_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_addf_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_mulf_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_minf_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_gt_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_lt_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_ge_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_le_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_gt_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_lt_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_ge_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_le_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_gtf_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_ltf_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_gef_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_lef_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_eq_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_eq_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_eqf_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_eq_bool_trusted(vmc_trusted_t *vmc, INT *pc_idx);
 /* Optimised instructions */
-void eval_move(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_pop (vmc_trusted_t *vmc, INT *pc_idx);
-void eval_snoc(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_comb(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_gotoifalse(vmc_trusted_t *vmc, INT *pc_idx);
-void eval_switchi   (vmc_trusted_t *vmc, INT *pc_idx);
-void eval_callrts   (vmc_trusted_t *vmc, INT *pc_idx);
+void eval_move_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_pop_trusted (vmc_trusted_t *vmc, INT *pc_idx);
+void eval_snoc_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_comb_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_gotoifalse_trusted(vmc_trusted_t *vmc, INT *pc_idx);
+void eval_switchi_trusted   (vmc_trusted_t *vmc, INT *pc_idx);
+void eval_callrts_trusted   (vmc_trusted_t *vmc, INT *pc_idx);
 
 
 
-eval_fun evaluators[] =
-  { eval_fst,
-    eval_snd,
-    eval_acc,
-    eval_rest,
-    eval_push,
-    eval_swap,
-    eval_loadi,
-    eval_loadb,
-    eval_clear,
-    eval_cons,
-    eval_cur,
-    eval_pack,
-    eval_skip,
-    eval_stop,
-    eval_app,
-    eval_return,
-    eval_call,
-    eval_goto,
-    eval_gotofalse,
-    eval_switch,
-    eval_abs,
-    eval_neg,
-    eval_not,
-    eval_dec,
-    eval_add_signedi,
-    eval_mul_signedi,
-    eval_min_signedi,
-    eval_addf,
-    eval_mulf,
-    eval_minf,
-    eval_gt_signedi,
-    eval_lt_signedi,
-    eval_eq_signedi,
-    eval_ge_signedi,
-    eval_le_signedi,
-    eval_add_unsignedi,
-    eval_mul_unsignedi,
-    eval_min_unsignedi,
-    eval_gt_unsignedi,
-    eval_lt_unsignedi,
-    eval_eq_unsignedi,
-    eval_ge_unsignedi,
-    eval_le_unsignedi,
-    eval_gtf,
-    eval_ltf,
-    eval_eqf,
-    eval_gef,
-    eval_lef,
-    eval_eq_bool,
-    eval_move,
-    eval_pop,
-    eval_snoc,
-    eval_comb,
-    eval_gotoifalse,
-    eval_switchi,
-    eval_callrts  // 0x37 : 55
+eval_fun_trusted evaluators_trusted[] =
+  { eval_fst_trusted,
+    eval_snd_trusted,
+    eval_acc_trusted,
+    eval_rest_trusted,
+    eval_push_trusted,
+    eval_swap_trusted,
+    eval_loadi_trusted,
+    eval_loadb_trusted,
+    eval_clear_trusted,
+    eval_cons_trusted,
+    eval_cur_trusted,
+    eval_pack_trusted,
+    eval_skip_trusted,
+    eval_stop_trusted,
+    eval_app_trusted,
+    eval_return_trusted,
+    eval_call_trusted,
+    eval_goto_trusted,
+    eval_gotofalse_trusted,
+    eval_switch_trusted,
+    eval_abs_trusted,
+    eval_neg_trusted,
+    eval_not_trusted,
+    eval_dec_trusted,
+    eval_add_signedi_trusted,
+    eval_mul_signedi_trusted,
+    eval_min_signedi_trusted,
+    eval_addf_trusted,
+    eval_mulf_trusted,
+    eval_minf_trusted,
+    eval_gt_signedi_trusted,
+    eval_lt_signedi_trusted,
+    eval_eq_signedi_trusted,
+    eval_ge_signedi_trusted,
+    eval_le_signedi_trusted,
+    eval_add_unsignedi_trusted,
+    eval_mul_unsignedi_trusted,
+    eval_min_unsignedi_trusted,
+    eval_gt_unsignedi_trusted,
+    eval_lt_unsignedi_trusted,
+    eval_eq_unsignedi_trusted,
+    eval_ge_unsignedi_trusted,
+    eval_le_unsignedi_trusted,
+    eval_gtf_trusted,
+    eval_ltf_trusted,
+    eval_eqf_trusted,
+    eval_gef_trusted,
+    eval_lef_trusted,
+    eval_eq_bool_trusted,
+    eval_move_trusted,
+    eval_pop_trusted,
+    eval_snoc_trusted,
+    eval_comb_trusted,
+    eval_gotoifalse_trusted,
+    eval_switchi_trusted,
+    eval_callrts_trusted  // 0x37 : 55
   };
 
 
-uint16_t get_label(vmc_trusted_t *vmc, INT *pc_idx){
+static uint16_t get_label(vmc_trusted_t *vmc, INT *pc_idx){
   INT lab_idx1 = (*pc_idx) + 1;
   INT lab_idx2 = (*pc_idx) + 2;
   uint16_t label =
@@ -178,7 +178,7 @@ uint16_t get_label(vmc_trusted_t *vmc, INT *pc_idx){
   return label;
 }
 
-uint16_t get_tag(vmc_trusted_t *vmc, INT *pc_idx){
+static uint16_t get_tag(vmc_trusted_t *vmc, INT *pc_idx){
   INT tag_idx1 = (*pc_idx) + 1;
   INT tag_idx2 = (*pc_idx) + 2;
   uint16_t tag =
@@ -194,14 +194,14 @@ static bool is_all_contexts_stopped(vmc_trusted_t *vmc){
   return !start;
 }
 
-void eval_fst(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_fst_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_value_t v = heap_fst(&vmc->heap, (heap_index)e.value);
   vmc->contexts[vmc->current_running_context_id].env = v;
 }
 
-void eval_snd(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_snd_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_value_t v = heap_snd(&vmc->heap, (heap_index)e.value);
@@ -209,7 +209,7 @@ void eval_snd(vmc_trusted_t *vmc, INT *pc_idx) {
 }
 
 
-void eval_acc(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_acc_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   INT n_idx = (*pc_idx) + 1;
   uint8_t acc_n = vmc->code_memory[n_idx];
   for(unsigned int i = 0; i < acc_n; i++){
@@ -222,7 +222,7 @@ void eval_acc(vmc_trusted_t *vmc, INT *pc_idx) {
   *pc_idx = (*pc_idx) + 2;
 }
 
-void eval_rest(vmc_trusted_t *vmc, INT *pc_idx)  {
+void eval_rest_trusted(vmc_trusted_t *vmc, INT *pc_idx)  {
   INT n_idx = (*pc_idx) + 1;
   uint8_t acc_n = vmc->code_memory[n_idx];
   for(unsigned int i = 0; i < acc_n; i++){
@@ -233,7 +233,7 @@ void eval_rest(vmc_trusted_t *vmc, INT *pc_idx)  {
   *pc_idx = (*pc_idx) + 2;
 }
 
-void eval_push(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_push_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   int i = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, e);
   if(i == 0){
@@ -244,7 +244,7 @@ void eval_push(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
 }
 
-void eval_swap(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_swap_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
@@ -263,7 +263,7 @@ void eval_swap(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
 }
 
-void eval_loadi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_loadi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   INT int_idx1 = (*pc_idx) + 1;
   INT int_idx2 = (*pc_idx) + 2;
   uint16_t int_idx =
@@ -280,7 +280,7 @@ void eval_loadi(vmc_trusted_t *vmc, INT *pc_idx) {
   *pc_idx = (*pc_idx) + 3;
 }
 
-void eval_loadb(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_loadb_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   INT bool_idx = (*pc_idx) + 1;
   uint8_t bool_val = vmc->code_memory[bool_idx];
   cam_value_t v = { .value = (UINT)bool_val, .flags = 0};
@@ -288,13 +288,13 @@ void eval_loadb(vmc_trusted_t *vmc, INT *pc_idx) {
   *pc_idx = (*pc_idx) + 2;
 }
 
-void eval_clear(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_clear_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_value_t empty_tuple = { .value = 0, .flags = 0 };
   vmc->contexts[vmc->current_running_context_id].env = empty_tuple;
 }
 
-void eval_cons(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_cons_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -304,7 +304,7 @@ void eval_cons(vmc_trusted_t *vmc, INT *pc_idx) {
     *pc_idx = -1;
     return;
   }
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -319,12 +319,12 @@ void eval_cons(vmc_trusted_t *vmc, INT *pc_idx) {
   }
 }
 
-void eval_cur(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_cur_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   uint16_t label = get_label(vmc, pc_idx);
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -338,12 +338,12 @@ void eval_cur(vmc_trusted_t *vmc, INT *pc_idx) {
   }
 }
 
-void eval_pack(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_pack_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   uint16_t tag = get_tag(vmc, pc_idx);
   cam_value_t cam_tag =
     { .value = (UINT)tag, .flags = 0 };
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -357,15 +357,15 @@ void eval_pack(vmc_trusted_t *vmc, INT *pc_idx) {
   }
 }
 
-void eval_skip(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_skip_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (void)vmc;
   (*pc_idx)++;
 }
 
-void eval_stop(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_stop_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (void)pc_idx;
   vmc->context_used[vmc->current_running_context_id] = false;
-  int i = dispatch(vmc);
+  int i = dispatch_trusted(vmc);
   if(i == -1)
     DEBUG_PRINT(("Ready Queue is empty\n"));
   if(is_all_contexts_stopped(vmc)){
@@ -374,7 +374,7 @@ void eval_stop(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_app(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_app_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
 
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -414,7 +414,7 @@ void eval_app(vmc_trusted_t *vmc, INT *pc_idx) {
     cam_value_t val = heap_f;
     cam_value_t label = heap_s;
 
-    heap_index hi = vmc_heap_alloc_withGC(vmc);
+    heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation has failed"));
       *pc_idx = -1;
@@ -441,7 +441,7 @@ void eval_app(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_return(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_return_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
   if(i == 0){
@@ -452,7 +452,7 @@ void eval_return(vmc_trusted_t *vmc, INT *pc_idx) {
   *pc_idx = hold_reg.value;
 }
 
-void eval_call(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_call_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   uint16_t label = get_label(vmc, pc_idx);
   INT jump_address = (*pc_idx) + 3; // see Jump convention at the top
   cam_value_t j_add = { .value = (UINT)jump_address };
@@ -465,13 +465,13 @@ void eval_call(vmc_trusted_t *vmc, INT *pc_idx) {
   *pc_idx = (INT)label;
 }
 
-void eval_goto(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_goto_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   uint16_t label = get_label(vmc, pc_idx);
   // GOTO doesn't store jump address on stack
   *pc_idx = (INT)label;
 }
 
-void eval_gotofalse(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_gotofalse_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
@@ -482,13 +482,13 @@ void eval_gotofalse(vmc_trusted_t *vmc, INT *pc_idx) {
   }
   vmc->contexts[vmc->current_running_context_id].env = hold_reg;
   if ((e.value & 1) == 0){ // NOT SET; FALSE
-    eval_goto(vmc, pc_idx);
+    eval_goto_trusted(vmc, pc_idx);
   } else { // TRUE
     *pc_idx = (*pc_idx) + 3;
   }
 }
 
-void eval_switch(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_switch_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
   int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &hold_reg);
@@ -529,7 +529,7 @@ void eval_switch(vmc_trusted_t *vmc, INT *pc_idx) {
     return;
   }
 
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -544,7 +544,7 @@ void eval_switch(vmc_trusted_t *vmc, INT *pc_idx) {
   *pc_idx = (INT)label_to_jump;
 }
 
-void eval_abs(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_abs_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   INT signed_i = (INT)e.value;
   INT abs_i = abs(signed_i);
@@ -553,7 +553,7 @@ void eval_abs(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
 }
 
-void eval_neg(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_neg_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   UINT i = e.value;
   INT j = -i; // XXX: might cause underflow for large uints
@@ -563,7 +563,7 @@ void eval_neg(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_not(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_not_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   UINT i = e.value;
   UINT j = i ^ 1;
@@ -573,7 +573,7 @@ void eval_not(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_dec(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_dec_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   UINT i = e.value;
   INT j = i - 1; // XXX: casting might cause issues for uint when outside int range
@@ -584,7 +584,7 @@ void eval_dec(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_add_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_add_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -599,7 +599,7 @@ void eval_add_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_mul_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_mul_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -614,7 +614,7 @@ void eval_mul_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_min_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_min_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -629,7 +629,7 @@ void eval_min_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_add_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_add_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -650,7 +650,7 @@ void eval_add_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_mul_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_mul_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -671,7 +671,7 @@ void eval_mul_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_min_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_min_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -693,7 +693,7 @@ void eval_min_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
 }
 
 
-void eval_addf(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_addf_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -714,7 +714,7 @@ void eval_addf(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_mulf(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_mulf_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -735,7 +735,7 @@ void eval_mulf(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_minf(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_minf_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -756,7 +756,7 @@ void eval_minf(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_gt_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_gt_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 };
@@ -771,7 +771,7 @@ void eval_gt_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_lt_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_lt_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 };
@@ -786,7 +786,7 @@ void eval_lt_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_ge_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_ge_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 };
@@ -801,7 +801,7 @@ void eval_ge_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_le_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_le_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 };
@@ -816,7 +816,7 @@ void eval_le_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_gt_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_gt_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -837,7 +837,7 @@ void eval_gt_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_lt_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_lt_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -858,7 +858,7 @@ void eval_lt_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_ge_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_ge_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -879,7 +879,7 @@ void eval_ge_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_le_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_le_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -901,7 +901,7 @@ void eval_le_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_gtf(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_gtf_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -922,7 +922,7 @@ void eval_gtf(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_ltf(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_ltf_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -943,7 +943,7 @@ void eval_ltf(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_gef(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_gef_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -964,7 +964,7 @@ void eval_gef(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_lef(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_lef_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -988,7 +988,7 @@ void eval_lef(vmc_trusted_t *vmc, INT *pc_idx) {
 
 // Equality on base types
 
-void eval_eq_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_eq_unsignedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -1003,7 +1003,7 @@ void eval_eq_unsignedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_eq_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_eq_signedi_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -1024,7 +1024,7 @@ void eval_eq_signedi(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_eqf(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_eqf_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg = { .flags = 0, .value = 0 }; // init register
@@ -1046,7 +1046,7 @@ void eval_eqf(vmc_trusted_t *vmc, INT *pc_idx) {
 
 }
 
-void eval_eq_bool(vmc_trusted_t *vmc, INT *pc_idx) {
+void eval_eq_bool_trusted(vmc_trusted_t *vmc, INT *pc_idx) {
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env; // bool represented using uint
   cam_register_t hold_reg = { .flags = 0, .value = 0 };
@@ -1061,7 +1061,7 @@ void eval_eq_bool(vmc_trusted_t *vmc, INT *pc_idx) {
   vmc->contexts[vmc->current_running_context_id].env = final_value;
 }
 
-void eval_move(vmc_trusted_t *vmc, INT *pc_idx){
+void eval_move_trusted(vmc_trusted_t *vmc, INT *pc_idx){
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   int i = stack_push(&vmc->contexts[vmc->current_running_context_id].stack, e);
   if(i == 0){
@@ -1077,7 +1077,7 @@ void eval_move(vmc_trusted_t *vmc, INT *pc_idx){
 
 }
 
-void eval_pop (vmc_trusted_t *vmc, INT *pc_idx){
+void eval_pop_trusted(vmc_trusted_t *vmc, INT *pc_idx){
   cam_register_t r;
   int i = stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &r);
   if(i == 0){
@@ -1089,7 +1089,7 @@ void eval_pop (vmc_trusted_t *vmc, INT *pc_idx){
 
   (*pc_idx)++;
 }
-void eval_snoc(vmc_trusted_t *vmc, INT *pc_idx){
+void eval_snoc_trusted(vmc_trusted_t *vmc, INT *pc_idx){
   (*pc_idx)++;
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
   cam_register_t hold_reg;
@@ -1100,7 +1100,7 @@ void eval_snoc(vmc_trusted_t *vmc, INT *pc_idx){
     *pc_idx = -1;
     return;
   }
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -1115,12 +1115,12 @@ void eval_snoc(vmc_trusted_t *vmc, INT *pc_idx){
   }
 
 }
-void eval_comb(vmc_trusted_t *vmc, INT *pc_idx){
+void eval_comb_trusted(vmc_trusted_t *vmc, INT *pc_idx){
 
   uint16_t label = get_label(vmc, pc_idx);
   cam_value_t cam_label =
     { .value = (UINT)label, .flags = 0 };
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
   if(hi == HEAP_NULL){
     DEBUG_PRINT(("Heap allocation has failed"));
     *pc_idx = -1;
@@ -1142,18 +1142,18 @@ void eval_comb(vmc_trusted_t *vmc, INT *pc_idx){
   }
 
 }
-void eval_gotoifalse(vmc_trusted_t *vmc, INT *pc_idx){
+void eval_gotoifalse_trusted(vmc_trusted_t *vmc, INT *pc_idx){
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
 
   if ((e.value & 1) == 0){ // NOT SET; FALSE
-    eval_goto(vmc, pc_idx);
+    eval_goto_trusted(vmc, pc_idx);
   } else { // TRUE
     *pc_idx = (*pc_idx) + 3;
   }
 
 }
 
-void eval_switchi(vmc_trusted_t *vmc, INT *pc_idx){
+void eval_switchi_trusted(vmc_trusted_t *vmc, INT *pc_idx){
 
   cam_register_t e = vmc->contexts[vmc->current_running_context_id].env;
 
@@ -1224,7 +1224,7 @@ static int handle_spawn(vmc_trusted_t *vmc){
 
     vmc->contexts[vmc->current_running_context_id].env = empty_tuple;
 
-    return spawn(vmc, (uint16_t)label.value); // will place PID in env
+    return spawn_trusted(vmc, (uint16_t)label.value); // will place PID in env
 
 
   } else { // not a combinator but a closure
@@ -1237,7 +1237,7 @@ static int handle_spawn(vmc_trusted_t *vmc){
     // spawn then copies the content of the env register to
     // the `env` register of the new context
 
-    heap_index hi = vmc_heap_alloc_withGC(vmc);
+    heap_index hi = vmc_heap_alloc_withGC_trusted(vmc);
     if(hi == HEAP_NULL){
       DEBUG_PRINT(("Heap allocation has failed"));
       return -1;
@@ -1249,7 +1249,7 @@ static int handle_spawn(vmc_trusted_t *vmc){
     vmc->contexts[vmc->current_running_context_id].env = new_env_pointer;
 
     // Spawn will places the label graveyard address on the stack
-    return spawn(vmc, (uint16_t)label.value); // will place PID in env
+    return spawn_trusted(vmc, (uint16_t)label.value); // will place PID in env
 
   }
 
@@ -1257,7 +1257,7 @@ static int handle_spawn(vmc_trusted_t *vmc){
 
 static int handle_channel(vmc_trusted_t *vmc){
   UUID chan_id;
-  int j = channel(vmc, &chan_id);
+  int j = channel_trusted(vmc, &chan_id);
   if(j == -1){
     DEBUG_PRINT(("Error initializing a channel \n"));
     return j;
@@ -1280,7 +1280,7 @@ static int handle_sendevt(vmc_trusted_t *vmc){
   UUID channel_id = (UUID)hold_reg.value;
 
   event_t send_evt;
-  int j = sendEvt(vmc, &channel_id, message, &send_evt);
+  int j = sendEvt_trusted(vmc, &channel_id, message, &send_evt);
   if(j == -1){
     DEBUG_PRINT(("Error with sendEvt \n"));
     return j;
@@ -1298,7 +1298,7 @@ static int handle_recvevt(vmc_trusted_t *vmc){
   UUID channel_id = (UUID)channel_cam.value;
 
   event_t recv_evt;
-  int j = recvEvt(vmc, &channel_id, &recv_evt);
+  int j = recvEvt_trusted(vmc, &channel_id, &recv_evt);
   if(j == -1){
     DEBUG_PRINT(("Error with recvEvt \n"));
     return j;
@@ -1321,7 +1321,7 @@ static int handle_sync(vmc_trusted_t *vmc){
 
   event_t evt = (event_t)event_env.value;
 
-  int j = sync(vmc, &evt);
+  int j = sync_trusted(vmc, &evt);
   if(j == -1){
     DEBUG_PRINT(("Error in synchronisation \n"));
     return j;
@@ -1348,7 +1348,7 @@ static int handle_choose(vmc_trusted_t *vmc){
 
   event_t final_evt;
 
-  choose(vmc, &evt1, &evt2, &final_evt);
+  choose_trusted(vmc, &evt1, &evt2, &final_evt);
 
   cam_value_t final_evt_cam =
     { .value = (UINT)final_evt, .flags = VALUE_PTR_BIT };
@@ -1453,7 +1453,7 @@ static int handle_time(vmc_trusted_t *vmc){
   // because the sequence of bytecode will be - ..time; sync...
   vmc->contexts[vmc->current_running_context_id].env = hold_reg3;
 
-  int k = time(vmc, baseline, deadline);
+  int k = time_trusted(vmc, baseline, deadline);
   if(k == -1){
     DEBUG_PRINT(("Error with syncT \n"));
     return k;
@@ -1468,7 +1468,7 @@ static int handle_time(vmc_trusted_t *vmc){
 
 }
 
-void eval_callrts(vmc_trusted_t *vmc, INT *pc_idx){
+void eval_callrts_trusted(vmc_trusted_t *vmc, INT *pc_idx){
   INT n_idx = (*pc_idx) + 1;
   uint8_t rts_op_no = vmc->code_memory[n_idx];
 

@@ -30,9 +30,9 @@
 #include <trusted/TrustedRTS.h>
 #include <trusted/TrustedVMC.h>
 
-typedef void (*eval_fun) (vmc_trusted_t *vmc, INT *pc_idx);
+typedef void (*eval_fun_trusted) (vmc_trusted_t *vmc, INT *pc_idx);
 
 /* TODO: The list of evaluators should be specified as constant */
-extern eval_fun evaluators[56]; // 56 instructions
+extern eval_fun_trusted evaluators_trusted[56]; // 56 instructions
 
 #endif

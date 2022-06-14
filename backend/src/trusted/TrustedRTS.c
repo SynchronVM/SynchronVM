@@ -121,9 +121,9 @@ static int cleanupChannels(vmc_trusted_t *container, event_t *evts){
     /****************************************************/
     // polling the channel queuss cleans the dirty entries
     if(bevt_simple.e_type == SEND)
-      poll_sendq(container, &container->channels[bevt_simple.channel_id].sendq);
+      poll_sendq_trusted(container, &container->channels[bevt_simple.channel_id].sendq);
     else if (bevt_simple.e_type == RECV)
-      poll_recvq(container, &container->channels[bevt_simple.channel_id].recvq);
+      poll_recvq_trusted(container, &container->channels[bevt_simple.channel_id].recvq);
 
     // continue the while loop
 
@@ -179,14 +179,14 @@ static int findSynchronizable(vmc_trusted_t *container, event_t *evts, cam_event
 
     if(bevt_simple.e_type == SEND){
 
-      if(poll_recvq(container, &container->channels[bevt_simple.channel_id].recvq)){
+      if(poll_recvq_trusted(container, &container->channels[bevt_simple.channel_id].recvq)){
         *cev = cevt;
         return 1;
       } // else continue the do-while loop
 
     } else if (bevt_simple.e_type == RECV) { // recvEvt
 
-      if(poll_sendq(container, &container->channels[bevt_simple.channel_id].sendq)){
+      if(poll_sendq_trusted(container, &container->channels[bevt_simple.channel_id].sendq)){
         *cev = cevt;
         return 1;
       }
