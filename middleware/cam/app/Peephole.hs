@@ -28,7 +28,7 @@ import qualified Control.Monad.State.Strict as S
 import Debug.Trace
 
 optimise :: CAM -> CAM
-optimise cam = traceShowId cam'
+optimise cam = cam'
   where
     flatcam   = flattenCAM cam
     initState = initCode flatcam 0
