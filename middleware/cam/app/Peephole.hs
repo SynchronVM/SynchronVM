@@ -32,7 +32,7 @@ optimise cam = cam'
   where
     flatcam   = flattenCAM cam
     initState = initCode flatcam 0
-    flatcam'  = S.evalState (runOptimise optimiser) initState
+    flatcam'  = S.evalState (runOptimise optimiser') initState
     cam'      = rebuildCAM flatcam'
 
 data Code = Code { instrs :: [FlatCAM]
@@ -49,6 +49,15 @@ newtype Optimise a =
     }
   deriving (Functor, Applicative, Monad, S.MonadState Code)
 
+optimiser' :: Optimise [FlatCAM]
+optimiser' = do
+  instrs <- getInstrs
+  instrs' <- optimiser
+  if instrs == instrs'
+    then return instrs'
+    else S.put (initCode instrs' 0) >> optimiser'
+
+
 optimiser :: Optimise [FlatCAM]
 optimiser = do
   pc <- getPC
@@ -58,6 +67,8 @@ optimiser = do
     is <- getInstrs
     pure is
   else do
+    o <- applyFiveOPRule
+    incPCBy o
     o <- applyThreeOPRule
     incPCBy o
     o <- applyTwoOPRule
@@ -112,6 +123,30 @@ applyTwoOPRule = do
       _ -> pure 0 -- maybe the OneOPRule applies so don't increment PC
 
   else pure 0 -- if there is only one instruction and applyOneOPRule applies
+
+applyFiveOPRule :: Optimise Offset
+applyFiveOPRule = do
+  is <- getInstrs
+  pc <- getPC
+  b <- atleastNInstrs 5
+  if b
+    then do
+      let i1 = is !! pc
+          i2 = is !! (pc + 1)
+          i3 = is !! (pc + 2)
+          i4 = is !! (pc + 3)
+          i5 = is !! (pc + 4)
+      case (i1, i2, i3, i4, i5) of
+        (Plain (Ins i1_), Plain (Ins i2_), Plain (Ins i3_), Plain (Ins i4_), Plain (Ins i5_)) -> do
+          let (is_, offset) = fiveOPRule i1_ i2_ i3_ i4_ i5_
+          replaceNInstrs 5 Nothing is_
+          pure offset
+        (Labeled l (Ins i1_), Plain (Ins i2_), Plain (Ins i3_), Plain (Ins i4_), Plain (Ins i5_)) -> do
+          let (is_, offset) = fiveOPRule i1_ i2_ i3_ i4_ i5_
+          replaceNInstrs 5 (Just l) is_
+          pure offset
+        _ -> pure 0
+    else pure 0
 
 {-
 The 3 op rule was added to deal with certain scenarios
@@ -308,7 +343,9 @@ twoOPRule (COMB l) APP = ([POP , CALL l], -1)
 twoOPRule (CALL l) RETURN = ([GOTO l], 1)
 twoOPRule i1       i2     = ([i1, i2], 0) -- try oneOPRules now
 
-
+fiveOPRule :: Instruction -> Instruction -> Instruction -> Instruction -> Instruction -> ([Instruction], Offset)
+fiveOPRule PUSH FST SWAP SND CONS = ([], -1)
+fiveOPRule i1 i2 i3 i4 i5 = ([i1, i2, i3, i4, i5], 0)
 
 
 
