@@ -94,6 +94,7 @@ applyOneOPRule = do
       Labeled l (Ins il_) -> do
           let (is_, offset) = oneOPRule is il_
           replaceNInstrs 1 (Just l) is_
+          removeSkipFromLabel
           pure 1 -- a labeled instruction becomes a new labeled instruction, so
                  -- we should just progress the PC by 1 instruction
 
@@ -101,6 +102,37 @@ applyOneOPRule = do
 
   else pure 1 -- trigger `terminateNow`
 
+{- | Remove SKIP instructions from labels, as these are otherwise not inspected by the
+optimizer. This function will look at the instruction at @pc@ and @pc + 1@, and if they
+are of the pattern
+
+@
+Label l SKIP;
+instr
+@
+
+they are optimized to
+
+@
+Label l instr
+@
+
+The list of instructions is modified to contain only the new label-instruction instead of
+the two previous instructions
+-}
+removeSkipFromLabel :: Optimise ()
+removeSkipFromLabel = do
+  is <- getInstrs
+  pc <- getPC
+  b <- atleastNInstrs 2
+  if b
+    then do
+      let i1 = is !! pc
+          i2 = is !! (pc + 1)
+      case (i1, i2) of
+        (Labeled l (Ins SKIP), Plain (Ins i2_)) -> replaceNInstrs 2 (Just l) [i2_]
+        _ -> return ()
+    else return ()
 
 applyTwoOPRule :: Optimise Offset
 applyTwoOPRule = do
@@ -119,6 +151,7 @@ applyTwoOPRule = do
       (Labeled l (Ins i1_), Plain (Ins i2_)) -> do
           let (is_, offset) = twoOPRule i1_ i2_
           replaceNInstrs 2 (Just l) is_
+          removeSkipFromLabel
           pure offset
       _ -> pure 0 -- maybe the OneOPRule applies so don't increment PC
 
@@ -144,6 +177,7 @@ applyFiveOPRule = do
         (Labeled l (Ins i1_), Plain (Ins i2_), Plain (Ins i3_), Plain (Ins i4_), Plain (Ins i5_)) -> do
           let (is_, offset) = fiveOPRule i1_ i2_ i3_ i4_ i5_
           replaceNInstrs 5 (Just l) is_
+          removeSkipFromLabel
           pure offset
         _ -> pure 0
     else pure 0
