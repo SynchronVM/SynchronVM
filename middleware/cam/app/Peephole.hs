@@ -28,7 +28,7 @@ import qualified Control.Monad.State.Strict as S
 import Debug.Trace
 
 optimise :: CAM -> CAM
-optimise cam = cam'
+optimise cam = traceShowId cam'
   where
     flatcam   = flattenCAM cam
     initState = initCode flatcam 0
@@ -79,6 +79,12 @@ applyOneOPRule = do
           let (is_, offset) = oneOPRule is i1_
           replaceNInstrs 1 Nothing is_
           pure offset
+      
+      Labeled l (Ins il_) -> do
+          let (is_, offset) = oneOPRule is il_
+          replaceNInstrs 1 (Just l) is_
+          pure 1 -- a labeled instruction becomes a new labeled instruction, so
+                 -- we should just progress the PC by 1 instruction
 
       _ -> pure 1 -- this is because the two op rule has already been applied
 
@@ -164,6 +170,18 @@ incPCBy offset = do
   if (offset < 0 && pc <= 0) then return ()
     else  S.modify $ \s -> s {programcounter = pc + offset}
 
+{- | Replace @n@ instructions from the current @pc@ with instructions @is_@. If the label @l@ is
+a @Just@, the interleaved statements are @Labeled l SKIP@ if @is_@ is empty, and @Labeled l (head i) : is@ if
+  it @is_@ is not empty.
+  
+  Result is
+  
+  @
+  concat [ take pc instructions
+         , new interleaved instructions
+         , drop (pc + n) instructions
+         ]
+  @-}
 replaceNInstrs :: Int -> Maybe Label -> [Instruction] -> Optimise ()
 replaceNInstrs n l is_ = do
   is <- getInstrs
