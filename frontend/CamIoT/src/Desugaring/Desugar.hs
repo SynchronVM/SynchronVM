@@ -262,13 +262,14 @@ desugarExp m ffitys e = case e of
                                e2' = desugarExp m ffitys e2
                                e3' = desugarExp m ffitys e3
                            in SEIf a' e1' e2' e3'
-    AST.EApp a e1 e2    -> let a'  = desugarType a
-                               e1' = desugarExp m ffitys e1
-                               e2' = desugarExp m ffitys e2
-                           in if hasForeign e1'
-                              then let (id, args) = getForeignIdArgs e1'
-                                    in SEAppF a' id (args ++ [e2'])
-                              else SEApp a' e1' e2'
+    AST.EApp a e1 e2    -> if hasForeign e1
+        then let (id, args) = getForeignIdArgs e1
+                 a' = desugarType a
+             in SEAppF a' id (map (desugarExp m ffitys) (args ++ [e2]))
+        else let a' = desugarType a
+                 e1' = desugarExp m ffitys e1
+                 e2' = desugarExp m ffitys e2
+             in SEApp a' e1' e2'
     AST.EOr a e1 e2     -> let a'  = desugarType a
                                e1' = desugarExp m ffitys e1
                                e2' = desugarExp m ffitys e2
@@ -306,19 +307,22 @@ desugarExp m ffitys e = case e of
                                   Nothing -> error "should not end up here - constructor not found"
     AST.EConst a c      -> SEConst (desugarType a) c
     where
-      hasForeign (SEVar _ id) = Set.member id ffitys
-      hasForeign (SEApp _ e1 _) = hasForeign e1
+      hasForeign :: AST.Exp AST.Type -> Bool
+      hasForeign (AST.EVar _ id) = Set.member id ffitys
+      hasForeign (AST.EApp _ e1 _) = hasForeign e1
       hasForeign _ = False -- XXX : bans partial applications
 
-      getForeignIdArgs :: SExp SType -> (AST.Ident, [SExp SType])
+      getForeignIdArgs :: AST.Exp AST.Type -> (AST.Ident, [AST.Exp AST.Type])
       getForeignIdArgs e = (getid e, getargs e)
 
-      getid (SEVar _ id) = id
-      getid (SEApp _ e1 _) = getid e1
+      getid :: AST.Exp AST.Type -> AST.Ident
+      getid (AST.EVar _ id) = id
+      getid (AST.EApp _ e1 _) = getid e1
       getid _ = error "partial applications not allowed for FFI"
 
-      getargs (SEVar _ _) = []
-      getargs (SEApp _ e1 e2) = getargs e1 ++ [e2]
+      getargs :: AST.Exp AST.Type -> [AST.Exp AST.Type]
+      getargs (AST.EVar _ _) = []
+      getargs (AST.EApp _ e1 e2) = getargs e1 ++ [e2]
       getargs _ = error "partial applications not allowed for FFI"
 
 desugarPat :: AST.Pat AST.Type -> SPat SType
