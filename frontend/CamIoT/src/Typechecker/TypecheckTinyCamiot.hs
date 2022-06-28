@@ -232,6 +232,9 @@ checkForeignApps funs = mapM_ checkOne funs
       FMutrec x0      -> []
       ForeignFN id ty -> [(id, length (typearguments ty))]
 
+    callsFFI :: Ident -> Bool
+    callsFFI id = maybe False (const True) (Map.lookup id foreigns)
+
     {- | Checks that an identifier @id@ applied to @appliedTo@ arguments is fully
     applied, ni the case that @id@ is the name of a foreign function. -}
     okArity :: Ident -> Int -> TC ()
@@ -256,29 +259,18 @@ checkForeignApps funs = mapM_ checkOne funs
       DEquation _ _ _ body -> mapM_ (uncurry okArity) (apps body)
       _ -> return ()
 
-    {- | Return all the applications of arity up to 6 in an expression. E.g @f (f 2 5) 6@
-    will return @[("f", [f 2 5, 6]), ("f", [2, 5])]@. This function is called when all
-    applications of forieng functions are checked to make sure that they are fully applied.
+    {- | Return a list of funtion names and the number of arguments they were applied to.
+    This will be used when determining if all foreign function calls are fully applied.
     -}
     apps :: Exp a -> [(Ident, Int)]
-    apps (EApp _ (EVar _ id@(Ident fun)) e) = (id, 1) : apps e
-    apps (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) =
-        (id, 2) : apps e1 ++ apps e2
-    apps (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) =
-        (id, 3) : apps e1 ++ apps e2 ++ apps e2
-    apps (EApp _ (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) e4) =
-        (id, 4) : apps e1 ++ apps e2 ++ apps e3 ++ apps e4
-    apps (EApp _ (EApp _ (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) e4) e5) =
-        (id, 5) : apps e1 ++ apps e2 ++ apps e3 ++ apps e4 ++ apps e5
-    apps (EApp _ (EApp _ (EApp _ (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) e4) e5) e6) =
-        (id, 6) : apps e1 ++ apps e2 ++ apps e3 ++ apps e4 ++ apps e5 ++ apps e6
     apps e = case e of
       ECase _ e pms   -> apps e ++ (concatMap (\(PM _ e) -> apps e) pms)
       ELet _ _ e1 e2  -> apps e1 ++ apps e2
       ELetR _ _ e1 e2 -> apps e1 ++ apps e2
       ELam _ _ e      -> apps e
       EIf _ e1 e2 e3  -> apps e1 ++ apps e2 ++ apps e3
-      EApp _ e1 e2    -> apps e1 ++ apps e2
+      EApp _ e1 e2    -> let (id, args) = getForeignIdArgs e1
+                         in (id, length $ args ++ [e2]) : concatMap apps (args ++ [e2])
       EOr _ e1 e2     -> apps e1 ++ apps e2
       EAnd _ e1 e2    -> apps e1 ++ apps e2
       ERel _ e1 _ e2  -> apps e1 ++ apps e2
@@ -287,6 +279,20 @@ checkForeignApps funs = mapM_ checkOne funs
       ETup _ es       -> concatMap apps es
       ENot _ e        -> apps e
       _ -> []
+
+    -- | Given an expression that is an application, returns the id and arguments
+    getForeignIdArgs :: Exp a -> (Ident, [Exp a])
+    getForeignIdArgs e = (getid e, getargs e)
+
+    -- | Return the id of an application
+    getid (EVar _ id) = id
+    getid (EApp _ e1 _) = getid e1
+    getid _ = error "partial applications not allowed for FFI"
+
+    -- | Return the arguments of an application
+    getargs (EVar _ _) = []
+    getargs (EApp _ e1 e2) = getargs e1 ++ [e2]
+    getargs _ = error "partial applications not allowed for FFI"
 
 {-- | Given a program as a list of definitions, return a pair where the first component
 is the data type declarations and the second component is a list of all the functions,
