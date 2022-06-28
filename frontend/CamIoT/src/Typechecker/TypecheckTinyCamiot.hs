@@ -158,6 +158,9 @@ checkProgram ds = do
 
     let (datadecls, functions) = makeFunctions ds
     let datadecls' = map fakeCoerce datadecls -- TODO omg get back to this
+
+    -- check that all foreign function applications are fully applied
+    checkForeignApps functions
     ((++) datadecls' . concat . map unwrapDef) <$> local scope (single functions)
 
   where
@@ -216,6 +219,74 @@ checkProgram ds = do
         fakeCoerce (DDataDec tyvar vars cons) = DDataDec tyvar vars cons
         fakeCoerce (DTypeSig name sig) = DTypeSig name sig
         fakeCoerce otherwise = error "should not be invoked"
+
+{- | Return @True@ if all foreign function applications are fully applied, or @False@
+otherwise. -}
+checkForeignApps :: [Function a] -> TC ()
+checkForeignApps funs = mapM_ checkOne funs
+  where
+    -- | Map from foreign functions to their airty
+    foreigns :: Map.Map Ident Int
+    foreigns = Map.fromList $ flip concatMap funs $ \f -> case f of
+      FN id m_ty defs -> []
+      FMutrec x0      -> []
+      ForeignFN id ty -> [(id, length (typearguments ty))]
+
+    {- | Checks that an identifier @id@ applied to @appliedTo@ arguments is fully
+    applied, ni the case that @id@ is the name of a foreign function. -}
+    okArity :: Ident -> Int -> TC ()
+    okArity id appliedTo = case Map.lookup id foreigns of
+        Just i | i == appliedTo -> return ()
+               | otherwise -> throwError $ IllformedForeignApplication id i appliedTo
+        Nothing -> return ()
+
+    -- | Checks the applications of a single function
+    checkOne :: Function a -> TC ()
+    checkOne (FN _ _ defs)        = mapM_ checkDef defs
+    checkOne (FMutrec idsTysDefs) = mapM_ (mapM_ checkDef . thrd) idsTysDefs
+    checkOne _                    = return ()
+
+    -- | Extract the third element from a triple
+    thrd :: (a,b,c) -> c
+    thrd (_,_,c) = c
+
+    -- | Check the applications of a single definition
+    checkDef :: Def a -> TC ()
+    checkDef d = case d of
+      DEquation _ _ _ body -> mapM_ (uncurry okArity) (apps body)
+      _ -> return ()
+
+    {- | Return all the applications of arity up to 6 in an expression. E.g @f (f 2 5) 6@
+    will return @[("f", [f 2 5, 6]), ("f", [2, 5])]@. This function is called when all
+    applications of forieng functions are checked to make sure that they are fully applied.
+    -}
+    apps :: Exp a -> [(Ident, Int)]
+    apps (EApp _ (EVar _ id@(Ident fun)) e) = (id, 1) : apps e
+    apps (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) =
+        (id, 2) : apps e1 ++ apps e2
+    apps (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) =
+        (id, 3) : apps e1 ++ apps e2 ++ apps e2
+    apps (EApp _ (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) e4) =
+        (id, 4) : apps e1 ++ apps e2 ++ apps e3 ++ apps e4
+    apps (EApp _ (EApp _ (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) e4) e5) =
+        (id, 5) : apps e1 ++ apps e2 ++ apps e3 ++ apps e4 ++ apps e5
+    apps (EApp _ (EApp _ (EApp _ (EApp _ (EApp _ (EApp _ (EVar _ id@(Ident fun)) e1) e2) e3) e4) e5) e6) =
+        (id, 6) : apps e1 ++ apps e2 ++ apps e3 ++ apps e4 ++ apps e5 ++ apps e6
+    apps e = case e of
+      ECase _ e pms   -> apps e ++ (concatMap (\(PM _ e) -> apps e) pms)
+      ELet _ _ e1 e2  -> apps e1 ++ apps e2
+      ELetR _ _ e1 e2 -> apps e1 ++ apps e2
+      ELam _ _ e      -> apps e
+      EIf _ e1 e2 e3  -> apps e1 ++ apps e2 ++ apps e3
+      EApp _ e1 e2    -> apps e1 ++ apps e2
+      EOr _ e1 e2     -> apps e1 ++ apps e2
+      EAnd _ e1 e2    -> apps e1 ++ apps e2
+      ERel _ e1 _ e2  -> apps e1 ++ apps e2
+      EAdd _ e1 _ e2  -> apps e1 ++ apps e2
+      EMul _ e1 _ e2  -> apps e1 ++ apps e2
+      ETup _ es       -> concatMap apps es
+      ENot _ e        -> apps e
+      _ -> []
 
 {-- | Given a program as a list of definitions, return a pair where the first component
 is the data type declarations and the second component is a list of all the functions,
