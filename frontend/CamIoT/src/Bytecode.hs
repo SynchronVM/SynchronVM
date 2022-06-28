@@ -64,6 +64,7 @@ translate (SETag _ (AST.UIdent tag) maybeExp) =
   case maybeExp of
     Nothing -> C.Con tag C.Void
     Just e  -> C.Con tag (translate e)
+translate e@(SEAppF _ (AST.Ident ident) args) = C.Foreign $ C.ForeignCall ident (length args) (map translate args)
 translate e@(SEApp _ e1 e2)
   | runtimeFuncs e = genrtsfunc e
   | otherwise      = C.App (translate e1) (translate e2)
@@ -461,7 +462,7 @@ byteCompile verbose path = do
     Right desugaredIr -> do
 
       condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
-      condPutStrLn verbose $ PP.printTree desugaredIr
+      condPutStrLn verbose $ show desugaredIr--PP.printTree desugaredIr
       --putStrLn $ show desugaredIr
 
       condPutStrLn verbose $ "\nCAM IR (no pp): \n"

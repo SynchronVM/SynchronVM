@@ -24,6 +24,7 @@ module CamOpt ( Exp (..)
               , Var
               , Tag
               , Sys (..)
+              , Foreign (..)
               , BinOp (..)
               , UnaryOp (..)
               , Label (..)
@@ -59,6 +60,7 @@ type TaggedField = (Tag, Pat)
 
 data Exp = Var Var  -- variable
          | Sys Sys  -- Primops
+         | Foreign Foreign -- Foreign calls
          | Void     -- Empty Tuple
          | Pair Exp Exp    -- Pair
          | Con  Tag Exp    -- Constructed Value
@@ -80,6 +82,19 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS2 RTS2 Exp Exp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
+
+{- | Foreign function calls.
+
+                   name of foreign function
+                              |
+                              v  arity
+                                   |
+                                   v   args
+                                        |
+                                        v
+-}
+data Foreign = ForeignCall String Int [Exp]
+  deriving (Ord, Show, Eq)
 
 {-
 
@@ -691,6 +706,7 @@ rFree Void _           = Set.empty
 rFree (Pair e1 e2) etaenv = rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFree (Con _ e) etaenv    = rFree e  etaenv
 rFree (App e1 e2) etaenv  = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Foreign (ForeignCall id arity args)) etaenv = Set.unions $ map (flip rFree etaenv) args
 rFree (Lam p e) etaenv = rFree e (EtaPair etaenv p) `Set.difference` vars p
 rFree (If e1 e2 e3) etaenv =
   rFree e1 etaenv `Set.union`
