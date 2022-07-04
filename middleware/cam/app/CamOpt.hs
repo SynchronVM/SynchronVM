@@ -189,6 +189,9 @@ data Instruction
      -- Calling an RTS function
    | CALLRTS OperationNumber
 
+     -- Calling a foreign function with name and arity
+   | APPF String Int
+
    | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
 
@@ -480,6 +483,22 @@ codegen (Sequence e1 e2) env = do
   e1' <- codegen e1 env
   e2' <- codegen e2 env
   pure $! e1' <+> e2'
+codegen (Foreign (ForeignCall name arity args)) env = do
+  args' <- compileArgs args
+  pure $! args' <+> (Ins (APPF name arity))
+  where
+    {- | Compile the arguments for the foreign call. The first parameter goes in the
+    register, and the rest goes on the stack. With the first element being the top
+    of the stack, they appear in the order @[arg2, arg3, arg4, ...@. -}
+    compileArgs :: [Exp] -> Codegen CAM
+    compileArgs args = do
+      let arg1 = head args -- register contents
+          rest = tail args -- stack contents
+      rest' <- S.foldM (\acc arg -> do
+        arg' <- codegen arg env
+        pure $! acc <+> arg' <+> Ins MOVE) (Ins SKIP) (reverse rest)
+      arg1' <- codegen arg1 env
+      pure $! rest' <+> arg1'
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e@(If e1 e2 e3) env

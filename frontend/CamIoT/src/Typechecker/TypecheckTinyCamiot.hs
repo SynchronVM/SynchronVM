@@ -269,8 +269,10 @@ checkForeignApps funs = mapM_ checkOne funs
       ELetR _ _ e1 e2 -> apps e1 ++ apps e2
       ELam _ _ e      -> apps e
       EIf _ e1 e2 e3  -> apps e1 ++ apps e2 ++ apps e3
-      EApp _ e1 e2    -> let (id, args) = getForeignIdArgs e1
-                         in (id, length $ args ++ [e2]) : concatMap apps (args ++ [e2])
+      EApp _ e1 e2 | isFunction e1 ->
+        let (id, args) = getForeignIdArgs e1
+        in (id, length $ args ++ [e2]) : concatMap apps (args ++ [e2])
+                   | otherwise -> apps e1 ++ apps e2
       EOr _ e1 e2     -> apps e1 ++ apps e2
       EAnd _ e1 e2    -> apps e1 ++ apps e2
       ERel _ e1 _ e2  -> apps e1 ++ apps e2
@@ -283,6 +285,12 @@ checkForeignApps funs = mapM_ checkOne funs
     -- | Given an expression that is an application, returns the id and arguments
     getForeignIdArgs :: Exp a -> (Ident, [Exp a])
     getForeignIdArgs e = (getid e, getargs e)
+
+    -- | Returns @True@ if a function is applied, and not a constructor
+    isFunction :: Exp a -> Bool
+    isFunction (EVar _ _)    = True
+    isFunction (EApp _ e1 _) = isFunction e1
+    isFunction _             = False
 
     -- | Return the id of an application
     getid (EVar _ id) = id
