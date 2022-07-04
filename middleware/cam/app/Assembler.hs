@@ -41,7 +41,6 @@ Bytecode format for CAM
 
 ---------------------------
 
-
 FE ED CA FE    -- *Magic Number* - 4 bytes
 
 FF             -- *Version of bytecode* - 1 byte;
@@ -59,7 +58,9 @@ FF             -- *Version of bytecode* - 1 byte;
 
 
 00 00          -- *Native Pool count* - 2 bytes - index for native functions
-
+               -- each entry is 3 bytes. First two identify the function, and the last is the arity. (pc + 1 | pc + 2) forms the index,
+               -- and pc + 3 is the arity
+00 00 02       -- example foreign function "0", arity 2
 
 00 00 00 FF    -- Code Length - Max size of 4 bytes
 <opcode> <data>
@@ -126,7 +127,7 @@ COMB <l>                       0x34FFFF                    3
 GOTOIFALSE <l>                 0x35FFFF                    3
 SWITCHI <n> <t> <l> ...        0x36FF...                   1 + 1 + 1024
 CALLRTS                        0x37FF                      1 + 1
-APPF                           0x38                        1
+APPF                           0x38FFFF                    1 + 2
 
 
 * <n> - Positive ints - 1 byte long
