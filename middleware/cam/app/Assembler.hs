@@ -32,6 +32,8 @@ import Data.Binary
 import Data.Bits
 import Data.Int (Int32)
 import Data.Word
+import qualified Data.Map as Map
+import Data.List
 import GHC.Generics
 import System.Directory.ProjectRoot
 
@@ -199,7 +201,9 @@ instance Binary Str where
 
 data AssemblerState =
   AssemblerState
-  { intpool :: [[Word8]]
+  { intpool :: Map.Map Int32 Word16
+    {- ^ Maps an integer literal to its index in the int pool. Should only be modified
+    by @modifyIntPool@. -}
   , strpool :: [[Word8]]
   , nativepool  :: [[Word8]]
   , symbolTable :: SymbolTable
@@ -215,7 +219,7 @@ newtype Assembler a =
   deriving (Functor, Applicative, Monad, MonadState AssemblerState)
 
 initState :: SymbolTable -> AssemblerState
-initState st = AssemblerState [] [] [] st [] 0
+initState st = AssemblerState Map.empty [] [] st [] 0
 
 originalBytecodeOffset
   = 4 -- magic number
@@ -236,7 +240,7 @@ translate cam =
       npoolSize = length npool
       bytelistSize = length bytelist
    in magic ++ version ++
-      serializeToBytes (byte2 ipoolSize) ++ join ipool ++
+      serializeToBytes (byte2 ipoolSize) ++ ipoolcontents ipool ++
       serializeToBytes (byte2 spoolSize) ++ join spool ++
       serializeToBytes (byte2 npoolSize) ++ join npool ++
       serializeToBytes (byte4 bytelistSize) ++
@@ -247,6 +251,13 @@ translate cam =
     (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
     i   = instructions cam
     st  = buildST cam
+
+    -- | Converts the intpool map into the contents of the actual integer pool.
+    ipoolcontents :: Map.Map Int32 Word16 -> [Word8]
+    ipoolcontents ipool = let aslist = Map.toList ipool
+                              sorted = sortBy (\(_,a) (_,b) -> compare a b) aslist
+                              theints = map fst sorted
+                          in concatMap serializeToBytes theints
 
 magic :: [Word8]
 magic = [254,237,202,254]
@@ -337,12 +348,19 @@ assemble (i : is) =
 serializeToBytes :: (Binary a) => a -> [Word8]
 serializeToBytes a = B.unpack $ encode a
 
+{- | Given a literal, return the index into the int pool of the literal in question.
+If the literal has been seen before, return the previously generated index. Otherwise
+a new index will be generated and put in the state. -}
 modifyIntPool :: Int32 -> Assembler [Word8]
 modifyIntPool i32 = do
   ipool <- gets intpool
-  let word8X4 = serializeToBytes i32
-  modify $ \s -> s { intpool = ipool <~: word8X4 }
-  pure $! serializeToBytes $ byte2 (length ipool)
+  case Map.lookup i32 ipool of
+    Just index -> pure $! serializeToBytes index -- index already generated, return it
+    Nothing -> do
+      let newindex = byte2 $ Map.size ipool
+          newmap = Map.insert i32 newindex ipool
+      modify $ \s -> s { intpool = newmap } -- update state with new index
+      pure $! serializeToBytes newindex
 
 modifyStringPool :: String -> Assembler [Word8]
 modifyStringPool s = do
