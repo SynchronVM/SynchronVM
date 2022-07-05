@@ -27,6 +27,7 @@ module Bytecode where
 import Control.Monad.State.Class
 import Control.Monad.State.Strict
 import Data.Int(Int32)
+import Data.Word(Word16)
 import Data.List
 import Desugaring.AST
 import GHC.Float(double2Float)
@@ -453,7 +454,7 @@ condPutStrLn b s =
     True -> putStrLn s
     False -> return ()
 
-byteCompile :: Bool -> FilePath -> IO ([Word8], [String])
+byteCompile :: Bool -> FilePath -> IO ([Word8], [String], [(String, Word16)])
 byteCompile verbose path = do
   compiled <- compile verbose path
   case compiled of
@@ -478,7 +479,7 @@ byteCompile verbose path = do
       condPutStrLn verbose $ show camopt
 
       condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
-      let (bytecode, foreign_arr) = A.translate camopt
+      let (bytecode, foreign_arr, constructor_table) = A.translate camopt
       condPutStrLn verbose $ show bytecode
 
       --condPutStrLn verbose $ "\n\n CAM HS Interpreter \n\n"
@@ -488,7 +489,7 @@ byteCompile verbose path = do
       -- condPutStrLn verbose $ "\nCAM Assembler and true bytecode generator: \n"
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
-      return (bytecode, foreign_arr)
+      return (bytecode, foreign_arr, constructor_table)
 
 
 -- Experiments --

@@ -230,9 +230,9 @@ originalBytecodeOffset
   + 0 -- starts with nothing in native pool
   + 4 -- bytecode instructions size
 
-translate :: CAM -> ([Word8], [String])
+translate :: CAM -> ([Word8], [String], [(Tag, TagIdx)])
 translate cam =
-  let (AssemblerState ipool spool npool _ _ _) = pools
+  let (AssemblerState ipool spool npool _ ttable _) = pools
       ipoolSize = length ipool
       spoolSize = sum $ map length spool
       npoolSize = length npool
@@ -246,6 +246,7 @@ translate cam =
                             spoolSize +
                             npoolSize) bytelist
       , writeForeignArray npool
+      , ttable
       )
   where
     (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
