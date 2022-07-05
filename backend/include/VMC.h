@@ -102,7 +102,7 @@ extern heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n);
 /**********************/
 
 #if FFI_ENABLED
-extern const void(*ffi_arr[])(void);
+extern void(*ffi_arr[])(void);
 extern bool is_constructor(uint16_t tagidx, char *constr);
 #endif
 
