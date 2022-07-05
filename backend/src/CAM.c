@@ -1528,9 +1528,5 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
   }
 }
 
-#ifdef FFI_ENABLED
-extern const void(*ffi_arr[])(void);
-#endif
-
 void eval_appf(vmc_t *vmc, INT *pc_idx){
 }

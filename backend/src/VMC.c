@@ -37,6 +37,12 @@
 #include <sys_time.h>
 #include <CONFIG_DEFINES.h>
 
+#ifdef FFI_ENABLED
+const void(*ffi_arr[])(void) = {
+  #include VMC_FOREIGN_FUNCTIONS_FILE
+};
+#endif
+
 /* TODO: We need a better way to manage these
    conditional includes. */
 #if VMC_CONTAINER_1_USE_BUTTON_0

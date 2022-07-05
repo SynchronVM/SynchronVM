@@ -102,9 +102,7 @@ extern heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n);
 /**********************/
 
 #ifdef FFI_ENABLED
-const void(*ffi_arr[])(void) = {
-  #include VMC_FOREIGN_FUNCTIONS_FILE
-};
+extern const void(*ffi_arr[])(void);
 #endif
 
 #endif
