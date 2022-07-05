@@ -23,7 +23,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 module Assembler ( translate
-                 , genbytecode
                  , writeAssembly) where
 
 import CamOpt hiding (initState)
@@ -172,8 +171,6 @@ EQB   - 48
 
 
 
-genbytecode :: CAM -> IO ()
-genbytecode = writeAssembly . translate
 
 
 writeAssembly :: [Word8] -> IO ()
@@ -233,21 +230,23 @@ originalBytecodeOffset
   + 0 -- starts with nothing in native pool
   + 4 -- bytecode instructions size
 
-translate :: CAM -> [Word8]
+translate :: CAM -> ([Word8], [String])
 translate cam =
   let (AssemblerState ipool spool npool _ _ _) = pools
       ipoolSize = length ipool
       spoolSize = sum $ map length spool
       npoolSize = length npool
       bytelistSize = length bytelist
-   in magic ++ version ++
-      serializeToBytes (byte2 ipoolSize) ++ ipoolcontents ipool ++
-      serializeToBytes (byte2 spoolSize) ++ join spool ++
-      serializeToBytes (byte2 npoolSize) ++ nativepoolcontents npool ++
-      serializeToBytes (byte4 bytelistSize) ++
-      rectifyLabelOffset ((ipoolSize * 4) + -- each int is 4 bytes
-                          spoolSize +
-                          npoolSize) bytelist
+   in ( magic ++ version ++
+        serializeToBytes (byte2 ipoolSize) ++ ipoolcontents ipool ++
+        serializeToBytes (byte2 spoolSize) ++ join spool ++
+        serializeToBytes (byte2 npoolSize) ++ nativepoolcontents npool ++
+        serializeToBytes (byte4 bytelistSize) ++
+        rectifyLabelOffset ((ipoolSize * 4) + -- each int is 4 bytes
+                            spoolSize +
+                            npoolSize) bytelist
+      , writeForeignArray npool
+      )
   where
     (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
     i   = instructions cam
@@ -269,6 +268,12 @@ translate cam =
       in concatMap (\(index,arity) -> serializeToBytes index ++ [arity, 0]) thecontents
       --                                                                ^
       --                                                 garbage number for the unused byte
+
+    writeForeignArray :: Map.Map String (Word16, Word8) -> [String]
+    writeForeignArray npool =
+      let aslist = Map.toList npool
+          sorted = sortBy (\(_, (a, _)) (_, (b, _)) -> compare a b) aslist
+      in map ((++) "foreign_" . fst) sorted
 
 magic :: [Word8]
 magic = [254,237,202,254]

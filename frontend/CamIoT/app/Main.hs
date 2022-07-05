@@ -24,6 +24,8 @@ module Main where
 import System.Environment (getArgs)
 import System.Exit
 
+import Control.Monad
+
 import Numeric
 import Data.List
 import Data.Maybe
@@ -32,7 +34,7 @@ import GHC.Word
 import Bytecode
 
 data Target = Target { inputFile :: Maybe FilePath
-                     , outputFile :: Maybe FilePath
+                     , outputFile :: Maybe String
                      , verbose :: Bool
                      -- Add more stuff as needed 
                      }
@@ -95,6 +97,8 @@ parseArgs = do
 hexStrings :: [Word8] -> [String]
 hexStrings xs = map (\x -> "0x" ++ showHex x "") xs
 
+foreign_c_arr :: [String] -> String
+foreign_c_arr foreigns = intercalate ", " foreigns
 
 doCompile :: Target -> IO ()
 doCompile t
@@ -102,15 +106,16 @@ doCompile t
   | otherwise =
       do
         let input = fromJust (inputFile t)
-        let outFile = case outputFile t of
-                        Nothing -> "out.svm"
-                        Just s -> s
+        let (outFile, foreignOutFile) = case outputFile t of
+                        Nothing -> ("out.svm", "foreign.svmarr")
+                        Just s -> (s ++ ".svm", s ++ ".svmarr")
         putStrLn $ "compiling file " ++ show input ++ " to output " ++ show outFile
     
-        compiled <- byteCompile (verbose t) input
+        (compiled, foreign_arr) <- byteCompile (verbose t) input
         let bc = concat $ intersperse ", " $ hexStrings compiled
         condPutStrLn (verbose t) $ "SenseVM ByteCode: \n" ++ bc
         writeFile outFile bc
+        when (not $ null foreign_arr) (writeFile foreignOutFile (foreign_c_arr foreign_arr))
                                          
 main :: IO ()
 main = do

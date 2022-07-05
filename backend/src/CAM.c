@@ -107,6 +107,7 @@ void eval_comb(vmc_t *vmc, INT *pc_idx);
 void eval_gotoifalse(vmc_t *vmc, INT *pc_idx);
 void eval_switchi   (vmc_t *vmc, INT *pc_idx);
 void eval_callrts   (vmc_t *vmc, INT *pc_idx);
+void eval_appf(vmc_t *vmc, int *pc_idx);
 
 
 
@@ -166,7 +167,8 @@ eval_fun evaluators[] =
     eval_comb,
     eval_gotoifalse,
     eval_switchi,
-    eval_callrts  // 0x37 : 55
+    eval_callrts,  // 0x37 : 55
+    eval_appf // 0x38 : 56
   };
 
 
@@ -1524,4 +1526,11 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
 
     *pc_idx = (*pc_idx) + 2;
   }
+}
+
+#ifdef FFI_ENABLED
+extern const void(*ffi_arr[])(void);
+#endif
+
+void eval_appf(vmc_t *vmc, INT *pc_idx){
 }
