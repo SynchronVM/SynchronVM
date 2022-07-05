@@ -37,7 +37,7 @@
 #include <sys_time.h>
 #include <CONFIG_DEFINES.h>
 
-#ifdef FFI_ENABLED
+#if FFI_ENABLED
 const void(*ffi_arr[])(void) = {
   #include VMC_FOREIGN_FUNCTIONS_FILE
 };
