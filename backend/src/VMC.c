@@ -38,11 +38,11 @@
 #include <CONFIG_DEFINES.h>
 
 #if FFI_ENABLED
-#include "foreign.c"
+#include <foreign.h>
 void(*ffi_arr[])(void) = {
   #include VMC_FOREIGN_FUNCTIONS_FILE
 };
-/* #include VMC_CONSTRUCTOR_COMPARE_FUNC */
+
 #endif
 
 /* TODO: We need a better way to manage these
