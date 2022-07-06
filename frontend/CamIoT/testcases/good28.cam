@@ -3,4 +3,4 @@ foreign import add : Int -> Int -> Int
 sub : Int -> Int -> Int
 sub x y = x - y
 
-main = add 3 5
+main = add 22 35
