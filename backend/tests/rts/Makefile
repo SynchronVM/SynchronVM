@@ -31,13 +31,13 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/stack.c \
               $(SOURCE_DIR)/VMC.c \
               $(SOURCE_DIR)/ll/ll_driver.c \
-	      foreign.c \
+	      ./FOREIGN/foreign.c \
               $(PLATFORM_SRC)/sys_time.c
 
 TEST_SOURCES = $(wildcard *.c)
 TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))
 
-TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I$(SENSEVM_DIR)/platform/linux-x86/include -I.
+TEST_INCLUDES = -I./FOREIGN -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I$(SENSEVM_DIR)/platform/linux-x86/include -I.
 
 all: $(TEST_EXECS) 
 
