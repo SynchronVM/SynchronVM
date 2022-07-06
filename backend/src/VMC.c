@@ -39,7 +39,7 @@
 
 #if FFI_ENABLED
 #include <foreign.h>
-void(*ffi_arr[])(void) = {
+cam_value_t(*ffi_arr[])(cam_value_t *) = {
   #include VMC_FOREIGN_FUNCTIONS_FILE
 };
 

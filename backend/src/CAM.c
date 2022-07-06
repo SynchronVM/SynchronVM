@@ -1522,7 +1522,7 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
   if(ret_code == -1){
     DEBUG_PRINT(("Error in RTS function"));
     *pc_idx = ret_code;
-  } else { 
+  } else {
 
     *pc_idx = (*pc_idx) + 2;
   }
@@ -1560,229 +1560,32 @@ void eval_appf(vmc_t *vmc, INT *pc_idx){
 
 
   cam_value_t res;
-  cam_value_t arg1;
-  switch(num_args){
-  case 0:
-    res = ((cam_value_t(*)())(ffi_arr[ffi_func_idx]))();
-    break;
-  case 1:
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    res = ((cam_value_t(*)(cam_value_t))(ffi_arr[ffi_func_idx]))(arg1);
-    break;
-  case 2:
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_register_t arg2;
-    int i =
-      stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg2);
-    if(i == 0){
-      DEBUG_PRINT(("Stack pop has failed"));
-      return;
-    }
-    res = ((cam_value_t(*)(cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx]))(arg1, arg2);
-    break;
-  case 3:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)(cam_value_t, cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]);
-    }
-    break;
 
-  case 4:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
+  cam_value_t arg_arr[num_args];
+
+  if (num_args == 0){
+    res = ffi_arr[ffi_func_idx](arg_arr);
+  } else if(num_args == 1){
+    arg_arr[0] = vmc->contexts[vmc->current_running_context_id].env;
+    res = ffi_arr[ffi_func_idx](arg_arr);
+  } else {
+    arg_arr[0] = vmc->contexts[vmc->current_running_context_id].env;
+    for(int j = 1; j < num_args; j++){
       cam_register_t arg_n;
       int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
+        stack_pop(  &vmc->contexts[vmc->current_running_context_id].stack
+                  , &arg_n);
       if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
+        DEBUG_PRINT(("Stack pop failed inside eval_appf"));
+        *pc_idx = -10;
         return;
       }
       arg_arr[j] = arg_n;
     }
-    res = ((cam_value_t(*)(cam_value_t, cam_value_t, cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]);
-    }
-    break;
-  case 5:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)( cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]
-                                 , arg_arr[3]);
-    }
-    break;
-  case 6:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)( cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]
-                                 , arg_arr[3]
-                                 , arg_arr[4]);
-    }
-    break;
-  case 7:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)( cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t, cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]
-                                 , arg_arr[3]
-                                 , arg_arr[4]
-                                 , arg_arr[5]);
-    }
-    break;
-  case 8:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)( cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t, cam_value_t, cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]
-                                 , arg_arr[3]
-                                 , arg_arr[4]
-                                 , arg_arr[5]
-                                 , arg_arr[6]);
-    }
-    break;
-  case 9:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)( cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]
-                                 , arg_arr[3]
-                                 , arg_arr[4]
-                                 , arg_arr[5]
-                                 , arg_arr[6]
-                                 , arg_arr[7]);
-    }
-    break;
-  case 10:
-    {
-    arg1 = vmc->contexts[vmc->current_running_context_id].env;
-    cam_value_t arg_arr[num_args - 1];
-    for(int j = 0; j < num_args - 1; j++){
-      cam_register_t arg_n;
-      int i =
-        stack_pop(&vmc->contexts[vmc->current_running_context_id].stack, &arg_n);
-      if(i == 0){
-        DEBUG_PRINT(("Stack pop has failed"));
-        return;
-      }
-      arg_arr[j] = arg_n;
-    }
-    res = ((cam_value_t(*)( cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t, cam_value_t, cam_value_t, cam_value_t
-                         , cam_value_t, cam_value_t))
-           (ffi_arr[ffi_func_idx])) ( arg1
-                                 , arg_arr[0]
-                                 , arg_arr[1]
-                                 , arg_arr[2]
-                                 , arg_arr[3]
-                                 , arg_arr[4]
-                                 , arg_arr[5]
-                                 , arg_arr[6]
-                                 , arg_arr[7]
-                                 , arg_arr[8]);
-    }
-    break;
-  default:
-    DEBUG_PRINT(("More than 10 FFI args not supported"));
-    *pc_idx = -10;
-    return;
+
+    res = ffi_arr[ffi_func_idx](arg_arr);
   }
+
 
   vmc->contexts[vmc->current_running_context_id].env = res;
 

@@ -98,7 +98,7 @@ hexStrings :: [Word8] -> [String]
 hexStrings xs = map (\x -> "0x" ++ showHex x "") xs
 
 foreign_c_arr :: [String] -> String
-foreign_c_arr foreigns = intercalate ", " $ map ((++) "(void (*)(void))")foreigns
+foreign_c_arr foreigns = intercalate ", " foreigns
 
 tag_table_c_compare :: [(String, Word16)] -> String
 tag_table_c_compare contents =

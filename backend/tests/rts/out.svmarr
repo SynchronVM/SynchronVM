@@ -1,1 +1,1 @@
-(void (*)(void))foreign_add
+foreign_add

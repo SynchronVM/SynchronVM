@@ -102,7 +102,7 @@ extern heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n);
 /**********************/
 
 #if FFI_ENABLED
-extern void(*ffi_arr[])(void);
+extern cam_value_t(*ffi_arr[])(cam_value_t *);
 extern bool is_constructor(uint16_t tagidx, char *constr);
 #endif
 
