@@ -107,7 +107,7 @@ foreign_c_trampolines foreigns = map singleForeign foreigns
     singleForeign (name, arity) =
       let argindexes = map (flip (-) 1) [1..arity]
           args = map (\i -> "args[" ++ show i ++ "]") argindexes
-      in unlines [ "inline cam_value_t " ++ name ++ "_trampoline(cam_value_t args*) {"
+      in unlines [ "inline cam_value_t " ++ name ++ "_trampoline(cam_value_t *args) {"
                  , "    return " ++ name ++ "(" ++ intercalate ", " args ++ ");"
                  , "}"
                  ]
