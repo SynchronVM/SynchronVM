@@ -33,6 +33,6 @@
 typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
 
 /* TODO: The list of evaluators should be specified as constant */
-extern eval_fun evaluators[56]; // 56 instructions
+extern eval_fun evaluators[57]; // 57 instructions
 
 #endif

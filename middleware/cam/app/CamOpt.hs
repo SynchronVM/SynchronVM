@@ -24,6 +24,7 @@ module CamOpt ( Exp (..)
               , Var
               , Tag
               , Sys (..)
+              , Foreign (..)
               , BinOp (..)
               , UnaryOp (..)
               , Label (..)
@@ -59,6 +60,7 @@ type TaggedField = (Tag, Pat)
 
 data Exp = Var Var  -- variable
          | Sys Sys  -- Primops
+         | Foreign Foreign -- Foreign calls
          | Void     -- Empty Tuple
          | Pair Exp Exp    -- Pair
          | Con  Tag Exp    -- Constructed Value
@@ -80,6 +82,19 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS2 RTS2 Exp Exp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
+
+{- | Foreign function calls.
+
+                   name of foreign function
+                              |
+                              v  arity
+                                   |
+                                   v   args
+                                        |
+                                        v
+-}
+data Foreign = ForeignCall String Int [Exp]
+  deriving (Ord, Show, Eq)
 
 {-
 
@@ -173,6 +188,9 @@ data Instruction
 
      -- Calling an RTS function
    | CALLRTS OperationNumber
+
+     -- Calling a foreign function with name and arity
+   | APPF String Int
 
    | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
@@ -465,6 +483,22 @@ codegen (Sequence e1 e2) env = do
   e1' <- codegen e1 env
   e2' <- codegen e2 env
   pure $! e1' <+> e2'
+codegen (Foreign (ForeignCall name arity args)) env = do
+  args' <- compileArgs args
+  pure $! args' <+> (Ins (APPF name arity))
+  where
+    {- | Compile the arguments for the foreign call. The first parameter goes in the
+    register, and the rest goes on the stack. With the first element being the top
+    of the stack, they appear in the order @[arg2, arg3, arg4, ...@. -}
+    compileArgs :: [Exp] -> Codegen CAM
+    compileArgs args = do
+      let arg1 = head args -- register contents
+          rest = tail args -- stack contents
+      rest' <- S.foldM (\acc arg -> do
+        arg' <- codegen arg env
+        pure $! acc <+> arg' <+> Ins MOVE) (Ins SKIP) (reverse rest)
+      arg1' <- codegen arg1 env
+      pure $! rest' <+> arg1'
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e@(If e1 e2 e3) env
@@ -691,6 +725,7 @@ rFree Void _           = Set.empty
 rFree (Pair e1 e2) etaenv = rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFree (Con _ e) etaenv    = rFree e  etaenv
 rFree (App e1 e2) etaenv  = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Foreign (ForeignCall id arity args)) etaenv = Set.unions $ map (flip rFree etaenv) args
 rFree (Lam p e) etaenv = rFree e (EtaPair etaenv p) `Set.difference` vars p
 rFree (If e1 e2 e3) etaenv =
   rFree e1 etaenv `Set.union`

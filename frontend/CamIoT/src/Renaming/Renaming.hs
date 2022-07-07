@@ -79,6 +79,12 @@ isRenamed id = do
 renameDef :: [Def a] -> R [Def a]
 renameDef []     = return []
 renameDef x@(d:ds) = case d of
+    DForeignType ident ty -> do
+      b <- isRenamed ident
+      if b
+        then do ds' <- renameDef ds
+                return $ (DForeignType ident ty):ds'
+        else inEnv (ident, ident) (renameDef (d:ds))
     DEquation _ id _ _ -> do
       b <- isRenamed id
       if b

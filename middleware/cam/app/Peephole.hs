@@ -32,7 +32,7 @@ optimise cam = cam'
   where
     flatcam   = flattenCAM cam
     initState = initCode flatcam 0
-    flatcam'  = S.evalState (runOptimise optimiser) initState
+    flatcam'  = S.evalState (runOptimise optimiser') initState
     cam'      = rebuildCAM flatcam'
 
 data Code = Code { instrs :: [FlatCAM]
@@ -49,6 +49,15 @@ newtype Optimise a =
     }
   deriving (Functor, Applicative, Monad, S.MonadState Code)
 
+optimiser' :: Optimise [FlatCAM]
+optimiser' = do
+  instrs <- getInstrs
+  instrs' <- optimiser
+  if instrs == instrs'
+    then return instrs'
+    else S.put (initCode instrs' 0) >> optimiser'
+
+
 optimiser :: Optimise [FlatCAM]
 optimiser = do
   pc <- getPC
@@ -58,6 +67,8 @@ optimiser = do
     is <- getInstrs
     pure is
   else do
+    o <- applyFiveOPRule
+    incPCBy o
     o <- applyThreeOPRule
     incPCBy o
     o <- applyTwoOPRule
@@ -79,11 +90,49 @@ applyOneOPRule = do
           let (is_, offset) = oneOPRule is i1_
           replaceNInstrs 1 Nothing is_
           pure offset
+      
+      Labeled l (Ins il_) -> do
+          let (is_, offset) = oneOPRule is il_
+          replaceNInstrs 1 (Just l) is_
+          removeSkipFromLabel
+          pure 1 -- a labeled instruction becomes a new labeled instruction, so
+                 -- we should just progress the PC by 1 instruction
 
       _ -> pure 1 -- this is because the two op rule has already been applied
 
   else pure 1 -- trigger `terminateNow`
 
+{- | Remove SKIP instructions from labels, as these are otherwise not inspected by the
+optimizer. This function will look at the instruction at @pc@ and @pc + 1@, and if they
+are of the pattern
+
+@
+Label l SKIP;
+instr
+@
+
+they are optimized to
+
+@
+Label l instr
+@
+
+The list of instructions is modified to contain only the new label-instruction instead of
+the two previous instructions
+-}
+removeSkipFromLabel :: Optimise ()
+removeSkipFromLabel = do
+  is <- getInstrs
+  pc <- getPC
+  b <- atleastNInstrs 2
+  if b
+    then do
+      let i1 = is !! pc
+          i2 = is !! (pc + 1)
+      case (i1, i2) of
+        (Labeled l (Ins SKIP), Plain (Ins i2_)) -> replaceNInstrs 2 (Just l) [i2_]
+        _ -> return ()
+    else return ()
 
 applyTwoOPRule :: Optimise Offset
 applyTwoOPRule = do
@@ -102,10 +151,36 @@ applyTwoOPRule = do
       (Labeled l (Ins i1_), Plain (Ins i2_)) -> do
           let (is_, offset) = twoOPRule i1_ i2_
           replaceNInstrs 2 (Just l) is_
+          removeSkipFromLabel
           pure offset
       _ -> pure 0 -- maybe the OneOPRule applies so don't increment PC
 
   else pure 0 -- if there is only one instruction and applyOneOPRule applies
+
+applyFiveOPRule :: Optimise Offset
+applyFiveOPRule = do
+  is <- getInstrs
+  pc <- getPC
+  b <- atleastNInstrs 5
+  if b
+    then do
+      let i1 = is !! pc
+          i2 = is !! (pc + 1)
+          i3 = is !! (pc + 2)
+          i4 = is !! (pc + 3)
+          i5 = is !! (pc + 4)
+      case (i1, i2, i3, i4, i5) of
+        (Plain (Ins i1_), Plain (Ins i2_), Plain (Ins i3_), Plain (Ins i4_), Plain (Ins i5_)) -> do
+          let (is_, offset) = fiveOPRule i1_ i2_ i3_ i4_ i5_
+          replaceNInstrs 5 Nothing is_
+          pure offset
+        (Labeled l (Ins i1_), Plain (Ins i2_), Plain (Ins i3_), Plain (Ins i4_), Plain (Ins i5_)) -> do
+          let (is_, offset) = fiveOPRule i1_ i2_ i3_ i4_ i5_
+          replaceNInstrs 5 (Just l) is_
+          removeSkipFromLabel
+          pure offset
+        _ -> pure 0
+    else pure 0
 
 {-
 The 3 op rule was added to deal with certain scenarios
@@ -164,6 +239,18 @@ incPCBy offset = do
   if (offset < 0 && pc <= 0) then return ()
     else  S.modify $ \s -> s {programcounter = pc + offset}
 
+{- | Replace @n@ instructions from the current @pc@ with instructions @is_@. If the label @l@ is
+a @Just@, the interleaved statements are @Labeled l SKIP@ if @is_@ is empty, and @Labeled l (head i) : is@ if
+  it @is_@ is not empty.
+  
+  Result is
+  
+  @
+  concat [ take pc instructions
+         , new interleaved instructions
+         , drop (pc + n) instructions
+         ]
+  @-}
 replaceNInstrs :: Int -> Maybe Label -> [Instruction] -> Optimise ()
 replaceNInstrs n l is_ = do
   is <- getInstrs
@@ -290,7 +377,9 @@ twoOPRule (COMB l) APP = ([POP , CALL l], -1)
 twoOPRule (CALL l) RETURN = ([GOTO l], 1)
 twoOPRule i1       i2     = ([i1, i2], 0) -- try oneOPRules now
 
-
+fiveOPRule :: Instruction -> Instruction -> Instruction -> Instruction -> Instruction -> ([Instruction], Offset)
+fiveOPRule PUSH FST SWAP SND CONS = ([], -1)
+fiveOPRule i1 i2 i3 i4 i5 = ([i1, i2, i3, i4, i5], 0)
 
 
 

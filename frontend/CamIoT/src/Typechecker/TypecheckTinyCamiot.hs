@@ -146,6 +146,7 @@ gatherDataDecs (d:ds) = case d of
 
 data Function a = FN Ident (Maybe Type) [Def a]
                 | FMutrec [(Ident, Maybe Type, [Def a])]
+                | ForeignFN Ident Type
 
 -- | Given a list of definitions, return a list of typechecked and annotated definitions.
 checkProgram :: [Def ()] -> TC [Def Type]
@@ -157,6 +158,9 @@ checkProgram ds = do
 
     let (datadecls, functions) = makeFunctions ds
     let datadecls' = map fakeCoerce datadecls -- TODO omg get back to this
+
+    -- check that all foreign function applications are fully applied
+    checkForeignApps functions
     ((++) datadecls' . concat . map unwrapDef) <$> local scope (single functions)
 
   where
@@ -194,13 +198,14 @@ checkProgram ds = do
         -- | Given a `Function a`, returns the name of the function.
         getName :: Function a -> Ident
         getName (FN n _ _) = n
-
+        getName (ForeignFN name _) = name
         {-- | Given a value of type Function Type, constructs a list of definitions
         that represent the same information.
         -}
         unwrapDef :: Function Type -> [Def Type]
         unwrapDef (FN _ Nothing ds)  = ds
         unwrapDef (FN n (Just t) ds) = (DTypeSig n t) : ds
+        unwrapDef (ForeignFN name ty) = [DForeignType name ty]
         unwrapDef (FMutrec idsTysDefs) =
           [DMutRec $
            map (\(id,(Just t),defs ) -> (DTypeSig id t, defs)) idsTysDefs
@@ -214,6 +219,88 @@ checkProgram ds = do
         fakeCoerce (DDataDec tyvar vars cons) = DDataDec tyvar vars cons
         fakeCoerce (DTypeSig name sig) = DTypeSig name sig
         fakeCoerce otherwise = error "should not be invoked"
+
+{- | Return @True@ if all foreign function applications are fully applied, or @False@
+otherwise. -}
+checkForeignApps :: [Function a] -> TC ()
+checkForeignApps funs = mapM_ checkOne funs
+  where
+    -- | Map from foreign functions to their airty
+    foreigns :: Map.Map Ident Int
+    foreigns = Map.fromList $ flip concatMap funs $ \f -> case f of
+      FN id m_ty defs -> []
+      FMutrec x0      -> []
+      ForeignFN id ty -> [(id, length (typearguments ty))]
+
+    callsFFI :: Ident -> Bool
+    callsFFI id = maybe False (const True) (Map.lookup id foreigns)
+
+    {- | Checks that an identifier @id@ applied to @appliedTo@ arguments is fully
+    applied, ni the case that @id@ is the name of a foreign function. -}
+    okArity :: Ident -> Int -> TC ()
+    okArity id appliedTo = case Map.lookup id foreigns of
+        Just i | i == appliedTo -> return ()
+               | otherwise -> throwError $ IllformedForeignApplication id i appliedTo
+        Nothing -> return ()
+
+    -- | Checks the applications of a single function
+    checkOne :: Function a -> TC ()
+    checkOne (FN _ _ defs)        = mapM_ checkDef defs
+    checkOne (FMutrec idsTysDefs) = mapM_ (mapM_ checkDef . thrd) idsTysDefs
+    checkOne _                    = return ()
+
+    -- | Extract the third element from a triple
+    thrd :: (a,b,c) -> c
+    thrd (_,_,c) = c
+
+    -- | Check the applications of a single definition
+    checkDef :: Def a -> TC ()
+    checkDef d = case d of
+      DEquation _ _ _ body -> mapM_ (uncurry okArity) (apps body)
+      _ -> return ()
+
+    {- | Return a list of funtion names and the number of arguments they were applied to.
+    This will be used when determining if all foreign function calls are fully applied.
+    -}
+    apps :: Exp a -> [(Ident, Int)]
+    apps e = case e of
+      ECase _ e pms   -> apps e ++ (concatMap (\(PM _ e) -> apps e) pms)
+      ELet _ _ e1 e2  -> apps e1 ++ apps e2
+      ELetR _ _ e1 e2 -> apps e1 ++ apps e2
+      ELam _ _ e      -> apps e
+      EIf _ e1 e2 e3  -> apps e1 ++ apps e2 ++ apps e3
+      EApp _ e1 e2 | isFunction e1 ->
+        let (id, args) = getForeignIdArgs e1
+        in (id, length $ args ++ [e2]) : concatMap apps (args ++ [e2])
+                   | otherwise -> apps e1 ++ apps e2
+      EOr _ e1 e2     -> apps e1 ++ apps e2
+      EAnd _ e1 e2    -> apps e1 ++ apps e2
+      ERel _ e1 _ e2  -> apps e1 ++ apps e2
+      EAdd _ e1 _ e2  -> apps e1 ++ apps e2
+      EMul _ e1 _ e2  -> apps e1 ++ apps e2
+      ETup _ es       -> concatMap apps es
+      ENot _ e        -> apps e
+      _ -> []
+
+    -- | Given an expression that is an application, returns the id and arguments
+    getForeignIdArgs :: Exp a -> (Ident, [Exp a])
+    getForeignIdArgs e = (getid e, getargs e)
+
+    -- | Returns @True@ if a function is applied, and not a constructor
+    isFunction :: Exp a -> Bool
+    isFunction (EVar _ _)    = True
+    isFunction (EApp _ e1 _) = isFunction e1
+    isFunction _             = False
+
+    -- | Return the id of an application
+    getid (EVar _ id) = id
+    getid (EApp _ e1 _) = getid e1
+    getid _ = error "partial applications not allowed for FFI"
+
+    -- | Return the arguments of an application
+    getargs (EVar _ _) = []
+    getargs (EApp _ e1 e2) = getargs e1 ++ [e2]
+    getargs _ = error "partial applications not allowed for FFI"
 
 {-- | Given a program as a list of definitions, return a pair where the first component
 is the data type declarations and the second component is a list of all the functions,
@@ -262,6 +349,7 @@ makeFunctions ds =
     makeFun :: [Def ()] -> Function ()
     makeFun ((DTypeSig name t):ds)        = FN name (Just t) ds
     makeFun ds@((DEquation _ name _ _):_) = FN name Nothing ds
+    makeFun ((DForeignType name t):ds)    = ForeignFN name t
 
     mutRecToFuns :: Def () -> Function ()
     mutRecToFuns (DMutRec tydefs) =
@@ -287,6 +375,7 @@ function. If the functions is recursive but lacks a type signature, we raise an 
 -}
 checkFunction :: Function () -> TC (Type, Function Type)
 checkFunction (FN name (Just t) []) = throwError $ AloneTypeSignature name t
+checkFunction (ForeignFN name t) = return (t, (ForeignFN name t))
 checkFunction fun@(FN name sig clauses) = do
     clauses' <- case recursive fun of
         True  -> case hasTypeSig fun of

@@ -65,7 +65,8 @@ llDef d  = case d of
             local (myUnion pvars) $ do
                 (e',ds) <- llExp e
                 return (DEquation a id ps e', ds)
-        DTypeSig _ _   -> return (d, [])
+        DTypeSig _ _     -> return (d, [])
+        DForeignType _ _ -> return (d, [])
         DDataDec _ _ _ -> return (d, [])
         DMutRec  _     -> return (d, []) -- XXX: Do not lambdalift mutually
                                          -- recursive functions as it might

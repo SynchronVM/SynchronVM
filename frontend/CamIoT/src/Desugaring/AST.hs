@@ -28,6 +28,7 @@ data SExp a
     | SELam   a (SPat a) (SExp a)
     | SEIf    a (SExp a) (SExp a) (SExp a)
     | SEApp   a (SExp a) (SExp a)
+    | SEAppF  a AST.Ident [(SExp a)] --FFI call
     | SEOr    a (SExp a) (SExp a)
     | SEAnd   a (SExp a) (SExp a)
     | SERel   a (SExp a) (AST.RelOp a) (SExp a)
@@ -105,6 +106,7 @@ instance Print a => Print (SExp a) where
     SELam a pat exp -> prPrec i 0 (concatD [doc (showString "\\"), prt 0 pat, doc (showString "->"), prt 0 exp])
     SEIf a exp1 exp2 exp3 -> prPrec i 0 (concatD [doc (showString "if"), prt 0 exp1, doc (showString "then"), prt 0 exp2, doc (showString "else"), prt 0 exp3])
     SEApp a exp1 exp2 -> prPrec i 6 (concatD [prt 6 exp1, prt 7 exp2])
+    SEAppF a id exps -> prPrec i 6 (concatD $ [doc (showString "foreign"), prt 0 id] ++ map (\e -> prt 0 e) exps)
     SEOr a exp1 exp2 -> prPrec i 1 (concatD [prt 2 exp1, doc (showString "||"), prt 1 exp2])
     SEAnd a exp1 exp2 -> prPrec i 2 (concatD [prt 3 exp1, doc (showString "&&"), prt 2 exp2])
     SERel a exp1 relop exp2 -> prPrec i 3 (concatD [prt 3 exp1, prt 0 relop, prt 4 exp2])

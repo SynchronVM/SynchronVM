@@ -107,6 +107,7 @@ void eval_comb(vmc_t *vmc, INT *pc_idx);
 void eval_gotoifalse(vmc_t *vmc, INT *pc_idx);
 void eval_switchi   (vmc_t *vmc, INT *pc_idx);
 void eval_callrts   (vmc_t *vmc, INT *pc_idx);
+void eval_appf(vmc_t *vmc, INT *pc_idx);
 
 
 
@@ -166,7 +167,8 @@ eval_fun evaluators[] =
     eval_comb,
     eval_gotoifalse,
     eval_switchi,
-    eval_callrts  // 0x37 : 55
+    eval_callrts,  // 0x37 : 55
+    eval_appf      // 0x38 : 56
   };
 
 
@@ -1520,8 +1522,74 @@ void eval_callrts(vmc_t *vmc, INT *pc_idx){
   if(ret_code == -1){
     DEBUG_PRINT(("Error in RTS function"));
     *pc_idx = ret_code;
-  } else { 
+  } else {
 
     *pc_idx = (*pc_idx) + 2;
   }
+}
+
+
+void eval_appf(vmc_t *vmc, INT *pc_idx){
+  // We set pc_idx = -10 for errors from the APPF bytecode
+  INT native_pool_idx_1 = (*pc_idx) + 1;
+  INT native_pool_idx_2 = (*pc_idx) + 2;
+  uint16_t native_pool_idx =
+    ( vmc->code_memory[native_pool_idx_1] << 8)
+    | vmc->code_memory[native_pool_idx_2]; // merge 2 bytes
+  uint16_t int_pool_count_idx =
+    (vmc->code_memory[5] << 8) | vmc->code_memory[6];
+  INT cur_idx = 7 + 4 * int_pool_count_idx;
+
+  uint16_t str_pool_count_idx =
+    (vmc->code_memory[cur_idx] << 8) | vmc->code_memory[cur_idx + 1];
+
+  cur_idx = cur_idx + 2 + str_pool_count_idx;
+
+  cur_idx += 2; // native pool count = 2 bytes
+
+
+  INT npool_idx = cur_idx + 4 * native_pool_idx;
+
+  uint8_t byte0    = vmc->code_memory[npool_idx];
+  uint8_t byte1    = vmc->code_memory[npool_idx + 1];
+  uint8_t num_args = vmc->code_memory[npool_idx + 2];
+  // fourth byte unused currently
+
+  uint16_t ffi_func_idx = (byte0 << 8) | byte1;
+
+
+
+  cam_value_t res;
+
+  cam_value_t arg_arr[num_args];
+
+  if (num_args == 0){
+    res = ffi_arr[ffi_func_idx](arg_arr);
+  } else if(num_args == 1){
+    arg_arr[0] = vmc->contexts[vmc->current_running_context_id].env;
+    res = ffi_arr[ffi_func_idx](arg_arr);
+  } else {
+    arg_arr[0] = vmc->contexts[vmc->current_running_context_id].env;
+    for(int j = 1; j < num_args; j++){
+      cam_register_t arg_n;
+      int i =
+        stack_pop(  &vmc->contexts[vmc->current_running_context_id].stack
+                  , &arg_n);
+      if(i == 0){
+        DEBUG_PRINT(("Stack pop failed inside eval_appf"));
+        *pc_idx = -10;
+        return;
+      }
+      arg_arr[j] = arg_n;
+    }
+
+    res = ffi_arr[ffi_func_idx](arg_arr);
+  }
+
+
+  vmc->contexts[vmc->current_running_context_id].env = res;
+
+
+  *pc_idx = (*pc_idx) + 3;
+
 }

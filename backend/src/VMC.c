@@ -37,6 +37,14 @@
 #include <sys_time.h>
 #include <CONFIG_DEFINES.h>
 
+#if FFI_ENABLED
+#include <foreign.h>
+cam_value_t(*ffi_arr[])(cam_value_t *) = {
+  #include VMC_FOREIGN_FUNCTIONS_FILE
+};
+
+#endif
+
 /* TODO: We need a better way to manage these
    conditional includes. */
 #if VMC_CONTAINER_1_USE_BUTTON_0
@@ -744,7 +752,7 @@ heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 
 heap_index vmc_heap_alloc_withGC(vmc_t *container) {
 
-  uint32_t t0 = sys_get_timestamp();
+  // uint32_t t0 = sys_get_timestamp();
   
   heap_index hi = heap_allocate(&container->heap);
   if(hi == HEAP_NULL){
@@ -760,14 +768,14 @@ heap_index vmc_heap_alloc_withGC(vmc_t *container) {
     hi =  heap_allocate(&container->heap);
   }
 
-  uint32_t t1 = sys_get_timestamp();
-  uint32_t tdiff = t1 - t0;
-  if (tdiff > vmc_stats.gc_time_max)
-    vmc_stats.gc_time_max = tdiff;
-  if (tdiff < vmc_stats.gc_time_min)
-    vmc_stats.gc_time_min = tdiff;
-  vmc_stats.gc_time_total += tdiff;
-  vmc_stats.gc_num ++;
+  // uint32_t t1 = sys_get_timestamp();
+  // uint32_t tdiff = t1 - t0;
+  // if (tdiff > vmc_stats.gc_time_max)
+  //   vmc_stats.gc_time_max = tdiff;
+  // if (tdiff < vmc_stats.gc_time_min)
+  //   vmc_stats.gc_time_min = tdiff;
+  // vmc_stats.gc_time_total += tdiff;
+  // vmc_stats.gc_num ++;
       
   return hi;
 }

@@ -1,0 +1,8 @@
+foreign import add : Int -> Int -> Int
+
+sub : Int -> Int -> Int
+sub 5 0 = 5
+sub x y = x - y
+
+main = let f = add 2
+       in f 5

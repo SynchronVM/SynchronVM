@@ -62,6 +62,7 @@ data TCError =
   | FunctionClauseWrongType Ident Type Type
   | RecursiveFunctionWithoutTypesig Ident
   | AloneTypeSignature Ident Type
+  | IllformedForeignApplication Ident Int Int
 
 instance Show TCError where
     show (InfiniteType var t) =
@@ -143,6 +144,11 @@ instance Show TCError where
         "Type error ---\n" ++
         "The type signature " ++ printTree name ++ " : " ++ printTree t ++ " lacks " ++
         "an accompanying function definition"
+    show (IllformedForeignApplication name expected applied) =
+        "Type error ---\n" ++
+        "The foreign function " ++ printTree name ++ " is applied to " ++ show applied ++
+        " argument(s), but it expects " ++ show expected ++ ".\n" ++
+        "Foreign functions must be fully applied, because we are too lazy to deal with the other cases :-)"
 
 {- | Checks if the first type is more general than the second type. Returns `Nothing`
 if the shapes are different, Just False if the shapes are the same and they are equally

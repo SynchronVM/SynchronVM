@@ -24,6 +24,8 @@ module Main where
 import System.Environment (getArgs)
 import System.Exit
 
+import Control.Monad
+
 import Numeric
 import Data.List
 import Data.Maybe
@@ -32,7 +34,7 @@ import GHC.Word
 import Bytecode
 
 data Target = Target { inputFile :: Maybe FilePath
-                     , outputFile :: Maybe FilePath
+                     , outputFile :: Maybe String
                      , verbose :: Bool
                      -- Add more stuff as needed 
                      }
@@ -95,6 +97,27 @@ parseArgs = do
 hexStrings :: [Word8] -> [String]
 hexStrings xs = map (\x -> "0x" ++ showHex x "") xs
 
+foreign_c_arr :: [String] -> String
+foreign_c_arr foreigns = intercalate ", " foreigns
+
+tag_table_c_compare :: [(String, Word16)] -> String
+tag_table_c_compare contents =
+  unlines [ "bool is_constructor(uint16_t tagidx, char *constr) {"
+          , "    switch(tagidx) {"
+          , intercalate "\n" $ map single_case contents
+          , "        default: return false;"
+          , "    }"
+          , "    return false;"
+          , "}"
+          ]
+  where
+    single_case :: (String, Word16) -> String
+    single_case (tag, index) =
+      unlines [ concat ["        case ", show index, ": {"]
+              , concat ["            return strncmp(constr, ", show tag, ", strlen(constr)) == 0;"]
+              , "            break;"
+              , "        }"
+              ]
 
 doCompile :: Target -> IO ()
 doCompile t
@@ -102,15 +125,18 @@ doCompile t
   | otherwise =
       do
         let input = fromJust (inputFile t)
-        let outFile = case outputFile t of
-                        Nothing -> "out.svm"
-                        Just s -> s
+        let (outFile, foreignOutFile, constructorCompareFunction) = case outputFile t of
+                        Nothing -> ("out.svm", "out.svmarr", "out.constr")
+                        Just s -> (s ++ ".svm", s ++ ".svmarr", s ++ ".c")
         putStrLn $ "compiling file " ++ show input ++ " to output " ++ show outFile
     
-        compiled <- byteCompile (verbose t) input
+        (compiled, foreign_arr, constructor_table) <- byteCompile (verbose t) input
         let bc = concat $ intersperse ", " $ hexStrings compiled
         condPutStrLn (verbose t) $ "SenseVM ByteCode: \n" ++ bc
         writeFile outFile bc
+        when (not $ null foreign_arr) $ do
+          writeFile foreignOutFile (foreign_c_arr foreign_arr)
+          writeFile constructorCompareFunction (tag_table_c_compare constructor_table)
                                          
 main :: IO ()
 main = do
