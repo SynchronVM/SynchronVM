@@ -3,6 +3,6 @@
 
 #include<typedefs.h>
 
-cam_value_t foreign_add(cam_value_t *args);
+cam_value_t foreign_add(cam_value_t x, cam_value_t y);
 
 #endif

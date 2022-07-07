@@ -31,6 +31,7 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/stack.c \
               $(SOURCE_DIR)/VMC.c \
               $(SOURCE_DIR)/ll/ll_driver.c \
+          ./FOREIGN/out.c \
 	      ./FOREIGN/foreign.c \
               $(PLATFORM_SRC)/sys_time.c
 

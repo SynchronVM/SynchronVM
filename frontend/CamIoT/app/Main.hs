@@ -100,9 +100,13 @@ hexStrings xs = map (\x -> "0x" ++ showHex x "") xs
 foreign_c_arr :: [(String, Word8)] -> String
 foreign_c_arr foreigns = intercalate ", " $ map (flip (++) "_trampoline" . fst) foreigns
 
-foreign_c_trampolines :: [(String, Word8)] -> [String]
-foreign_c_trampolines foreigns = map singleForeign foreigns
+foreign_c_trampolines_definitions :: [(String, Word8)] -> String
+foreign_c_trampolines_definitions foreigns =
+  unlines $ topmatter ++ map singleForeign foreigns
   where
+    topmatter :: [String]
+    topmatter = ["#include \"foreign.h\""]
+
     singleForeign :: (String, Word8) -> String
     singleForeign (name, arity) =
       let argindexes = map (flip (-) 1) [1..arity]
@@ -111,6 +115,22 @@ foreign_c_trampolines foreigns = map singleForeign foreigns
                  , "    return " ++ name ++ "(" ++ intercalate ", " args ++ ");"
                  , "}"
                  ]
+
+foreign_c_trampolines_prototypes :: [(String, Word8)] -> String
+foreign_c_trampolines_prototypes foreigns =
+  unlines $ header ++ map singleForeign foreigns ++ [footer]
+  where
+    singleForeign :: (String, Word8) -> String
+    singleForeign (name, arity) = "inline cam_value_t " ++ name ++ "_trampoline(cam_value_t *args);"
+
+    header :: [String]
+    header = [ "#ifndef TRAMPOLINES_H"
+             , "#define TRAMPOLINES_H"
+             , "#include \"typedefs.h\""
+             ]
+    
+    footer :: String
+    footer = "#endif // TRAMPOLINES_H"
 
 tag_table_c_compare :: [(String, Word16)] -> String
 tag_table_c_compare contents =
@@ -137,9 +157,9 @@ doCompile t
   | otherwise =
       do
         let input = fromJust (inputFile t)
-        let (outFile, foreignOutFile, constructorCompareFunction, trampolinefile) = case outputFile t of
-                        Nothing -> ("out.svm", "out.svmarr", "out.constr", "out.h")
-                        Just s -> (s ++ ".svm", s ++ ".svmarr", s ++ ".c", s ++ "trampolines.h")
+        let (outFile, foreignOutFile, constructorCompareFunction, trampolinefile, trampolineheader) = case outputFile t of
+                        Nothing -> ("out.svm", "out.svmarr", "out.constr", "out.c", "out.h")
+                        Just s -> (s ++ ".svm", s ++ ".svmarr", s ++ ".c", s ++ "trampolines.c", s ++ "trampolines.h")
         putStrLn $ "compiling file " ++ show input ++ " to output " ++ show outFile
     
         (compiled, foreign_arr, constructor_table) <- byteCompile (verbose t) input
@@ -149,7 +169,8 @@ doCompile t
         when (not $ null foreign_arr) $ do
           writeFile foreignOutFile (foreign_c_arr foreign_arr)
           writeFile constructorCompareFunction (tag_table_c_compare constructor_table)
-          writeFile trampolinefile (unlines $ foreign_c_trampolines foreign_arr)
+          writeFile trampolinefile $ foreign_c_trampolines_definitions foreign_arr
+          writeFile trampolineheader $ foreign_c_trampolines_prototypes foreign_arr
                                          
 main :: IO ()
 main = do

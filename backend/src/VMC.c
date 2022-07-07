@@ -38,7 +38,7 @@
 #include <CONFIG_DEFINES.h>
 
 #if FFI_ENABLED
-#include <foreign.h>
+#include <out.h>
 cam_value_t(*ffi_arr[])(cam_value_t *) = {
   #include VMC_FOREIGN_FUNCTIONS_FILE
 };
