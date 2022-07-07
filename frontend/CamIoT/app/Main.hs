@@ -97,8 +97,20 @@ parseArgs = do
 hexStrings :: [Word8] -> [String]
 hexStrings xs = map (\x -> "0x" ++ showHex x "") xs
 
-foreign_c_arr :: [String] -> String
-foreign_c_arr foreigns = intercalate ", " foreigns
+foreign_c_arr :: [(String, Word8)] -> String
+foreign_c_arr foreigns = intercalate ", " $ map (flip (++) "_trampoline" . fst) foreigns
+
+foreign_c_trampolines :: [(String, Word8)] -> [String]
+foreign_c_trampolines foreigns = map singleForeign foreigns
+  where
+    singleForeign :: (String, Word8) -> String
+    singleForeign (name, arity) =
+      let argindexes = map (flip (-) 1) [1..arity]
+          args = map (\i -> "args[" ++ show i ++ "]") argindexes
+      in unlines [ "inline cam_value_t " ++ name ++ "_trampoline(cam_value_t args*) {"
+                 , "    return " ++ name ++ "(" ++ intercalate ", " args ++ ");"
+                 , "}"
+                 ]
 
 tag_table_c_compare :: [(String, Word16)] -> String
 tag_table_c_compare contents =
@@ -125,9 +137,9 @@ doCompile t
   | otherwise =
       do
         let input = fromJust (inputFile t)
-        let (outFile, foreignOutFile, constructorCompareFunction) = case outputFile t of
-                        Nothing -> ("out.svm", "out.svmarr", "out.constr")
-                        Just s -> (s ++ ".svm", s ++ ".svmarr", s ++ ".c")
+        let (outFile, foreignOutFile, constructorCompareFunction, trampolinefile) = case outputFile t of
+                        Nothing -> ("out.svm", "out.svmarr", "out.constr", "out.h")
+                        Just s -> (s ++ ".svm", s ++ ".svmarr", s ++ ".c", s ++ "trampolines.h")
         putStrLn $ "compiling file " ++ show input ++ " to output " ++ show outFile
     
         (compiled, foreign_arr, constructor_table) <- byteCompile (verbose t) input
@@ -137,6 +149,7 @@ doCompile t
         when (not $ null foreign_arr) $ do
           writeFile foreignOutFile (foreign_c_arr foreign_arr)
           writeFile constructorCompareFunction (tag_table_c_compare constructor_table)
+          writeFile trampolinefile (unlines $ foreign_c_trampolines foreign_arr)
                                          
 main :: IO ()
 main = do

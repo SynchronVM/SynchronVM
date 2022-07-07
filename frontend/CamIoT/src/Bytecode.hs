@@ -454,7 +454,7 @@ condPutStrLn b s =
     True -> putStrLn s
     False -> return ()
 
-byteCompile :: Bool -> FilePath -> IO ([Word8], [String], [(String, Word16)])
+byteCompile :: Bool -> FilePath -> IO ([Word8], [(String, Word8)], [(String, Word16)])
 byteCompile verbose path = do
   compiled <- compile verbose path
   case compiled of

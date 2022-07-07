@@ -31,6 +31,7 @@ import Data.Binary
 import Data.Bits
 import Data.Int (Int32)
 import Data.Word
+import Data.Bifunctor hiding (first, second)
 import qualified Data.Map as Map
 import Data.List
 import GHC.Generics
@@ -230,7 +231,7 @@ originalBytecodeOffset
   + 0 -- starts with nothing in native pool
   + 4 -- bytecode instructions size
 
-translate :: CAM -> ([Word8], [String], [(Tag, TagIdx)])
+translate :: CAM -> ([Word8], [(String, Word8)], [(Tag, TagIdx)])
 translate cam =
   let (AssemblerState ipool spool npool _ ttable _) = pools
       ipoolSize = length ipool
@@ -270,11 +271,11 @@ translate cam =
       --                                                                ^
       --                                                 garbage number for the unused byte
 
-    writeForeignArray :: Map.Map String (Word16, Word8) -> [String]
+    writeForeignArray :: Map.Map String (Word16, Word8) -> [(String, Word8)]
     writeForeignArray npool =
       let aslist = Map.toList npool
           sorted = sortBy (\(_, (a, _)) (_, (b, _)) -> compare a b) aslist
-      in map ((++) "foreign_" . fst) sorted
+      in map (bimap ((++) "foreign_") snd) sorted
 
 magic :: [Word8]
 magic = [254,237,202,254]
