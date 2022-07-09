@@ -459,6 +459,37 @@ bool vmc_run_12_test(){
   }
 }
 
+bool vmc_run_13_test(){
+
+  /*
+
+    foreign import add : Int -> Int -> Int
+
+    sub : Int -> Int -> Int
+    sub x y = x - y
+
+    main = add 22 35
+
+  */
+  uint8_t code [] =
+    {254,237,202,254,1,0,2,0,0,0,3,0,0,0,5,0,0,0,1,0,0,1,0,0,0,0,43,52,0,60,49,8,11,0,0,9,4,4,1,5,49,6,0,0,5,0,14,14,5,49,6,0,1,5,0,14,14,56,0,0,13,11,0,1,15,10,0,56,15,13};
+
+
+  vmc_t container;
+
+  int i = setup_and_run(&container, code, sizeof(code));
+  if(i == -1){
+    printf("Failure in vmc_run_13\n");
+    return false;
+  }
+
+  if(container.contexts[0].env.value == 0){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 
 void test_stat(char *s, int *tot, bool t){

@@ -2,7 +2,8 @@
 #define __FOREIGN_H_
 
 #include<typedefs.h>
+#include<ffi_util.h>
 
-cam_value_t foreign_add(cam_value_t x, cam_value_t y);
+cam_value_t foreign_prnLst(cam_value_t x);
 
 #endif

@@ -1,0 +1,8 @@
+foreign import prnLst : List a -> ()
+
+data List a where 
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+main = let list = (Cons 5 (Cons 3 Nil)) in
+       prnLst list   

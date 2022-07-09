@@ -30,7 +30,6 @@
 #include <CAM.h>
 #include <queue.h>
 #include <priorityqueue.h>
-
 #include <ll/ll_driver.h>
 
 #include <sys_gpio_printf.h>
@@ -474,6 +473,11 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   vm_containers[VMC_CONTAINER_2].current_running_context_id = 0;
   // channel initialization missing
   r++;
+  #endif
+
+  #if FFI_ENABLED
+  extern void init_ffi_container(vmc_t *container);
+  init_ffi_container(&vm_containers[VMC_CONTAINER_1]);
   #endif
 
   return r;

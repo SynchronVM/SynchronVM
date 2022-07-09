@@ -23,37 +23,33 @@
 /**********************************************************************************/
 
 
+#include <ffi_util.h>
 
-#ifndef FFI_UTIL_H
-#define FFI_UTIL_H
 
-#include <typedefs.h>
-#include <VMC.h>
+static vmc_t *vmc;
 
-/* Convert a cam_value_t to a int */
-#define cvtToInt(value) ((int) value.value)
-
-/* Convert a cam_value_t to a bool */
-#define cvtToBool(value) ((bool) value.value)
-
-/* Write an int value to a cam_value_t */
-inline void intToCvt(int x, cam_value_t *dest) {
-    dest->value = (UINT)x;
+// currently assummes FFI with a single container
+void init_ffi_container(vmc_t *container){
+  vmc = container;
 }
 
-/* Write an int value to a cam_value_t */
-inline void boolToCvt(bool x, cam_value_t *dest) {
-    dest->value = (bool)x;
+// The following functions were not `inline`d because of C99 6.7.4
+/*
+ * An inline definition of a function with external linkage shall not contain a
+ * definition of a modifiable object with static storage duration, and shall not
+ * contain a reference to an identifier with internal linkage.
+ */
+
+
+
+cam_value_t cvt_fst(cam_value_t *v){
+  return heap_fst(&vmc->heap, (heap_index)v->value);
 }
 
-/* cam_value_t representing the camiot "()" value */
+cam_value_t cvt_snd(cam_value_t *v){
+  return heap_snd(&vmc->heap, (heap_index)v->value);
+}
 
-
-
-/**util funcs for FFI-HEAP communication ***/
-extern cam_value_t cvt_fst(cam_value_t *v);
-extern cam_value_t cvt_snd(cam_value_t *v);
-extern bool is_pointer(cam_value_t *v);
-
-
-#endif // FFI_UTIL_H
+bool is_pointer(cam_value_t *v){
+  return (v->flags & (1<<16)); // PTR is 0x8000
+}

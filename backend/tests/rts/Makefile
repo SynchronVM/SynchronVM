@@ -30,9 +30,10 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/scheduler.c \
               $(SOURCE_DIR)/stack.c \
               $(SOURCE_DIR)/VMC.c \
+	      $(SOURCE_DIR)/ffi_util.c \
               $(SOURCE_DIR)/ll/ll_driver.c \
-          ./FOREIGN/out.c \
-	      ./FOREIGN/foreign.c \
+							./FOREIGN/out.c \
+	      			./FOREIGN/foreign.c \
               $(PLATFORM_SRC)/sys_time.c
 
 TEST_SOURCES = $(wildcard *.c)
