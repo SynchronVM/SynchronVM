@@ -51,5 +51,5 @@ cam_value_t cvt_snd(cam_value_t *v){
 }
 
 bool is_pointer(cam_value_t *v){
-  return (v->flags & (1<<16)); // PTR is 0x8000
+  return (v->flags == 32768); // PTR is 0x8000 (32768)
 }

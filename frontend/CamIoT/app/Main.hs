@@ -111,7 +111,7 @@ foreign_c_trampolines_definitions foreigns =
     singleForeign (name, arity) =
       let argindexes = map (flip (-) 1) [1..arity]
           args = map (\i -> "args[" ++ show i ++ "]") argindexes
-      in unlines [ "inline cam_value_t " ++ name ++ "_trampoline(cam_value_t *args) {"
+      in unlines [ "cam_value_t " ++ name ++ "_trampoline(cam_value_t *args) {"
                  , "    return " ++ name ++ "(" ++ intercalate ", " args ++ ");"
                  , "}"
                  ]
@@ -121,7 +121,7 @@ foreign_c_trampolines_prototypes foreigns =
   unlines $ header ++ map singleForeign foreigns ++ [footer]
   where
     singleForeign :: (String, Word8) -> String
-    singleForeign (name, arity) = "inline cam_value_t " ++ name ++ "_trampoline(cam_value_t *args);"
+    singleForeign (name, arity) = "cam_value_t " ++ name ++ "_trampoline(cam_value_t *args);"
 
     header :: [String]
     header = [ "#ifndef TRAMPOLINES_H"
