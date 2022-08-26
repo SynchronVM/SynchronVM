@@ -245,7 +245,7 @@ translate cam =
         serializeToBytes (byte4 bytelistSize) ++
         rectifyLabelOffset ((ipoolSize * 4) + -- each int is 4 bytes
                             spoolSize +
-                            npoolSize) bytelist
+                            npoolSize * 4) bytelist
       , writeForeignArray npool
       , ttable
       )
@@ -442,6 +442,8 @@ rectifyLabelOffset offset (w : ws) =
            in   w : b1 : b2 : rectifyLabelOffset offset bs
     11 -> let (b1 : b2 : bs) = ws -- PACK
            in   w : b1 : b2 : rectifyLabelOffset offset bs
+    56 -> let (b1 : b2 : bs) = ws -- APPF
+           in   w : b1 : b2 : rectifyLabelOffset offset bs
 
     ---- OFFSETTING HAPPENS IN THE FOLLOWING 8 INSTRUCTIONS ---
     10 -> let (b1 : b2 : bs) = ws -- CUR
@@ -544,6 +546,7 @@ bytecounter i ((inst, label) : xs) =
     -- 3 bytes long --
     -- TODO: Not handled Float
     QUOTE (LInt _)  -> (inst, label, i) : bytecounter (i + 3) xs
+    APPF _ _        -> (inst, label, i) : bytecounter (i + 3) xs
     CUR _           -> (inst, label, i) : bytecounter (i + 3) xs
     PACK _          -> (inst, label, i) : bytecounter (i + 3) xs
     CALL _          -> (inst, label, i) : bytecounter (i + 3) xs
