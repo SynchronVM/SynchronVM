@@ -12,9 +12,9 @@ cam_value_t foreign_prnLst(cam_value_t x){
 
     if(is_pointer(&temp)){
       cam_value_t f = cvt_fst(&temp);
-      if(is_constructor(f.value,"Nil2")){
+      if(is_constructor(f.value,"Nil")){
         break;
-      } else if(is_constructor(f.value, "Cons1")){
+      } else if(is_constructor(f.value, "Cons")){
         cam_value_t s = cvt_snd(&temp);
         arr[i] = cvt_fst(&s).value;
         i++;
