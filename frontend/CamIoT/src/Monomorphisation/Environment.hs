@@ -58,11 +58,14 @@ type M a = StateT MState (
              WriterT [Def Type] IO) a
 
 -- | Run a monomorphising computation and return the result, and the new counter
-runM :: M a -> MState -> IO (a, Int)
+runM :: M a -> MState -> IO (a, Int, [(UIdent, UIdent)])
 runM ma st = do
     let wa = runStateT ma st
     ((a, c),_) <- runWriterT wa
-    return (a, counter c)
+    return (a, counter c, mstateToUIdentMap c)
+
+mstateToUIdentMap :: MState -> [(UIdent, UIdent)]
+mstateToUIdentMap st = map (\((olduid,_),newuid) -> (newuid, olduid)) $ Map.toList $ newConstructors st
 
 -- | Returns True if the identifier has a polymorphic type in the map.
 hasPolymorphicType :: Ident -> M Bool

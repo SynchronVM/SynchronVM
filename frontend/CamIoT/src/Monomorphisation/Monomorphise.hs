@@ -22,7 +22,7 @@ trace x = unsafePerformIO $ putStrLn (show x) >> return x
 
 {- | Entrypoint for the monoomrphisation pass. Takes the current state (for name generation)
 and the program and returns the monomorphised program and the new state. -}
-monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int)
+monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int, [(UIdent, UIdent)])
 monomorphise counter defs = runM (monomorphiseFunctions defs) state
   where
     state =

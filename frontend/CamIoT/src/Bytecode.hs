@@ -460,7 +460,7 @@ byteCompile verbose path = do
   case compiled of
     Left err -> do putStrLn err
                    exitFailure 
-    Right desugaredIr -> do
+    Right (desugaredIr, constructorMap) -> do
 
       condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
       condPutStrLn verbose $ show desugaredIr--PP.printTree desugaredIr
@@ -479,7 +479,8 @@ byteCompile verbose path = do
       condPutStrLn verbose $ show camopt
 
       condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
-      let (bytecode, foreign_arr, constructor_table) = A.translate camopt
+      let tagmap = map (\(AST.UIdent newuid, AST.UIdent olduid) -> (newuid, olduid)) constructorMap
+          (bytecode, foreign_arr, constructor_table) = A.translate camopt tagmap
       condPutStrLn verbose $ show bytecode
 
       --condPutStrLn verbose $ "\n\n CAM HS Interpreter \n\n"
@@ -503,7 +504,7 @@ test = do
   compiled <- compile True path
   case compiled of
     Left err -> putStrLn err
-    Right desugaredIr -> do
+    Right (desugaredIr, constructorMap) -> do
       putStrLn $ PP.printTree desugaredIr
       putStrLn $ "\n\n Debug Follows \n\n"
       -- putStrLn $ show desugaredIr
@@ -520,7 +521,8 @@ test = do
 
       putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
       let cam   = Peephole.optimise $ C.interpret camir
-      putStrLn $ show $ A.translate cam
+      let tagmap = map (\(AST.UIdent newuid, AST.UIdent olduid) -> (newuid, olduid)) constructorMap
+      putStrLn $ show $ A.translate cam tagmap
 
       putStrLn $ "\n\n CAM HS Interpreter \n\n"
       let val = IM.evaluate $ C.interpret camir

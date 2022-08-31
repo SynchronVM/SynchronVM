@@ -51,7 +51,7 @@ condPutStrLn b s =
     True -> putStrLn s
     False -> return ()
 
-compile :: Bool -> String -> IO (Either String (SExp SType))
+compile :: Bool -> String -> IO (Either String (SExp SType, [(UIdent, UIdent)]))
 compile verbose input = do
     contents <- T.readFile input
 
@@ -80,7 +80,7 @@ compile verbose input = do
                                           condPutStrLn verbose "***** LambdaLifted version *****"
                                           condPutStrLn verbose $ betterPrint ll
                                           condPutStrLn verbose ""
-                                          (mm2, state3) <- M.monomorphise state2 ll
+                                          (mm2, state3, constructorMap) <- M.monomorphise state2 ll
                                           condPutStrLn verbose "***** Monomorphized version 2 *****"
                                           condPutStrLn verbose $ betterPrint mm2
                                           condPutStrLn verbose ""
@@ -94,7 +94,7 @@ compile verbose input = do
                                           -- putStrLn $ printTree ss'
                                           -- putStrLn ""
 
-                                          return $ Right ss
+                                          return $ Right (ss, constructorMap)
 
 betterPrint :: (Show a, Print a) => [Def a] -> String
 betterPrint defs = intercalate "\n\n" (map printTree groups)

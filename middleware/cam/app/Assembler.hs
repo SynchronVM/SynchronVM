@@ -217,8 +217,8 @@ newtype Assembler a =
     }
   deriving (Functor, Applicative, Monad, MonadState AssemblerState)
 
-initState :: SymbolTable -> AssemblerState
-initState st = AssemblerState Map.empty [] Map.empty st [] 0
+initState :: SymbolTable -> TagTable -> AssemblerState
+initState st tm = AssemblerState Map.empty [] Map.empty st tm 0
 
 originalBytecodeOffset
   = 4 -- magic number
@@ -231,9 +231,9 @@ originalBytecodeOffset
   + 0 -- starts with nothing in native pool
   + 4 -- bytecode instructions size
 
-translate :: CAM -> ([Word8], [(String, Word8)], [(Tag, TagIdx)])
-translate cam =
-  let (AssemblerState ipool spool npool _ ttable _) = pools
+translate :: CAM -> [(Tag, Tag)] -> ([Word8], [(String, Word8)], [(Tag, TagIdx)])
+translate cam tm =
+  let (AssemblerState ipool spool npool _ _ _) = pools
       ipoolSize = length ipool
       spoolSize = sum $ map length spool
       npoolSize = length npool
@@ -247,12 +247,23 @@ translate cam =
                             spoolSize +
                             npoolSize * 4) bytelist
       , writeForeignArray npool
-      , ttable
+      , tm''
       )
   where
-    (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
+    (bytelist, pools) = runState (runAssembler (assemble i)) (initState st tm')
     i   = instructions cam
     st  = buildST cam
+    (tm', tm'') = createTagMap tm
+
+    {- | Given a map that maps new constructor names to their original ones, construct
+    a tag table where the constructors are given unique indexes based on what the
+    original constructor was. E.g both Nil0 and Nil1 will have the same tag index. -}
+    createTagMap :: [(Tag, Tag)] -> (TagTable, TagTable)
+    createTagMap tm =
+      let sorted   = sortBy (\e1 e2 -> compare (snd e1) (snd e2)) tm
+          grouped  = groupBy (\e1 e2 -> snd e1 == snd e2) tm
+          assigned = [ (g, i) | (g,i) <- zip grouped [0..]]
+      in ([ (new, i) | (g, i) <- assigned, (new, old) <- g], [ (snd (head g), i) | (g,i) <- assigned])
 
     -- | Converts the intpool map into the contents of the actual integer pool.
     ipoolcontents :: Map.Map Int32 Word16 -> [Word8]
