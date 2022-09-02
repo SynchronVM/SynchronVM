@@ -42,14 +42,32 @@ void init_ffi_container(vmc_t *container){
 
 
 
-cam_value_t cvt_fst(cam_value_t *v){
+cam_value_t cvt_get_fst(cam_value_t *v){
   return heap_fst(&vmc->heap, (heap_index)v->value);
 }
 
-cam_value_t cvt_snd(cam_value_t *v){
+cam_value_t cvt_get_snd(cam_value_t *v){
   return heap_snd(&vmc->heap, (heap_index)v->value);
+}
+
+void cvt_set_fst(cam_value_t *ptr, cam_value_t *v) {
+  heap_set_fst(&vmc->heap, (heap_index)ptr->value, *v);
+}
+
+void cvt_set_snd(cam_value_t *ptr, cam_value_t *v) {
+  heap_set_snd(&vmc->heap, (heap_index)ptr->value, *v);
+}
+
+void cvt_set(cam_value_t *ptr, cam_value_t *f, cam_value_t *s) {
+  cvt_set_fst(ptr, f);
+  cvt_set_snd(ptr, s);
 }
 
 bool is_pointer(cam_value_t *v){
   return (v->flags == 32768); // PTR is 0x8000 (32768)
+}
+
+cam_value_t alloc_cvt() {
+  heap_index hi = vmc_heap_alloc_withGC(vmc);
+  return (cam_value_t) { .value = hi, .flags = VALUE_PTR_BIT};
 }

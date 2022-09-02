@@ -15,3 +15,13 @@ bool is_constructor(uint16_t tagidx, char *constr) {
     }
     return false;
 }
+
+cam_value_t create_constructor(char *constr) {
+    if(strncmp(constr, "Cons", strlen(constr)) == 0) {
+        return (cam_value_t) {.value = (uint16_t)0, .flags = 0};
+    } else if (strncmp(constr, "Nil", strlen(constr)) == 0) {
+        return (cam_value_t) {.value = (uint16_t)1, .flags = 0};
+    }
+    cam_value_t abc = {.value = 0, .flags = 0};
+    return abc;
+}

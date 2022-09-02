@@ -51,9 +51,17 @@ inline void boolToCvt(bool x, cam_value_t *dest) {
 
 
 /**util funcs for FFI-HEAP communication ***/
-extern cam_value_t cvt_fst(cam_value_t *v);
-extern cam_value_t cvt_snd(cam_value_t *v);
+extern cam_value_t cvt_get_fst(cam_value_t *v);
+extern cam_value_t cvt_get_snd(cam_value_t *v);
+extern void cvt_set_fst(cam_value_t *ptr, cam_value_t *v);
+extern void cvt_set_snd(cam_value_t *ptr, cam_value_t *v);
+extern void cvt_set(cam_value_t *ptr, cam_value_t *f, cam_value_t *s);
 extern bool is_pointer(cam_value_t *v);
 
+/**
+ * @brief Allocate a pair on the heap, and get a cam_value_t back that is a pointer to
+ * that cell.
+ */
+extern cam_value_t alloc_cvt();
 
 #endif // FFI_UTIL_H
