@@ -29,6 +29,7 @@
 
 #include <typedefs.h>
 #include <VMC.h>
+#include <stdarg.h>
 
 /* Convert a cam_value_t to a int */
 #define cvtToInt(value) ((int) value.value)
@@ -62,6 +63,6 @@ extern bool is_pointer(cam_value_t *v);
  * @brief Allocate a pair on the heap, and get a cam_value_t back that is a pointer to
  * that cell.
  */
-extern cam_value_t alloc_cvt();
+extern cam_value_t alloc_cvt(int num_args, ...);
 
 #endif // FFI_UTIL_H

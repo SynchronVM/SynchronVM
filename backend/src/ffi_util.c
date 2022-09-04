@@ -25,7 +25,6 @@
 
 #include <ffi_util.h>
 
-
 static vmc_t *vmc;
 
 // currently assummes FFI with a single container
@@ -67,7 +66,15 @@ bool is_pointer(cam_value_t *v){
   return (v->flags == 32768); // PTR is 0x8000 (32768)
 }
 
-cam_value_t alloc_cvt() {
-  heap_index hi = vmc_heap_alloc_withGC(vmc);
+cam_value_t alloc_cvt(int num_args, ...) {
+  cam_value_t ffi_val_arr[num_args];
+  va_list args;
+  va_start(args, num_args);
+  for(int i = 0; i < num_args; i++){
+    cam_value_t ffi_val = va_arg(args, cam_value_t);
+    ffi_val_arr[i] = ffi_val;
+  }
+  va_end(args);
+  heap_index hi = heap_alloc_FFI_GC(vmc, num_args, ffi_val_arr);
   return (cam_value_t) { .value = hi, .flags = VALUE_PTR_BIT};
 }

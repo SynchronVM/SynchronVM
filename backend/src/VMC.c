@@ -735,7 +735,7 @@ heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 heap_index vmc_heap_alloc_withGC(vmc_t *container) {
 
   // uint32_t t0 = sys_get_timestamp();
-  
+
   heap_index hi = heap_allocate(&container->heap);
   if(hi == HEAP_NULL){
     // heap full; time to do a GC
@@ -758,9 +758,39 @@ heap_index vmc_heap_alloc_withGC(vmc_t *container) {
   //   vmc_stats.gc_time_min = tdiff;
   // vmc_stats.gc_time_total += tdiff;
   // vmc_stats.gc_num ++;
-      
+
   return hi;
 }
+
+#if FFI_ENABLED
+heap_index heap_alloc_FFI_GC(vmc_t *container, int num_args, cam_value_t *roots){
+  heap_index hi = heap_allocate(&container->heap);
+  if(hi == HEAP_NULL){
+    // heap full; time to do a GC
+
+    /* GC parent context */
+    heap_mark_phase(container);
+
+    /* FFI values GC start */
+
+    for(int i = 0; i < num_args; i++){
+      cam_value_t ffi_val = roots[i];
+      heap_mark(&container->heap, ffi_val);
+    }
+
+    /* FFI values GC end   */
+
+
+
+    // if heap_allocate_helper returns HEAP_NULL again need to resize heap
+    hi =  heap_allocate(&container->heap);
+
+  }
+
+  return hi;
+
+}
+#endif
 
 void vmc_get_stats(vmc_statistics_t *stats) {
   stats->gc_time_max = vmc_stats.gc_time_max;
