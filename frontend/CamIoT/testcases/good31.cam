@@ -1,0 +1,11 @@
+foreign import prnLst : List -> ()
+foreign import allocLst : () -> List
+
+data List where 
+  Nil  : List
+  Cons : Int -> List -> List
+
+foo = Cons 5 (Cons 3 Nil)
+
+main = let list = allocLst () in
+       prnLst list
