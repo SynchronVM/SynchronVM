@@ -5,7 +5,13 @@ data List where
   Nil  : List
   Cons : Int -> List -> List
 
-foo = Cons 5 (Cons 3 Nil)
+foo = Cons 6 (Cons 8 Nil)
+
+append : List -> List -> List
+append xs ys =
+  case xs of
+    Nil -> ys
+    Cons x xss -> Cons x (append xss ys)
 
 main = let list = allocLst () in
-       prnLst list
+       prnLst (append list foo)

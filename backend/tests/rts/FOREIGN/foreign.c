@@ -6,7 +6,7 @@
 
 cam_value_t foreign_prnLst(cam_value_t x){
 
-  int arr[2];
+  int arr[4];
   int i = 0;
   cam_value_t temp = x;
 
@@ -25,7 +25,7 @@ cam_value_t foreign_prnLst(cam_value_t x){
     }
   }
   printf("Printing List \n");
-  for (int j = 0; j<2; j++){
+  for (int j = 0; j<4; j++){
     printf("%d\n",arr[j]);
   }
 

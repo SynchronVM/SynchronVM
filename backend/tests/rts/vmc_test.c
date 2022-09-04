@@ -468,14 +468,14 @@ bool vmc_run_13_test(){
     foreign import prnLst : List -> ()
     foreign import allocLst : () -> List
 
-    data List where 
-    Nil  : List
-    Cons : Int -> List -> List
+    data List where
+         Nil  : List
+         Cons : Int -> List -> List
 
     foo = Cons 5 (Cons 3 Nil)
 
     main = let list = allocLst () in
-    prnLst list
+           prnLst list
 
 
   */
@@ -498,6 +498,53 @@ bool vmc_run_13_test(){
     return false;
   }
 }
+
+bool vmc_run_14_test(){
+
+  /*
+
+
+    foreign import prnLst : List -> ()
+    foreign import allocLst : () -> List
+
+    data List where
+         Nil  : List
+         Cons : Int -> List -> List
+
+    foo = Cons 6 (Cons 8 Nil)
+
+    append : List -> List -> List
+    append xs ys =
+        case xs of
+          Nil -> ys
+          Cons x xss -> append xss ys
+
+    main = let list = allocLst () in
+           prnLst (append list foo)
+
+
+
+  */
+  uint8_t code [] =
+    {254,237,202,254,1,0,2,0,0,0,8,0,0,0,6,0,0,0,2,0,0,1,0,0,1,1,0,0,0,0,125,52,0,90,49,8,11,0,1,9,4,4,4,1,5,49,6,0,0,5,0,14,14,5,49,6,0,1,5,0,14,14,9,49,8,56,0,1,9,4,2,1,5,4,1,5,0,51,51,16,0,94,56,0,0,13,11,0,0,15,10,0,86,15,4,4,2,1,5,1,9,9,4,1,0,19,2,0,1,0,115,0,0,0,119,2,1,1,15,4,4,2,1,1,5,4,1,1,5,3,4,51,51,16,0,94,5,4,1,0,5,3,6,14,14,15,15,10,0,94,15,10,0,147,15,13};
+
+
+  vmc_t container;
+
+  int i = setup_and_run(&container, code, sizeof(code));
+  if(i == -1){
+    printf("Failure in vmc_run_13\n");
+    return false;
+  }
+
+  if(container.contexts[0].env.value == 0){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 
 
 
@@ -544,10 +591,12 @@ int main(int argc, char **argv) {
   test_stat("vmc_run_11", &total, t11);
   /* bool t12 = vmc_run_12_test(); */
   /* test_stat("vmc_run_12", &total, t12); */
-  bool t13 = vmc_run_13_test();
-  test_stat("vmc_run_13", &total, t13);
+  /* bool t13 = vmc_run_13_test(); */
+  /* test_stat("vmc_run_13", &total, t13); */
+  bool t14 = vmc_run_14_test();
+  test_stat("vmc_run_14", &total, t14);
 
-  if (t1 && t2 && t3 && t4 && t8 && t9 && t10 && t11 && t13) {
+  if (t1 && t2 && t3 && t4 && t8 && t9 && t10 && t11 && t14) {
     printf("Passed total : %d/%d tests\n", total, 9);
     return 1;
   }
