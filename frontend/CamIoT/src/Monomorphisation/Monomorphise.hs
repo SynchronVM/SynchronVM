@@ -12,6 +12,7 @@ import HindleyMilner.TypeInference () -- importing an instance
 import Control.Monad.State
 import Control.Monad.Writer
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 
 import System.IO.Unsafe
@@ -25,7 +26,7 @@ and the program and returns the monomorphised program and the new state. -}
 monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int, [(UIdent, UIdent)])
 monomorphise counter defs = do
   (defs', counter', constrMap) <- runM (monomorphiseFunctions defs) state
-  return (defs', counter', constrMap ++ [(ui,ui) | ui <- allDeclaredConstructors defs])
+  return (defs', counter', create_constructor_table constrMap (allDeclaredConstructors defs))
   where
     state =
       MState
@@ -35,6 +36,16 @@ monomorphise counter defs = do
         Map.empty
         Map.empty
 
+{- | Create the constructor table used by the assembler, including dummy mappings from
+orig-constr to orig-constr if there is no mapping from a new-constr to orig-constr. This
+must be done to ensure that the FFI generated out.constr includes all constructors. -}
+create_constructor_table :: [(UIdent, UIdent)] -> [UIdent] -> [(UIdent, UIdent)]
+create_constructor_table table constrs = table ++ [ (ui,ui) | ui <- constrs, not (elem ui prvUIs)]
+  where
+    prvUIs :: [UIdent]
+    prvUIs = Set.toList $ Set.fromList $ map snd table
+
+-- | Return a list of all constructors that was declared in a program
 allDeclaredConstructors :: [Def a] -> [UIdent]
 allDeclaredConstructors [] = []
 allDeclaredConstructors (d:ds) = case d of

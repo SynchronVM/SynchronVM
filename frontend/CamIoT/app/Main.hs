@@ -134,7 +134,8 @@ foreign_c_trampolines_prototypes foreigns =
 
 tag_table_c_compare :: [(String, Word16)] -> String
 tag_table_c_compare contents =
-  unlines [ "bool is_constructor(uint16_t tagidx, char *constr) {"
+  unlines [ "// check if a tag index corresponds to a specific constructor"
+          , "bool is_constructor(uint16_t tagidx, char *constr) {"
           , "    switch(tagidx) {"
           , intercalate "\n" $ map single_case contents
           , "        default: return false;"
@@ -146,10 +147,42 @@ tag_table_c_compare contents =
     single_case :: (String, Word16) -> String
     single_case (tag, index) =
       unlines [ concat ["        case ", show index, ": {"]
-              , concat ["            return strncmp(constr, ", show tag, ", strlen(constr)) == 0;"]
+              , concat ["            return !strcmp(constr, ", show tag, ");"]
               , "            break;"
               , "        }"
               ]
+
+tag_table_c_create :: [(String, Word16)] -> String
+tag_table_c_create contents =
+  unlines [ "// create a cam_value_t representing a constructor node"
+          , "bool create_constructor(char *constr) {"
+          , intercalate "\n" $ map clause contents
+          , "    cam_value_t abc = {.value = 0, .flags = 0};"
+          , "    return abc;"
+          , "}"
+          ]
+    where
+      clause :: (String, Word16) -> String
+      clause (constr, tagidx) =
+        unlines [ concat [ "    if(strcmp(constr, ", show constr, ")) {" ]
+                , concat [ "        return (cam_value_t) {.value = (uint16_t)"
+                         , show tagidx
+                         , ", .flags = 0};"
+                         ]
+                ]
+
+create_out_constr :: [(String, Word16)] -> String
+create_out_constr contents = unlines ["#include <string.h>", tag_table_c_compare contents, tag_table_c_create contents]
+
+-- cam_value_t create_constructor(char *constr) {
+--     if(strncmp(constr, "Cons", strlen(constr)) == 0) {
+--         return (cam_value_t) {.value = (uint16_t)0, .flags = 0};
+--     } else if (strncmp(constr, "Nil", strlen(constr)) == 0) {
+--         return (cam_value_t) {.value = (uint16_t)1, .flags = 0};
+--     }
+--     cam_value_t abc = {.value = 0, .flags = 0};
+--     return abc;
+-- }
 
 doCompile :: Target -> IO ()
 doCompile t
@@ -168,7 +201,7 @@ doCompile t
         writeFile outFile bc
         when (not $ null foreign_arr) $ do
           writeFile foreignOutFile (foreign_c_arr foreign_arr)
-          writeFile constructorCompareFunction (tag_table_c_compare constructor_table)
+          writeFile constructorCompareFunction $ create_out_constr constructor_table
           writeFile trampolinefile $ foreign_c_trampolines_definitions foreign_arr
           writeFile trampolineheader $ foreign_c_trampolines_prototypes foreign_arr
                                          
