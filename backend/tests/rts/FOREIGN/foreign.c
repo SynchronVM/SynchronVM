@@ -57,11 +57,11 @@ cam_value_t foreign_allocLst(cam_value_t x){
   cam_value_t nil  = create_constructor("Nil");
   cam_value_t val0  = {.value = 5, .flags = 0};
   cam_value_t val1  = {.value = 3, .flags = 0};
-  cam_value_t ptr0 = alloc_cvt(0, cons, nil, val0, val1);
-  cam_value_t ptr1 = alloc_cvt(0, cons, nil, val0, val1);
-  cam_value_t ptr2 = alloc_cvt(0, cons, nil, val0, val1);
-  cam_value_t ptr3 = alloc_cvt(0, cons, nil, val0, val1);
-  cam_value_t ptr4 = alloc_cvt(0, cons, nil, val0, val1);
+  cam_value_t ptr0 = alloc_cvt(4, cons, nil, val0, val1);
+  cam_value_t ptr1 = alloc_cvt(4, cons, nil, val0, val1);
+  cam_value_t ptr2 = alloc_cvt(4, cons, nil, val0, val1);
+  cam_value_t ptr3 = alloc_cvt(4, cons, nil, val0, val1);
+  cam_value_t ptr4 = alloc_cvt(4, cons, nil, val0, val1);
   cvt_set(&ptr0, &cons, &ptr1);
   cvt_set(&ptr1, &val0, &ptr2);
   cvt_set(&ptr2, &cons, &ptr3);
