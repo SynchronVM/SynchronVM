@@ -1,0 +1,17 @@
+foreign import prnLst : List -> ()
+foreign import create_histogram : List -> List
+
+data List where 
+  Nil  : List
+  Cons : Int -> List -> List
+
+input : List
+input = Cons 1 (Cons 2 (Cons 3 (Cons 4 (Cons 5 (Cons 2 (Cons 4 Nil))))))
+
+iota2 : Int -> Int -> List
+iota2 n a = if n == 0 then Nil else Cons a (iota2 (n-1) (a+1))
+
+iota : Int -> List
+iota n = iota2 n 0
+
+main = prnLst (create_histogram (iota 200))
