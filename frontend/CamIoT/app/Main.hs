@@ -155,7 +155,7 @@ tag_table_c_compare contents =
 tag_table_c_create :: [(String, Word16)] -> String
 tag_table_c_create contents =
   unlines [ "// create a cam_value_t representing a constructor node"
-          , "bool create_constructor(char *constr) {"
+          , "cam_value_t create_constructor(char *constr) {"
           , intercalate "\n" $ map clause contents
           , "    cam_value_t abc = {.value = 0, .flags = 0};"
           , "    return abc;"
@@ -164,7 +164,7 @@ tag_table_c_create contents =
     where
       clause :: (String, Word16) -> String
       clause (constr, tagidx) =
-        unlines [ concat [ "    if(strcmp(constr, ", show constr, ")) {" ]
+        unlines [ concat [ "    if(!strcmp(constr, ", show constr, "))" ]
                 , concat [ "        return (cam_value_t) {.value = (uint16_t)"
                          , show tagidx
                          , ", .flags = 0};"
