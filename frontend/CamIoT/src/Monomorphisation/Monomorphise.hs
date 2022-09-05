@@ -23,7 +23,9 @@ trace x = unsafePerformIO $ putStrLn (show x) >> return x
 {- | Entrypoint for the monoomrphisation pass. Takes the current state (for name generation)
 and the program and returns the monomorphised program and the new state. -}
 monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int, [(UIdent, UIdent)])
-monomorphise counter defs = runM (monomorphiseFunctions defs) state
+monomorphise counter defs = do
+  (defs', counter', constrMap) <- runM (monomorphiseFunctions defs) state
+  return (defs', counter', constrMap ++ [(ui,ui) | ui <- allDeclaredConstructors defs])
   where
     state =
       MState
@@ -32,6 +34,15 @@ monomorphise counter defs = runM (monomorphiseFunctions defs) state
                                                                -- but we will add this functionality in the future
         Map.empty
         Map.empty
+
+allDeclaredConstructors :: [Def a] -> [UIdent]
+allDeclaredConstructors [] = []
+allDeclaredConstructors (d:ds) = case d of
+  DEquation _ _ _ _ -> allDeclaredConstructors ds
+  DTypeSig _ _      -> allDeclaredConstructors ds
+  DForeignType _ _  -> allDeclaredConstructors ds
+  DMutRec _         -> allDeclaredConstructors ds
+  DDataDec _ _ csr  -> map (\(ConstDec ui _) -> ui) csr ++ allDeclaredConstructors ds
 
 {- | Monomorphise all the functions in the program. The input is given as a flattened
 list of definitions, which are then grouped together and monomorphised on a group basis. -}
