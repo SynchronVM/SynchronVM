@@ -28,3 +28,4 @@ cam_value_t create_constructor(char *constr) {
     cam_value_t abc = {.value = 0, .flags = 0};
     return abc;
 }
+
