@@ -32,6 +32,8 @@ int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 
   unsigned int num_elt = size_bytes / (sizeof(UINT) + sizeof(value_flags_t));
 
+  DEBUG_PRINT(("size_butes %u\n", size_bytes));
+
   // Maybe make sure that the s->data becomes 4 bytes aligned?
   s->data = (UINT*)mem;
 
@@ -39,6 +41,8 @@ int stack_init(cam_stack_t *s, uint8_t *mem, unsigned int size_bytes) {
 
   s->sp = 0;
   s->size = num_elt;
+
+  DEBUG_PRINT(("stack size here %u\n", s->size));
 
   return 1;
 }
@@ -48,8 +52,8 @@ int stack_push(cam_stack_t *s, cam_value_t cvalue) {
     DEBUG_PRINT(("Stack Overflow!!\n"));
 
     // Stack overflow debugging toolkit; Uncomment when necessary
-    /* unsigned int failedsp = s->sp; */
-    /* DEBUG_PRINT(("Stack Pointer %u \n Stack size %u\n Elements : %u, %u, %u, %u, %u, %u, %u, %u, %u, %u\n", s->sp, s->size, s->data[failedsp], s->data[failedsp-1], s->data[failedsp-2], s->data[failedsp-3], s->data[failedsp-4], s->data[failedsp-5], s->data[failedsp-6], s->data[failedsp-7], s->data[failedsp-8], s->data[failedsp-9])); */
+    unsigned int failedsp = s->sp;
+    DEBUG_PRINT(("Stack Pointer %u \n Stack size %u\n Elements : %u, %u, %u, %u, %u, %u, %u, %u, %u, %u\n", s->sp, s->size, s->data[failedsp], s->data[failedsp-1], s->data[failedsp-2], s->data[failedsp-3], s->data[failedsp-4], s->data[failedsp-5], s->data[failedsp-6], s->data[failedsp-7], s->data[failedsp-8], s->data[failedsp-9]));
 
     return 0;
   }

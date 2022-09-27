@@ -146,12 +146,51 @@ cam_value_t foreign_create_histogram(cam_value_t x) {
     if(histogram[i] != 0) {
       cam_value_t val_ptr = alloc_cvt(1, root);
       cam_value_t next_ptr = alloc_cvt(2, root, val_ptr);
+
+      cam_value_t tuple_ptr = alloc_cvt(3, val_ptr, next_ptr, root);
       cam_value_t val = {.value = histogram[i], .flags = 0};
-      cvt_set(&val_ptr, &val, &next_ptr);
+      cam_value_t key = {.value = i, .flags = 0};
+      cvt_set(&tuple_ptr, &key, &val);
+
+      cvt_set(&val_ptr, &tuple_ptr, &next_ptr);
       cvt_set(&last_ptr, &cons, &val_ptr);
       last_ptr = next_ptr;
     }
   }
   cvt_set_fst(&last_ptr, &nil);
   return root;
+}
+
+cam_value_t foreign_print_tupleIntInt(cam_value_t x) {
+  if(is_pointer(&x)) {
+    cam_value_t a = cvt_get_fst(&x);
+    cam_value_t b = cvt_get_snd(&x);
+    printf("(%d,%d)\n", a.value, b.value);
+  } else {
+    // error
+    printf("tried to print (Int, Int), but argument type is not a pointer\n");
+  }
+  cam_value_t retVal = {.value = 0, .flags = 0};
+  return retVal;
+}
+
+cam_value_t foreign_print_tupleIntIntList(cam_value_t x){
+
+  cam_value_t temp = x;
+
+  while(true){
+    if(is_pointer(&temp)){
+      cam_value_t f = cvt_get_fst(&temp);
+      if(is_constructor(f.value,"Nil")){
+        break;
+      } else if(is_constructor(f.value, "Cons")){
+        cam_value_t s = cvt_get_snd(&temp);
+        foreign_print_tupleIntInt(cvt_get_fst(&s));
+        temp = cvt_get_snd(&s);
+      }
+    }
+  }
+
+  cam_value_t abc ={.value = 0, .flags = 0};
+  return abc;
 }

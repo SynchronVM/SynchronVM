@@ -613,7 +613,7 @@ static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size
 
     int st_status = stack_init(&ctx[i].stack
                                , &mem[offset]
-                               , CONTEXT_STACK_SPACE);
+                               , VMC_CONTAINER_1_STACK_SIZE_BYTES);
     ctx[i].deadline = TIME_MAX;
 
     if(!st_status){

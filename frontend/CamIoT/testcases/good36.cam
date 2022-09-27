@@ -1,0 +1,35 @@
+foreign import print_tupleIntIntList : List (Int, Int) -> ()
+
+data List a where
+  Nil : List a
+  Cons : a -> List a -> List a
+
+increment : Int -> List (Int, Int) -> List (Int, Int)
+increment key xs = case xs of
+  Nil -> Cons (key, 1) Nil
+  Cons (key', value) xss -> if key == key'
+                              then Cons (key, value + 1) xss
+                              else Cons (key', value) (increment key xss)
+
+compute_histogram : List Int -> List (Int, Int)
+compute_histogram xs = case xs of
+  Nil -> Nil
+  Cons value xss -> increment value (compute_histogram xss)
+
+iota3 : Int -> List Int -> List Int
+iota3 a xs = if a == 0 then xs else iota3 (a - 1) (Cons a xs)
+
+iota : Int -> List Int
+iota n = iota3 n Nil
+
+append : List a -> List a -> List a
+append xs ys = case xs of
+  Nil -> ys
+  (Cons x xss) -> Cons x (append xss ys)
+
+main : ()
+main = print_tupleIntIntList (compute_histogram (append (append (iota 200) (iota 200)) (iota 200)))
+
+
+
+

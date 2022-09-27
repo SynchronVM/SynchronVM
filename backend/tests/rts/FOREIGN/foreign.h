@@ -6,4 +6,5 @@
 
 cam_value_t foreign_prnLst(cam_value_t x);
 cam_value_t foreign_allocLst(cam_value_t x);
+cam_value_t foreign_print_tupleIntIntList(cam_value_t x);
 #endif

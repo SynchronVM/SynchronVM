@@ -34,7 +34,8 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/ll/ll_driver.c \
 							./FOREIGN/out.c \
 	      			./FOREIGN/foreign.c \
-              $(PLATFORM_SRC)/sys_time.c
+              $(PLATFORM_SRC)/sys_time.c \
+              $(PLATFORM_SRC)/debug.c
 
 TEST_SOURCES = $(wildcard *.c)
 TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))
@@ -47,7 +48,7 @@ debug: CCFLAGS += -DDEBUG -g
 debug: $(TEST_EXECS) $(OBJECTS)
 
 %.exe: %.c $(SVM_SOURCES)
-	$(CC) $(TEST_INCLUDES) $(CCFLAGS) $(SVM_SOURCES) $< -o $@ 
+	$(CC) $(TEST_INCLUDES) $(CCFLAGS) -DDEBUG $(SVM_SOURCES) $< -o $@ 
 
 clean:
 	rm -f $(BUILD_DIR)/*.o
