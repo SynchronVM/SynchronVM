@@ -304,14 +304,14 @@ interpret e =  instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
     maxLabel = 65535 -- (label can be max 2 bytes)
 
 codegen :: Exp -> Env -> Codegen CAM
-codegen v@(Var var) env 
+codegen v@(Var var) env
   | rClosed v (env2Eta env) = pure $! rcl -- lookupRC var env
   | otherwise = pure $! l -- lookup var env 0
   where rcl' = lookupRC var env
         l'   = lookup var env 0
         rcl  = traceFail rcl' ("LookupRC failure: " ++ show v ++ " in env: " ++ show env) rcl'
         l    = traceFail l' ("Lookup failure: " ++ show v ++ " in env: " ++ show env) l'
-        
+
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
@@ -740,7 +740,8 @@ rFree (Case e clauses) etaenv =
 rFree (Let p1 e1 e) etaenv =
   (rFree e (EtaPair etaenv p1) `Set.difference` vars p1) `Set.union`
   rFree e1 etaenv
-rFree (Letrec recpats e) etaenv = rFree e eta'
+rFree (Letrec recpats e) etaenv =
+  foldr Set.union (rFree e eta') (map (\(_, e) -> rFree e etaenv) recpats)
   where
     eta0 = foldr (\(pat, _) eta -> EtaAnn eta (pat, Set.empty)) etaenv recpats
     eta' = fixpoint recpats eta0

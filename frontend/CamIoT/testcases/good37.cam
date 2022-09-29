@@ -1,0 +1,9 @@
+data List a where
+  Nil : List a
+  Cons : a -> List a -> List a
+
+increment : List (Int, Int) -> List (Int, Int)
+increment xs = case xs of
+                     Nil -> Nil
+                     Cons x xss -> (increment xss)
+main = ()
