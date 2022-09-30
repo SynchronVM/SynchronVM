@@ -1,7 +1,9 @@
+#define _POSIX_C_SOURCE 199309L
 #include <foreign.h>
 #include <stdio.h>
 #include <typedefs.h>
 #include "out.constr"
+#include <time.h>
 
 
 cam_value_t foreign_prnLst(cam_value_t x){
@@ -120,8 +122,12 @@ cam_value_t foreign_allocLst(cam_value_t x){
 	return ptr0;
 }
 
-cam_value_t foreign_create_histogram(cam_value_t x) {
-  int histogram[256] = {0};
+cam_value_t foreign_create_histogram(cam_value_t numbuckets, cam_value_t x) {
+  printf("numbuckets.value %u\n", numbuckets.value);
+  printf("numbuckets.flags %u\n", numbuckets.flags);
+  printf("is_pointer(numbuckets) = %d\n", is_pointer(&numbuckets));
+  int histogram[numbuckets.value];
+  memset(histogram, 0, numbuckets.value);
 
   cam_value_t tmp = x;
   while(true) {
@@ -142,7 +148,7 @@ cam_value_t foreign_create_histogram(cam_value_t x) {
   cam_value_t root = alloc_cvt(0);
   cam_value_t last_ptr = root;
 
-  for(int i = 0; i < 256; i++) {
+  for(int i = 0; i < numbuckets.value; i++) {
     if(histogram[i] != 0) {
       cam_value_t val_ptr = alloc_cvt(1, root);
       cam_value_t next_ptr = alloc_cvt(2, root, val_ptr);
@@ -191,6 +197,64 @@ cam_value_t foreign_print_tupleIntIntList(cam_value_t x){
     }
   }
 
+  cam_value_t abc ={.value = 0, .flags = 0};
+  return abc;
+}
+
+struct timespec begin;
+struct timespec end;
+
+void record_time(struct timespec *spec) {
+  int res;
+  if(res = clock_gettime(CLOCK_REALTIME, spec)) {
+    printf("error recording time (%d)\n", res);
+  }
+}
+
+cam_value_t foreign_record_start_time(cam_value_t x) {
+
+  record_time(&begin);
+
+  cam_value_t abc ={.value = 0, .flags = 0};
+  return abc;
+}
+
+cam_value_t foreign_record_end_time(cam_value_t x) {
+
+  record_time(&end);
+
+  cam_value_t abc ={.value = 0, .flags = 0};
+  return abc;
+}
+
+cam_value_t foreign_print_elapsed_time(cam_value_t x) {
+
+  long int elapsed_s  = end.tv_sec - begin.tv_sec;
+  long elapsed_ns = end.tv_nsec - begin.tv_nsec;
+  if(elapsed_ns < 0) {
+    elapsed_s -= 1;
+    elapsed_ns += 1000000000L;
+  }
+  elapsed_ns += elapsed_s * 1000000000L;
+  printf("elapsed: %lds and %ldns\n", elapsed_s, elapsed_ns);
+  printf("==== TIME REPORT ====\n");
+  printf("elapsed ns: %ld\n", elapsed_ns);
+  printf("elapsed us: %ld\n", elapsed_ns / 1000L);
+  printf("elapsed ms: %f\n", ((float) elapsed_ns / 1000000.0));
+  printf("==== END  REPORT ====\n");
+
+  cam_value_t abc ={.value = 0, .flags = 0};
+  return abc;
+}
+
+cam_value_t foreign_print_int(cam_value_t theint) {
+  printf("theint = %u\n", theint.value);
+  cam_value_t abc ={.value = 0, .flags = 0};
+  return abc;
+}
+
+cam_value_t foreign_print_two_ints(cam_value_t fst, cam_value_t snd) {
+  printf("fst = %u, snd = %u\n", fst.value, snd.value);
   cam_value_t abc ={.value = 0, .flags = 0};
   return abc;
 }

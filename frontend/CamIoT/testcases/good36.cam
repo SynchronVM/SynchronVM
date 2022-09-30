@@ -1,4 +1,9 @@
 foreign import print_tupleIntIntList : List (Int, Int) -> ()
+foreign import create_histogram : Int -> List Int -> List (Int, Int)
+foreign import record_start_time : () -> ()
+foreign import record_end_time : () -> ()
+foreign import print_elapsed_time : () -> ()
+foreign import print_int : Int -> ()
 
 data List a where
   Nil : List a
@@ -16,20 +21,34 @@ compute_histogram xs = case xs of
   Nil -> Nil
   Cons value xss -> increment value (compute_histogram xss)
 
-iota3 : Int -> List Int -> List Int
-iota3 a xs = if a == 0 then xs else iota3 (a - 1) (Cons a xs)
+iota_tr : Int -> List Int -> List Int
+iota_tr a xs = if a == 0 then xs else iota_tr (a - 1) (Cons a xs)
 
 iota : Int -> List Int
-iota n = iota3 n Nil
+iota n = iota_tr n Nil
 
 append : List a -> List a -> List a
 append xs ys = case xs of
   Nil -> ys
   (Cons x xss) -> Cons x (append xss ys)
 
-main : ()
-main = print_tupleIntIntList (compute_histogram (append (append (iota 200) (iota 200)) (iota 200)))
+repeat : Int -> List a -> List a
+repeat n xs = if n == 0 then Nil else append xs (repeat (n - 1) xs)
 
+benchmark : Bool -> Int -> Int -> ()
+benchmark verbose repe size =
+  let _          = print_int size in
+  let input      = repeat repe (iota size) in
+  let _          = record_start_time () in
+  let histogram1 = compute_histogram input in
+  let _          = record_end_time () in
+  let _          = if verbose then print_tupleIntIntList histogram1 else () in
+  let _          = print_elapsed_time () in
+  let _          = print_int size in
+  let _          = record_start_time () in
+  let histogram2 = create_histogram size input in
+  let _          = record_end_time () in
+  let _          = if verbose then print_tupleIntIntList histogram2 else () in
+  print_elapsed_time ()
 
-
-
+main = benchmark False 3 1173
