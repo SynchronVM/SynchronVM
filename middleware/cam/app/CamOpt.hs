@@ -489,9 +489,6 @@ codegen (Sequence e1 e2) env = do
     of the stack, they appear in the order @[arg2, arg3, arg4, ...@. -}
 codegen (Foreign (ForeignCall name arity args)) env
   | length args == 0 = pure $! Ins (APPF name arity)
-  | length args == 1 = do
-      i1   <- codegen (head args) env
-      pure $! i1 <+> Ins (APPF name arity)
   | otherwise = do
       i_arg1     <- codegen (head args) env
       i_arg_rest <- S.foldM (\is e -> do

@@ -5,6 +5,6 @@ cam_value_t foreign_print_elapsed_time_trampoline(cam_value_t *args);
 cam_value_t foreign_print_tupleIntIntList_trampoline(cam_value_t *args);
 cam_value_t foreign_record_end_time_trampoline(cam_value_t *args);
 cam_value_t foreign_create_histogram_trampoline(cam_value_t *args);
-cam_value_t foreign_print_int_trampoline(cam_value_t *args);
 cam_value_t foreign_record_start_time_trampoline(cam_value_t *args);
+cam_value_t foreign_print_int_trampoline(cam_value_t *args);
 #endif // TRAMPOLINES_H
