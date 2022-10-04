@@ -483,22 +483,25 @@ codegen (Sequence e1 e2) env = do
   e1' <- codegen e1 env
   e2' <- codegen e2 env
   pure $! e1' <+> e2'
-codegen (Foreign (ForeignCall name arity args)) env = do
-  args' <- compileArgs args
-  pure $! args' <+> (Ins (APPF name arity))
-  where
-    {- | Compile the arguments for the foreign call. The first parameter goes in the
+
+{- | Compile the arguments for the foreign call. The first parameter goes in the
     register, and the rest goes on the stack. With the first element being the top
     of the stack, they appear in the order @[arg2, arg3, arg4, ...@. -}
-    compileArgs :: [Exp] -> Codegen CAM
-    compileArgs args = do
-      let arg1 = head args -- register contents
-          rest = tail args -- stack contents
-      rest' <- S.foldM (\acc arg -> do
-        arg' <- codegen arg env
-        pure $! acc <+> arg' <+> Ins MOVE) (Ins SKIP) (reverse rest)
-      arg1' <- codegen arg1 env
-      pure $! rest' <+> arg1'
+codegen (Foreign (ForeignCall name arity args)) env
+  | length args == 0 = pure $! Ins (APPF name arity)
+  | length args == 1 = do
+      i1   <- codegen (head args) env
+      pure $! i1 <+> Ins (APPF name arity)
+  | otherwise = do
+      i_arg1     <- codegen (head args) env
+      i_arg_rest <- S.foldM (\is e -> do
+                                i <- codegen e env
+                                pure $! is
+                                    <+> Ins PUSH
+                                    <+> i
+                                    <+> Ins SWAP
+                            ) (Ins SKIP) (reverse (tail args))
+      pure $! i_arg_rest <+> i_arg1 <+> (Ins (APPF name arity))
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e@(If e1 e2 e3) env

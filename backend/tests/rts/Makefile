@@ -48,7 +48,7 @@ debug: CCFLAGS += -DDEBUG -g
 debug: $(TEST_EXECS) $(OBJECTS)
 
 %.exe: %.c $(SVM_SOURCES)
-	$(CC) $(TEST_INCLUDES) $(CCFLAGS) -DDEBUG $(SVM_SOURCES) $< -o $@ 
+	$(CC) $(TEST_INCLUDES) $(CCFLAGS) $(SVM_SOURCES) $< -o $@ 
 
 clean:
 	rm -f $(BUILD_DIR)/*.o
