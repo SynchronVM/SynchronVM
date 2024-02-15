@@ -59,7 +59,7 @@ import Parser.AbsTinyCamiot
       AddOp(Minus, Plus),
       Exp(..),
       Type(TFloat, TVar, TAdt, TNil, TTup, TLam, TBool, TInt),
-      Def(DEquation, DTypeSig, DMutRec),
+      Def(DEquation, DTypeSig, DMutRec, DForeignType),
       Ident )
 import Typechecker.Substitution ( Substitutable(..) )
 
@@ -199,6 +199,7 @@ recursive defs = any (usesVar name) (exps defs)
     exps []                     = []
     exps (DTypeSig _ _:ds)      = exps ds
     exps (DEquation _ _ _ e:ds) = e : exps ds
+    exps (DForeignType _ _:ds)  = exps ds
 
 {-- | Checks if the argument identifier occurs in the argument expression.
 Used to check for e.g if a function is recursive.

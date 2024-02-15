@@ -40,11 +40,13 @@
 /*********/
 /* VMC 1 */
 /*********/
-#define VMC_CONTAINER_1_HEAP_SIZE_BYTES       8192
+#define VMC_CONTAINER_1_HEAP_SIZE_BYTES       (327680 * 2)
 #define VMC_CONTAINER_1_BYTECODE_FILE         "test.X"
-#define VMC_CONTAINER_1_STACK_SIZE_BYTES      1024
-#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  4096
+#define VMC_CONTAINER_1_STACK_SIZE_BYTES      81920
+#define VMC_CONTAINER_1_ARRAY_MEM_SIZE_BYTES  8192
 
+#define FFI_ENABLED   1
+#define VMC_FOREIGN_FUNCTIONS_FILE            "out.svmarr"
 //#define VMC_CONTAINER_1_USE_UART_0            1
 //#define VMC_CONTAINER_1_USE_UART_1            1
 

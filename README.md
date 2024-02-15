@@ -145,6 +145,37 @@ After flashing, the program will immediately start running on the board. Current
 debug information will be printed over the USB interface (the USB port on the oposite end 
 to the programming interface on the discovery board).
 
+### Foreign function interface
+
+There is an experimental foreign function interface for SynchromVM programs.
+If foreign functions are used in the code, the compiler will generate some more files.
+The prefixes will be the same as the bytecode file, but the suffix will be `.svmarr` and `.constr`.
+The `.svmarr` file will contain the contents of the array of foreign functions, and needs to be
+mentioned in the `vm-conf` file similarly to how the bytecode is.
+
+``` C
+#define VMC_FOREIGN_FUNCTIONS_FILE "out.svmarr"
+```
+
+The second emitted file is the `.constr` file, and it contains a function that can be used to
+check which constructor a tagindex is associated with. It also needs to be included in the
+`vm-conf` file.
+
+``` C
+#define VMC_CONSTRUCTOR_COMPARE_FUNC "out.constr"
+```
+
+Lasty, a compiler flag for the RTS needs to be set in order for the RTS to compile the
+relevant code. To set this flag, you need to include
+
+``` C
+#define FFI_ENABLED
+```
+
+Otherwise, just leave it out completely.
+
+**It is important that all three of these #define's are declared, or none of them.**
+
 ### What about Zephyr??!?!
 
 SynchronVM can be built on top of ChibiOS or ZephyrOS, currently the

@@ -1,0 +1,15 @@
+foreign import prnLst : List a -> ()
+
+data List a where 
+  Nil  : List a
+  Cons : a -> List a -> List a
+
+x : List Bool
+x = Cons True Nil
+
+length : List a -> Int
+length Nil = 0
+length (Cons _ xs) = 1 + length xs
+
+main = let list = (Cons 5 (Cons (length x) Nil)) in
+       prnLst list   

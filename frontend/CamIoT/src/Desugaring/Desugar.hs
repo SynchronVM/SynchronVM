@@ -9,22 +9,28 @@ import Desugaring.AST
 import Data.List
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import System.IO.Unsafe
+
+import qualified Debug.Trace as DT
 
 trace :: Show a => a -> a
 trace x = unsafePerformIO $ putStrLn (show x) >> return x
 
 {- ********** Actual desugaring ********** -}
 
+type ForeignInterfaces = Set.Set AST.Ident
+
 data DSState = DSState {
                counter :: Int
              , constructorfuncs :: Map.Map AST.UIdent AST.Ident
+             , foreignTypes :: ForeignInterfaces
              }
 type DS a = State DSState a
 
 desugar :: Int -> [AST.Def AST.Type] -> SExp SType
-desugar state defs = runDS state $ do
+desugar state defs = runDS state buildForeignInterfaces $ do
     if length datadecs > 0
         then do datadecs <- desugarADTs datadecs
                 program  <- desugarFunctions funs' (fromJust main)
@@ -33,24 +39,41 @@ desugar state defs = runDS state $ do
                Nothing -> error "No main function present!\n\n"
                Just main' -> desugarFunctions funs' (main')
   where
-      funs  = groupAsFunctions defs
+      funs  = groupAsFunctions (removeFFIs defs)
       funs' = filter (\(d:_) -> case d of
                     AST.DMutRec _          -> True
                     AST.DDataDec _ _ _     -> False
+                    AST.DForeignType _ _   -> True
                     AST.DTypeSig id _      -> id /= AST.Ident "main"
                     AST.DEquation _ id _ _ -> id /= AST.Ident "main") funs
       main  = find (\(d:_) -> case d of
                     AST.DMutRec _          -> False
                     AST.DDataDec _ _ _     -> False
+                    AST.DForeignType _ _   -> False
                     AST.DTypeSig id _      -> id == AST.Ident "main"
                     AST.DEquation _ id _ _ -> id == AST.Ident "main")
                   funs
       datadecs = filter (\d -> case d of
           AST.DDataDec _ _ _ -> True
           _                  -> False) defs
+      buildForeignInterfaces =
+        let ffis = filter (\dexps ->
+                             case dexps of
+                               AST.DForeignType id ty -> True
+                               _ -> False
+                          ) defs
+            ffis' = map (\(AST.DForeignType id _) -> id) ffis
+         in Set.fromList ffis'
+      removeFFIs defs =
+        filter (\dexps ->
+                   case dexps of
+                     AST.DForeignType _ _ -> False
+                     _ -> True
+               ) defs
 
-runDS :: Int -> DS a -> a
-runDS state ds = evalState ds $ DSState state Map.empty
+
+runDS :: Int -> ForeignInterfaces -> DS a -> a
+runDS state ffis ds = evalState ds $ DSState state Map.empty ffis
 
 fresh :: DS AST.Ident
 fresh = do
@@ -96,7 +119,7 @@ desugarADTs decs = do
           -- new name for the function we just created which we will then
           -- insert in the environent as a mapping from the constructor to the new name.
           id <- fresh
-          modify $ (\(DSState c m) -> DSState c (Map.insert uid id m))
+          modify $ (\(DSState c m s) -> DSState c (Map.insert uid id m) s)
           let fun = SPVar (getSExpVar res) id
           return $ \e -> SELet (getSExpVar e) fun res e
 
@@ -109,21 +132,22 @@ desugarMutRecs (AST.DTypeSig ident t, defs) = do
 desugarFunctions :: [[AST.Def AST.Type]] -> [AST.Def AST.Type] -> DS (SExp SType)
 desugarFunctions functions main = do
     m <- gets constructorfuncs
+    ffiTys <- gets foreignTypes
     case functions of
-        [] -> return $ desugarMain m
+        [] -> return $ desugarMain m ffiTys
         ([AST.DMutRec tydefs]:funs) -> do
           tydefs' <- mapM desugarMutRecs tydefs
           rest <- desugarFunctions funs main
           return $ SEMutR (typeof rest) tydefs' rest
         (fun:funs) -> case funs of
                 [] -> do fun' <- desugarFunction fun
-                         return $ fun' (desugarMain m)
+                         return $ fun' (desugarMain m ffiTys)
                 _  -> do fun' <- desugarFunction fun
                          rest <- desugarFunctions funs main
                          return $ fun' rest
   where
-    desugarMain :: Map.Map AST.UIdent AST.Ident -> SExp SType
-    desugarMain m = desugarExp m (findMainBody main)
+    desugarMain :: Map.Map AST.UIdent AST.Ident -> ForeignInterfaces -> SExp SType
+    desugarMain m ffitys = desugarExp m ffitys (findMainBody main)
 
     findMainBody [] = error $ "main body not found"
     findMainBody ((AST.DEquation _ id _ body):xs)
@@ -137,6 +161,7 @@ desugarFunctions functions main = do
 desugarFunction :: [AST.Def AST.Type] -> DS (SExp SType -> SExp SType)
 desugarFunction defs = do
     m <- gets constructorfuncs
+    ffiTys <- gets foreignTypes
     if numargs defs > 0
         then do
             -- new arguments for the function
@@ -147,12 +172,12 @@ desugarFunction defs = do
             -- create typed variables out of the generated variable names and the fetched types
             let typedargs = zipWith (\id typ -> AST.EVar typ id) args' argtyps
             -- create a tuple out of the new typed variables and simplify it
-            let argtup    = desugarExp m (AST.ETup (AST.TTup argtyps) typedargs)
+            let argtup    = desugarExp m ffiTys (AST.ETup (AST.TTup argtyps) typedargs)
 
             -- case branches representing the different equations
-            let casebranches = map (uncurry SPM) (branches m defs)
+            let casebranches = map (uncurry SPM) (branches m ffiTys defs)
             -- result type of case expression
-            let casetype     = getSExpVar (snd (head (branches m defs)))
+            let casetype     = getSExpVar (snd (head (branches m ffiTys defs)))
             -- the actual case expression
             let caseExp      = SECase casetype argtup casebranches
             -- turn all the variables into patterns and bind them in lambdas
@@ -169,7 +194,7 @@ desugarFunction defs = do
                 then SELetR typ (SPVar typ name) resultExp
                 else SELet  typ (SPVar typ name) resultExp
         else do let (typ, name)  = typeAndName
-                let casebranches = branches m defs
+                let casebranches = branches m ffiTys defs
                 let let_ = case recursive defs of
                              True -> SELetR
                              False -> SELet
@@ -182,7 +207,7 @@ desugarFunction defs = do
       defs' = case head defs of
           AST.DEquation _ _ _ _ -> defs
           AST.DTypeSig _ _      -> tail defs
-    
+
       -- Name of the function
       typeAndName :: (SType, AST.Ident)
       typeAndName = case head defs of
@@ -190,10 +215,10 @@ desugarFunction defs = do
           AST.DEquation t id _ _ -> (desugarType t, id)
 
       -- A list of pairs of (patterns, body) representing an equation such as f patterns = body
-      branches :: Map.Map AST.UIdent AST.Ident -> [AST.Def AST.Type] -> [(SPat SType, SExp SType)]
-      branches m []                                = []
-      branches m (AST.DTypeSig _ _: ds)            = branches m ds
-      branches m (AST.DEquation t id args body:ds) =
+      branches :: Map.Map AST.UIdent AST.Ident -> ForeignInterfaces -> [AST.Def AST.Type] -> [(SPat SType, SExp SType)]
+      branches m ffitys []                         = []
+      branches m ffitys (AST.DTypeSig _ _: ds)     = branches m ffitys ds
+      branches m ffitys (AST.DEquation t id args body:ds) =
           {- We are going to case match on the arguments, so we turn them into
           a long tuple instead (if there are more than one). -}
           let argtup = case length args of
@@ -202,80 +227,103 @@ desugarFunction defs = do
               -- turn the tuple into a simplified tuple
               args'  = desugarPat argtup
               -- simplify the body
-              body'  = desugarExp m body
-          in (args', body') : branches m ds
+              body'  = desugarExp m ffitys body
+          in (args', body') : branches m ffitys ds
 
       numargs :: [AST.Def AST.Type] -> Int
       numargs []                           = error "no definitions - should not end up here"
       numargs (AST.DTypeSig _ _:ds)        = numargs ds
       numargs (AST.DEquation _ _ args _:_) = length args
+      -- numargs (AST.DForeignType _ _:ds)    = 2
 
-desugarExp :: Map.Map AST.UIdent AST.Ident -> AST.Exp AST.Type -> SExp SType
-desugarExp m e = case e of
+desugarExp :: Map.Map AST.UIdent AST.Ident -> ForeignInterfaces -> AST.Exp AST.Type -> SExp SType
+desugarExp m ffitys e = case e of
     AST.ECase a e' pms  -> let a'   = desugarType a
-                               e''  = desugarExp m e'
-                               pms' = map (desugarPM m) pms
+                               e''  = desugarExp m ffitys e'
+                               pms' = map (desugarPM m ffitys) pms
                            in SECase a' e'' pms'
     AST.ELet a p e1 e2  -> let a'  = desugarType a
                                p'  = desugarPat p
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                            in SELet a' p' e1' e2'
     AST.ELetR a p e1 e2 -> let a'  = desugarType a
                                p'  = desugarPat p
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                            in SELetR a' p' e1' e2'
     AST.ELam a p e'     -> let a'  = desugarType a
                                p'  = desugarPat p
-                               e'' = desugarExp m e'
+                               e'' = desugarExp m ffitys e'
                            in SELam a' p' e''
     -- If becomes a case expression
     AST.EIf a e1 e2 e3  -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
-                               e3' = desugarExp m e3
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
+                               e3' = desugarExp m ffitys e3
                            in SEIf a' e1' e2' e3'
-    AST.EApp a e1 e2    -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
-                           in SEApp a' e1' e2'
+    AST.EApp a e1 e2    -> if hasForeign e1
+        then let (id, args) = getForeignIdArgs e1
+                 a' = desugarType a
+             in SEAppF a' id (map (desugarExp m ffitys) (args ++ [e2]))
+        else let a' = desugarType a
+                 e1' = desugarExp m ffitys e1
+                 e2' = desugarExp m ffitys e2
+             in SEApp a' e1' e2'
     AST.EOr a e1 e2     -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                            in SEOr a' e1' e2'
     AST.EAnd a e1 e2    -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                            in SEAnd a' e1' e2'
     AST.ERel a e1 op e2 -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                                op' = fmap desugarType op
                            in SERel a' e1' op' e2'
     AST.EAdd a e1 op e2 -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                                op' = fmap desugarType op
                            in SEAdd a' e1' op' e2'
     AST.EMul a e1 op e2 -> let a'  = desugarType a
-                               e1' = desugarExp m e1
-                               e2' = desugarExp m e2
+                               e1' = desugarExp m ffitys e1
+                               e2' = desugarExp m ffitys e2
                                op' = fmap desugarType op
                            in SEMul a' e1' op' e2'
     -- n-ary tuples become 2-ary
     AST.ETup a texps    -> case texps of
-        [x]      -> desugarExp m x
+        [x]      -> desugarExp m ffitys x
         (x:y:xs) -> let (AST.TTup (_:as)) = a
                         a'                = AST.TTup as
                         texps'            = AST.ETup a' (y:xs)
-                    in SETup (desugarType a) (desugarExp m x) (desugarExp m texps')
-    AST.ENot a e'       -> SENot (desugarType a) (desugarExp m e')
+                    in SETup (desugarType a) (desugarExp m ffitys x) (desugarExp m ffitys texps')
+    AST.ENot a e'       -> SENot (desugarType a) (desugarExp m ffitys e')
     AST.EVar a id       -> SEVar (desugarType a) id
     AST.EUVar a uid     -> case Map.lookup uid m of
                                   Just id -> SEVar (desugarType a) id
                                   Nothing -> error "should not end up here - constructor not found"
     AST.EConst a c      -> SEConst (desugarType a) c
+    where
+      hasForeign :: AST.Exp AST.Type -> Bool
+      hasForeign (AST.EVar _ id) = Set.member id ffitys
+      hasForeign (AST.EApp _ e1 _) = hasForeign e1
+      hasForeign _ = False -- XXX : bans partial applications
+
+      getForeignIdArgs :: AST.Exp AST.Type -> (AST.Ident, [AST.Exp AST.Type])
+      getForeignIdArgs e = (getid e, getargs e)
+
+      getid :: AST.Exp AST.Type -> AST.Ident
+      getid (AST.EVar _ id) = id
+      getid (AST.EApp _ e1 _) = getid e1
+      getid _ = error "partial applications not allowed for FFI"
+
+      getargs :: AST.Exp AST.Type -> [AST.Exp AST.Type]
+      getargs (AST.EVar _ _) = []
+      getargs (AST.EApp _ e1 e2) = getargs e1 ++ [e2]
+      getargs _ = error "partial applications not allowed for FFI"
 
 desugarPat :: AST.Pat AST.Type -> SPat SType
 desugarPat p = case p of
@@ -298,8 +346,8 @@ desugarPat p = case p of
                     in SPTup (desugarType a) (desugarPat x) (desugarPat pats')
     AST.PLay a id p'     -> SPLay (desugarType a) id (desugarPat p')
 
-desugarPM :: Map.Map AST.UIdent AST.Ident -> AST.PatMatch AST.Type -> SPatMatch SType
-desugarPM m (AST.PM p e) = SPM (desugarPat p) (desugarExp m e)
+desugarPM :: Map.Map AST.UIdent AST.Ident -> ForeignInterfaces -> AST.PatMatch AST.Type -> SPatMatch SType
+desugarPM m ffitys (AST.PM p e) = SPM (desugarPat p) (desugarExp m ffitys e)
 
 desugarType :: AST.Type -> SType
 desugarType t = case t of
@@ -328,6 +376,7 @@ desugarType t = case t of
 desugarFunction' :: [AST.Def AST.Type] -> DS (SExp SType)
 desugarFunction' defs = do
     m <- gets constructorfuncs
+    ffitys <- gets foreignTypes
     if numargs defs > 0
         then do
             -- new arguments for the function
@@ -338,12 +387,12 @@ desugarFunction' defs = do
             -- create typed variables out of the generated variable names and the fetched types
             let typedargs = zipWith (\id typ -> AST.EVar typ id) args' argtyps
             -- create a tuple out of the new typed variables and simplify it
-            let argtup    = desugarExp m (AST.ETup (AST.TTup argtyps) typedargs)
+            let argtup    = desugarExp m ffitys (AST.ETup (AST.TTup argtyps) typedargs)
 
             -- case branches representing the different equations
-            let casebranches = map (uncurry SPM) (branches m defs)
+            let casebranches = map (uncurry SPM) (branches m ffitys defs)
             -- result type of case expression
-            let casetype     = getSExpVar (snd (head (branches m defs)))
+            let casetype     = getSExpVar (snd (head (branches m ffitys defs)))
             -- the actual case expression
             let caseExp      = SECase casetype argtup casebranches
             -- turn all the variables into patterns and bind them in lambdas
@@ -358,7 +407,7 @@ desugarFunction' defs = do
             -- return either the recursive-tagged one or a normal let binding
             return $ resultExp
         else do let (typ, name)  = typeAndName
-                let casebranches = branches m defs
+                let casebranches = branches m ffitys defs
                 let let_ = case recursive defs of
                              True -> SELetR
                              False -> SELet
@@ -379,10 +428,10 @@ desugarFunction' defs = do
           AST.DEquation t id _ _ -> (desugarType t, id)
 
       -- A list of pairs of (patterns, body) representing an equation such as f patterns = body
-      branches :: Map.Map AST.UIdent AST.Ident -> [AST.Def AST.Type] -> [(SPat SType, SExp SType)]
-      branches m []                                = []
-      branches m (AST.DTypeSig _ _: ds)            = branches m ds
-      branches m (AST.DEquation t id args body:ds) =
+      branches :: Map.Map AST.UIdent AST.Ident -> ForeignInterfaces -> [AST.Def AST.Type] -> [(SPat SType, SExp SType)]
+      branches m _ []                                = []
+      branches m ffitys (AST.DTypeSig _ _: ds)       = branches m ffitys ds
+      branches m ffitys (AST.DEquation t id args body:ds) =
           {- We are going to case match on the arguments, so we turn them into
           a long tuple instead (if there are more than one). -}
           let argtup = case length args of
@@ -391,8 +440,8 @@ desugarFunction' defs = do
               -- turn the tuple into a simplified tuple
               args'  = desugarPat argtup
               -- simplify the body
-              body'  = desugarExp m body
-          in (args', body') : branches m ds
+              body'  = desugarExp m ffitys body
+          in (args', body') : branches m ffitys ds
 
       numargs :: [AST.Def AST.Type] -> Int
       numargs []                           = error "no definitions - should not end up here"

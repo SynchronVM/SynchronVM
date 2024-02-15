@@ -23,7 +23,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 module Assembler ( translate
-                 , genbytecode
                  , writeAssembly) where
 
 import CamOpt hiding (initState)
@@ -32,6 +31,9 @@ import Data.Binary
 import Data.Bits
 import Data.Int (Int32)
 import Data.Word
+import Data.Bifunctor hiding (first, second)
+import qualified Data.Map as Map
+import Data.List
 import GHC.Generics
 import System.Directory.ProjectRoot
 
@@ -40,7 +42,6 @@ import qualified Data.ByteString.Lazy as B
 Bytecode format for CAM
 
 ---------------------------
-
 
 FE ED CA FE    -- *Magic Number* - 4 bytes
 
@@ -59,7 +60,9 @@ FF             -- *Version of bytecode* - 1 byte;
 
 
 00 00          -- *Native Pool count* - 2 bytes - index for native functions
-
+               -- each entry is 4 bytes. First two identify the function, and the last is the arity. (pc + 1 | pc + 2) forms the index,
+               -- and pc + 3 is the arity. The fourth byte is unused as of now, and can contain any garbage value.
+00 00 02 00    -- example foreign function "0", arity 2
 
 00 00 00 FF    -- Code Length - Max size of 4 bytes
 <opcode> <data>
@@ -126,6 +129,7 @@ COMB <l>                       0x34FFFF                    3
 GOTOIFALSE <l>                 0x35FFFF                    3
 SWITCHI <n> <t> <l> ...        0x36FF...                   1 + 1 + 1024
 CALLRTS                        0x37FF                      1 + 1
+APPF                           0x38FFFF                    1 + 2
 
 
 * <n> - Positive ints - 1 byte long
@@ -168,8 +172,6 @@ EQB   - 48
 
 
 
-genbytecode :: CAM -> IO ()
-genbytecode = writeAssembly . translate
 
 
 writeAssembly :: [Word8] -> IO ()
@@ -197,9 +199,12 @@ instance Binary Str where
 
 data AssemblerState =
   AssemblerState
-  { intpool :: [[Word8]]
+  { intpool :: Map.Map Int32 Word16
+    {- ^ Maps an integer literal to its index in the int pool. Should only be modified
+    by @modifyIntPool@. -}
   , strpool :: [[Word8]]
-  , nativepool  :: [[Word8]]
+  , nativepool  :: Map.Map String (Word16, Word8)--[[Word8]]
+    -- ^ Maps a native function symbol to its index in the native pool, as well as its arity.
   , symbolTable :: SymbolTable
   , tagTable    :: TagTable
   , tagIdx      :: TagIdx
@@ -212,8 +217,8 @@ newtype Assembler a =
     }
   deriving (Functor, Applicative, Monad, MonadState AssemblerState)
 
-initState :: SymbolTable -> AssemblerState
-initState st = AssemblerState [] [] [] st [] 0
+initState :: SymbolTable -> TagTable -> AssemblerState
+initState st tm = AssemblerState Map.empty [] Map.empty st tm 0
 
 originalBytecodeOffset
   = 4 -- magic number
@@ -226,25 +231,62 @@ originalBytecodeOffset
   + 0 -- starts with nothing in native pool
   + 4 -- bytecode instructions size
 
-translate :: CAM -> [Word8]
-translate cam =
+translate :: CAM -> [(Tag, Tag)] -> ([Word8], [(String, Word8)], [(Tag, TagIdx)])
+translate cam tm =
   let (AssemblerState ipool spool npool _ _ _) = pools
       ipoolSize = length ipool
       spoolSize = sum $ map length spool
       npoolSize = length npool
       bytelistSize = length bytelist
-   in magic ++ version ++
-      serializeToBytes (byte2 ipoolSize) ++ join ipool ++
-      serializeToBytes (byte2 spoolSize) ++ join spool ++
-      serializeToBytes (byte2 npoolSize) ++ join npool ++
-      serializeToBytes (byte4 bytelistSize) ++
-      rectifyLabelOffset ((ipoolSize * 4) + -- each int is 4 bytes
-                          spoolSize +
-                          npoolSize) bytelist
+   in ( magic ++ version ++
+        serializeToBytes (byte2 ipoolSize) ++ ipoolcontents ipool ++
+        serializeToBytes (byte2 spoolSize) ++ join spool ++
+        serializeToBytes (byte2 npoolSize) ++ nativepoolcontents npool ++
+        serializeToBytes (byte4 bytelistSize) ++
+        rectifyLabelOffset ((ipoolSize * 4) + -- each int is 4 bytes
+                            spoolSize +
+                            npoolSize * 4) bytelist
+      , writeForeignArray npool
+      , tm''
+      )
   where
-    (bytelist, pools) = runState (runAssembler (assemble i)) (initState st)
+    (bytelist, pools) = runState (runAssembler (assemble i)) (initState st tm')
     i   = instructions cam
     st  = buildST cam
+    (tm', tm'') = createTagMap tm
+
+    {- | Given a map that maps new constructor names to their original ones, construct
+    a tag table where the constructors are given unique indexes based on what the
+    original constructor was. E.g both Nil0 and Nil1 will have the same tag index. -}
+    createTagMap :: [(Tag, Tag)] -> (TagTable, TagTable)
+    createTagMap tm =
+      let sorted   = sortBy (\e1 e2 -> compare (snd e1) (snd e2)) tm
+          grouped  = groupBy (\e1 e2 -> snd e1 == snd e2) tm
+          assigned = [ (g, i) | (g,i) <- zip grouped [0..]]
+      in ([ (new, i) | (g, i) <- assigned, (new, old) <- g], [ (snd (head g), i) | (g,i) <- assigned])
+
+    -- | Converts the intpool map into the contents of the actual integer pool.
+    ipoolcontents :: Map.Map Int32 Word16 -> [Word8]
+    ipoolcontents ipool = let aslist = Map.toList ipool
+                              sorted = sortBy (\(_,a) (_,b) -> compare a b) aslist
+                              theints = map fst sorted
+                          in concatMap serializeToBytes theints
+
+    -- | Converts the nativepool map into the contents of the actual native pool
+    nativepoolcontents :: Map.Map String (Word16, Word8) -> [Word8]
+    nativepoolcontents npool =
+      let aslist = Map.toList npool
+          sorted = sortBy (\(_, (a,_)) (_, (b,_)) -> compare a b) aslist
+          thecontents = map snd sorted
+      in concatMap (\(index,arity) -> serializeToBytes index ++ [arity, 0]) thecontents
+      --                                                                ^
+      --                                                 garbage number for the unused byte
+
+    writeForeignArray :: Map.Map String (Word16, Word8) -> [(String, Word8)]
+    writeForeignArray npool =
+      let aslist = Map.toList npool
+          sorted = sortBy (\(_, (a, _)) (_, (b, _)) -> compare a b) aslist
+      in map (bimap ((++) "foreign_") snd) sorted
 
 magic :: [Word8]
 magic = [254,237,202,254]
@@ -315,6 +357,10 @@ assemble (i : is) =
       pure $! switchi : size : join bytes ++ rs
 
     CALLRTS n -> gen2 callrts n -- no need to call `byte` n already Word8
+    APPF name arity -> do
+      rs <- assemble is
+      index <- modifyNativePool name arity -- index into native pool
+      pure $! appf : index ++ rs
     _ -> error $! "Impossible instruction : " <> show i
     where
       gen1 word = do
@@ -335,12 +381,33 @@ assemble (i : is) =
 serializeToBytes :: (Binary a) => a -> [Word8]
 serializeToBytes a = B.unpack $ encode a
 
+{- | Given a literal, return the index into the int pool of the literal in question.
+If the literal has been seen before, return the previously generated index. Otherwise
+a new index will be generated and put in the state. -}
 modifyIntPool :: Int32 -> Assembler [Word8]
 modifyIntPool i32 = do
   ipool <- gets intpool
-  let word8X4 = serializeToBytes i32
-  modify $ \s -> s { intpool = ipool <~: word8X4 }
-  pure $! serializeToBytes $ byte2 (length ipool)
+  case Map.lookup i32 ipool of
+    Just index -> pure $! serializeToBytes index -- index already generated, return it
+    Nothing -> do
+      let newindex = byte2 $ Map.size ipool
+          newmap = Map.insert i32 newindex ipool
+      modify $ \s -> s { intpool = newmap } -- update state with new index
+      pure $! serializeToBytes newindex
+
+{- | Given a native function name and its arity, return the index into the native pool.
+If the native function has not been seen before, return the previously generated index.
+Otherwise, a new index will be generated and put in the state. -}
+modifyNativePool :: String -> Int -> Assembler [Word8]
+modifyNativePool name arity = do
+  npool <- gets nativepool
+  case Map.lookup name npool of
+    Just (index, _) -> pure $! serializeToBytes index
+    Nothing -> do
+      let newindex = byte2 $ Map.size npool
+          newmap = Map.insert name (newindex, byte arity) npool
+      modify $ \s -> s { nativepool = newmap }
+      pure $! serializeToBytes newindex
 
 modifyStringPool :: String -> Assembler [Word8]
 modifyStringPool s = do
@@ -385,6 +452,8 @@ rectifyLabelOffset offset (w : ws) =
     6  -> let (b1 : b2 : bs) = ws -- LOADI
            in   w : b1 : b2 : rectifyLabelOffset offset bs
     11 -> let (b1 : b2 : bs) = ws -- PACK
+           in   w : b1 : b2 : rectifyLabelOffset offset bs
+    56 -> let (b1 : b2 : bs) = ws -- APPF
            in   w : b1 : b2 : rectifyLabelOffset offset bs
 
     ---- OFFSETTING HAPPENS IN THE FOLLOWING 8 INSTRUCTIONS ---
@@ -488,6 +557,7 @@ bytecounter i ((inst, label) : xs) =
     -- 3 bytes long --
     -- TODO: Not handled Float
     QUOTE (LInt _)  -> (inst, label, i) : bytecounter (i + 3) xs
+    APPF _ _        -> (inst, label, i) : bytecounter (i + 3) xs
     CUR _           -> (inst, label, i) : bytecounter (i + 3) xs
     PACK _          -> (inst, label, i) : bytecounter (i + 3) xs
     CALL _          -> (inst, label, i) : bytecounter (i + 3) xs
@@ -581,6 +651,10 @@ switchi    = 54
 
 callrts :: Word8
 callrts = 55
+
+-- | Native call bytecode
+appf :: Word8
+appf = 56
 
 byte :: Int -> Word8
 byte n

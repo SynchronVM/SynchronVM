@@ -13,8 +13,8 @@ SOURCE_DIR = $(SENSEVM_DIR)/src
 #            -I$(INCLUDE_DIR)/ll \
 #            -I.
 
-PLATFORM_SRC = $(SENSEVM_DIR)/platform/macosx/src
-PLATFORM_H   = $(SENSEVM_DIR)/platform/macosx/include
+PLATFORM_SRC = $(SENSEVM_DIR)/platform/linux-x86/src
+PLATFORM_H   = $(SENSEVM_DIR)/platform/linux-x86/include
 
 $(shell mkdir -p ${BUILD_DIR})
 
@@ -30,13 +30,17 @@ SVM_SOURCES = $(SOURCE_DIR)/CAM.c \
               $(SOURCE_DIR)/scheduler.c \
               $(SOURCE_DIR)/stack.c \
               $(SOURCE_DIR)/VMC.c \
+	      $(SOURCE_DIR)/ffi_util.c \
               $(SOURCE_DIR)/ll/ll_driver.c \
-              $(PLATFORM_SRC)/sys_time.c
+							./FOREIGN/out.c \
+	      			./FOREIGN/foreign.c \
+              $(PLATFORM_SRC)/sys_time.c \
+              $(PLATFORM_SRC)/debug.c
 
 TEST_SOURCES = $(wildcard *.c)
 TEST_EXECS = $(patsubst %.c, %.exe, $(TEST_SOURCES))
 
-TEST_INCLUDES = -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I$(SENSEVM_DIR)/platform/macosx/include -I.
+TEST_INCLUDES = -I./FOREIGN -I$(SENSEVM_DIR)/include -I$(SENSEVM_DIR)/include/sys -I$(SENSEVM_DIR)/platform/linux-x86/include -I.
 
 all: $(TEST_EXECS) 
 

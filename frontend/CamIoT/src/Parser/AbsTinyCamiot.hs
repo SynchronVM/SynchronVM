@@ -19,6 +19,7 @@ newtype UIdent = UIdent String
 data Def a
     = DEquation a Ident [Pat a] (Exp a)
     | DTypeSig Ident Type
+    | DForeignType Ident Type
     | DDataDec UIdent [Ident] [ConstructorDec]
     | DMutRec [(Def a, [Def a])]
     --           ^       ^

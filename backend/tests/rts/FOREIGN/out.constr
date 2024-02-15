@@ -1,0 +1,31 @@
+#include <string.h>
+// check if a tag index corresponds to a specific constructor
+bool is_constructor(uint16_t tagidx, char *constr) {
+    switch(tagidx) {
+        case 0: {
+            return !strcmp(constr, "Cons");
+            break;
+        }
+
+        case 1: {
+            return !strcmp(constr, "Nil");
+            break;
+        }
+
+        default: return false;
+    }
+    return false;
+}
+
+// create a cam_value_t representing a constructor node
+cam_value_t create_constructor(char *constr) {
+    if(!strcmp(constr, "Cons"))
+        return (cam_value_t) {.value = (uint16_t)0, .flags = 0};
+
+    if(!strcmp(constr, "Nil"))
+        return (cam_value_t) {.value = (uint16_t)1, .flags = 0};
+
+    cam_value_t abc = {.value = 0, .flags = 0};
+    return abc;
+}
+

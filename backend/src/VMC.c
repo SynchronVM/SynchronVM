@@ -30,12 +30,19 @@
 #include <CAM.h>
 #include <queue.h>
 #include <priorityqueue.h>
-
 #include <ll/ll_driver.h>
 
 #include <sys_gpio_printf.h>
 #include <sys_time.h>
 #include <CONFIG_DEFINES.h>
+
+#if FFI_ENABLED
+#include <out.h>
+cam_value_t(*ffi_arr[])(cam_value_t *) = {
+  #include VMC_FOREIGN_FUNCTIONS_FILE
+};
+
+#endif
 
 /* TODO: We need a better way to manage these
    conditional includes. */
@@ -490,6 +497,11 @@ int vmc_init(vmc_t *vm_containers, int max_num_containers) {
   r++;
   #endif
 
+  #if FFI_ENABLED
+  extern void init_ffi_container(vmc_t *container);
+  init_ffi_container(&vm_containers[VMC_CONTAINER_1]);
+  #endif
+
   return r;
 }
 
@@ -623,7 +635,7 @@ static bool init_all_contexts(Context_t *ctx, uint8_t *mem, uint32_t memory_size
 
     int st_status = stack_init(&ctx[i].stack
                                , &mem[offset]
-                               , CONTEXT_STACK_SPACE);
+                               , VMC_CONTAINER_1_STACK_SIZE_BYTES);
     ctx[i].deadline = TIME_MAX;
 
     if(!st_status){
@@ -744,8 +756,8 @@ heap_index vmc_heap_alloc_n(vmc_t *container, unsigned int n) {
 
 heap_index vmc_heap_alloc_withGC(vmc_t *container) {
 
-  uint32_t t0 = sys_get_timestamp();
-  
+  // uint32_t t0 = sys_get_timestamp();
+
   heap_index hi = heap_allocate(&container->heap);
   if(hi == HEAP_NULL){
     // heap full; time to do a GC
@@ -760,17 +772,47 @@ heap_index vmc_heap_alloc_withGC(vmc_t *container) {
     hi =  heap_allocate(&container->heap);
   }
 
-  uint32_t t1 = sys_get_timestamp();
-  uint32_t tdiff = t1 - t0;
-  if (tdiff > vmc_stats.gc_time_max)
-    vmc_stats.gc_time_max = tdiff;
-  if (tdiff < vmc_stats.gc_time_min)
-    vmc_stats.gc_time_min = tdiff;
-  vmc_stats.gc_time_total += tdiff;
-  vmc_stats.gc_num ++;
-      
+  // uint32_t t1 = sys_get_timestamp();
+  // uint32_t tdiff = t1 - t0;
+  // if (tdiff > vmc_stats.gc_time_max)
+  //   vmc_stats.gc_time_max = tdiff;
+  // if (tdiff < vmc_stats.gc_time_min)
+  //   vmc_stats.gc_time_min = tdiff;
+  // vmc_stats.gc_time_total += tdiff;
+  // vmc_stats.gc_num ++;
+
   return hi;
 }
+
+#if FFI_ENABLED
+heap_index heap_alloc_FFI_GC(vmc_t *container, int num_args, cam_value_t *roots){
+  heap_index hi = heap_allocate(&container->heap);
+  if(hi == HEAP_NULL){
+    // heap full; time to do a GC
+
+    /* GC parent context */
+    heap_mark_phase(container);
+
+    /* FFI values GC start */
+
+    for(int i = 0; i < num_args; i++){
+      cam_value_t ffi_val = roots[i];
+      heap_mark(&container->heap, ffi_val);
+    }
+
+    /* FFI values GC end   */
+
+
+
+    // if heap_allocate_helper returns HEAP_NULL again need to resize heap
+    hi =  heap_allocate(&container->heap);
+
+  }
+
+  return hi;
+
+}
+#endif
 
 void vmc_get_stats(vmc_statistics_t *stats) {
   stats->gc_time_max = vmc_stats.gc_time_max;

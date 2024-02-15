@@ -49,6 +49,7 @@ functionsMap defs = Map.fromList pairs
       name :: Def Type -> Ident
       name (DTypeSig id _)      = id
       name (DEquation _ id _ _) = id
+      name (DForeignType id _)  = id
 
       (.||.) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
       (.||.) f g a = f a || g a
@@ -57,11 +58,14 @@ type M a = StateT MState (
              WriterT [Def Type] IO) a
 
 -- | Run a monomorphising computation and return the result, and the new counter
-runM :: M a -> MState -> IO (a, Int)
+runM :: M a -> MState -> IO (a, Int, [(UIdent, UIdent)])
 runM ma st = do
     let wa = runStateT ma st
     ((a, c),_) <- runWriterT wa
-    return (a, counter c)
+    return (a, counter c, mstateToUIdentMap c)
+
+mstateToUIdentMap :: MState -> [(UIdent, UIdent)]
+mstateToUIdentMap st = map (\((olduid,_),newuid) -> (newuid, olduid)) $ Map.toList $ newConstructors st
 
 -- | Returns True if the identifier has a polymorphic type in the map.
 hasPolymorphicType :: Ident -> M Bool
@@ -71,6 +75,7 @@ hasPolymorphicType id = do
         Just d  -> case d of
             (DTypeSig _ t:_)      -> return $ containsTypeVariable t
             (DEquation t _ _ _:_) -> return $ containsTypeVariable t
+            (DForeignType _ t:_)  -> return False
         Nothing -> return False
 
 -- | Generate a fresh name

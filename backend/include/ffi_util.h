@@ -1,7 +1,7 @@
 /**********************************************************************************/
 /* MIT License									  */
 /* 										  */
-/* Copyright (c) 2020 Abhiroop Sarkar, Joel Svensson             		  */
+/* Copyright (c) 2022 Abhiroop Sarkar, Robert Krook  				  */
 /* 										  */
 /* Permission is hereby granted, free of charge, to any person obtaining a copy	  */
 /* of this software and associated documentation files (the "Software"), to deal  */
@@ -22,17 +22,47 @@
 /* SOFTWARE.									  */
 /**********************************************************************************/
 
-#ifndef __CAM_H_
-#define __CAM_H_
 
-#include <stdint.h>
+
+#ifndef FFI_UTIL_H
+#define FFI_UTIL_H
+
 #include <typedefs.h>
-#include <RTS.h>
 #include <VMC.h>
+#include <stdarg.h>
 
-typedef void (*eval_fun) (vmc_t *vmc, INT *pc_idx);
+/* Convert a cam_value_t to a int */
+#define cvtToInt(value) ((int) value.value)
 
-/* TODO: The list of evaluators should be specified as constant */
-extern eval_fun evaluators[57]; // 57 instructions
+/* Convert a cam_value_t to a bool */
+#define cvtToBool(value) ((bool) value.value)
 
-#endif
+/* Write an int value to a cam_value_t */
+inline void intToCvt(int x, cam_value_t *dest) {
+    dest->value = (UINT)x;
+}
+
+/* Write an int value to a cam_value_t */
+inline void boolToCvt(bool x, cam_value_t *dest) {
+    dest->value = (bool)x;
+}
+
+/* cam_value_t representing the camiot "()" value */
+
+
+
+/**util funcs for FFI-HEAP communication ***/
+extern cam_value_t cvt_get_fst(cam_value_t *v);
+extern cam_value_t cvt_get_snd(cam_value_t *v);
+extern void cvt_set_fst(cam_value_t *ptr, cam_value_t *v);
+extern void cvt_set_snd(cam_value_t *ptr, cam_value_t *v);
+extern void cvt_set(cam_value_t *ptr, cam_value_t *f, cam_value_t *s);
+extern bool is_pointer(cam_value_t *v);
+
+/**
+ * @brief Allocate a pair on the heap, and get a cam_value_t back that is a pointer to
+ * that cell.
+ */
+extern cam_value_t alloc_cvt(int num_args, ...);
+
+#endif // FFI_UTIL_H

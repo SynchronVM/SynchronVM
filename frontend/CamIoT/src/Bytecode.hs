@@ -27,6 +27,7 @@ module Bytecode where
 import Control.Monad.State.Class
 import Control.Monad.State.Strict
 import Data.Int(Int32)
+import Data.Word(Word16)
 import Data.List
 import Desugaring.AST
 import GHC.Float(double2Float)
@@ -64,6 +65,7 @@ translate (SETag _ (AST.UIdent tag) maybeExp) =
   case maybeExp of
     Nothing -> C.Con tag C.Void
     Just e  -> C.Con tag (translate e)
+translate e@(SEAppF _ (AST.Ident ident) args) = C.Foreign $ C.ForeignCall ident (length args) (map translate args)
 translate e@(SEApp _ e1 e2)
   | runtimeFuncs e = genrtsfunc e
   | otherwise      = C.App (translate e1) (translate e2)
@@ -452,16 +454,16 @@ condPutStrLn b s =
     True -> putStrLn s
     False -> return ()
 
-byteCompile :: Bool -> FilePath -> IO [Word8]
+byteCompile :: Bool -> FilePath -> IO ([Word8], [(String, Word8)], [(String, Word16)])
 byteCompile verbose path = do
   compiled <- compile verbose path
   case compiled of
     Left err -> do putStrLn err
                    exitFailure 
-    Right desugaredIr -> do
+    Right (desugaredIr, constructorMap) -> do
 
       condPutStrLn verbose $ "\nDesugared intermediate representation: \n"
-      condPutStrLn verbose $ PP.printTree desugaredIr
+      condPutStrLn verbose $ show desugaredIr--PP.printTree desugaredIr
       --putStrLn $ show desugaredIr
 
       condPutStrLn verbose $ "\nCAM IR (no pp): \n"
@@ -477,7 +479,8 @@ byteCompile verbose path = do
       condPutStrLn verbose $ show camopt
 
       condPutStrLn verbose $ "\nCAM BYTECODE (uint8_t): \n"
-      let bytecode = A.translate camopt
+      let tagmap = map (\(AST.UIdent newuid, AST.UIdent olduid) -> (newuid, olduid)) constructorMap
+          (bytecode, foreign_arr, constructor_table) = A.translate camopt tagmap
       condPutStrLn verbose $ show bytecode
 
       --condPutStrLn verbose $ "\n\n CAM HS Interpreter \n\n"
@@ -487,20 +490,21 @@ byteCompile verbose path = do
       -- condPutStrLn verbose $ "\nCAM Assembler and true bytecode generator: \n"
       -- A.genbytecode cam
       -- putStrLn $ show $ A.translate $ C.interpret $ translate desugaredIr
-      return bytecode
+      return (bytecode, foreign_arr, constructor_table)
 
 
 -- Experiments --
-path = "testcases/mutrec_debug.cam"
+-- path = "testcases/mutrec_debug.cam"
 
--- path = "testcases/good27.cam"
+path = "testcases/good36.cam"
+
 
 test :: IO ()
 test = do
   compiled <- compile True path
   case compiled of
     Left err -> putStrLn err
-    Right desugaredIr -> do
+    Right (desugaredIr, constructorMap) -> do
       putStrLn $ PP.printTree desugaredIr
       putStrLn $ "\n\n Debug Follows \n\n"
       -- putStrLn $ show desugaredIr
@@ -517,7 +521,8 @@ test = do
 
       putStrLn $ "\n\n CAM BYTECODE (uint8_t) \n\n"
       let cam   = Peephole.optimise $ C.interpret camir
-      putStrLn $ show $ A.translate cam
+      let tagmap = map (\(AST.UIdent newuid, AST.UIdent olduid) -> (newuid, olduid)) constructorMap
+      putStrLn $ show $ A.translate cam tagmap
 
       putStrLn $ "\n\n CAM HS Interpreter \n\n"
       let val = IM.evaluate $ C.interpret camir

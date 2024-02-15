@@ -12,6 +12,7 @@ import HindleyMilner.TypeInference () -- importing an instance
 import Control.Monad.State
 import Control.Monad.Writer
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 
 import System.IO.Unsafe
@@ -22,8 +23,10 @@ trace x = unsafePerformIO $ putStrLn (show x) >> return x
 
 {- | Entrypoint for the monoomrphisation pass. Takes the current state (for name generation)
 and the program and returns the monomorphised program and the new state. -}
-monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int)
-monomorphise counter defs = runM (monomorphiseFunctions defs) state
+monomorphise :: Int -> [Def Type] -> IO ([Def Type], Int, [(UIdent, UIdent)])
+monomorphise counter defs = do
+  (defs', counter', constrMap) <- runM (monomorphiseFunctions defs) state
+  return (defs', counter', create_constructor_table constrMap (allDeclaredConstructors defs))
   where
     state =
       MState
@@ -32,6 +35,25 @@ monomorphise counter defs = runM (monomorphiseFunctions defs) state
                                                                -- but we will add this functionality in the future
         Map.empty
         Map.empty
+
+{- | Create the constructor table used by the assembler, including dummy mappings from
+orig-constr to orig-constr if there is no mapping from a new-constr to orig-constr. This
+must be done to ensure that the FFI generated out.constr includes all constructors. -}
+create_constructor_table :: [(UIdent, UIdent)] -> [UIdent] -> [(UIdent, UIdent)]
+create_constructor_table table constrs = table ++ [ (ui,ui) | ui <- constrs, not (elem ui prvUIs)]
+  where
+    prvUIs :: [UIdent]
+    prvUIs = Set.toList $ Set.fromList $ map snd table
+
+-- | Return a list of all constructors that was declared in a program
+allDeclaredConstructors :: [Def a] -> [UIdent]
+allDeclaredConstructors [] = []
+allDeclaredConstructors (d:ds) = case d of
+  DEquation _ _ _ _ -> allDeclaredConstructors ds
+  DTypeSig _ _      -> allDeclaredConstructors ds
+  DForeignType _ _  -> allDeclaredConstructors ds
+  DMutRec _         -> allDeclaredConstructors ds
+  DDataDec _ _ csr  -> map (\(ConstDec ui _) -> ui) csr ++ allDeclaredConstructors ds
 
 {- | Monomorphise all the functions in the program. The input is given as a flattened
 list of definitions, which are then grouped together and monomorphised on a group basis. -}
@@ -68,6 +90,7 @@ monomorphiseFunctions defs = do defs'   <- withoutPoly grouped
     name :: [Def Type] -> Ident
     name (DTypeSig id _:_)      = id
     name (DEquation _ id _ _:_) = id
+    name (DForeignType id _:_)  = id
 
 {- | Monomorphise a single function. If it uses any polymorphic functions they will be
 specialized and a new function call replaces the old one. The specialized functions
@@ -84,6 +107,7 @@ monomorphiseFunction defs = do defs' <- monoAllDefinitions defs --undefined
     monoAllDefinitions (d:ds) = case d of
       DDataDec _ _ _           -> monoAllDefinitions ds >>= \ds' -> return (d:ds')
       DTypeSig id t            -> monoAllDefinitions ds >>= \ds' -> return (d:ds')
+      DForeignType _ _         -> monoAllDefinitions ds >>= \ds' -> return (d:ds')
       DEquation t id args body -> do body' <- removePolyAppsInExp body
                                      args' <- mapM removePolyADTsInPats args
                                      let d' = DEquation t id args' body'
@@ -373,6 +397,7 @@ updateTypeOfDef :: Map.Map Type Type -> Def Type -> Def Type
 updateTypeOfDef m d = case d of
     DDataDec uid args cons   -> DDataDec uid args (map (updateCons m) cons)
     DTypeSig id t            -> DTypeSig id (updateType m t)
+    DForeignType id t        -> DForeignType id (updateType m t)
     DEquation t id args body -> let t'    = updateType m t
                                     args' = map  (fmap (updateType m)) args
                                     body' = fmap (updateType m) body

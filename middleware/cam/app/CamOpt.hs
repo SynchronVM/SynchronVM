@@ -24,6 +24,7 @@ module CamOpt ( Exp (..)
               , Var
               , Tag
               , Sys (..)
+              , Foreign (..)
               , BinOp (..)
               , UnaryOp (..)
               , Label (..)
@@ -59,6 +60,7 @@ type TaggedField = (Tag, Pat)
 
 data Exp = Var Var  -- variable
          | Sys Sys  -- Primops
+         | Foreign Foreign -- Foreign calls
          | Void     -- Empty Tuple
          | Pair Exp Exp    -- Pair
          | Con  Tag Exp    -- Constructed Value
@@ -80,6 +82,19 @@ data Sys = Sys2 BinOp Exp Exp -- BinOp
          | RTS2 RTS2 Exp Exp
          | RTS1 RTS1 Exp
          deriving (Ord, Show, Eq)
+
+{- | Foreign function calls.
+
+                   name of foreign function
+                              |
+                              v  arity
+                                   |
+                                   v   args
+                                        |
+                                        v
+-}
+data Foreign = ForeignCall String Int [Exp]
+  deriving (Ord, Show, Eq)
 
 {-
 
@@ -173,6 +188,9 @@ data Instruction
 
      -- Calling an RTS function
    | CALLRTS OperationNumber
+
+     -- Calling a foreign function with name and arity
+   | APPF String Int
 
    | FAIL -- a meta instruction to indicate search failure
    deriving (Ord, Show, Eq)
@@ -286,14 +304,14 @@ interpret e =  instrs <+> Ins STOP <+> fold thunks_ <+> labelGraveyard
     maxLabel = 65535 -- (label can be max 2 bytes)
 
 codegen :: Exp -> Env -> Codegen CAM
-codegen v@(Var var) env 
+codegen v@(Var var) env
   | rClosed v (env2Eta env) = pure $! rcl -- lookupRC var env
   | otherwise = pure $! l -- lookup var env 0
   where rcl' = lookupRC var env
         l'   = lookup var env 0
         rcl  = traceFail rcl' ("LookupRC failure: " ++ show v ++ " in env: " ++ show env) rcl'
         l    = traceFail l' ("Lookup failure: " ++ show v ++ " in env: " ++ show env) l'
-        
+
 codegen (Sys (LInt n)) _  = pure $! Ins $ QUOTE (LInt n)  -- s(0)
 codegen (Sys (LFloat f)) _  = pure $! Ins $ QUOTE (LFloat f)  -- s(0)
 codegen (Sys (LBool b)) _ = pure $! Ins $ QUOTE (LBool b) -- s(0)
@@ -465,6 +483,22 @@ codegen (Sequence e1 e2) env = do
   e1' <- codegen e1 env
   e2' <- codegen e2 env
   pure $! e1' <+> e2'
+
+{- | Compile the arguments for the foreign call. The first parameter goes in the
+    register, and the rest goes on the stack. With the first element being the top
+    of the stack, they appear in the order @[arg2, arg3, arg4, ...@. -}
+codegen (Foreign (ForeignCall name arity args)) env
+  | length args == 0 = pure $! Ins (APPF name arity)
+  | otherwise = do
+      i_arg1     <- codegen (head args) env
+      i_arg_rest <- S.foldM (\is e -> do
+                                i <- codegen e env
+                                pure $! is
+                                    <+> Ins PUSH
+                                    <+> i
+                                    <+> Ins SWAP
+                            ) (Ins SKIP) (reverse (tail args))
+      pure $! i_arg_rest <+> i_arg1 <+> (Ins (APPF name arity))
 
 codegenR :: Exp -> Env -> Codegen CAM
 codegenR e@(If e1 e2 e3) env
@@ -691,6 +725,7 @@ rFree Void _           = Set.empty
 rFree (Pair e1 e2) etaenv = rFree e1 etaenv `Set.union` rFree e2 etaenv
 rFree (Con _ e) etaenv    = rFree e  etaenv
 rFree (App e1 e2) etaenv  = rFree e1 etaenv `Set.union` rFree e2 etaenv
+rFree (Foreign (ForeignCall id arity args)) etaenv = Set.unions $ map (flip rFree etaenv) args
 rFree (Lam p e) etaenv = rFree e (EtaPair etaenv p) `Set.difference` vars p
 rFree (If e1 e2 e3) etaenv =
   rFree e1 etaenv `Set.union`
@@ -705,7 +740,8 @@ rFree (Case e clauses) etaenv =
 rFree (Let p1 e1 e) etaenv =
   (rFree e (EtaPair etaenv p1) `Set.difference` vars p1) `Set.union`
   rFree e1 etaenv
-rFree (Letrec recpats e) etaenv = rFree e eta'
+rFree (Letrec recpats e) etaenv =
+  foldr Set.union (rFree e eta') (map (\(_, e) -> rFree e etaenv) recpats)
   where
     eta0 = foldr (\(pat, _) eta -> EtaAnn eta (pat, Set.empty)) etaenv recpats
     eta' = fixpoint recpats eta0

@@ -1,0 +1,8 @@
+foreign import inc : Int -> Int
+foreign import print_int : Int -> ()
+
+apply : (a -> b) -> a -> b
+apply f x = f x
+
+-- this should not fail, but it does because the foreign function 'inc' appears as a variable
+main = print_int (apply inc 5)

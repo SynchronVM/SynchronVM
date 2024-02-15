@@ -129,6 +129,9 @@ instance Print a => Print (Def a) where
     DTypeSig id type_ -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_])
     DDataDec uident ids constructordecs -> prPrec i 0 (concatD [doc (showString "data"), prt 0 uident, prt 0 ids, doc (showString "where"), doc (showString "{"), prt 0 constructordecs, doc (showString "}")])
     DMutRec tydefs -> prtList 0 $ concatMap (\(ty,defs) -> ty:defs) tydefs
+    DForeignType id type_ -> prPrec i 0 (concatD [ doc (showString "foreign import")
+                                                 , prt 0 id
+                                                 , doc (showString ":"), prt 0 type_])
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
